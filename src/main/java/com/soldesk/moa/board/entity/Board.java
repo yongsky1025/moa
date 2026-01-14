@@ -32,4 +32,5 @@ public class Board extends BaseEntity {
 
     private String content;
 
+    // circles
 }
