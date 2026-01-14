@@ -32,4 +32,6 @@ public class Scedule extends BaseEntity {
 
     private String content;
 
+    // scedule
+
 }
