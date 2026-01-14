@@ -1,6 +1,45 @@
 # File created using '.gitignore Generator' for Visual Studio Code: https://bit.ly/vscode-gig
-# Created by https://www.toptal.com/developers/gitignore/api/java,python,react
-# Edit at https://www.toptal.com/developers/gitignore?templates=java,python,react
+# Created by https://www.toptal.com/developers/gitignore/api/react,python,java
+# Edit at https://www.toptal.com/developers/gitignore?templates=react,python,java
+
+### gradle
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!/src/main//build/
+!/src/test//build/
+
+### STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!/src/main//bin/
+!/src/test//bin/
+
+### IntelliJ IDEA
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!/src/main//out/
+!/src/test//out/
+
+### NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code
+.vscode/
 
 ### Java ###
 # Compiled class file
@@ -214,7 +253,9 @@ psd
 thumb
 sketch
 
-# End of https://www.toptal.com/developers/gitignore/api/java,python,react
+
+
+# End of https://www.toptal.com/developers/gitignore/api/react,python,java
 
 # Custom rules (everything added below won't be overriden by 'Generate .gitignore File' if you use 'Update' option)
 
