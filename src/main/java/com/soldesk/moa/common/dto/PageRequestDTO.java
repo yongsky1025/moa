@@ -22,4 +22,6 @@ public class PageRequestDTO {
 
     private String keyword;
 
+    // scedule
+
 }
