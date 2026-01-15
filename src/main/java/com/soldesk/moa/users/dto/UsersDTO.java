@@ -1,13 +1,15 @@
 package com.soldesk.moa.users.dto;
 
-import groovy.transform.ToString;
-import groovy.transform.builder.Builder;
+import com.soldesk.moa.users.entity.constant.UserRole;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @ToString
 @AllArgsConstructor
@@ -32,5 +34,7 @@ public class UsersDTO {
 
     @NotNull(message = "필수")
     private String address;
+
+    private UserRole userRole;
 
 }

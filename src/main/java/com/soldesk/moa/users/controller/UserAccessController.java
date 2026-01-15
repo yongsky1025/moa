@@ -26,17 +26,17 @@ public class UserAccessController {
         log.info("로그인 폼 요청");
     }
 
-    @GetMapping("/register")
-    public void getRegister(UsersDTO dto) {
+    @GetMapping("/signUp")
+    public void getSignUp(UsersDTO dto) {
         log.info("회원가입 폼 요청");
     }
 
-    @PostMapping("/register")
-    public String postRegister(@Valid UsersDTO dto, BindingResult result, RedirectAttributes rttr) {
+    @PostMapping("/signUp")
+    public String postSignUp(@Valid UsersDTO dto, BindingResult result, RedirectAttributes rttr) {
         log.info("회원가입 요청 {}, dto");
 
         if (result.hasErrors()) {
-            return "/users/register";
+            return "/users/signUp";
         }
 
         return "redirect:/users/login";
