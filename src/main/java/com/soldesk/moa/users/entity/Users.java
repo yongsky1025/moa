@@ -5,6 +5,7 @@ import com.soldesk.moa.users.entity.constant.UserRole;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -29,17 +30,33 @@ public class Users extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
 
+    @Column(nullable = false)
     private String name;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
     private String password;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String nickname;
 
+    @Column(nullable = false)
     private String address;
 
+    @Enumerated(EnumType.STRING)
     private UserRole userRole;
+
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void changeAddress(String address) {
+        this.address = address;
+    }
+
+    public void changePassword(String password) {
+        this.password = password;
+    }
 }
