@@ -6,9 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import com.soldesk.moa.circle.dto.CircleCreateRequest;
-import com.soldesk.moa.circle.dto.CircleResponse;
-import com.soldesk.moa.circle.dto.CircleUpdateRequest;
+import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
+import com.soldesk.moa.circle.dto.CircleResponseDTO;
+import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
 import com.soldesk.moa.circle.service.CircleService;
 
 import jakarta.validation.Valid;
@@ -24,16 +24,23 @@ public class CircleController {
 
     // 서클 생성
     @PostMapping
-    public ResponseEntity<CircleResponse> createCircle(
-            @RequestBody @Valid CircleCreateRequest request) {
+    public ResponseEntity<CircleResponseDTO> createCircle(
+            @RequestBody @Valid CircleCreateRequestDTO request) {
 
         return ResponseEntity.ok(circleService.createCircle(request));
     }
 
     // 서클 목록 조회
     @GetMapping
-    public ResponseEntity<List<CircleResponse>> getCircles() {
+    public ResponseEntity<List<CircleResponseDTO>> getCircles() {
         return ResponseEntity.ok(circleService.getCircles());
+    }
+
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<List<CircleResponseDTO>> getCirclesByCategory(
+            @PathVariable Long categoryId) {
+
+        return ResponseEntity.ok(circleService.getCirclesByCategory(categoryId));
     }
 
     // 서클 삭제
@@ -45,9 +52,9 @@ public class CircleController {
 
     // 서클 수정 (이름, 설명만)
     @PutMapping("/{circleId}")
-    public ResponseEntity<CircleResponse> updateCircle(
+    public ResponseEntity<CircleResponseDTO> updateCircle(
             @PathVariable Long circleId,
-            @RequestBody @Valid CircleUpdateRequest request) {
+            @RequestBody @Valid CircleUpdateRequestDTO request) {
 
         return ResponseEntity.ok(circleService.updateCircle(circleId, request));
     }

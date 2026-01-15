@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class CircleUpdateRequest {
+public class CircleUpdateRequestDTO {
 
     @NotBlank(message = "서클 이름은 필수입니다.")
     @Size(max = 20, message = "서클 이름은 20자 이내여야 합니다.")

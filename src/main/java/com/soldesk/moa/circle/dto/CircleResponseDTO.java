@@ -5,7 +5,7 @@ import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import lombok.Getter;
 
 @Getter
-public class CircleResponse {
+public class CircleResponseDTO {
 
     private Long circleId;
     private String name;
@@ -15,7 +15,7 @@ public class CircleResponse {
     private int currentMember;
     private String categoryName;
 
-    public CircleResponse(Circle circle) {
+    public CircleResponseDTO(Circle circle) {
         this.circleId = circle.getCircleId();
         this.name = circle.getName();
         this.description = circle.getDescription();
