@@ -16,6 +16,7 @@ import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleCategoryRepository;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,7 +31,7 @@ public class CircleService {
 
         // 서클 생성
         @Transactional
-        public CircleResponseDTO createCircle(CircleCreateRequestDTO request) {
+        public CircleResponseDTO createCircle(CircleCreateRequestDTO request, Users loginUser) {
 
                 CircleCategory circleCategory = categoryRepository.findById(request.getCategoryId())
                                 .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
@@ -49,7 +50,7 @@ public class CircleService {
                 // 3. CircleMember 생성 (모임장)
                 CircleMember leader = CircleMember.builder()
                                 .circle(savedCircle)
-                                .user(user)
+                                .user(loginUser)
                                 .role(CircleRole.LEADER)
                                 .build();
 

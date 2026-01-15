@@ -3,6 +3,7 @@ package com.soldesk.moa.circle.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,6 +11,8 @@ import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
 import com.soldesk.moa.circle.service.CircleService;
+import com.soldesk.moa.users.entity.CustomUserDetails;
+import com.soldesk.moa.users.entity.Users;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +28,11 @@ public class CircleController {
     // 서클 생성
     @PostMapping
     public ResponseEntity<CircleResponseDTO> createCircle(
-            @RequestBody @Valid CircleCreateRequestDTO request) {
+            @RequestBody @Valid CircleCreateRequestDTO request, @AuthenticationPrincipal CustomUserDetails customUserDetails ) {
 
-        return ResponseEntity.ok(circleService.createCircle(request));
+        Users loginUser = customUserDetails.getUser();
+
+        return ResponseEntity.ok(circleService.createCircle(request, loginUser));
     }
 
     // 서클 목록 조회
