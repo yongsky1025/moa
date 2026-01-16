@@ -11,6 +11,7 @@ import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleCategory;
 import com.soldesk.moa.circle.entity.CircleMember;
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleCategoryRepository;
@@ -52,6 +53,7 @@ public class CircleService {
                                 .circle(savedCircle)
                                 .user(loginUser)
                                 .role(CircleRole.LEADER)
+                                .status(CircleMemberStatus.ACTIVE)
                                 .build();
 
                 circleMemberRepository.save(leader);

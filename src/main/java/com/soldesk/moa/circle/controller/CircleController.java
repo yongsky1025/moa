@@ -2,6 +2,7 @@ package com.soldesk.moa.circle.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -10,9 +11,10 @@ import org.springframework.web.bind.annotation.*;
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
+import com.soldesk.moa.circle.service.CircleMemberService;
 import com.soldesk.moa.circle.service.CircleService;
-import com.soldesk.moa.users.entity.CustomUserDetails;
 import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.users.entity.constant.CustomUserDetails;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class CircleController {
 
     private final CircleService circleService;
+    private final CircleMemberService circleMemberService;
 
     // 서클 생성
     @PostMapping
@@ -62,5 +65,16 @@ public class CircleController {
             @RequestBody @Valid CircleUpdateRequestDTO request) {
 
         return ResponseEntity.ok(circleService.updateCircle(circleId, request));
+    }
+
+    // 가입 신청
+    @PostMapping("/{circleId}/members")
+    public ResponseEntity<Void> joinCircle(
+            @PathVariable Long circleId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        circleMemberService.requestJoin(circleId, userDetails.getUser());
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

@@ -5,8 +5,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.soldesk.moa.users.entity.CustomUserDetails;
 import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.users.entity.constant.CustomUserDetails;
 import com.soldesk.moa.users.repository.UsersRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +23,7 @@ public class CustomUserDetailsService implements UserDetailsService {
      */
     @Override
     public UserDetails loadUserByUsername(String email) {
+        System.out.println("로그인 시도 이메일: " + email);
 
         // DB에서 유저 조회
         Users user = usersRepository.findByEmail(email)

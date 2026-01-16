@@ -1,8 +1,10 @@
 package com.soldesk.moa.circle.entity;
 
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.users.entity.Users;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -47,4 +49,8 @@ public class CircleMember {
     @Enumerated(EnumType.STRING)
     private CircleRole role;
 
+    // 가입 상태 (확장 대비)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CircleMemberStatus status;
 }
