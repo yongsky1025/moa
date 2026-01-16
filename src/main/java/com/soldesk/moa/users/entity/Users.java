@@ -1,6 +1,14 @@
 package com.soldesk.moa.users.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.soldesk.moa.admin.temporary.Board;
+import com.soldesk.moa.admin.temporary.Reply;
+import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
 
 import jakarta.persistence.Column;
@@ -10,6 +18,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +30,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString
+@ToString(exclude = { "images", "boards", "replies", "circleMembers" })
 @Table(name = "users")
 @Entity
 public class Users extends BaseEntity {
@@ -47,6 +56,25 @@ public class Users extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private UserRole userRole;
+
+    @Column(nullable = false)
+    private UserGender userGender;
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    private List<Image> images = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    private List<Board> boards = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    private List<Reply> replies = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    private List<CircleMember> circleMembers = new ArrayList<>();
 
     public void changeNickname(String nickname) {
         this.nickname = nickname;

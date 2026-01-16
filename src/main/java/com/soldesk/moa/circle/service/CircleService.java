@@ -49,7 +49,6 @@ public class CircleService {
                 // 3. CircleMember 생성 (모임장)
                 CircleMember leader = CircleMember.builder()
                                 .circle(savedCircle)
-                                .user(user)
                                 .role(CircleRole.LEADER)
                                 .build();
 

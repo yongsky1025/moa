@@ -1,6 +1,6 @@
-package com.soldesk.moa.common.entity;
+package com.soldesk.moa.admin.temporary;
 
-import com.soldesk.moa.admin.temporary.Board;
+import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.users.entity.Users;
 
 import jakarta.persistence.Column;
@@ -11,44 +11,39 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Entity
-@Table(name = "image")
-@Getter
+@Data
+@ToString(exclude = { "user", "circle", "boardCategory" })
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = { "board", "user" })
-public class Image {
+public class Board {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long imageId;
+    private Long groupId;
 
     @Column(nullable = false)
-    private String name;
+    private String title;
 
-    @Column(nullable = false, unique = true)
-    private String uuid;
-
-    @Column(nullable = false)
-    private String path;
-
-    @Column(nullable = false)
-    private Long ord;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "board_id")
-    private Board board;
+    @Column
+    private String content;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
     private Users user;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "circle_id")
+    private Circle circle;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "board_category_id")
+    private BoardCategory boardCategory;
 }
