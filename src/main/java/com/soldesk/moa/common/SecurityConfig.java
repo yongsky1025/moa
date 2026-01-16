@@ -21,10 +21,26 @@ public class SecurityConfig {
 
     @Bean // == 객체 생성
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // , RememberMeServices rememberMeServices
-        http.authorizeHttpRequests(authorize -> authorize
-                .anyRequest().permitAll());
 
+        http.authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/auth/**").permitAll()
+                .anyRequest().authenticated());
+
+        // 개발 단계 중 csrf 보호 비활성화
+        http.csrf(csrf -> csrf.disable());
+
+        // 기본 로그인 기능 활성화
+        http.formLogin(form -> form.loginProcessingUrl("/auth/login").permitAll());
+
+        // 로그아웃 활성화
+        http.logout(logout -> logout
+                .logoutUrl("/auth/logout")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
+                .logoutSuccessHandler((req, res, auth) -> {
+                    res.setStatus(200);
+                }));
         return http.build();
     }
 

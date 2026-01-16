@@ -1,7 +1,5 @@
 package com.soldesk.moa.users.dto;
 
-import com.soldesk.moa.users.entity.constant.UserRole;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -17,7 +15,7 @@ import lombok.ToString;
 @Builder
 @Setter
 @Getter
-public class UsersDTO {
+public class SignUpRequestDTO {
 
     @Email(message = "이메일을 작성해 주세요.")
     @NotNull(message = "필수")
@@ -34,7 +32,5 @@ public class UsersDTO {
 
     @NotNull(message = "필수")
     private String address;
-
-    private UserRole userRole;
 
 }
