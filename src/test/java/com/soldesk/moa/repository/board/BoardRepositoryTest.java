@@ -33,6 +33,7 @@ public class BoardRepositoryTest {
                     .email("user" + i + "@gmail.com")
                     .nickname("user" + i)
                     .address("address" + i)
+                    .password("1111")
                     .userRole(UserRole.USER)
                     .build();
             usersRepository.save(users);
@@ -44,19 +45,19 @@ public class BoardRepositoryTest {
     @Test
     public void testInsertBoard() {
         IntStream.rangeClosed(1, 20).forEach(i -> {
+            Users user = usersRepository.findById((long) i).orElseThrow();
             Board board = Board.builder()
                     .boardType(BoardType.NOTICE)
                     .title("title_test" + i)
                     .content("content_test" + i)
                     .viewCount(0)
-                    .writer(Users.builder().userId((long) i).build())
+                    .userId(user)
                     .build();
             boardRepository.save(board);
         });
     }
 
     @Test
-    @Transactional
     public void testBoardModify() {
 
         Board board = boardRepository.findById(1L).orElseThrow();
@@ -68,12 +69,20 @@ public class BoardRepositoryTest {
     }
 
     @Test
+    public void testBoarddel() {
+
+        Board board = boardRepository.findById(2L).orElseThrow();
+
+        boardRepository.delete(board);
+    }
+
+    @Test
     @Transactional
     public void testFindBoard() {
 
         Board board = boardRepository.findBoardWithWriter(1L).orElseThrow();
 
         System.out.println(board);
-        System.out.println(board.getWriter().getEmail());
+        System.out.println(board.getUserId().getEmail());
     }
 }

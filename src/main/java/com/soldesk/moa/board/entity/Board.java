@@ -25,7 +25,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = "writer")
+@ToString(exclude = "userId")
 @Table
 @Entity
 public class Board extends BaseEntity {
@@ -44,12 +44,13 @@ public class Board extends BaseEntity {
     @Column(nullable = false)
     private String content;
 
-    private int viewCount;
+    @Builder.Default
+    private int viewCount = 0;
 
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private Users writer;
+    private Users userId; // 작성자 불러옴
 
     // 수정용 setter
     public void changeTitle(String title) {
@@ -58,9 +59,5 @@ public class Board extends BaseEntity {
 
     public void changeContent(String content) {
         this.content = content;
-    }
-
-    public void upViewCount(int viewCount) {
-        this.viewCount = viewCount;
     }
 }

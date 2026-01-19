@@ -20,8 +20,9 @@ public class SecurityConfig {
     @Bean // == 객체 생성
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // , RememberMeServices rememberMeServices
-        http.authorizeHttpRequests(authorize -> authorize
-                .anyRequest().permitAll());
+        http.csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().permitAll());
 
         return http.build();
     }

@@ -14,7 +14,12 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
     List<Board> findByBoardType(BoardType boardType);
 
-    @Query("select b from Board b join fetch b.writer where b.bno = :id")
-    Optional<Board> findBoardWithWriter(@Param("id") Long id);
+    // 게시판 상세 (작성자join)
+    @Query("select b from Board b join fetch b.userId where b.bno = :bno")
+    Optional<Board> findBoardWithWriter(@Param("bno") Long bno);
+
+    // 전체 목록 (작성자join)
+    @Query("select b from Board b join fetch b.userId order by b.bno desc")
+    List<Board> findAllWithWriter();
 
 }
