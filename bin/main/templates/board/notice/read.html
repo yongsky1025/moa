@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html
+  lang="en"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/layout}"
+>
+  <head>
+    <title layout:fragment="title">notice</title>
+  </head>
+
+  <body>
+    <div class="container-fluid" layout:fragment="content">
+      <div class="mx-auto" style="max-width: 100%">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <h1 class="h3 mb-0 text-gray-800">공지사항</h1>
+        </div>
+
+        <div class="card shadow mb-4">
+          <div class="card-body">
+            <!-- 제목 -->
+            <h4 class="font-weight-bold mb-2" th:text="${dto.title}">공지사항 제목</h4>
+
+            <!-- 메타 정보 -->
+            <div class="d-flex justify-content-between align-items-center mb-3 text-muted small">
+              <div>
+                <span th:text="${dto.writer.nickname}">작성자</span>
+                <span class="mx-1">|</span>
+                <span th:text="${#temporals.format(dto.createDate, 'yyyy-MM-dd HH:mm')}"> 2026.01.16 14:32 </span>
+              </div>
+
+              <div>
+                <span class="mr-3">
+                  <i class="fas fa-eye mr-1"></i>
+                  <span th:text="${dto.viewCount}">39</span>
+                </span>
+                <!-- 추천/댓글은 나중에 붙일 수 있게 자리만 -->
+                <!--
+        <span class="mr-3">
+          <i class="far fa-thumbs-up mr-1"></i>0
+        </span>
+        <span>
+          <i class="far fa-comment-dots mr-1"></i>4
+        </span>
+        -->
+              </div>
+            </div>
+
+            <hr />
+
+            <!-- 내용 -->
+            <div class="pt-2">
+              <div class="content h5" style="white-space: pre-wrap; line-height: 1.7" th:text="${dto.content}">
+                내용
+              </div>
+            </div>
+            <hr class="my-4" />
+
+            <div class="d-flex justify-content-start">
+              <!-- 목록 -->
+              <a class="btn btn-secondary mr-2" th:href="@{/board/notice/list}"> 목록 </a>
+
+              <!-- 수정 -->
+              <a class="btn btn-primary mr-2" th:href="@{/board/notice/modify(bno=${dto.bno})}"> 수정 </a>
+
+              <!-- 삭제 -->
+              <a class="btn btn-danger mr-2" th:href="@{/}"> 삭제 </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- /.container-fluid -->
+  </body>
+</html>
