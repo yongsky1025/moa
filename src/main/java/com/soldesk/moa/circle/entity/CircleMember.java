@@ -53,4 +53,9 @@ public class CircleMember {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CircleMemberStatus status;
+
+    // 멤버 상태 변경
+    public void changeStatus(CircleMemberStatus status) {
+        this.status = status;
+    }
 }

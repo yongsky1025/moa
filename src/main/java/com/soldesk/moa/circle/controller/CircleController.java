@@ -9,6 +9,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
+import com.soldesk.moa.circle.dto.CircleMemberResponseDTO;
+import com.soldesk.moa.circle.dto.CircleMemberStatusRequestDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
 import com.soldesk.moa.circle.service.CircleMemberService;

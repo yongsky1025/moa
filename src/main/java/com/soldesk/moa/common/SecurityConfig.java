@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/login", "/auth/signup").permitAll()
                         .requestMatchers("/auth/me").authenticated()
-                        .anyRequest().authenticated() // ⭐ 중요
+                        .anyRequest().authenticated() //중요
                 );
 
         return http.build();
