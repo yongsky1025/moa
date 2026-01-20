@@ -1,5 +1,8 @@
 package com.soldesk.moa.users.dto;
 
+import com.soldesk.moa.users.entity.constant.UserGender;
+import com.soldesk.moa.users.entity.constant.UserRole;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -33,4 +36,7 @@ public class SignUpRequestDTO {
     @NotNull(message = "필수")
     private String address;
 
+    private UserGender userGender;
+
+    private UserRole userRole;
 }

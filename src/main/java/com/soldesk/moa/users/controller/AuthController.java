@@ -1,5 +1,7 @@
 package com.soldesk.moa.users.controller;
 
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 
@@ -8,39 +10,38 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import com.soldesk.moa.users.dto.SignUpRequestDTO;
-import com.soldesk.moa.users.service.CustomUserService;
+import com.soldesk.moa.users.service.UsersService;
 
 import jakarta.validation.Valid;
 
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 @Log4j2
 @Controller
 public class AuthController {
 
-    private final CustomUserService customUserService;
+    private final UsersService userService;
 
-    @GetMapping("/auth/login")
-    public void logIn() {
+    @GetMapping("/login")
+    public String getLogIn() {
         log.info("로그인 폼 요청");
+        return "users/login";
     }
 
-    @PostMapping("/auth/logout")
-    public void logOut() {
-        log.info("로그아웃 요청");
-    }
-
-    @GetMapping("/auth/signup")
-    public void getSignUp(SignUpRequestDTO dto) {
+    @GetMapping("/signup")
+    public String getSignUp(SignUpRequestDTO dto) {
         log.info("회원가입 폼 요청");
+        return "users/signup";
     }
 
-    @PostMapping("/auth/signup")
+    @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody @Valid SignUpRequestDTO dto) {
-        customUserService.signup(dto);
-        return ResponseEntity.ok("회원가입 완료");
+        userService.signup(dto);
+        return ResponseEntity.ok(Map.of("message", "회원가입 완료"));
     }
 
 }
