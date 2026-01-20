@@ -17,7 +17,6 @@ public class BoardController {
     @GetMapping("/list")
     public void getList() {
         log.info("board list 호출");
-
     }
 
     @GetMapping("/read/{bno}")
@@ -37,5 +36,4 @@ public class BoardController {
         log.info("board create 호출");
         return "board/create";
     }
-
 }

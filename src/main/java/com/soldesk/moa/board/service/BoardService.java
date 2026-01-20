@@ -34,6 +34,7 @@ public class BoardService {
 
         String writerName = board.getUserId().getNickname();
 
+        // 보드 기본dto 틀
         return BoardDTO.builder()
                 .bno(board.getBno())
                 .title(board.getTitle())
@@ -44,8 +45,9 @@ public class BoardService {
                 .build();
     }
 
+    // 타입으로 보드리스트 호출
     @Transactional(readOnly = true)
-    public List<BoardDTO> getBoardsByType(BoardType boardType) {
+    public List<BoardDTO> getBoardByType(BoardType boardType) {
         return boardRepository.findByBoardType(boardType).stream()
                 .map(this::toDto)
                 .toList();
@@ -60,6 +62,7 @@ public class BoardService {
     }
 
     // 작성자 join 게시판 리스트
+    // 조회(GET)
     @Transactional(readOnly = true)
     public List<BoardDTO> getList() {
         List<Board> boards = boardRepository.findAllWithWriter();
@@ -72,10 +75,12 @@ public class BoardService {
     // 생성 (POST)
     @Transactional
     public Long create(BoardCreateRequest req) {
-        Users writer = usersRepository.findById(req.getUserId()).orElseThrow();
+        Users writer = usersRepository.findById(1L).orElseThrow();
+
+        BoardType boardType = req.getBoardType() != null ? req.getBoardType() : BoardType.FREE;
 
         Board board = Board.builder()
-                .boardType(req.getBoardType())
+                .boardType(boardType)
                 .title(req.getTitle())
                 .content(req.getContent())
                 .userId(writer)
@@ -86,12 +91,12 @@ public class BoardService {
 
     // 수정 (PUT)
     @Transactional
-    public void update(Long bno, BoardUpdateRequest req) {
+    public void modify(Long bno, BoardUpdateRequest req) {
         Board board = boardRepository.findById(bno).orElseThrow();
 
         board.changeTitle(req.getTitle());
         board.changeContent(req.getContent());
-        // Dirty Checking으로 자동 update
+        // Dirty Checking으로 자동 modify
     }
 
     // 삭제 (DELETE)
@@ -102,5 +107,4 @@ public class BoardService {
         }
         boardRepository.deleteById(bno);
     }
-
 }

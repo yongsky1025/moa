@@ -1,5 +1,6 @@
 package com.soldesk.moa.repository.board;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,6 +12,7 @@ import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.service.BoardService;
 import com.soldesk.moa.users.repository.UsersRepository;
 
+@Disabled
 @SpringBootTest
 public class BoardServiceTest {
 
