@@ -1,37 +1,37 @@
 package com.soldesk.moa.circle.entity;
 
-import com.soldesk.moa.common.entity.BaseEntity;
+import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-@Builder
+
+
+@Entity
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@ToString
-@Entity
-public class Circles extends BaseEntity {
+@Builder
+@ToString(exclude = "circles")
+public class CircleCategory {
 
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    private Long circleId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long categoryId;
 
-    @Column(unique = true)
-    private String name;
+    @Column(nullable = false, unique = true)
+    private String categoryName;
 
-    private String description;
-
-    private String status;
-
-    private int maxMember;
+    @OneToMany(mappedBy = "category")
+    private List<Circle> circles;
 
 }

@@ -1,7 +1,7 @@
 package com.soldesk.moa.board.entity;
 
 import com.soldesk.moa.board.entity.constant.BoardRole;
-import com.soldesk.moa.circle.entity.Circles;
+import com.soldesk.moa.circle.entity.Circle;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -36,6 +36,6 @@ public class Board {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "circle_id", nullable = false)
-    private Circles circleId;
+    private Circle circleId;
 
 }
