@@ -1,5 +1,10 @@
 package com.soldesk.moa.users.dto;
 
+import java.time.LocalDate;
+
+import com.soldesk.moa.users.entity.constant.UserGender;
+import com.soldesk.moa.users.entity.constant.UserRole;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -33,4 +38,12 @@ public class SignUpRequestDTO {
     @NotNull(message = "필수")
     private String address;
 
+    private LocalDate birthDate;
+
+    @NotNull(message = "필수")
+    private String phoneNumber;
+
+    private UserGender userGender;
+
+    private UserRole userRole;
 }
