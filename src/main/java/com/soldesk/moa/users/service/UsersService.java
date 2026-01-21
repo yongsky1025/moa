@@ -82,6 +82,4 @@ public class UsersService {
         }
     }
 
-    // 이메일
-
 }
