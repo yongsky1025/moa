@@ -50,11 +50,11 @@ public class BoardRESTController {
         return ResponseEntity.created(URI.create("/api/board/" + bno)).build();
     }
 
-    // PUT /api/board/update/{bno} (수정)
-    @PutMapping("/update/{bno}")
-    public ResponseEntity<Void> update(@PathVariable Long bno,
+    // PUT /api/board/modify/{bno} (수정)
+    @PutMapping("/modify/{bno}")
+    public ResponseEntity<Void> modify(@PathVariable Long bno,
             @RequestBody @Valid BoardUpdateRequest req) {
-        boardService.update(bno, req);
+        boardService.modify(bno, req);
         return ResponseEntity.noContent().build();
     }
 

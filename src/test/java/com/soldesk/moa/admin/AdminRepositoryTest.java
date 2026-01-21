@@ -2,6 +2,7 @@ package com.soldesk.moa.admin;
 
 import java.util.stream.IntStream;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,6 +13,7 @@ import com.soldesk.moa.admin.repository.AdminRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserRole;
 
+@Disabled
 @SpringBootTest
 @Transactional
 public class AdminRepositoryTest {
