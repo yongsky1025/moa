@@ -1,12 +1,15 @@
 package com.soldesk.moa.board.entity;
 
-import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.board.entity.constant.BoardRole;
+import com.soldesk.moa.circle.entity.Circle;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,18 +21,21 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString
+@ToString(exclude = "circleId")
 @Table
 @Entity
-public class Board extends BaseEntity {
+public class Board {
 
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     private Long boardId;
 
-    @Column(unique = true)
-    private String title;
+    @Enumerated(EnumType.STRING)
+    private BoardRole boardRole; // GLOBAL,CIRCLE
 
-    private String content;
+    private String name;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "circle_id", nullable = false)
+    private Circle circleId;
 
 }
