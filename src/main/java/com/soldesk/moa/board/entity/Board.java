@@ -38,4 +38,16 @@ public class Board {
     @JoinColumn(name = "circle_id", nullable = false)
     private Circles circleId;
 
+<<<<<<< HEAD
+=======
+    // 수정용 setter
+    public void changeTitle(String title) {
+        this.title = title;
+    }
+
+    public void changeContent(String content) {
+        this.content = content;
+    }
+
+>>>>>>> 003e61bc8ba3f0867e883e15fff91f95ef115c2d
 }
