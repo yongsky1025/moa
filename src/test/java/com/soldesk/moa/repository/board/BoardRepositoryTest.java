@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.soldesk.moa.board.entity.Board;
-import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.entity.Post;
+import com.soldesk.moa.board.entity.constant.BoardRole;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserRole;
@@ -39,50 +39,5 @@ public class BoardRepositoryTest {
             usersRepository.save(users);
 
         });
-
-    }
-
-    @Test
-    public void testInsertBoard() {
-        IntStream.rangeClosed(1, 20).forEach(i -> {
-            Users user = usersRepository.findById((long) i).orElseThrow();
-            Board board = Board.builder()
-                    .boardType(BoardType.NOTICE)
-                    .title("title_test" + i)
-                    .content("content_test" + i)
-                    .viewCount(0)
-                    .userId(user)
-                    .build();
-            boardRepository.save(board);
-        });
-    }
-
-    @Test
-    public void testBoardModify() {
-
-        Board board = boardRepository.findById(1L).orElseThrow();
-
-        board.changeTitle("수정title하자");
-        board.changeContent("수정content하자");
-
-        System.out.println(boardRepository.save(board));
-    }
-
-    @Test
-    public void testBoarddel() {
-
-        Board board = boardRepository.findById(2L).orElseThrow();
-
-        boardRepository.delete(board);
-    }
-
-    @Test
-    @Transactional
-    public void testFindBoard() {
-
-        Board board = boardRepository.findBoardWithWriter(1L).orElseThrow();
-
-        System.out.println(board);
-        System.out.println(board.getUserId().getEmail());
     }
 }

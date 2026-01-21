@@ -1,16 +1,12 @@
 package com.soldesk.moa.board.entity;
 
-import com.soldesk.moa.board.entity.constant.BoardType;
-import com.soldesk.moa.common.entity.BaseEntity;
-import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.board.entity.constant.BoardRole;
+import com.soldesk.moa.circle.entity.Circles;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -25,40 +21,21 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = "userId")
+@ToString(exclude = "circleId")
 @Table
 @Entity
-public class Board extends BaseEntity {
+public class Board {
 
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    private Long bno;
+    private Long boardId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private BoardType boardType;
+    private BoardRole boardRole; // GLOBAL,CIRCLE
 
-    @Column(unique = true, nullable = false)
-    private String title;
+    private String name;
 
-    @Column(nullable = false)
-    private String content;
-
-    @Builder.Default
-    private int viewCount = 0;
-
-    // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private Users userId; // 작성자 불러옴
-
-    // 수정용 setter
-    public void changeTitle(String title) {
-        this.title = title;
-    }
-
-    public void changeContent(String content) {
-        this.content = content;
-    }
+    @JoinColumn(name = "circle_id", nullable = false)
+    private Circles circleId;
 
 }

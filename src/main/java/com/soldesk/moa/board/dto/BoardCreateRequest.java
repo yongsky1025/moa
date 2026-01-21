@@ -1,6 +1,6 @@
 package com.soldesk.moa.board.dto;
 
-import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.entity.constant.BoardRole;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,6 +21,6 @@ public class BoardCreateRequest {
     // 이후 로그인 정보를 기반으로 담을 예정
     private Long userId;
 
-    private BoardType boardType;
+    private BoardRole boardType;
 
 }

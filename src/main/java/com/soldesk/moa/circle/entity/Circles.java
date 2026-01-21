@@ -19,7 +19,7 @@ import lombok.ToString;
 @Getter
 @ToString
 @Entity
-public class Circle extends BaseEntity {
+public class Circles extends BaseEntity {
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
