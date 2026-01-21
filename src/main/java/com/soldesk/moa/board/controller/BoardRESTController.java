@@ -51,7 +51,6 @@ public class BoardRestController {
     // return ResponseEntity.created(URI.create("/api/board/" + bno)).build();
     // }
 
-<<<<<<< HEAD
     // // PUT /api/board/modify/{bno} (수정)
     // @PutMapping("/modify/{bno}")
     // public ResponseEntity<Void> modify(@PathVariable Long bno,
@@ -59,15 +58,6 @@ public class BoardRestController {
     // boardService.modify(bno, req);
     // return ResponseEntity.noContent().build();
     // }
-=======
-    // PUT /api/board/modify/{bno} (수정)
-    @PutMapping("/modify/{bno}")
-    public ResponseEntity<Void> modify(@PathVariable Long bno,
-            @RequestBody @Valid BoardUpdateRequest req) {
-        boardService.modify(bno, req);
-        return ResponseEntity.noContent().build();
-    }
->>>>>>> 003e61bc8ba3f0867e883e15fff91f95ef115c2d
 
     // // DELETE /api/board/delete/{bno} (삭제)
     // @DeleteMapping("/delete/{bno}")
