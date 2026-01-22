@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.soldesk.moa.schedule.dto.ScheduleCreateRequestDTO;
 import com.soldesk.moa.schedule.dto.ScheduleResponseDTO;
 import com.soldesk.moa.schedule.service.ScheduleService;
+import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.CustomUserDetails;
 
 import jakarta.validation.Valid;
@@ -18,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/circles/{circleId}/schedules")
+@RequestMapping("/{circleId}/schedules")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
@@ -36,5 +37,14 @@ public class ScheduleController {
                 userDetails.getUser());
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{scheduleId}/join")
+    public ResponseEntity<Void> joinSchedule(
+            @PathVariable Long scheduleId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        scheduleService.joinSchedule(scheduleId, userDetails.getUser());
+        return ResponseEntity.ok().build();
     }
 }

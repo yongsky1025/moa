@@ -30,15 +30,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/login", "/auth/signup").permitAll()
                         .requestMatchers("/auth/me").authenticated()
-                        .anyRequest().authenticated() //중요
+                        .anyRequest().authenticated() // 중요
                 );
 
         return http.build();
     }
 
-    /**
-     * 비밀번호 암호화 (회원가입 시 사용)
-     */
+    // 비밀번호 암호화 (회원가입 시 사용)
     @Bean
     public PasswordEncoder passwordEncoder() {
         // 운영, 실무, 여러 암호화 알고리즘 사용
@@ -48,9 +46,7 @@ public class SecurityConfig {
         // return new BCryptPasswordEncoder();
     }
 
-    /**
-     * 인증 관리자 (로그인 시 사용)
-     */
+    // 인증 관리자 (로그인 시 사용)
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config) throws Exception {
