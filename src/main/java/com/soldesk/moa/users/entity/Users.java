@@ -64,9 +64,9 @@ public class Users extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private UserGender userGender;
 
-    @OneToMany(mappedBy = "user")
-    @Builder.Default
-    private List<Image> images = new ArrayList<>();
+    // @OneToMany(mappedBy = "user")
+    // @Builder.Default
+    // private List<Image> images = new ArrayList<>();
 
     public void changeNickname(String nickname) {
         this.nickname = nickname;

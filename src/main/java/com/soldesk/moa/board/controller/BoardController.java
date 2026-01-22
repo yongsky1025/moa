@@ -14,26 +14,26 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Log4j2
 public class BoardController {
 
-    @GetMapping("/list")
-    public void getList() {
-        log.info("board list 호출");
-    }
+    // @GetMapping("/list")
+    // public void getList() {
+    // log.info("board list 호출");
+    // }
 
-    @GetMapping("/read/{bno}")
-    public String read(@PathVariable Long bno) {
-        log.info("board read 호출{}", bno);
-        return "board/read";
-    }
+    // @GetMapping("/read/{bno}")
+    // public String read(@PathVariable Long bno) {
+    // log.info("board read 호출{}", bno);
+    // return "board/read";
+    // }
 
-    @GetMapping("/modify/{bno}")
-    public String modify(@PathVariable Long bno) {
-        log.info("board modify 호출{}", bno);
-        return "board/modify";
-    }
+    // @GetMapping("/modify/{bno}")
+    // public String modify(@PathVariable Long bno) {
+    // log.info("board modify 호출{}", bno);
+    // return "board/modify";
+    // }
 
-    @GetMapping("/create")
-    public String create() {
-        log.info("board create 호출");
-        return "board/create";
-    }
+    // @GetMapping("/create")
+    // public String create() {
+    // log.info("board create 호출");
+    // return "board/create";
+    // }
 }

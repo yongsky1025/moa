@@ -25,18 +25,22 @@ import lombok.ToString;
 @ToString
 public class PostDTO {
 
+    private Long boardId;
+
     private Long postId;
 
     private String title;
 
     private String content;
 
-    private String writer; // users.nickname
+    private Long userId;
 
     private int viewCount;
 
     private int replyCnt;
 
     private LocalDateTime createDate;
+
+    private LocalDateTime updateDate;
 
 }
