@@ -1,13 +1,8 @@
 package com.soldesk.moa.board.entity;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.users.entity.Users;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,29 +11,27 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Entity
 @Data
-@ToString(exclude = { "user", "circle", "boardCategory", "replies" })
+@EqualsAndHashCode(callSuper = false)
+@ToString(exclude = { "user", "board" })
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Board extends BaseEntity {
+public class Reply extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long boardId;
+    private Long replyId;
 
     @Column(nullable = false)
-    private String title;
-
-    @Column
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -46,14 +39,7 @@ public class Board extends BaseEntity {
     private Users user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "circle_id")
-    private Circle circle;
+    @JoinColumn(name = "board_id")
+    private Board board;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "board_category_id")
-    private BoardCategory boardCategory;
-
-    @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "board")
-    @Builder.Default
-    private List<Reply> replies = new ArrayList<>();
 }
