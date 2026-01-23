@@ -15,6 +15,8 @@ import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
 import com.soldesk.moa.circle.service.CircleMemberService;
 import com.soldesk.moa.circle.service.CircleService;
+import com.soldesk.moa.common.dto.PageRequestDTO;
+import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.CustomUserDetails;
 
@@ -33,7 +35,8 @@ public class CircleController {
     // 서클 생성
     @PostMapping
     public ResponseEntity<CircleResponseDTO> createCircle(
-            @RequestBody @Valid CircleCreateRequestDTO request, @AuthenticationPrincipal CustomUserDetails customUserDetails ) {
+            @RequestBody @Valid CircleCreateRequestDTO request,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         Users loginUser = customUserDetails.getUser();
 
@@ -42,15 +45,11 @@ public class CircleController {
 
     // 서클 목록 조회
     @GetMapping
-    public ResponseEntity<List<CircleResponseDTO>> getCircles() {
-        return ResponseEntity.ok(circleService.getCircles());
-    }
-
-    @GetMapping("/category/{categoryId}")
-    public ResponseEntity<List<CircleResponseDTO>> getCirclesByCategory(
-            @PathVariable Long categoryId) {
-
-        return ResponseEntity.ok(circleService.getCirclesByCategory(categoryId));
+    public ResponseEntity<PageResultDTO<CircleResponseDTO>> getCircles(
+            @RequestParam(required = false) Long categoryId,
+            @ModelAttribute PageRequestDTO pageRequestDTO) {
+        return ResponseEntity.ok(
+                circleService.getCircles(categoryId, pageRequestDTO));
     }
 
     // 서클 삭제
@@ -69,14 +68,5 @@ public class CircleController {
         return ResponseEntity.ok(circleService.updateCircle(circleId, request));
     }
 
-    // 가입 신청
-    @PostMapping("/{circleId}/members")
-    public ResponseEntity<Void> joinCircle(
-            @PathVariable Long circleId,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-
-        circleMemberService.requestJoin(circleId, userDetails.getUser());
-
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
+    
 }

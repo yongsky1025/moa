@@ -11,7 +11,8 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.users.entity.Users;
 
-public interface CircleMemberRepository extends JpaRepository<CircleMember, Long> {
+public interface CircleMemberRepository extends JpaRepository<CircleMember, Long>,
+                CircleMemberRepositoryCustom {
 
         // 이미 가입했거나(PENDING, ACTIVE)
         // 가입 신청 중인지 확인

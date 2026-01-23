@@ -17,6 +17,8 @@ import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleCategoryRepository;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.common.dto.PageRequestDTO;
+import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;
@@ -61,14 +63,6 @@ public class CircleService {
                 return new CircleResponseDTO(savedCircle);
         }
 
-        @Transactional(readOnly = true)
-        public List<CircleResponseDTO> getCircles() {
-                return circleRepository.findAll()
-                                .stream()
-                                .map(CircleResponseDTO::new)
-                                .toList();
-        }
-
         @Transactional
         public void deleteCircle(Long circleId) {
                 Circle circle = circleRepository.findById(circleId)
@@ -97,11 +91,24 @@ public class CircleService {
         }
 
         @Transactional(readOnly = true)
-        public List<CircleResponseDTO> getCirclesByCategory(Long categoryId) {
+        public PageResultDTO<CircleResponseDTO> getCircles(
+                        Long categoryId,
+                        PageRequestDTO pageRequestDTO) {
 
-                return circleRepository.findByCategory_CategoryId(categoryId)
-                                .stream()
-                                .map(CircleResponseDTO::new)
-                                .toList();
+                PageResultDTO<Circle> result = circleRepository.findByCategory_CategoryId(
+                                categoryId,
+                                pageRequestDTO);
+
+                // 엔티티 → DTO 변환
+                return PageResultDTO.<CircleResponseDTO>withAll()
+                                .dtoList(
+                                                result.getDtoList()
+                                                                .stream()
+                                                                .map(CircleResponseDTO::new)
+                                                                .toList())
+                                .pageRequestDTO(pageRequestDTO)
+                                .totalCount(result.getTotalCount())
+                                .build();
         }
+
 }
