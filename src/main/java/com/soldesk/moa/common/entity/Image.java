@@ -1,10 +1,15 @@
 package com.soldesk.moa.common.entity;
 
+import com.soldesk.moa.users.entity.Users;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,22 +23,31 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+<<<<<<< HEAD
 @ToString
+=======
+@ToString(exclude = { "user" })
+>>>>>>> origin/users
 public class Image {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long imageId;
+    private Long imageId;
 
     @Column(nullable = false)
-    String name;
+    private String name;
 
     @Column(nullable = false, unique = true)
-    String uuid;
+    private String uuid;
 
     @Column(nullable = false)
-    String path;
+    private String path;
 
     @Column(nullable = false)
-    Long ord;
+    private Long ord;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id")
+    private Users user;
+
 }

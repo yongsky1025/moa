@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>회원가입</title>
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:200,300,400,600,700,800,900" />
+    <link rel="stylesheet" href="/assets/vendor/fontawesome-free/css/all.min.css" />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/assets/css/sb-admin-2.min.css" />
+  </head>
+
+  <body class="bg-gradient-primary">
+    <div class="container">
+      <div class="card o-hidden border-0 shadow-lg my-5">
+        <div class="card-body p-0">
+          <div class="row">
+            <div class="col-lg-5 d-none d-lg-block bg-register-image"></div>
+            <div class="col-lg-7">
+              <div class="p-5">
+                <div class="text-center">
+                  <h1 class="h4 text-gray-900 mb-4">회원 가입</h1>
+                </div>
+
+                <form class="user" id="signupForm" th:action="@{/auth/signup}" method="post">
+                  <div class="form-group">
+                    <input
+                      type="email"
+                      id="email"
+                      class="form-control form-control-user"
+                      name="email"
+                      placeholder="이메일을 입력해주세요."
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <input type="text" id="name" class="form-control form-control-user" name="name" placeholder="이름을 입력해주세요." required />
+                  </div>
+                  <div class="form-group">
+                    <input
+                      type="text"
+                      id="nickname"
+                      class="form-control form-control-user"
+                      name="nickname"
+                      placeholder="닉네임을 입력해주세요."
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <input
+                      type="text"
+                      id="phoneNumber"
+                      class="form-control form-control-user"
+                      name="phoneNumber"
+                      placeholder="휴대폰 번호를 입력해주세요."
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <input
+                      type="date"
+                      id="birthDate"
+                      class="form-control form-control-user"
+                      name="birthDate"
+                      placeholder="생년월일를 입력해주세요."
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <select class="form-control" id="userGender" name="userGender">
+                      <option value="" selected>성별</option>
+                      <option value="MALE">남성</option>
+                      <option value="FEMALE">여성</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <input type="text" id="phone" class="form-control form-control-user" name="address" placeholder="주소를 입력해주세요." required />
+                  </div>
+                  <div class="form-group">
+                    <input
+                      type="password"
+                      id="password"
+                      class="form-control form-control-user"
+                      name="password"
+                      placeholder="비밀번호를 입력해주세요."
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <input
+                      type="text"
+                      id="address"
+                      class="form-control form-control-user"
+                      name="address"
+                      placeholder="주소를 입력해주세요."
+                      required
+                    />
+                  </div>
+                  <button type="submit" class="btn btn-primary btn-user btn-block">완료</button>
+                </form>
+
+                <hr />
+                <div class="text-center">
+                  <a class="small" th:href="@{/auth/login}">로그인</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/assets/vendor/jquery/jquery.min.js"></script>
+    <script src="/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="/assets/js/sb-admin-2.min.js"></script>
+    <!-- <script th:src="@{/users/js/signup.js}"></script> -->
+  </body>
+</html>
