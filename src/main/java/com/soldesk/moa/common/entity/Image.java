@@ -23,11 +23,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-<<<<<<< HEAD
-@ToString
-=======
 @ToString(exclude = { "user" })
->>>>>>> origin/users
 public class Image {
 
     @Id

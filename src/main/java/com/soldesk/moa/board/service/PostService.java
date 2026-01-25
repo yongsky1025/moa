@@ -1,98 +1,197 @@
 package com.soldesk.moa.board.service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.soldesk.moa.board.dto.PostDTO;
+import com.soldesk.moa.board.dto.PostRequestDTO;
+import com.soldesk.moa.board.dto.PostResponseDTO;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.Post;
+import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.repository.PostRepository;
+import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class PostService {
 
-        private final UsersRepository usersRepository;
-
         private final PostRepository postRepository;
-
         private final BoardRepository boardRepository;
+        private final UsersRepository usersRepository;
+        private final CircleMemberRepository circleMemberRepository; // 선택
 
-        @Transactional(readOnly = true)
-        public List<PostDTO> findByBoardPostList(Long boardId) {
+        // ===== Global =====
 
-                List<PostDTO> result = postRepository.findByBoardPost(boardId).stream()
-                                .map(post -> PostDTO.builder()
-                                                .boardId(post.getBoardId().getBoardId())
-                                                .postId(post.getPostId())
-                                                .title(post.getTitle())
-                                                .content(post.getContent())
-                                                .userId(post.getUserId().getUserId())
-                                                .viewCount(post.getViewCount())
-                                                // .replyCnt(0)
-                                                .createDate(post.getCreateDate())
-                                                .updateDate(post.getUpdateDate())
-                                                .build())
+        public List<PostResponseDTO> listGlobal(BoardType type) {
+                return postRepository.findGlobalPosts(type).stream()
+                                .map(this::toPostResponse)
                                 .toList();
-                return result;
+        }
 
-        };
+        public PostResponseDTO readGlobal(BoardType type, Long postId) {
+                Post p = postRepository.findGlobalPost(type, postId)
+                                .orElseThrow(() -> new NotFoundException("post not found"));
+                return toPostResponse(p);
+        }
 
-        @Transactional(readOnly = true)
-        public PostDTO findByBoardPostRead(Long boardId, Long postId) {
-                Post post = postRepository.findByBoardPostRead(boardId, postId)
-                                .orElseThrow(() -> new IllegalArgumentException("post not found" + postId));
-                return PostDTO.builder()
-                                .boardId(post.getBoardId().getBoardId())
-                                .postId(post.getPostId())
-                                .title(post.getTitle())
-                                .content(post.getContent())
-                                .userId(post.getUserId().getUserId())
-                                .viewCount(post.getViewCount())
-                                // .replyCnt(0)
-                                .createDate(post.getCreateDate())
-                                .updateDate(post.getUpdateDate())
+        @Transactional
+        public Long createGlobal(BoardType type, Long userId, PostRequestDTO req) {
+                Board board = boardRepository.findByBoardTypeAndCircleIdIsNull(type)
+                                .orElseThrow(() -> new NotFoundException("global board not found"));
+
+                Users user = usersRepository.findById(userId)
+                                .orElseThrow(() -> new NotFoundException("user not found"));
+
+                Post p = Post.builder()
+                                .boardId(board)
+                                .title(req.getTitle())
+                                .content(req.getContent())
+                                .userId(user)
+                                .build();
+
+                return postRepository.save(p).getPostId();
+        }
+
+        @Transactional
+        public Long updateGlobal(BoardType type, Long postId, PostRequestDTO req) {
+                Post p = postRepository.findGlobalPost(type, postId)
+                                .orElseThrow(() -> new NotFoundException("post not found"));
+                p.changeTitle(req.getTitle());
+                p.changeContent(req.getContent());
+                return p.getPostId();
+        }
+
+        @Transactional
+        public void deleteGlobal(BoardType type, Long postId) {
+                Post p = postRepository.findGlobalPost(type, postId)
+                                .orElseThrow(() -> new NotFoundException("post not found"));
+                postRepository.delete(p);
+        }
+
+        // ===== FREE (작성자 검증) =====
+
+        @Transactional
+        public Long updateFreeAsOwner(Long postId, Long userId, PostRequestDTO req) {
+                Post p = postRepository.findGlobalPost(BoardType.FREE, postId)
+                                .orElseThrow(() -> new NotFoundException("post not found"));
+
+                if (!isOwner(p, userId)) {
+                        throw new ForbiddenException("not owner");
+                }
+
+                p.changeTitle(req.getTitle());
+                p.changeContent(req.getContent());
+                return p.getPostId();
+        }
+
+        @Transactional
+        public void deleteFreeAsOwner(Long postId, Long userId) {
+                Post p = postRepository.findGlobalPost(BoardType.FREE, postId)
+                                .orElseThrow(() -> new NotFoundException("post not found"));
+
+                if (!isOwner(p, userId)) {
+                        throw new ForbiddenException("not owner");
+                }
+
+                postRepository.delete(p);
+        }
+
+        // ===== Circle =====
+
+        public List<PostResponseDTO> listCircle(Long circleId, Long boardId) {
+                return postRepository.findCirclePosts(circleId, boardId).stream()
+                                .map(this::toPostResponse)
+                                .toList();
+        }
+
+        public PostResponseDTO readCircle(Long circleId, Long boardId, Long postId) {
+                Post p = postRepository.findCirclePost(circleId, boardId, postId)
+                                .orElseThrow(() -> new NotFoundException("post not found"));
+                return toPostResponse(p);
+        }
+
+        @Transactional
+        public Long createCircle(Long circleId, Long boardId, Long userId, PostRequestDTO req) {
+                // 1) 멤버 체크 (원하면)
+                if (!circleMemberRepository.existsByCircle_CircleIdAndUser_UserId(circleId, userId)) {
+                        throw new ForbiddenException("not a circle member");
+                }
+
+                // 2) board가 circle에 속한 CIRCLE board인지 검증
+                Board board = boardRepository
+                                .findByBoardIdAndBoardTypeAndCircleId_CircleId(boardId, BoardType.CIRCLE, circleId)
+                                .orElseThrow(() -> new ForbiddenException("board not in circle"));
+
+                Users user = usersRepository.findById(userId)
+                                .orElseThrow(() -> new NotFoundException("user not found"));
+
+                Post p = Post
+                                .builder()
+                                .boardId(board)
+                                .title(req.getTitle())
+                                .content(req.getContent())
+                                .userId(user)
+                                .build();
+
+                return postRepository.save(p).getPostId();
+        }
+
+        @Transactional
+        public Long updateCircleAsOwner(Long circleId, Long boardId, Long postId, Long userId, PostRequestDTO req) {
+                Post p = postRepository.findCirclePost(circleId, boardId, postId)
+                                .orElseThrow(() -> new NotFoundException("post not found"));
+
+                if (!isOwner(p, userId)) {
+                        throw new ForbiddenException("not owner");
+                }
+
+                p.changeTitle(req.getTitle());
+                p.changeContent(req.getContent());
+                return p.getPostId();
+        }
+
+        @Transactional
+        public void deleteCircleAsOwner(Long circleId, Long boardId, Long postId, Long userId) {
+                Post p = postRepository.findCirclePost(circleId, boardId, postId)
+                                .orElseThrow(() -> new NotFoundException("post not found"));
+
+                if (!isOwner(p, userId)) {
+                        throw new ForbiddenException("not owner");
+                }
+
+                postRepository.delete(p);
+        }
+
+        // ===== helpers =====
+
+        private boolean isOwner(Post p, Long userId) {
+
+                return Objects.equals(p.getUserId().getUserId(), userId);
+
+        }
+
+        private PostResponseDTO toPostResponse(Post p) {
+
+                return PostResponseDTO.builder()
+                                .boardId(p.getBoardId().getBoardId())
+                                .postId(p.getPostId())
+                                .title(p.getTitle())
+                                .content(p.getContent())
+                                .userId(p.getUserId().getUserId()) // Users PK명 맞춰 수정
+                                .viewCount(p.getViewCount())
+                                .createDate(p.getCreateDate())
+                                .updateDate(p.getUpdateDate())
                                 .build();
         }
-
-        public Long create(PostDTO dto) {
-                Users user = usersRepository.findById(dto.getUserId())
-                                .orElseThrow(() -> new IllegalArgumentException("user not found" + dto.getUserId()));
-                Board board = boardRepository.findById(dto.getBoardId())
-                                .orElseThrow(() -> new IllegalArgumentException("board not found" + dto.getBoardId()));
-                Post post = Post.builder()
-                                .title(dto.getTitle())
-                                .content(dto.getContent())
-                                .userId(user) // Users 엔티티
-                                .boardId(board) // Board 엔티티
-                                .build();
-                return postRepository.save(post).getPostId();
-        }
-
-        public Long update(PostDTO dto) {
-                Post post = postRepository.findById(dto.getPostId())
-                                .orElseThrow(() -> new IllegalArgumentException("post not found" + dto.getPostId()));
-                post.changeTitle(dto.getTitle());
-                post.changeContent(dto.getContent());
-
-                return post.getPostId();
-        }
-
-        public void delete(Long postId) {
-                postRepository.deleteById(postId);
-
-        }
-
 }

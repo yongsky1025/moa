@@ -18,19 +18,6 @@ import lombok.extern.log4j.Log4j2;
 public class SecurityConfig {
 
         // 시큐리티 설정 클래스
-
-<<<<<<< HEAD
-    @Bean // == 객체 생성
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // , RememberMeServices rememberMeServices
-        http.csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll());
-
-        return http.build();
-    }
-}
-=======
         @Bean // == 객체 생성
         SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -75,4 +62,3 @@ public class SecurityConfig {
                 return PasswordEncoderFactories.createDelegatingPasswordEncoder();
         }
 }
->>>>>>> origin/users

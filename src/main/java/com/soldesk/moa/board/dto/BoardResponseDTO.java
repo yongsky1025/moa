@@ -2,7 +2,7 @@ package com.soldesk.moa.board.dto;
 
 import java.time.LocalDateTime;
 
-import com.soldesk.moa.board.entity.constant.BoardRole;
+import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.circle.entity.Circle;
 
 import lombok.AllArgsConstructor;
@@ -18,17 +18,14 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class BoardDTO {
-
+public class BoardResponseDTO {
     private Long boardId;
-
-    private BoardRole boardRole; // GLOBAL,CIRCLE
-
+    private BoardType boardType;
     private String name;
-
     private Long circleId;
 
     private LocalDateTime createDate;
-
     private LocalDateTime updateDate;
+
+    // getter/setter
 }

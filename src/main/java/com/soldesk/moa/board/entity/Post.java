@@ -1,6 +1,6 @@
 package com.soldesk.moa.board.entity;
 
-import com.soldesk.moa.board.entity.constant.BoardRole;
+import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.users.entity.Users;
 

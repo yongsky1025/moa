@@ -1,15 +1,5 @@
 package com.soldesk.moa.users.service;
 
-<<<<<<< HEAD
-import org.springframework.stereotype.Service;
-
-import lombok.extern.log4j.Log4j2;
-
-@Service
-@Log4j2
-public class UsersService {
-
-=======
 import java.util.Optional;
 
 import org.apache.catalina.User;
@@ -92,5 +82,4 @@ public class UsersService {
         }
     }
 
->>>>>>> origin/users
 }

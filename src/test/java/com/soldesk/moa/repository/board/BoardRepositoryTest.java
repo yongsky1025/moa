@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.constant.BoardRole;
+import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.repository.PostRepository;
 import com.soldesk.moa.users.dto.UserDTO;
@@ -33,7 +33,7 @@ public class BoardRepositoryTest {
     public void testInserBoard() {
         IntStream.rangeClosed(1, 3).forEach(i -> {
             Board board = Board.builder()
-                    .boardRole(BoardRole.GLOBAL)
+                    .boardType(BoardType.NOTICE)
                     .name("게시판" + i)
                     .circleId(null)
                     .build();
@@ -41,7 +41,7 @@ public class BoardRepositoryTest {
         });
         IntStream.rangeClosed(4, 10).forEach(i -> {
             Board board = Board.builder()
-                    .boardRole(BoardRole.CIRCLE)
+                    .boardType(BoardType.CIRCLE)
                     .name("게시판" + i)
                     .circleId(null)
                     .build();
@@ -53,7 +53,7 @@ public class BoardRepositoryTest {
     public void testInserPost() {
 
         IntStream.rangeClosed(1, 10).forEach(i -> {
-            for (int j = 1; j < 21; j++) {
+            for (int j = 1; j < 11; j++) {
 
                 Post post = Post.builder()
                         .title("게시글" + j)
