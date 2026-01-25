@@ -2,31 +2,33 @@
 
 // import org.springframework.stereotype.Controller;
 // import org.springframework.web.bind.annotation.RequestMapping;
+// import org.springframework.web.bind.annotation.RequestParam;
 
 // import lombok.RequiredArgsConstructor;
 // import lombok.extern.log4j.Log4j2;
 // import org.springframework.web.bind.annotation.GetMapping;
 // import org.springframework.web.bind.annotation.PathVariable;
 
-// @RequestMapping("/board")
+// @RequestMapping("/board/notice")
 // @RequiredArgsConstructor
 // @Controller
 // @Log4j2
-// public class BoardController {
+// public class NoticeController {
 
-// @GetMapping("/post")
-// public void getList() {
-// log.info("post 호출");
+// @GetMapping("")
+// public String noticeList(@RequestParam("boardId") Long boardId) {
+// log.info("notice list boardId={}", boardId);
+// return "board/notice/list";
 // }
 
-// @GetMapping("/read/{bno}")
-// public String read(@PathVariable Long bno) {
-// log.info("board read 호출{}", bno);
+// @GetMapping("/read/{postId}")
+// public String getPost(@PathVariable Long postId) {
+// log.info("post상세 호출{}", postId);
 // return "board/read";
 // }
 
 // @GetMapping("/modify/{bno}")
-// public String modify(@PathVariable Long bno) {
+// public String update(@PathVariable Long bno) {
 // log.info("board modify 호출{}", bno);
 // return "board/modify";
 // }

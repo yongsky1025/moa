@@ -24,68 +24,75 @@ import lombok.extern.log4j.Log4j2;
 @Transactional
 public class PostService {
 
-    private final UsersRepository usersRepository;
+        private final UsersRepository usersRepository;
 
-    private final PostRepository postRepository;
+        private final PostRepository postRepository;
 
-    private final BoardRepository boardRepository;
+        private final BoardRepository boardRepository;
 
-    private PostDTO toDto(Post post) {
+        @Transactional(readOnly = true)
+        public List<PostDTO> findByBoardPostList(Long boardId) {
 
-        return PostDTO.builder()
-                .boardId(post.getBoardId().getBoardId())
-                .postId(post.getPostId())
-                .title(post.getTitle())
-                .content(post.getContent())
-                .userId(post.getUserId().getUserId())
-                .viewCount(post.getViewCount())
-                .replyCnt(0)
-                .createDate(post.getCreateDate())
-                .updateDate(post.getUpdateDate())
-                .build();
-    }
+                List<PostDTO> result = postRepository.findByBoardPost(boardId).stream()
+                                .map(post -> PostDTO.builder()
+                                                .boardId(post.getBoardId().getBoardId())
+                                                .postId(post.getPostId())
+                                                .title(post.getTitle())
+                                                .content(post.getContent())
+                                                .userId(post.getUserId().getUserId())
+                                                .viewCount(post.getViewCount())
+                                                // .replyCnt(0)
+                                                .createDate(post.getCreateDate())
+                                                .updateDate(post.getUpdateDate())
+                                                .build())
+                                .toList();
+                return result;
 
-    @Transactional(readOnly = true)
-    public List<PostDTO> findByBoardPostList(Long boardId) {
+        };
 
-        List<PostDTO> result = postRepository.findByBoardPost(boardId).stream().map(this::toDto)
-                .toList();
-        return result;
+        @Transactional(readOnly = true)
+        public PostDTO findByBoardPostRead(Long boardId, Long postId) {
+                Post post = postRepository.findByBoardPostRead(boardId, postId)
+                                .orElseThrow(() -> new IllegalArgumentException("post not found" + postId));
+                return PostDTO.builder()
+                                .boardId(post.getBoardId().getBoardId())
+                                .postId(post.getPostId())
+                                .title(post.getTitle())
+                                .content(post.getContent())
+                                .userId(post.getUserId().getUserId())
+                                .viewCount(post.getViewCount())
+                                // .replyCnt(0)
+                                .createDate(post.getCreateDate())
+                                .updateDate(post.getUpdateDate())
+                                .build();
+        }
 
-    };
+        public Long create(PostDTO dto) {
+                Users user = usersRepository.findById(dto.getUserId())
+                                .orElseThrow(() -> new IllegalArgumentException("user not found" + dto.getUserId()));
+                Board board = boardRepository.findById(dto.getBoardId())
+                                .orElseThrow(() -> new IllegalArgumentException("board not found" + dto.getBoardId()));
+                Post post = Post.builder()
+                                .title(dto.getTitle())
+                                .content(dto.getContent())
+                                .userId(user) // Users 엔티티
+                                .boardId(board) // Board 엔티티
+                                .build();
+                return postRepository.save(post).getPostId();
+        }
 
-    @Transactional(readOnly = true)
-    public PostDTO findByBoardPostRead(Long boardId, Long postId) {
-        Post post = postRepository.findByBoardPostRead(boardId, postId)
-                .orElseThrow(() -> new IllegalArgumentException("post not found"));
-        return toDto(post);
-    }
+        public Long update(PostDTO dto) {
+                Post post = postRepository.findById(dto.getPostId())
+                                .orElseThrow(() -> new IllegalArgumentException("post not found" + dto.getPostId()));
+                post.changeTitle(dto.getTitle());
+                post.changeContent(dto.getContent());
 
-    public Long create(PostDTO dto) {
-        Users user = usersRepository.findById(dto.getUserId())
-                .orElseThrow(EntityNotFoundException::new);
-        Board board = boardRepository.findById(dto.getBoardId())
-                .orElseThrow(EntityNotFoundException::new);
-        Post post = Post.builder()
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .userId(user) // Users 엔티티
-                .boardId(board) // Board 엔티티
-                .build();
-        return postRepository.save(post).getPostId();
-    }
+                return post.getPostId();
+        }
 
-    public Long update(PostDTO dto) {
-        Post post = postRepository.findById(dto.getPostId())
-                .orElseThrow(EntityNotFoundException::new);
-        post.changeTitle(dto.getTitle());
-        post.changeContent(dto.getContent());
+        public void delete(Long postId) {
+                postRepository.deleteById(postId);
 
-        return post.getPostId();
-    }
-
-    public void delete(Long postId) {
-        postRepository.deleteById(postId);
-    }
+        }
 
 }

@@ -2,14 +2,9 @@ package com.soldesk.moa.board.dto;
 
 import java.time.LocalDateTime;
 
-import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardRole;
-import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.circle.entity.Circle;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,24 +18,17 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class PostDTO {
+public class BoardDTO {
 
     private Long boardId;
 
-    private Long postId;
+    private BoardRole boardRole; // GLOBAL,CIRCLE
 
-    private String title;
+    private String name;
 
-    private String content;
-
-    private Long userId;
-
-    private int viewCount;
-
-    // private int replyCnt;
+    private Long circleId;
 
     private LocalDateTime createDate;
 
     private LocalDateTime updateDate;
-
 }

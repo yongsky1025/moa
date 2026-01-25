@@ -17,6 +17,8 @@ import com.soldesk.moa.board.repository.PostRepository;
 import com.soldesk.moa.board.service.BoardService;
 import com.soldesk.moa.board.service.PostService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -35,6 +37,7 @@ public class PostRestController {
     private final PostService postService;
 
     // 게시판조회 http://localhost:8080/api/post?boardId={}&postId={} + GET
+    @Operation(summary = "moa_post 조회", description = "moa_post 전제 조회 API - 완료 여부 포함 가능")
     @GetMapping("")
     public Object getPost(@RequestParam("boardId") Long boardId,
             @RequestParam(value = "postId", required = false) Long postId) {
@@ -44,6 +47,7 @@ public class PostRestController {
         return postService.findByBoardPostList(boardId);
     }
 
+    @Operation(summary = "moa_post 입력", description = "moa_post 입력 API")
     @PostMapping("/add")
     public Long postPost(@RequestBody PostDTO dto) {
         log.info("삽입 {}", dto);
@@ -51,8 +55,11 @@ public class PostRestController {
         return PostId;
     }
 
+    @Operation(summary = "moa_post 수정", description = "moa_post 수정 API")
     @PutMapping("/{postId}")
-    public Long putPost(@PathVariable("postId") Long postId, @RequestBody PostDTO dto) {
+    public Long putPost(
+            @Parameter(description = "수정할 post id 값", example = "1", required = true) @PathVariable("postId") Long postId,
+            @RequestBody PostDTO dto) {
         log.info("수정 {} {}", postId, dto);
 
         dto.setPostId(postId);
@@ -60,6 +67,7 @@ public class PostRestController {
         return postService.update(dto);
     }
 
+    @Operation(summary = "moa_post 삭제", description = "moa_post 삭제 API")
     @DeleteMapping("/{postId}")
     public ResponseEntity<String> deletePost(@PathVariable("postId") Long postId) {
         log.info("삭제{}", postId);
