@@ -120,41 +120,35 @@ public class CircleMemberService {
         }
 
         @Transactional(readOnly = true)
-public PageResultDTO<CircleMemberResponseDTO> getMembers(
-        Long circleId,
-        CircleMemberStatus status,
-        PageRequestDTO pageRequestDTO,
-        Users loginUser
-) {
-    Circle circle = circleRepository.findById(circleId)
-        .orElseThrow(() -> new IllegalArgumentException("서클 없음"));
+        public PageResultDTO<CircleMemberResponseDTO> getMembers(
+                        Long circleId,
+                        CircleMemberStatus status,
+                        PageRequestDTO pageRequestDTO,
+                        Users loginUser) {
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클 없음"));
 
-    // 리더 체크
-    circleMemberRepository
-            .findByCircleAndUserAndRole(
-                    circle,
-                    loginUser,
-                    CircleRole.LEADER
-            )
-            .orElseThrow(() -> new AccessDeniedException("리더만 조회 가능"));
+                // 리더 체크
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(
+                                                circle,
+                                                loginUser,
+                                                CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 조회 가능"));
 
-    PageResultDTO<CircleMember> result =
-            circleMemberRepository.findMembers(
-                    circleId,
-                    status,
-                    pageRequestDTO
-            );
+                PageResultDTO<CircleMember> result = circleMemberRepository.findMembers(
+                                circleId,
+                                status,
+                                pageRequestDTO);
 
-    return PageResultDTO.<CircleMemberResponseDTO>withAll()
-            .dtoList(
-                    result.getDtoList().stream()
-                            .map(CircleMemberResponseDTO::new)
-                            .toList()
-            )
-            .pageRequestDTO(pageRequestDTO)
-            .totalCount(result.getTotalCount())
-            .build();
-}
-
+                return PageResultDTO.<CircleMemberResponseDTO>withAll()
+                                .dtoList(
+                                                result.getDtoList().stream()
+                                                                .map(CircleMemberResponseDTO::from)
+                                                                .toList())
+                                .pageRequestDTO(pageRequestDTO)
+                                .totalCount(result.getTotalCount())
+                                .build();
+        }
 
 }

@@ -46,7 +46,7 @@ public class CircleController {
     // 서클 목록 조회
     @GetMapping
     public ResponseEntity<PageResultDTO<CircleResponseDTO>> getCircles(
-            @RequestParam(required = false) Long categoryId,
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
             @ModelAttribute PageRequestDTO pageRequestDTO) {
         return ResponseEntity.ok(
                 circleService.getCircles(categoryId, pageRequestDTO));
@@ -68,5 +68,4 @@ public class CircleController {
         return ResponseEntity.ok(circleService.updateCircle(circleId, request));
     }
 
-    
 }

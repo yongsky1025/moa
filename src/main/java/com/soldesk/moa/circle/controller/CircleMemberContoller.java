@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 import com.soldesk.moa.circle.dto.CircleMemberResponseDTO;
 import com.soldesk.moa.circle.dto.CircleMemberStatusRequestDTO;
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.service.CircleMemberService;
+import com.soldesk.moa.common.dto.PageRequestDTO;
+import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.users.entity.constant.CustomUserDetails;
 
 import lombok.RequiredArgsConstructor;
@@ -34,13 +37,19 @@ public class CircleMemberContoller {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    // 가입 신청 목록 조회 (리더만)
-    @GetMapping("/pending")
-    public ResponseEntity<List<CircleMemberResponseDTO>> getPendingMembers(
+    // 서클 멤버 조회(상태값 null=전체조회)
+    @GetMapping
+    public ResponseEntity<PageResultDTO<CircleMemberResponseDTO>> getMembers(
             @PathVariable Long circleId,
+            @RequestParam(required = false) CircleMemberStatus status,
+            @ModelAttribute PageRequestDTO pageRequestDTO,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity.ok(
-                circleMemberService.getPendingMembers(circleId, userDetails.getUser()));
+                circleMemberService.getMembers(
+                        circleId,
+                        status,
+                        pageRequestDTO,
+                        userDetails.getUser()));
     }
 
     // 멤버 상태 변경 (승인 / 거절)
