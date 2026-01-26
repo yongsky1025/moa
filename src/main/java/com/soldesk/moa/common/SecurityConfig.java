@@ -22,20 +22,17 @@ public class SecurityConfig {
         SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
                 http.authorizeHttpRequests(authorize -> authorize
-                                .requestMatchers("/", "/css/**",
-                                                "/js/**",
-                                                "/img/**",
-                                                "/images/**",
-                                                "/assets/**",
-                                                "/vendor/**",
-                                                "/fonts/**",
-                                                "/favicon.ico", "/users/js/**")
+                                .requestMatchers("/", "/assets/**", "/css/**", "/js/**", "/img/**", "/images/**",
+                                                "/vendor/**", "/fonts/**",
+                                                "/favicon.ico")
                                 .permitAll()
                                 .requestMatchers("/auth/**").permitAll()
                                 .requestMatchers("/users/**").permitAll()
                                 // viewcount 비회원도 허용
                                 .requestMatchers("/api/posts/*/view").permitAll()
 
+                                .requestMatchers("/auth/**", "/users/check-nickname").permitAll()
+                                .requestMatchers("/users/**").authenticated()
                                 .anyRequest().authenticated());
 
                 // 개발 단계 중 csrf 보호 비활성화
@@ -47,7 +44,8 @@ public class SecurityConfig {
                                 .usernameParameter("email")
                                 .passwordParameter("password")
                                 .loginProcessingUrl("/auth/login")
-                                .defaultSuccessUrl("/users/profile", true)
+                                .failureUrl("/auth/login?error")
+                                .defaultSuccessUrl("/", true)
                                 .permitAll());
 
                 // 로그아웃 활성화

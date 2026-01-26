@@ -1,14 +1,11 @@
 package com.soldesk.moa.users.service;
 
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.soldesk.moa.users.dto.AuthUserDTO;
-import com.soldesk.moa.users.dto.LoginRequestDTO;
-import com.soldesk.moa.users.dto.SignUpRequestDTO;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 

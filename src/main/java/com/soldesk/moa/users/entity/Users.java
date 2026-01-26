@@ -7,6 +7,7 @@ import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.common.entity.Image;
 import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
+import com.soldesk.moa.users.entity.constant.UserStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,6 +17,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -55,14 +58,23 @@ public class Users extends BaseEntity {
     private LocalDate birthDate;
 
     @Column(nullable = false)
-    private String phoneNumber;
+    private String phone;
+
+    @Column(nullable = false)
+    private int age;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole userRole;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private UserGender userGender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private UserStatus userStatus = UserStatus.ACTIVE;
 
     @OneToMany(mappedBy = "user")
     @Builder.Default
@@ -78,5 +90,20 @@ public class Users extends BaseEntity {
 
     public void changePassword(String password) {
         this.password = password;
+    }
+
+    public void changePhone(String phone) {
+        this.phone = phone;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void addAge() {
+        // 만 나이 계산
+        LocalDate now = LocalDate.now();
+        this.age = now.getYear() - birthDate.getYear();
+        if (birthDate.getDayOfYear() > now.getDayOfYear()) {
+            this.age--;
+        }
     }
 }
