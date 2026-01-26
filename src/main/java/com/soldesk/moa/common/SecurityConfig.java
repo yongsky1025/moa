@@ -28,11 +28,23 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers("/auth/**").permitAll()
                                 .requestMatchers("/users/**").permitAll()
-                                // viewcount 비회원도 허용
-                                .requestMatchers("/api/posts/*/view").permitAll()
 
                                 .requestMatchers("/auth/**", "/users/check-nickname").permitAll()
                                 .requestMatchers("/users/**").authenticated()
+
+                                // ----------- 보드 시큐리티 파트 ----------
+                                // 보드 css, js
+                                .requestMatchers("/board/**").permitAll()
+                                // board 열람 비회원도 허용(컨트롤러에서 crud 권한 설정예정)
+                                .requestMatchers("/notice/**", "/free/**", "/support/**").permitAll()
+                                .requestMatchers("/api/notice/posts/**", "/api/free/posts/**", "/api/support/posts/**")
+                                .permitAll()
+                                // board 써클 회원만 열람?(예정)
+                                // .requestMatchers("/circle/**").permitAll()
+                                // viewcount 비회원도 허용
+                                .requestMatchers("/api/posts/*/view").permitAll()
+                                // ----------- 보드 시큐리티 끝 ----------
+
                                 .anyRequest().authenticated());
 
                 // 개발 단계 중 csrf 보호 비활성화
