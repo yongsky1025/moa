@@ -41,7 +41,7 @@ public class SecurityConfig {
                                 .passwordParameter("password")
                                 .loginProcessingUrl("/auth/login")
                                 .failureUrl("/auth/login?error")
-                                .defaultSuccessUrl("/users/profile", true)
+                                .defaultSuccessUrl("/", true)
                                 .permitAll());
 
                 // 로그아웃 활성화
