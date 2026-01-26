@@ -1,13 +1,10 @@
 package com.soldesk.moa.board.entity;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.soldesk.moa.board.entity.constant.BoardType;
-import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.users.entity.Users;
 
-import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -17,7 +14,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,33 +25,41 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = { "circleId", "posts" })
+@ToString(exclude = { "userId", "boardId" })
 @Table
 @Entity
-public class Board extends BaseEntity {
+public class Post extends BaseEntity {
 
-    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long boardId;
+    @Id
+    private Long postId;
 
-    @Enumerated(EnumType.STRING)
-    private BoardType boardType; // GLOBAL,CIRCLE
+    @Column(nullable = false)
+    private String title;
 
-    private String name;
+    @Column(nullable = false)
+    private String content;
+
+    @Builder.Default
+    private int viewCount = 0;
+
+    // 작성자
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private Users userId; // 작성자 불러옴
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "circle_id", nullable = true)
-    private Circle circleId;
+    @JoinColumn(name = "board_id", nullable = false)
+    private Board boardId;
 
     // setter
-    // 이름변경
-    public void changeName(String name) {
-        this.name = name;
+    // 수정용
+    public void changeTitle(String title) {
+        this.title = title;
     }
 
-    // board -> post 삭제
-    @OneToMany(mappedBy = "boardId", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    @Builder.Default
-    private List<Post> posts = new ArrayList<>();
+    public void changeContent(String content) {
+        this.content = content;
+    }
 
 }
