@@ -17,25 +17,25 @@ public class FreePageController {
     @GetMapping("")
     public String listPage() {
         log.info("자유 리스트 호출");
-        return "free/list";
+        return "board/free/list";
     }
 
     @GetMapping("/{postId}")
     public String readPage(@PathVariable("postId") Long postId) {
         log.info("자유 상세 호출{}", postId);
-        return "free/read";
+        return "board/free/read";
     }
 
     @GetMapping("/new")
     public String createPage() {
         log.info("자유 생성 호출");
-        return "free/create";
+        return "board/free/create";
     }
 
     @GetMapping("/{postId}/edit")
     public String editPage(@PathVariable("postId") Long postId) {
         log.info("자유 수정 호출{}", postId);
-        return "free/edit";
+        return "board/free/edit";
     }
 
 }

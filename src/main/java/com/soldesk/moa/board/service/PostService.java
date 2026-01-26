@@ -17,6 +17,7 @@ import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -123,10 +124,12 @@ public class PostService {
 
         @Transactional
         public Long createCircle(Long circleId, Long boardId, Long userId, PostRequestDTO req) {
-                // 1) 멤버 체크 (원하면)
-                if (!circleMemberRepository.existsByCircle_CircleIdAndUser_UserId(circleId, userId)) {
-                        throw new ForbiddenException("not a circle member");
-                }
+                // // 1) 써클멤버 체크 (써클멤버만 작성 가능)
+                // if (!circleMemberRepository.existsByCircle_CircleIdAndUser_UserId(circleId,
+                //
+                // {
+                // throw new ForbiddenException("not a circle member");
+                // }
 
                 // 2) board가 circle에 속한 CIRCLE board인지 검증
                 Board board = boardRepository
@@ -173,6 +176,17 @@ public class PostService {
                 postRepository.delete(p);
         }
 
+        // 조회수 증가
+        @Transactional
+        public void increaseViewCountOnce(Long postId, HttpSession session) {
+                String key = "viewed:post:" + postId;
+                if (session.getAttribute(key) != null)
+                        return;
+
+                postRepository.incrementViewCount(postId);
+                session.setAttribute(key, true);
+        }
+
         // ===== helpers =====
 
         private boolean isOwner(Post p, Long userId) {
@@ -188,7 +202,7 @@ public class PostService {
                                 .postId(p.getPostId())
                                 .title(p.getTitle())
                                 .content(p.getContent())
-                                .userId(p.getUserId().getUserId()) // Users PK명 맞춰 수정
+                                .authorName(p.getUserId().getName()) // Users PK명 맞춰 수정
                                 .viewCount(p.getViewCount())
                                 .createDate(p.getCreateDate())
                                 .updateDate(p.getUpdateDate())

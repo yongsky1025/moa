@@ -33,6 +33,9 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers("/auth/**").permitAll()
                                 .requestMatchers("/users/**").permitAll()
+                                // viewcount 비회원도 허용
+                                .requestMatchers("/api/posts/*/view").permitAll()
+
                                 .anyRequest().authenticated());
 
                 // 개발 단계 중 csrf 보호 비활성화

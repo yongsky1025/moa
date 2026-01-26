@@ -27,6 +27,7 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final CircleRepository circleRepository; // Circle board 생성 시 필요
 
+    // ===== Global boards =====
     public List<BoardResponseDTO> listGlobalBoards() {
         return List.of(BoardType.NOTICE, BoardType.FREE, BoardType.SUPPORT).stream()
                 .map(this::getGlobalBoardOrThrow)
@@ -39,12 +40,30 @@ public class BoardService {
         return toBoardResponse(b);
     }
 
+    @Transactional
+    public Long updateBoardName(Long boardId, String newName) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new NotFoundException("board not found"));
+        board.changeName(newName);
+        return board.getBoardId();
+    }
+
+    private Board getGlobalBoardOrThrow(BoardType type) {
+        if (type == BoardType.CIRCLE) {
+            throw new IllegalArgumentException("CIRCLE is not global");
+        }
+        return boardRepository.findByBoardTypeAndCircleIdIsNull(type)
+                .orElseThrow(() -> new NotFoundException("global board not found: " + type));
+    }
+
+    // ===== Circle boards =====
+
     public List<BoardResponseDTO> listCircleBoards(Long circleId) {
-        // 이건 BoardRepository에 메서드 하나 추가하면 깔끔함:
-        // List<Board> findByBoardTypeAndCircleId_CircleId(BoardType type, Long
-        // circleId);
-        // 일단 최소로는 custom query 권장.
-        throw new UnsupportedOperationException("add repository method: find circle boards");
+        return boardRepository
+                .findByBoardTypeAndCircleId_CircleId(BoardType.CIRCLE, circleId)
+                .stream()
+                .map(this::toBoardResponse)
+                .toList();
     }
 
     @Transactional
@@ -70,19 +89,24 @@ public class BoardService {
     }
 
     @Transactional
-    public Long updateBoardName(Long boardId, String newName) {
-        Board board = boardRepository.findById(boardId)
+    public Long updateCircleBoardName(Long circleId, Long boardId, String newName) {
+        Board board = boardRepository
+                .findByBoardIdAndBoardTypeAndCircleId_CircleId(
+                        boardId, BoardType.CIRCLE, circleId)
                 .orElseThrow(() -> new NotFoundException("board not found"));
+
         board.changeName(newName);
         return board.getBoardId();
     }
 
-    private Board getGlobalBoardOrThrow(BoardType type) {
-        if (type == BoardType.CIRCLE) {
-            throw new IllegalArgumentException("CIRCLE is not global");
-        }
-        return boardRepository.findByBoardTypeAndCircleIdIsNull(type)
-                .orElseThrow(() -> new NotFoundException("global board not found: " + type));
+    @Transactional
+    public void deleteCircleBoard(Long circleId, Long boardId) {
+        Board board = boardRepository
+                .findByBoardIdAndBoardTypeAndCircleId_CircleId(
+                        boardId, BoardType.CIRCLE, circleId)
+                .orElseThrow(() -> new NotFoundException("board not found"));
+
+        boardRepository.delete(board);
     }
 
     private BoardResponseDTO toBoardResponse(Board b) {

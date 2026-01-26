@@ -19,7 +19,7 @@ public class CirclePageController {
     @GetMapping
     public String listPage(@PathVariable Long circleId,
             @PathVariable Long boardId) {
-        return "circle/list";
+        return "board/circle/list";
     }
 
     // 상세 페이지
@@ -28,7 +28,7 @@ public class CirclePageController {
     public String readPage(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
             @PathVariable("postId") Long postId) {
-        return "circle/read";
+        return "board/circle/read";
     }
 
     // 글쓰기 페이지
@@ -36,7 +36,7 @@ public class CirclePageController {
     @GetMapping("/new")
     public String createPage(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId) {
-        return "circle/create";
+        return "board/circle/create";
     }
 
     // 수정 페이지
@@ -45,6 +45,6 @@ public class CirclePageController {
     public String editPage(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
             @PathVariable("postId") Long postId) {
-        return "circle/edit";
+        return "board/circle/edit";
     }
 }

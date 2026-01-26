@@ -19,4 +19,6 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     // Circle 보드 검증: boardId + circleId가 맞는지
     // ⚠️ Circle PK 필드명이 circleId가 아니라면 여기 수정 필요
     Optional<Board> findByBoardIdAndBoardTypeAndCircleId_CircleId(Long boardId, BoardType type, Long circleId);
+
+    List<Board> findByBoardTypeAndCircleId_CircleId(BoardType boardType, Long circleId);
 }

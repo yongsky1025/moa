@@ -34,7 +34,7 @@ public class PostResponseDTO {
 
     private String content;
 
-    private Long userId;
+    private String authorName;
 
     private int viewCount;
 
