@@ -1,17 +1,23 @@
 package com.soldesk.moa.users.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Builder
-@Data
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PasswordDTO {
+public class PasswordUpdateRequestDTO {
 
-    private String email;
+    @NotBlank
     private String currentPassword;
+
+    @NotBlank
     private String newPassword;
+
+    @NotBlank
+    private String newPasswordConfirm;
 }

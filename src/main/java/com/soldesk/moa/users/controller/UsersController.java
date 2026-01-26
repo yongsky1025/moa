@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.soldesk.moa.users.dto.AuthUserDTO;
-import com.soldesk.moa.users.dto.PasswordDTO;
-import com.soldesk.moa.users.dto.UpdateProfileDTO;
+import com.soldesk.moa.users.dto.PasswordUpdateRequestDTO;
+import com.soldesk.moa.users.dto.UserProfileResponseDTO;
 import com.soldesk.moa.users.service.UsersService;
 
 import jakarta.servlet.http.HttpSession;
@@ -27,52 +27,20 @@ public class UsersController {
 
     private final UsersService usersService;
 
+    // 대시보드(My Page) 조회
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/dashboard")
-    public void overview() {
+    public String dashboard() {
         log.info("My Page 요청");
+        return "/users/dashboard";
     }
 
-    // @PreAuthorize("isAuthenticated()")
-    @GetMapping("/profile")
-    public void profile() {
-        log.info("profile 폼 요청");
-    }
-
-    // 닉네임 수정
-    @PostMapping("/edit/nickname")
-    public String postNickname(UpdateProfileDTO dto) {
-
-        Authentication authentication = getAuthentication();
-        AuthUserDTO auth = (AuthUserDTO) authentication.getPrincipal();
-        dto.setEmail(auth.getUsername());
-        usersService.nicknameUpdate(dto);
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        return "redirect:/users/profile";
-    }
-
-    // 비밀번호 수정
+    // 프로필 view 조회
     @PreAuthorize("isAuthenticated()")
-    @PostMapping("/edit/password")
-    public String postPassword(PasswordDTO dto, HttpSession session, RedirectAttributes rttr) {
-        log.info("비밀번호 수정 {}", dto);
-
-        try {
-            usersService.passwordUpdate(dto);
-            session.invalidate();
-        } catch (Exception e) {
-            e.printStackTrace();
-            rttr.addFlashAttribute("error", e.getMessage());
-            return "redirect:/user/edit";
-        }
-        // 세선 해제 후 로그인 페이지로 이동
-        return "redirect:/auth/login";
+    @GetMapping("/profile")
+    public String profile() {
+        log.info("profile 폼 요청");
+        return "/users/profile";
     }
 
-    public Authentication getAuthentication() {
-        SecurityContext context = SecurityContextHolder.getContext();
-        Authentication authentication = context.getAuthentication();
-        return authentication;
-    }
 }

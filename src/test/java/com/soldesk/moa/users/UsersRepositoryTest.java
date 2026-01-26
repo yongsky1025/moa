@@ -35,7 +35,7 @@ public class UsersRepositoryTest {
                     .password(passwordEncoder.encode("1111"))
                     .address("adress " + i)
                     .birthDate(LocalDate.of(1999, 11, 23))
-                    .phoneNumber("010-1234-5678")
+                    .phone("010-1234-5678")
                     .userRole(UserRole.USER)
                     .build();
             usersRepository.save(users);
