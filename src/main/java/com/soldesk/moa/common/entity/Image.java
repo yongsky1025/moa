@@ -40,10 +40,9 @@ public class Image {
     private String path;
 
     @Column(nullable = false)
-    private Long ord;
+    Long ord;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
     private Users user;
-
 }

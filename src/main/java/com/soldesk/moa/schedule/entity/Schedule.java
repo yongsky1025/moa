@@ -76,4 +76,10 @@ public class Schedule {
     @Column
     private Double longitude;
 
+    public void increaseCurrentMember() {
+        if (this.currentMember >= this.maxMember) {
+            throw new IllegalStateException("정원 초과");
+        }
+        this.currentMember++;
+    }
 }

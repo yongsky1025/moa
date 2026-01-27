@@ -1,5 +1,8 @@
 package com.soldesk.moa.users.controller;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -31,16 +33,10 @@ public class AuthController {
     private final UsersService usersService;
     private final UsersRepository usersRepository;
 
-    // 회원가입 폼 요청
-    @GetMapping("/signup")
-    public String getSignUp(SignUpRequestDTO dto) {
-        log.info("회원가입 폼 요청");
-        return "/users/signup";
-    }
-
     // 회원가입 요청
     @PostMapping("/signup")
-    public String signup(@Valid SignUpRequestDTO dto, BindingResult result, RedirectAttributes rttr) {
+    public String signup(@Valid SignUpRequestDTO dto, BindingResult result,
+            RedirectAttributes rttr) {
         log.info("회원 가입 요청 {}", dto);
 
         // 1. 중복 이메일/닉네임 확인
