@@ -1,7 +1,13 @@
 package com.soldesk.moa.users.entity;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
+import com.soldesk.moa.users.entity.constant.UserStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,6 +16,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +30,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString
+@ToString(exclude = { "images" })
 @Table(name = "users")
 @Entity
 public class Users extends BaseEntity {
@@ -30,18 +39,71 @@ public class Users extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
 
+    @Column(nullable = false)
     private String name;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
     private String password;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String nickname;
 
+    @Column(nullable = false)
     private String address;
 
+    @Column(nullable = false)
+    private LocalDate birthDate;
+
+    @Column(nullable = false)
+    private String phone;
+
+    @Column(nullable = false)
+    private int age;
+
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private UserRole userRole;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserGender userGender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private UserStatus userStatus = UserStatus.ACTIVE;
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    private List<Image> images = new ArrayList<>();
+
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void changeAddress(String address) {
+        this.address = address;
+    }
+
+    public void changePassword(String password) {
+        this.password = password;
+    }
+
+    public void changePhone(String phone) {
+        this.phone = phone;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void addAge() {
+        // 만 나이 계산
+        LocalDate now = LocalDate.now();
+        this.age = now.getYear() - birthDate.getYear();
+        if (birthDate.getDayOfYear() > now.getDayOfYear()) {
+            this.age--;
+        }
+    }
 }

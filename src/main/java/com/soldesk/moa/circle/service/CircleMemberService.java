@@ -16,6 +16,7 @@ import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.users.repository.UsersRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,9 +27,13 @@ public class CircleMemberService {
 
         private final CircleMemberRepository circleMemberRepository;
         private final CircleRepository circleRepository;
+        private final UsersRepository usersRepository;
 
         @Transactional
-        public void requestJoin(Long circleId, Users loginUser) {
+        public void requestJoin(Long circleId, Long userId) {
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
 
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
@@ -69,7 +74,10 @@ public class CircleMemberService {
                         Long circleId,
                         Long memberId,
                         CircleMemberStatus status,
-                        Users loginUser) {
+                        Long userId) {
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
 
                 // 멤버 조회 (서클 소속까지 검증)
                 CircleMember member = circleMemberRepository
@@ -124,7 +132,10 @@ public class CircleMemberService {
                         Long circleId,
                         CircleMemberStatus status,
                         PageRequestDTO pageRequestDTO,
-                        Users loginUser) {
+                        Long userId) {
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클 없음"));
 

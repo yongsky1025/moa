@@ -14,7 +14,7 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.service.CircleMemberService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
-import com.soldesk.moa.users.entity.constant.CustomUserDetails;
+import com.soldesk.moa.users.dto.AuthUserDTO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,9 +30,9 @@ public class CircleMemberContoller {
     @PostMapping
     public ResponseEntity<Void> joinCircle(
             @PathVariable Long circleId,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
-        circleMemberService.requestJoin(circleId, userDetails.getUser());
+        circleMemberService.requestJoin(circleId, authUserDTO.getUserId());
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -43,13 +43,13 @@ public class CircleMemberContoller {
             @PathVariable Long circleId,
             @RequestParam(required = false) CircleMemberStatus status,
             @ModelAttribute PageRequestDTO pageRequestDTO,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
         return ResponseEntity.ok(
                 circleMemberService.getMembers(
                         circleId,
                         status,
                         pageRequestDTO,
-                        userDetails.getUser()));
+                        authUserDTO.getUserId()));
     }
 
     // 멤버 상태 변경 (승인 / 거절)
@@ -58,13 +58,13 @@ public class CircleMemberContoller {
             @PathVariable Long circleId,
             @PathVariable Long memberId,
             @RequestBody CircleMemberStatusRequestDTO request,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
         circleMemberService.changeStatus(
                 circleId,
                 memberId,
                 request.getStatus(),
-                userDetails.getUser());
+                authUserDTO.getUserId());
 
         return ResponseEntity.ok().build();
     }

@@ -5,31 +5,33 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import com.soldesk.moa.users.dto.AuthUserDTO;
 import com.soldesk.moa.users.entity.Users;
-import com.soldesk.moa.users.entity.constant.CustomUserDetails;
 import com.soldesk.moa.users.repository.UsersRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
-@Service
 @RequiredArgsConstructor
+@Log4j2
+@Service
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UsersRepository usersRepository;
 
-    /**
-     * 로그인 요청 시 Spring Security가 자동 호출
-     * email = Username
-     */
+    // Security 로그인
     @Override
-    public UserDetails loadUserByUsername(String email) {
-        System.out.println("로그인 시도 이메일: " + email);
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 
-        // DB에서 유저 조회
-        Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("유저 없음"));
+        log.info("로그인 요청 : {}", email);
+        Users users = usersRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다." + email));
 
-        // Users → CustomUserDetails로 감싸서 반환
-        return new CustomUserDetails(user);
+        log.info("로그인 시도: {}", email);
+
+        AuthUserDTO authUserDTO = new AuthUserDTO(users);
+
+        return authUserDTO;
+
     }
 }

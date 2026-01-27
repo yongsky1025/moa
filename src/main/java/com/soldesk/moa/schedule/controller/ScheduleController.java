@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.soldesk.moa.schedule.dto.ScheduleCreateRequestDTO;
 import com.soldesk.moa.schedule.dto.ScheduleResponseDTO;
 import com.soldesk.moa.schedule.service.ScheduleService;
+import com.soldesk.moa.users.dto.AuthUserDTO;
 import com.soldesk.moa.users.entity.Users;
-import com.soldesk.moa.users.entity.constant.CustomUserDetails;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +29,12 @@ public class ScheduleController {
     public ResponseEntity<ScheduleResponseDTO> createSchedule(
             @PathVariable Long circleId,
             @RequestBody @Valid ScheduleCreateRequestDTO request,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
         ScheduleResponseDTO response = scheduleService.createSchedule(
                 circleId,
                 request,
-                userDetails.getUser());
+                authUserDTO.getUserId());
 
         return ResponseEntity.ok(response);
     }
@@ -42,9 +42,9 @@ public class ScheduleController {
     @PostMapping("/{scheduleId}/join")
     public ResponseEntity<Void> joinSchedule(
             @PathVariable Long scheduleId,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
-        scheduleService.joinSchedule(scheduleId, userDetails.getUser());
+        scheduleService.joinSchedule(scheduleId, authUserDTO.getUserId());
         return ResponseEntity.ok().build();
     }
 }

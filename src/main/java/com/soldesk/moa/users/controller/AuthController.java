@@ -4,73 +4,76 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 
-import com.soldesk.moa.users.dto.LoginRequestDTO;
-import com.soldesk.moa.users.dto.UserCreateRequestDTO;
-import com.soldesk.moa.users.dto.UserResponseDTO;
-import com.soldesk.moa.users.entity.constant.CustomUserDetails;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.web.bind.annotation.GetMapping;
+
+import com.soldesk.moa.users.dto.SignUpRequestDTO;
+import com.soldesk.moa.users.repository.UsersRepository;
 import com.soldesk.moa.users.service.UsersService;
 
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 
-@RestController
-@RequiredArgsConstructor
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.bind.annotation.PostMapping;
+
 @RequestMapping("/auth")
+@RequiredArgsConstructor
+@Log4j2
+@Controller
 public class AuthController {
 
-        private final AuthenticationManager authenticationManager;
-        private final UsersService usersService;
+    private final UsersService usersService;
+    private final UsersRepository usersRepository;
 
-        @PostMapping("/login")
-        public ResponseEntity<Void> login(
-                        @RequestBody LoginRequestDTO request,
-                        HttpServletRequest httpRequest) {
+    
 
-                // 1. 로그인 토큰 생성 (아직 인증 안 됨)
-                UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
-                                request.getEmail(),
-                                request.getPassword());
+    // 회원가입 요청
+    @PostMapping("/signup")
+    public String signup(@Valid SignUpRequestDTO dto, BindingResult result,
+    RedirectAttributes rttr) {
+    log.info("회원 가입 요청 {}", dto);
 
-                // 2. 인증 시도
-                Authentication auth = authenticationManager.authenticate(token);
+    // 1. 중복 이메일/닉네임 확인
+    if (usersRepository.existsByEmail(dto.getEmail())) {
+    result.rejectValue("email", "duplicate", "이미 사용 중인 이메일입니다.");
+    }
+    if (usersRepository.existsByNickname(dto.getNickname())) {
+    result.rejectValue("nickname", "duplicate", "이미 사용 중인 닉네임입니다.");
+    }
 
-                // 3. 인증 성공 → SecurityContext에 저장
-                SecurityContext context = SecurityContextHolder.createEmptyContext();
-                context.setAuthentication(auth);
+    // 2. 유효성 검사
+    if (result.hasErrors()) {
+    return "users/signup";
+    }
 
-                // 4. 쿠키 생성(왜 자동으로 안생기는지는 모르겠음??)
-                httpRequest.getSession(true)
-                                .setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                                                context);
+    usersService.signup(dto);
+    return "redirect:/auth/login";
+    }
 
-                return ResponseEntity.ok().build();
-        }
+    // 로그인 폼 요청
+    @GetMapping("/login")
+    public String login() {
+    log.info("로그인 폼 요청");
+    return "/users/login";
+    }
 
-        @PostMapping("/signup")
-        public ResponseEntity<Void> signup(
-                        @RequestBody UserCreateRequestDTO request) {
 
-                usersService.signup(request);
+    // 로그인 이후 Security Context 에 담긴 정보 확인)(개발)
+    @ResponseBody
+    @GetMapping("/auth")
+    public Authentication getAuthenticationInfo() {
 
-                return ResponseEntity.ok().build();
-        }
-
-        // 로그인한 사용자 정보 조회
-        @GetMapping("/me")
-        public ResponseEntity<UserResponseDTO> me(
-                        @AuthenticationPrincipal CustomUserDetails userDetails) {
-                return ResponseEntity.ok(
-                                usersService.getMyInfo(userDetails));
-        }
+        SecurityContext context = SecurityContextHolder.getContext();
+        Authentication authentication = context.getAuthentication();
+        return authentication;
+    }
 
 }

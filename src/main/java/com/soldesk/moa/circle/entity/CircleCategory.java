@@ -1,5 +1,6 @@
 package com.soldesk.moa.circle.entity;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.Column;
@@ -13,8 +14,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
-
 
 @Entity
 @Getter
@@ -32,6 +31,7 @@ public class CircleCategory {
     private String categoryName;
 
     @OneToMany(mappedBy = "category")
-    private List<Circle> circles;
+    @Builder.Default
+    private List<Circle> circles = new ArrayList<>();;
 
 }

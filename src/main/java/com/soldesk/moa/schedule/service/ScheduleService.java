@@ -17,6 +17,7 @@ import com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus;
 import com.soldesk.moa.schedule.repository.ScheduleMemberRepository;
 import com.soldesk.moa.schedule.repository.ScheduleRepository;
 import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.users.repository.UsersRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,11 +30,15 @@ public class ScheduleService {
         private final ScheduleMemberRepository scheduleMemberRepository;
         private final CircleRepository circleRepository;
         private final CircleMemberRepository circleMemberRepository;
+        private final UsersRepository usersRepository;
 
         public ScheduleResponseDTO createSchedule(
                         Long circleId,
                         ScheduleCreateRequestDTO request,
-                        Users loginUser) {
+                        Long userId) {
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
 
                 // 서클 존재 여부
                 Circle circle = circleRepository.findById(circleId)
@@ -82,7 +87,10 @@ public class ScheduleService {
         @Transactional
         public void joinSchedule(
                         Long scheduleId,
-                        Users loginUser) {
+                        Long userId) {
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
 
                 // 1. 일정 조회
                 Schedule schedule = scheduleRepository.findById(scheduleId)

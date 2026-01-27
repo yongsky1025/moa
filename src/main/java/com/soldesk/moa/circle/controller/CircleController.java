@@ -17,8 +17,8 @@ import com.soldesk.moa.circle.service.CircleMemberService;
 import com.soldesk.moa.circle.service.CircleService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.users.dto.AuthUserDTO;
 import com.soldesk.moa.users.entity.Users;
-import com.soldesk.moa.users.entity.constant.CustomUserDetails;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,17 +30,16 @@ import lombok.RequiredArgsConstructor;
 public class CircleController {
 
     private final CircleService circleService;
-    private final CircleMemberService circleMemberService;
 
     // 서클 생성
     @PostMapping
     public ResponseEntity<CircleResponseDTO> createCircle(
             @RequestBody @Valid CircleCreateRequestDTO request,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
-        Users loginUser = customUserDetails.getUser();
+        Long userId = authUserDTO.getUserId();
 
-        return ResponseEntity.ok(circleService.createCircle(request, loginUser));
+        return ResponseEntity.ok(circleService.createCircle(request, userId));
     }
 
     // 서클 목록 조회

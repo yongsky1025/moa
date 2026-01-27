@@ -20,6 +20,7 @@ import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.users.repository.UsersRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,10 +32,14 @@ public class CircleService {
         private final CircleRepository circleRepository;
         private final CircleCategoryRepository categoryRepository;
         private final CircleMemberRepository circleMemberRepository;
+        private final UsersRepository usersRepository;
 
         // 서클 생성
         @Transactional
-        public CircleResponseDTO createCircle(CircleCreateRequestDTO request, Users loginUser) {
+        public CircleResponseDTO createCircle(CircleCreateRequestDTO request, Long userId) {
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
 
                 CircleCategory circleCategory = categoryRepository.findById(request.getCategoryId())
                                 .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
