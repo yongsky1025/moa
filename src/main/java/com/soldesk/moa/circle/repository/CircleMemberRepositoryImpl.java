@@ -13,52 +13,52 @@ import com.soldesk.moa.common.dto.PageResultDTO;
 import jakarta.persistence.EntityManager;
 
 public class CircleMemberRepositoryImpl
-        implements CircleMemberRepositoryCustom {
+                implements CircleMemberRepositoryCustom {
 
-    private final JPAQueryFactory queryFactory;
+        private final JPAQueryFactory queryFactory;
 
-    public CircleMemberRepositoryImpl(EntityManager em) {
-        this.queryFactory = new JPAQueryFactory(em);
-    }
+        public CircleMemberRepositoryImpl(EntityManager em) {
+                this.queryFactory = new JPAQueryFactory(em);
+        }
 
-    @Override
-    public PageResultDTO<CircleMember> findMembers(
-            Long circleId,
-            CircleMemberStatus status,
-            PageRequestDTO pageRequestDTO) {
+        @Override
+        public PageResultDTO<CircleMember> findMembers(
+                        Long circleId,
+                        CircleMemberStatus status,
+                        PageRequestDTO pageRequestDTO) {
 
-        QCircleMember member = QCircleMember.circleMember;
+                QCircleMember member = QCircleMember.circleMember;
 
-        int page = pageRequestDTO.getPage() - 1;
-        int size = pageRequestDTO.getSize();
+                int page = pageRequestDTO.getPage() - 1;
+                int size = pageRequestDTO.getSize();
 
-        List<CircleMember> content = queryFactory
-                .selectFrom(member)
-                .join(member.user).fetchJoin()
-                .where(
-                        member.circle.circleId.eq(circleId),
-                        statusEq(status))
-                .offset((long) page * size)
-                .limit(size)
-                .fetch();
+                List<CircleMember> content = queryFactory
+                                .selectFrom(member)
+                                .join(member.user).fetchJoin()
+                                .where(
+                                                member.circle.circleId.eq(circleId),
+                                                statusEq(status))
+                                .offset((long) page * size)
+                                .limit(size)
+                                .fetch();
 
-        Long total = queryFactory
-                .select(member.count())
-                .from(member)
-                .where(
-                        member.circle.circleId.eq(circleId),
-                        statusEq(status))
-                .fetchOne();
+                Long total = queryFactory
+                                .select(member.count())
+                                .from(member)
+                                .where(
+                                                member.circle.circleId.eq(circleId),
+                                                statusEq(status))
+                                .fetchOne();
 
-        return PageResultDTO.<CircleMember>withAll()
-                .dtoList(content)
-                .pageRequestDTO(pageRequestDTO)
-                .totalCount(total == null ? 0 : total)
-                .build();
-    }
+                return PageResultDTO.<CircleMember>withAll()
+                                .dtoList(content)
+                                .pageRequestDTO(pageRequestDTO)
+                                .totalCount(total == null ? 0 : total)
+                                .build();
+        }
 
-    private BooleanExpression statusEq(CircleMemberStatus status) {
-        return status == null ? null
-                : QCircleMember.circleMember.status.eq(status);
-    }
+        private BooleanExpression statusEq(CircleMemberStatus status) {
+                return status == null ? null
+                                : QCircleMember.circleMember.status.eq(status);
+        }
 }

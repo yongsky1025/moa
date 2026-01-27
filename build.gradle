@@ -29,9 +29,8 @@ dependencies {
 	// thymeleaf 레이아웃 상속
 	implementation 'nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect:3.4.0'
 	// querydsl
-	implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
-	implementation 'com.querydsl:querydsl-apt:5.1.0:jakarta'
 	implementation 'com.querydsl:querydsl-core:5.1.0'
+	
 	// 소셜로그인(프로젝트 생성 시 추가 가능)
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	// 썸네일
