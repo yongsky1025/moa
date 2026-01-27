@@ -41,6 +41,7 @@ public class CirclePostRestController {
 
     private final PostService postService;
 
+    // 써클 보드 리스트
     @GetMapping
     public List<PostResponseDTO> list(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId) {
@@ -79,6 +80,6 @@ public class CirclePostRestController {
             @PathVariable("boardId") Long boardId,
             @PathVariable("postId") Long postId,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        postService.deleteCircleAsOwner(circleId, boardId, postId, auth.getUserId());
+        postService.deleteCircleAsOwner(circleId, boardId, postId, auth);
     }
 }

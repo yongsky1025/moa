@@ -55,7 +55,7 @@ public class NoticePostRestController {
     @PostMapping
     public Long create(@RequestBody @Valid PostRequestDTO req,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        return postService.createGlobal(BoardType.NOTICE, auth.getUserId(), req);
+        return postService.createGlobal(BoardType.NOTICE, auth, req);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

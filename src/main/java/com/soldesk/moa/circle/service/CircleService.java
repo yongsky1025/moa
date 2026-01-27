@@ -5,6 +5,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.soldesk.moa.board.entity.Board;
+import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
@@ -33,6 +36,7 @@ public class CircleService {
         private final CircleCategoryRepository categoryRepository;
         private final CircleMemberRepository circleMemberRepository;
         private final UsersRepository usersRepository;
+        private final BoardRepository boardRepository;
 
         // 서클 생성
         @Transactional
@@ -64,6 +68,13 @@ public class CircleService {
                                 .build();
 
                 circleMemberRepository.save(leader);
+
+                // 기본 게시판 3개 생성
+                List<Board> defaultBoards = List.of(
+                                Board.builder().boardType(BoardType.CIRCLE).name("공지사항").circleId(savedCircle).build(),
+                                Board.builder().boardType(BoardType.CIRCLE).name("자유게시판").circleId(savedCircle).build(),
+                                Board.builder().boardType(BoardType.CIRCLE).name("후기").circleId(savedCircle).build());
+                boardRepository.saveAll(defaultBoards);
 
                 return new CircleResponseDTO(savedCircle);
         }

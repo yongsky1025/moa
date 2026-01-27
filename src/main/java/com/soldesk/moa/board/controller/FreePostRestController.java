@@ -51,25 +51,25 @@ public class FreePostRestController {
         return postService.readGlobal(BoardType.FREE, postId);
     }
 
-    // @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping
     public Long create(@RequestBody @Valid PostRequestDTO req,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        return postService.createGlobal(BoardType.FREE, auth.getUserId(), req);
+        return postService.createGlobal(BoardType.FREE, auth, req);
     }
 
-    // @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @PutMapping("/{postId}")
     public Long update(@PathVariable("postId") Long postId,
             @RequestBody @Valid PostRequestDTO req,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        return postService.updateFreeAsOwner(postId, auth.getUserId(), req);
+        return postService.updateFreeAsOwner(postId, auth, req);
     }
 
-    // @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{postId}")
     public void delete(@PathVariable("postId") Long postId,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        postService.deleteFreeAsOwner(postId, auth.getUserId());
+        postService.deleteFreeAsOwner(postId, auth);
     }
 }

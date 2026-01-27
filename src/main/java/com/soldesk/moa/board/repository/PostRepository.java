@@ -60,6 +60,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
       @Param("boardId") Long boardId,
       @Param("postId") Long postId);
 
+  // 써클 모든 보드의 게시물
+  @Query("""
+          select p from Post p
+          join p.boardId b
+          where b.boardType = 'CIRCLE'
+            and b.circleId.circleId = :circleId
+      """)
+  List<Post> findCirclePostsAllBoards(@Param("circleId") Long circleId);
+
   @Modifying
   @Query("update Post p set p.viewCount = p.viewCount + 1 where p.postId = :postId")
   int incrementViewCount(@Param("postId") Long postId);
