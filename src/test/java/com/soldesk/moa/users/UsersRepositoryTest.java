@@ -27,18 +27,24 @@ public class UsersRepositoryTest {
     @Test
     public void usersInsertTest() {
         IntStream.rangeClosed(1, 10).forEach(i -> {
-            Users users = Users.builder()
-                    .email("user" + i + "@gmail.com")
-                    .name("user " + i)
+            boolean isAdmin = (i == 1);
+            String email = isAdmin ? "admin@gmail.com" : "user" + i + "@gmail.com";
+            if (usersRepository.existsByEmail(email)) {
+                return;
+            }
+
+            Users user = Users.builder()
+                    .email(email)
+                    .name(isAdmin ? "admin" : "user " + i)
                     .userGender(UserGender.MALE)
-                    .nickname("nickname" + i)
+                    .nickname(isAdmin ? "admin" : "nickname" + i)
                     .password(passwordEncoder.encode("1111"))
-                    .address("adress " + i)
+                    .address(isAdmin ? "admin address" : "adress " + i)
                     .birthDate(LocalDate.of(1999, 11, 23))
-                    .phone("010-1234-5678")
-                    .userRole(UserRole.USER)
+                    .phone(isAdmin ? "010-0000-0000" : "010-1234-5678")
+                    .userRole(isAdmin ? UserRole.ADMIN : UserRole.USER)
                     .build();
-            usersRepository.save(users);
+            usersRepository.save(user);
         });
     }
 }

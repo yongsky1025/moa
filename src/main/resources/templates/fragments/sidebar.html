@@ -29,37 +29,10 @@
       <!-- Divider -->
       <hr class="sidebar-divider" />
 
-      <li class="nav-item">
-        <a class="nav-link" th:href="@{/auth/login}">
-          <i class="fa-solid fa-right-to-bracket"></i>
-          <span>로그인</span></a
-        >
-      </li>
-
-      <li class="nav-item">
-        <a class="nav-link" th:href="@{/auth/signup}">
-          <i class="fa-solid fa-user-plus"></i>
-          <span>회원가입</span></a
-        >
-      </li>
-      <li class="nav-item">
+      <li class="nav-item" sec:authorize="hasRole('ADMIN')">
         <a class="nav-link" th:href="@{/admin}">
           <i class="fa-solid fa-lock"></i>
           <span>관리자페이지</span></a
-        >
-      </li>
-
-      <li class="nav-item">
-        <a class="nav-link" th:href="@{/users/profilep}">
-          <i class="fa-solid fa-user-gear"></i>
-          <span>내정보</span></a
-        >
-      </li>
-
-      <li class="nav-item">
-        <a class="nav-link" th:href="@{/users/dashboard}">
-          <i class="fa-solid fa-address-card"></i>
-          <span>마이페이지</span></a
         >
       </li>
 

@@ -45,11 +45,11 @@ public class Post extends BaseEntity {
 
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private Users userId; // 작성자 불러옴
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_id", nullable = false)
+    @JoinColumn(name = "board_id", nullable = true)
     private Board boardId;
 
     // setter
