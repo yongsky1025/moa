@@ -51,21 +51,21 @@ public class NoticePostRestController {
         return postService.readGlobal(BoardType.NOTICE, postId);
     }
 
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Long create(@RequestBody @Valid PostRequestDTO req,
             @AuthenticationPrincipal AuthUserDTO auth) {
         return postService.createGlobal(BoardType.NOTICE, auth.getUserId(), req);
     }
 
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{postId}")
     public Long update(@PathVariable("postId") Long postId,
             @RequestBody @Valid PostRequestDTO req) {
         return postService.updateGlobal(BoardType.NOTICE, postId, req);
     }
 
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{postId}")
     public void delete(@PathVariable("postId") Long postId) {
         postService.deleteGlobal(BoardType.NOTICE, postId);

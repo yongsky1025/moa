@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initCreatePage().catch(console.error);
 });
 
-function initCreatePage() {
+async function initCreatePage() {
   const board = getBoardKey(); // notice|free|support
   if (!board) throw new Error("invalid path");
 

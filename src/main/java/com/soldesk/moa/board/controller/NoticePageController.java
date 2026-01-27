@@ -1,5 +1,6 @@
 package com.soldesk.moa.board.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -26,12 +27,14 @@ public class NoticePageController {
         return "board/notice/read";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/new")
     public String createPage() {
         log.info("공지사항 생성 호출");
         return "board/notice/create";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{postId}/edit")
     public String editPage(@PathVariable("postId") Long postId) {
         log.info("공지사항 수정 호출{}", postId);
