@@ -1,4 +1,6 @@
 /gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
-* text=auto eol=lf
+
+# 줄바꿈 오류로 인해 추가
+*.svg binary
