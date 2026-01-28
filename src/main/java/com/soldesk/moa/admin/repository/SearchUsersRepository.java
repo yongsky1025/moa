@@ -21,4 +21,7 @@ public interface SearchUsersRepository {
 
     // 전체 유저 정보 조회(검색,필터)
     Page<Users> getUsersInfo(Pageable pageable, String type, String keyword);
+
+    // 유저 상세 조회
+    Object[] getUserProfile(Long userId);
 }

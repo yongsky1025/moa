@@ -27,8 +27,8 @@ public class UserInfoDTO {
 
     private LocalDateTime createDate;
 
-    private int countCreateBoard;
+    private long countCreateBoard;
 
-    private int countCreateReply;
+    private long countCreateReply;
 
 }

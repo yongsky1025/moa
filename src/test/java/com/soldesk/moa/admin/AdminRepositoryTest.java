@@ -37,6 +37,7 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleCategoryRepository;
+import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.entity.ScheduleMember;
 import com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus;
@@ -565,9 +566,31 @@ public class AdminRepositoryTest {
     // 전체 유저 정보 조회(검색)
     @Test
     public void getUsersInfo() {
-        Pageable pageable = PageRequest.of(0, 5);
         // 나이로 조회
+        PageRequestDTO pageRequestDTO = PageRequestDTO.builder()
+                .page(0)
+                .size(10)
+                .type("a")
+                .keyword("30")
+                .build();
+        Pageable pageable = PageRequest.of(pageRequestDTO.getPage(), pageRequestDTO.getSize());
+
         Page<Users> result = adminUsersRepository.getUsersInfo(pageable, "a", "30");
+
         result.forEach(System.out::println);
+        System.out.println(result.getTotalPages());
+        System.out.println(result.getTotalElements());
+
+    }
+
+    // 유저 상세 조회(게시글,댓글 카운팅 포함)
+    @Test
+    public void getUserProfile() {
+        Users user = adminUsersRepository.findById((long) (Math.random() * 900 + 1)).get();
+        Object[] result = adminUsersRepository.getUserProfile(user.getUserId());
+
+        System.out.println("user " + result[0]);
+        System.out.println("게시글 수 " + result[1]);
+        System.out.println("댓글 수 " + result[2]);
     }
 }

@@ -21,6 +21,8 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.JPQLQuery;
+import com.soldesk.moa.admin.temporary.QReply;
+import com.soldesk.moa.board.entity.QPost;
 import com.soldesk.moa.users.entity.QUsers;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserGender;
@@ -170,6 +172,26 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
         long count = query.fetchCount();
 
         return new PageImpl<>(list, pageable, count);
+    }
+
+    @Override
+    public Object[] getUserProfile(Long userId) {
+        QUsers user = QUsers.users;
+        QPost post = QPost.post;
+        QReply reply = QReply.reply;
+
+        JPQLQuery<Users> query = from(user)
+                .leftJoin(post).on(post.userId.eq(user))
+                .leftJoin(reply).on(reply.user.eq(user))
+                .where(user.userId.eq(userId));
+
+        JPQLQuery<Tuple> tuple = query.select(user, post.userId.count(), reply.user.count());
+
+        tuple.groupBy(user);
+
+        Tuple result = tuple.fetchFirst();
+
+        return result.toArray();
     }
 
 }
