@@ -72,8 +72,9 @@ public class CircleService {
                 // 기본 게시판 3개 생성
                 List<Board> defaultBoards = List.of(
                                 Board.builder().boardType(BoardType.CIRCLE).name("공지사항").circleId(savedCircle).build(),
-                                Board.builder().boardType(BoardType.CIRCLE).name("자유게시판").circleId(savedCircle).build(),
-                                Board.builder().boardType(BoardType.CIRCLE).name("후기").circleId(savedCircle).build());
+                                Board.builder().boardType(BoardType.CIRCLE).name("가입인사").circleId(savedCircle).build(),
+                                Board.builder().boardType(BoardType.CIRCLE).name("후기 및 인증").circleId(savedCircle)
+                                                .build());
                 boardRepository.saveAll(defaultBoards);
 
                 return new CircleResponseDTO(savedCircle);
