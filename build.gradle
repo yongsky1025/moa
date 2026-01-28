@@ -35,8 +35,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	// 썸네일
 	implementation 'net.coobird:thumbnailator:0.4.21'
-	// QueryDSL JPA
-    implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
+	// querydsl JPA Support
+	implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
+	// querydsl APT Support
+	implementation 'com.querydsl:querydsl-apt:5.1.0:jakarta'
+	// querydsl CORE Module
+	implementation 'com.querydsl:querydsl-core:5.1.0'
     // QueryDSL APT (Q클래스 생성용)
     annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'
     // Jakarta (컴파일 타임)

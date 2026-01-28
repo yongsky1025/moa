@@ -7,6 +7,7 @@ import com.querydsl.core.types.dsl.*;
 import com.querydsl.core.types.PathMetadata;
 import javax.annotation.processing.Generated;
 import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.PathInits;
 
 
 /**
@@ -23,10 +24,16 @@ public class QUsers extends EntityPathBase<Users> {
 
     public final StringPath address = createString("address");
 
+    public final NumberPath<Integer> age = createNumber("age", Integer.class);
+
+    public final DatePath<java.time.LocalDate> birthDate = createDate("birthDate", java.time.LocalDate.class);
+
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createDate = _super.createDate;
 
     public final StringPath email = createString("email");
+
+    public final ListPath<com.soldesk.moa.common.entity.Image, com.soldesk.moa.common.entity.QImage> images = this.<com.soldesk.moa.common.entity.Image, com.soldesk.moa.common.entity.QImage>createList("images", com.soldesk.moa.common.entity.Image.class, com.soldesk.moa.common.entity.QImage.class, PathInits.DIRECT2);
 
     public final StringPath name = createString("name");
 
@@ -34,12 +41,18 @@ public class QUsers extends EntityPathBase<Users> {
 
     public final StringPath password = createString("password");
 
+    public final StringPath phone = createString("phone");
+
     //inherited
     public final DateTimePath<java.time.LocalDateTime> updateDate = _super.updateDate;
+
+    public final EnumPath<com.soldesk.moa.users.entity.constant.UserGender> userGender = createEnum("userGender", com.soldesk.moa.users.entity.constant.UserGender.class);
 
     public final NumberPath<Long> userId = createNumber("userId", Long.class);
 
     public final EnumPath<com.soldesk.moa.users.entity.constant.UserRole> userRole = createEnum("userRole", com.soldesk.moa.users.entity.constant.UserRole.class);
+
+    public final EnumPath<com.soldesk.moa.users.entity.constant.UserStatus> userStatus = createEnum("userStatus", com.soldesk.moa.users.entity.constant.UserStatus.class);
 
     public QUsers(String variable) {
         super(Users.class, forVariable(variable));
