@@ -18,16 +18,12 @@ public class UserCountDTO {
     // 전체 유저 수
     private Long countTotalUser;
 
-    // 남성 유저 수
-    private Long countMale;
+    // 성별
+    private Long maleUser;
+    private Long femaleUser;
 
-    // 여성 유저 수
-    private Long countFemale;
-
-    // 남자 성비
+    // 성비
     private double maleRatio;
-
-    // 여자 성비
     private double femaleRatio;
 
     // 모임에 가입되어있는 유저 수

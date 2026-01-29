@@ -3,6 +3,8 @@ package com.soldesk.moa.admin.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.soldesk.moa.admin.dto.AdminUserResponseDTO;
+import com.soldesk.moa.admin.dto.AdminUserSearchDTO;
 import com.soldesk.moa.admin.dto.UserInfoDTO;
 import com.soldesk.moa.admin.service.AdminService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
@@ -26,10 +28,10 @@ public class AdminUserController {
 
     @GetMapping("/list")
     @Operation(summary = "admin user list data")
-    public PageResultDTO<UserInfoDTO> getMethodName(PageRequestDTO pageRequestDTO) {
+    public PageResultDTO<AdminUserResponseDTO> getMethodName(AdminUserSearchDTO searchDTO) {
         log.info("전체 유저 리스트 요청");
 
-        return adminService.getAllUserInfo(pageRequestDTO);
+        return adminService.getAllUserInfo(searchDTO);
     }
 
     @GetMapping("/profile/{id}")

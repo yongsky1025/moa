@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.soldesk.moa.admin.dto.AdminUserSearchDTO;
 import com.soldesk.moa.users.entity.Users;
 
 public interface SearchUsersRepository {
@@ -20,7 +21,7 @@ public interface SearchUsersRepository {
     List<Object[]> getAgeGroup();
 
     // 전체 유저 정보 조회(검색,필터)
-    Page<Users> getUsersInfo(Pageable pageable, String type, String keyword);
+    Page<Users> getUsersInfo(Pageable pageable, AdminUserSearchDTO searchDTO);
 
     // 유저 상세 조회
     Object[] getUserProfile(Long userId);

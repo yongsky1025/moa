@@ -1,27 +1,37 @@
 package com.soldesk.moa.admin.dto;
 
-import com.soldesk.moa.common.dto.PageRequestDTO;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
 import com.soldesk.moa.users.entity.constant.UserStatus;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
 
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class AdminUserSearchDTO extends PageRequestDTO {
+public class AdminUserResponseDTO {
+    private Long userId;
 
-    // 필터링 조건
-    private UserStatus status;
+    private String name;
+
+    private int age;
+
+    private LocalDate birth;
+
+    private String phone;
 
     private UserGender gender;
+
+    private UserStatus status;
+
+    private LocalDateTime createDate;
 
     private UserRole role;
 }

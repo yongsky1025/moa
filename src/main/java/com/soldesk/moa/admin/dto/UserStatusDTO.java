@@ -11,18 +11,14 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class UserStatusDTO {
 
-    private Long signUpYear;
-
-    private Long signUpMonth;
+    // 기준 년/월
+    private Long year;
+    private Long month;
 
     // 몇 일 기준 가입/탈퇴자 조회용
     private Long date;
 
-    private Long withdrawYear;
-
-    private Long withdrawMonth;
-
+    // 가입 , 탈퇴 수
     private Long signUpCount;
-
     private Long withdrawnCount;
 }

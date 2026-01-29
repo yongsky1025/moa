@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.soldesk.moa.admin.dto.AdminUserSearchDTO;
 import com.soldesk.moa.admin.repository.AdminBoardRepository;
 import com.soldesk.moa.admin.repository.AdminPostRepository;
 import com.soldesk.moa.admin.repository.AdminCircleMemberRepository;
@@ -423,7 +424,7 @@ public class AdminRepositoryTest {
         Object[] row = (Object[]) result[0];
         System.out.println(row[0]);
 
-        // long countCMs = adminCircleMemberRepository.findAll().size()
+        // long countCMs = adminCircleMemberRepository.findgetCountCircleMemberAll().size()
         // - adminUsersRepository.findByUserStatus(UserStatus.WITHDRAWN).size();
         long countCMs = adminCircleMemberRepository.findAll().size();
         System.out.println(countCMs);
@@ -563,19 +564,21 @@ public class AdminRepositoryTest {
         System.out.println(adminCircleMemberRepository.getCountCircleMember());
     }
 
-    // 전체 유저 정보 조회(검색)
+    // 전체 유저 정보 조회(필터&검색)
     @Test
     public void getUsersInfo() {
-        // 나이로 조회
-        PageRequestDTO pageRequestDTO = PageRequestDTO.builder()
-                .page(0)
-                .size(10)
+        // 남자,활동중,user중 나이 30세 조회
+        AdminUserSearchDTO searchDTO = AdminUserSearchDTO.builder()
+                .status(UserStatus.ACTIVE)
+                .gender(UserGender.MALE)
+                .role(UserRole.USER)
                 .type("a")
                 .keyword("30")
                 .build();
-        Pageable pageable = PageRequest.of(pageRequestDTO.getPage(), pageRequestDTO.getSize());
 
-        Page<Users> result = adminUsersRepository.getUsersInfo(pageable, "a", "30");
+        Pageable pageable = PageRequest.of(searchDTO.getPage() - 1, searchDTO.getSize());
+
+        Page<Users> result = adminUsersRepository.getUsersInfo(pageable, searchDTO);
 
         result.forEach(System.out::println);
         System.out.println(result.getTotalPages());
@@ -583,7 +586,7 @@ public class AdminRepositoryTest {
 
     }
 
-    // 유저 상세 조회(게시글,댓글 카운팅 포함)
+    // 유저 상세 조회(게시글,댓글,모임 카운팅 포함)
     @Test
     public void getUserProfile() {
         Users user = adminUsersRepository.findById((long) (Math.random() * 900 + 1)).get();
@@ -592,5 +595,6 @@ public class AdminRepositoryTest {
         System.out.println("user " + result[0]);
         System.out.println("게시글 수 " + result[1]);
         System.out.println("댓글 수 " + result[2]);
+        System.out.println("참여모임 수 " + result[3]);
     }
 }

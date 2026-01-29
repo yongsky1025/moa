@@ -25,7 +25,7 @@ public class AdminMainController {
     @Operation(summary = "admin main data", description = "메인페이지 data")
     public AdminMainDTO getAdminMain() {
         log.info("admin main page");
-        return adminService.getMoaInfo();
+        return adminService.mainDashBoard();
     }
 
 }

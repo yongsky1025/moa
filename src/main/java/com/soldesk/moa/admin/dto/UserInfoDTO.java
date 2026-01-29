@@ -31,4 +31,6 @@ public class UserInfoDTO {
 
     private long countCreateReply;
 
+    private long countJoinCircle;
+
 }

@@ -21,8 +21,11 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.JPQLQuery;
+import com.soldesk.moa.admin.dto.AdminUserResponseDTO;
+import com.soldesk.moa.admin.dto.AdminUserSearchDTO;
 import com.soldesk.moa.admin.temporary.QReply;
 import com.soldesk.moa.board.entity.QPost;
+import com.soldesk.moa.circle.entity.QCircleMember;
 import com.soldesk.moa.users.entity.QUsers;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserGender;
@@ -99,53 +102,53 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
     }
 
     @Override
-    public Page<Users> getUsersInfo(Pageable pageable, String type, String keyword) {
+    public Page<Users> getUsersInfo(Pageable pageable, AdminUserSearchDTO searchDTO) {
         log.info("전체 유저 조회");
         QUsers users = QUsers.users;
 
         JPQLQuery<Users> query = from(users).select(users);
 
-        // where(특정 유저 검색,필터)
-        // type => id == i , name = n, status = s, age = a, gender = g, role = r, birth
-        // = b, phone = p
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(users.userId.gt(0));
+        // where(조건 필터링)
 
-        if (type != null) {
-            String[] typeArr = type.split("");
+        if (searchDTO.getGender() != null) {
+            builder.and(users.userGender.eq(searchDTO.getGender()));
+        }
+        if (searchDTO.getRole() != null) {
+            builder.and(users.userRole.eq(searchDTO.getRole()));
+        }
+        if (searchDTO.getStatus() != null) {
+            builder.and(users.userStatus.eq(searchDTO.getStatus()));
+        }
+
+        // where(특정 유저 검색)
+        // type => id == i , name = n, status = s, age = a, gender = g, role = r, birth
+        // = b, phone = p
+
+        if (searchDTO.getType() != null) {
+            String[] typeArr = searchDTO.getType().split("");
             for (String t : typeArr) {
                 switch (t) {
                     case "i":
-                        long userId = Long.parseLong(keyword);
+                        long userId = Long.parseLong(searchDTO.getKeyword());
                         builder.and(users.userId.eq(userId));
                         break;
                     case "n":
-                        builder.and(users.name.contains(t));
+                        builder.and(users.name.contains(searchDTO.getKeyword()));
                         break;
                     case "a":
-                        int age = Integer.parseInt(keyword);
+                        int age = Integer.parseInt(searchDTO.getKeyword());
                         builder.and(users.age.eq(age));
                         break;
                     // 생년월일 8자리로 받겠음
                     case "b":
-                        LocalDate birth = LocalDate.parse(keyword);
+                        LocalDate birth = LocalDate.parse(searchDTO.getKeyword());
                         builder.and(users.birthDate.eq(birth));
                         break;
                     // 핸드폰 번호 : - 기호 없이
                     case "p":
-                        builder.and(users.phone.contains(keyword));
-                        break;
-                    case "s":
-                        UserStatus status = UserStatus.valueOf(keyword);
-                        builder.and(users.userStatus.eq(status));
-                        break;
-                    case "r":
-                        UserRole role = UserRole.valueOf(keyword);
-                        builder.and(users.userRole.eq(role));
-                        break;
-                    case "g":
-                        UserGender gender = UserGender.valueOf(keyword);
-                        builder.and(users.userGender.eq(gender));
+                        builder.and(users.phone.contains(searchDTO.getKeyword()));
                         break;
                 }
             }
@@ -169,6 +172,7 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
         log.info(query);
 
         List<Users> list = query.fetch();
+
         long count = query.fetchCount();
 
         return new PageImpl<>(list, pageable, count);
@@ -179,13 +183,15 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
         QUsers user = QUsers.users;
         QPost post = QPost.post;
         QReply reply = QReply.reply;
+        QCircleMember circleMember = QCircleMember.circleMember;
 
         JPQLQuery<Users> query = from(user)
                 .leftJoin(post).on(post.userId.eq(user))
                 .leftJoin(reply).on(reply.user.eq(user))
+                .leftJoin(circleMember).on(circleMember.user.eq(user))
                 .where(user.userId.eq(userId));
 
-        JPQLQuery<Tuple> tuple = query.select(user, post.userId.count(), reply.user.count());
+        JPQLQuery<Tuple> tuple = query.select(user, post.userId.count(), reply.user.count(), circleMember.user.count());
 
         tuple.groupBy(user);
 
