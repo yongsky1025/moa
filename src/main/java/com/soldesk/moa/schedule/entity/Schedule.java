@@ -82,4 +82,11 @@ public class Schedule {
         }
         this.currentMember++;
     }
+
+    public void decreaseCurrentMember() {
+        if (this.currentMember <= 0) {
+            throw new IllegalStateException("현재 인원이 0명입니다.");
+        }
+        this.currentMember--;
+    }
 }
