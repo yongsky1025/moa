@@ -15,6 +15,10 @@ public class CircleResponseDTO {
     private int currentMember;
     private String categoryName;
 
+    public static CircleResponseDTO from(Circle circle) {
+        return new CircleResponseDTO(circle);
+    }
+
     public CircleResponseDTO(Circle circle) {
         this.circleId = circle.getCircleId();
         this.name = circle.getName();

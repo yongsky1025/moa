@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/{circleId}/schedules")
+@RequestMapping("/circles/{circleId}/schedules")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
@@ -39,6 +39,7 @@ public class ScheduleController {
         return ResponseEntity.ok(response);
     }
 
+    // 일정 참여
     @PostMapping("/{scheduleId}/join")
     public ResponseEntity<Void> joinSchedule(
             @PathVariable Long scheduleId,

@@ -51,7 +51,7 @@ public class Circle extends BaseEntity {
     // 상태 변경
     public void increaseMember() {
         if (this.status == CircleStatus.FULL) {
-        throw new IllegalStateException("이미 정원이 가득 찬 서클입니다.");
+            throw new IllegalStateException("이미 정원이 가득 찬 서클입니다.");
         }
         this.currentMember++;
         if (this.currentMember >= this.maxMember) {
@@ -59,4 +59,10 @@ public class Circle extends BaseEntity {
         }
     }
 
+    // 멤버 탈퇴시 현재 인원 감소
+    public void decreaseMember() {
+        if (this.currentMember > 0) {
+            this.currentMember--;
+        }
+    }
 }

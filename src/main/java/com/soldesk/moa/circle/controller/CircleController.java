@@ -1,24 +1,17 @@
 package com.soldesk.moa.circle.controller;
 
-import java.util.List;
-
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
-import com.soldesk.moa.circle.dto.CircleMemberResponseDTO;
-import com.soldesk.moa.circle.dto.CircleMemberStatusRequestDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
-import com.soldesk.moa.circle.service.CircleMemberService;
 import com.soldesk.moa.circle.service.CircleService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.users.dto.AuthUserDTO;
-import com.soldesk.moa.users.entity.Users;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +33,14 @@ public class CircleController {
         Long userId = authUserDTO.getUserId();
 
         return ResponseEntity.ok(circleService.createCircle(request, userId));
+    }
+
+    // 서클 상세 조회
+    @GetMapping("/{circleId}")
+    public ResponseEntity<CircleResponseDTO> getCircle(
+            @PathVariable Long circleId) {
+
+        return ResponseEntity.ok(circleService.getCircle(circleId));
     }
 
     // 서클 목록 조회

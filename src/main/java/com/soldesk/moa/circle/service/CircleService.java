@@ -55,7 +55,7 @@ public class CircleService {
 
                 Circle savedCircle = circleRepository.save(circle);
 
-                // 3. CircleMember 생성 (모임장)
+                // CircleMember 생성 (리더)
                 CircleMember leader = CircleMember.builder()
                                 .circle(savedCircle)
                                 .user(loginUser)
@@ -68,14 +68,17 @@ public class CircleService {
                 return new CircleResponseDTO(savedCircle);
         }
 
+        // 서클 삭제
         @Transactional
         public void deleteCircle(Long circleId) {
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
 
+                circleMemberRepository.deleteByCircle(circle);
                 circleRepository.delete(circle);
         }
 
+        // 서클 정보 수정
         @Transactional
         public CircleResponseDTO updateCircle(Long circleId, CircleUpdateRequestDTO request) {
 
@@ -95,6 +98,16 @@ public class CircleService {
                 return new CircleResponseDTO(circleRepository.save(updatedCircle));
         }
 
+        // 서클 상세 정보
+        @Transactional(readOnly = true)
+        public CircleResponseDTO getCircle(Long circleId) {
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                return CircleResponseDTO.from(circle);
+        }
+
+        // 서클 리스트 조회
         @Transactional(readOnly = true)
         public PageResultDTO<CircleResponseDTO> getCircles(
                         Long categoryId,
