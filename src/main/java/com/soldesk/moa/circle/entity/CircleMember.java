@@ -2,6 +2,7 @@ package com.soldesk.moa.circle.entity;
 
 import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
+import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.users.entity.Users;
 
 import jakarta.persistence.Column;
@@ -21,7 +22,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
 @Entity
 @Table(name = "circle_member")
 @Getter
@@ -29,7 +29,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CircleMember {
+public class CircleMember extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,5 +57,10 @@ public class CircleMember {
     // 멤버 상태 변경
     public void changeStatus(CircleMemberStatus status) {
         this.status = status;
+    }
+
+    // 리더 권한 위임을 위한 역할 변경
+    public void changeRole(CircleRole role) {
+        this.role = role;
     }
 }
