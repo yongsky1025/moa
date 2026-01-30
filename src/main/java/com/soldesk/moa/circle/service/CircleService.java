@@ -69,6 +69,7 @@ public class CircleService {
         }
 
         // 서클 삭제
+        // 삭제 시 서클 멤버들에게 알림 처리 or 동의를 구하는 방식 추가
         @Transactional
         public void deleteCircle(Long circleId) {
                 Circle circle = circleRepository.findById(circleId)

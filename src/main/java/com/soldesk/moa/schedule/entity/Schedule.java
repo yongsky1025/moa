@@ -64,6 +64,7 @@ public class Schedule {
     @Column(nullable = false)
     private LocalDateTime endAt;
 
+    // 주소는 테이블을 따로 빼자//////////////////////
     // 위치 정보 (주소 / 장소명)
     @Column(length = 255)
     private String address;
@@ -75,6 +76,7 @@ public class Schedule {
     // 경도
     @Column
     private Double longitude;
+    //////////////////////////////////////////////////
 
     public void increaseCurrentMember() {
         if (this.currentMember >= this.maxMember) {
