@@ -130,6 +130,7 @@ public class CircleMemberService {
         }
 
         // 리더 전용 서클 멤버 조회
+        // 유저 정보 조회시 유저의 개인정보가 전부 보이는 문제.
         @Transactional(readOnly = true)
         public PageResultDTO<CircleMemberResponseDTO> getMembers(
                         Long circleId,
