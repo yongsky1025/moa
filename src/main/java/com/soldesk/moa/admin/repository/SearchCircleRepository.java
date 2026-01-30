@@ -11,7 +11,6 @@ public interface SearchCircleRepository {
     Page<Object[]> getJoinCircleByUserId(Long userId, Pageable pageable);
 
     // 전체 모임 정보 조회(필터,검색)
-    // Page<Object[]> getCircleInfo(Pageable pageable, AdminCircleSearchDTO
-    // adminCircleSearchDTO);
+    Page<Object[]> getCircleInfo(Pageable pageable, AdminCircleSearchDTO adminCircleSearchDTO);
 
 }

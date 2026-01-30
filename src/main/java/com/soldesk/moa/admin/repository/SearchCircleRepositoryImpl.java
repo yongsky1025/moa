@@ -59,50 +59,63 @@ public class SearchCircleRepositoryImpl extends QuerydslRepositorySupport
         return new PageImpl<>(list, pageable, count);
     }
 
-    // @Override
-    // public Page<Object[]> getCircleInfo(Pageable pageable, AdminCircleSearchDTO
-    // adminCircleSearchDTO) {
-    // QCircle circle = QCircle.circle;
-    // QCircleCategory circleCategory = QCircleCategory.circleCategory;
-    // QCircleMember circleMember = QCircleMember.circleMember;
+    @Override
+    public Page<Object[]> getCircleInfo(Pageable pageable, AdminCircleSearchDTO adminCircleSearchDTO) {
+        QCircle circle = QCircle.circle;
+        QCircleCategory circleCategory = QCircleCategory.circleCategory;
+        QCircleMember circleMember = QCircleMember.circleMember;
 
-    // JPQLQuery<Circle> query = from(circle)
-    // .join(circleCategory).on(circle.category.eq(circleCategory))
-    // .leftJoin(circleMember).on(circleMember.circle.eq(circle));
+        JPQLQuery<Circle> query = from(circle)
+                .join(circleCategory).on(circle.category.eq(circleCategory))
+                .leftJoin(circleMember).on(circleMember.circle.eq(circle));
 
-    // JPQLQuery<Tuple> tuple = query.select(circle, circleCategory.categoryName,
-    // circleMember.user.name);
+        JPQLQuery<Tuple> tuple = query.select(circle, circleCategory.categoryName,
+                circleMember.user.name);
 
-    // BooleanBuilder builder = new BooleanBuilder();
+        BooleanBuilder builder = new BooleanBuilder();
 
-    // // 필터링
-    // if (adminCircleSearchDTO.getStatus() != null) {
-    // builder.and(circle.status.eq(adminCircleSearchDTO.getStatus()));
-    // }
-    // if (adminCircleSearchDTO.getCategoryName() != null) {
-    // builder.and(circle.category.categoryName.eq(adminCircleSearchDTO.getCategoryName()));
-    // }
+        // 필터링
+        if (adminCircleSearchDTO.getStatus() != null) {
+            builder.and(circle.status.eq(adminCircleSearchDTO.getStatus()));
+        }
+        if (adminCircleSearchDTO.getCategoryName() != null) {
+            builder.and(circle.category.categoryName.eq(adminCircleSearchDTO.getCategoryName()));
+        }
 
-    // // 조건 검색
-    // // type => id == i, name == n, leader == l
-    // if (adminCircleSearchDTO.getType() != null) {
-    // String[] typeArr = adminCircleSearchDTO.getType().split("");
-    // for (String t : typeArr) {
-    // switch (t) {
-    // case "i":
-    // long circleId = Long.parseLong(adminCircleSearchDTO.getKeyword());
-    // builder.and(circle.circleId.eq(circleId));
-    // break;
-    // case "n":
-    // builder.and(circle.name.eq(adminCircleSearchDTO.getKeyword()));
-    // break;
-    // case "l":
-    // builder.and(circleMember.user.name.eq(adminCircleSearchDTO.getKeyword()));
-    // break;
+        // 조건 검색
+        // type => id == i, name == n, leader == l
+        if (adminCircleSearchDTO.getType() != null) {
+            String[] typeArr = adminCircleSearchDTO.getType().split("");
+            for (String t : typeArr) {
+                switch (t) {
+                    case "i":
+                        long circleId = Long.parseLong(adminCircleSearchDTO.getKeyword());
+                        builder.and(circle.circleId.eq(circleId));
+                        break;
+                    case "n":
+                        builder.and(circle.name.eq(adminCircleSearchDTO.getKeyword()));
+                        break;
+                    case "l":
+                        builder.and(circleMember.user.name.eq(adminCircleSearchDTO.getKeyword()));
+                        break;
 
-    // }
-    // }
-    // }
-    // }
+                }
+            }
+        }
+
+        tuple.where(builder);
+        tuple.orderBy(circle.circleId.asc());
+
+        tuple.offset(pageable.getOffset());
+        tuple.limit(pageable.getPageSize());
+
+        log.info(query);
+
+        List<Tuple> result = tuple.fetch();
+        long count = tuple.fetchCount();
+        List<Object[]> list = result.stream().map(Tuple::toArray).collect(Collectors.toList());
+
+        return new PageImpl<>(list, pageable, count);
+    }
 
 }
