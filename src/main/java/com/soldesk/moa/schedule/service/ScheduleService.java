@@ -103,9 +103,7 @@ public class ScheduleService {
 
                 // 서클 ACTIVE 멤버인지 확인
                 CircleMember member = circleMemberRepository
-                                .findByCircleAndUser_UserIdAndStatus(
-                                                schedule.getCircle(),
-                                                loginUser.getUserId(),
+                                .findByCircleAndUser_UserIdAndStatus(schedule.getCircle(), loginUser.getUserId(),
                                                 CircleMemberStatus.ACTIVE)
                                 .orElseThrow(() -> new AccessDeniedException("서클 멤버만 참여 가능합니다."));
 
@@ -153,7 +151,7 @@ public class ScheduleService {
                 // 일정 생성자 검증
                 boolean isCreator = schedule.getCreator().getUser().getUserId().equals(userId);
 
-                // 2️⃣ 서클 리더인지 확인
+                // 서클 리더인지 확인
                 boolean isLeader = circleMemberRepository
                                 .findByCircleAndUserAndRole(circle,
                                                 usersRepository.findById(userId)

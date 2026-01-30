@@ -98,7 +98,7 @@ public class CircleMemberService {
                                                 CircleRole.LEADER)
                                 .orElseThrow(() -> new AccessDeniedException("리더만 가능"));
 
-                // 상태 전이 검증
+                // 상태 검증
                 if (member.getStatus() != CircleMemberStatus.PENDING) {
                         throw new IllegalStateException("대기 상태인 멤버만 처리할 수 있습니다.");
                 }
