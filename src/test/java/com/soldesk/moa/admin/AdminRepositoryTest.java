@@ -424,7 +424,8 @@ public class AdminRepositoryTest {
         Object[] row = (Object[]) result[0];
         System.out.println(row[0]);
 
-        // long countCMs = adminCircleMemberRepository.findgetCountCircleMemberAll().size()
+        // long countCMs =
+        // adminCircleMemberRepository.findgetCountCircleMemberAll().size()
         // - adminUsersRepository.findByUserStatus(UserStatus.WITHDRAWN).size();
         long countCMs = adminCircleMemberRepository.findAll().size();
         System.out.println(countCMs);
@@ -516,7 +517,7 @@ public class AdminRepositoryTest {
         List<Users> users = adminUsersRepository.findAll();
         Users user = users.get((int) (Math.random() * users.size()));
 
-        Page<Object[]> result = adminBoardRepository.searchBoardListByUserId(771L,
+        Page<Object[]> result = adminBoardRepository.searchBoardListByUserId(user.getUserId(),
                 pageable);
         result.forEach(obj -> {
             System.out.println(Arrays.toString(obj));
@@ -596,5 +597,21 @@ public class AdminRepositoryTest {
         System.out.println("게시글 수 " + result[1]);
         System.out.println("댓글 수 " + result[2]);
         System.out.println("참여모임 수 " + result[3]);
+    }
+
+    // 특정 유저의 댓글 이력
+    @Test
+    public void getReplyByUserId() {
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Users> users = adminUsersRepository.findAll();
+        Users user = users.get((int) (Math.random() * users.size()));
+
+        Page<Object[]> result = adminReplyRepository.getReplyByUserId(user.getUserId(), pageable);
+        result.forEach(obj -> {
+            System.out.println(obj[0]);
+            System.out.println(obj[1]);
+            System.out.println(result.getTotalElements());
+            System.out.println(result.getTotalPages());
+        });
     }
 }

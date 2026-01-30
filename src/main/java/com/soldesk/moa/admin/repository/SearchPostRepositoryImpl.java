@@ -39,8 +39,7 @@ public class SearchPostRepositoryImpl extends QuerydslRepositorySupport
                 .leftJoin(board).on(post.boardId.eq(board))
                 .where(user.userId.eq(userId));
 
-        JPQLQuery<Tuple> tuple = query.select(post, board.boardType, board.name, user.name,
-                reply.count());
+        JPQLQuery<Tuple> tuple = query.select(board.name, post, reply.count());
 
         tuple.orderBy(post.postId.desc());
         tuple.groupBy(post);

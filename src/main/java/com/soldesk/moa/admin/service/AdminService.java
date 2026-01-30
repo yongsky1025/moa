@@ -1,6 +1,5 @@
 package com.soldesk.moa.admin.service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -8,7 +7,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +21,10 @@ import com.soldesk.moa.admin.dto.CircleSummaryDTO;
 import com.soldesk.moa.admin.dto.DashboardChartDTO;
 import com.soldesk.moa.admin.dto.MonthlyCountDTO;
 import com.soldesk.moa.admin.dto.UserCountDTO;
+import com.soldesk.moa.admin.dto.UserInfoCircleDTO;
 import com.soldesk.moa.admin.dto.UserInfoDTO;
+import com.soldesk.moa.admin.dto.UserInfoPostDTO;
+import com.soldesk.moa.admin.dto.UserInfoReplyDTO;
 import com.soldesk.moa.admin.dto.UserStatusDTO;
 import com.soldesk.moa.admin.repository.AdminBoardRepository;
 import com.soldesk.moa.admin.repository.AdminPostRepository;
@@ -33,6 +34,12 @@ import com.soldesk.moa.admin.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.repository.AdminScheduleMemberRepository;
 import com.soldesk.moa.admin.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.repository.AdminUsersRepository;
+import com.soldesk.moa.admin.temporary.Reply;
+import com.soldesk.moa.board.entity.Post;
+import com.soldesk.moa.circle.entity.Circle;
+import com.soldesk.moa.circle.entity.CircleMember;
+import com.soldesk.moa.circle.entity.constant.CircleRole;
+import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.users.entity.Users;
 
@@ -50,6 +57,7 @@ public class AdminService {
         private final AdminReplyRepository adminReplyRepository;
         private final AdminScheduleRepository adminScheduleRepository;
         private final AdminScheduleMemberRepository adminScheduleMemberRepository;
+        private final AdminPostRepository adminPostRepository;
 
         // admin main page
 
@@ -88,7 +96,7 @@ public class AdminService {
                                 signUpCount, withdrawnCount);
 
                 // 총 모임 수, 카테고리별 모임 수
-                long circleCount = adminCircleRepository.findAll().size();
+                long circleCount = adminCircleRepository.count();
                 List<Object[]> result2 = adminCircleRepository.getCircleByCategory();
                 Function<Object[], CircleDataDTO> function = obj -> {
                         return entityToCircleDataDTO((String) obj[0], (Long) obj[1]);
@@ -99,7 +107,7 @@ public class AdminService {
                 CircleSummaryDTO circleSummaryDTO = entityToCircleSummaryDTO(circleCount,
                                 circleDataDTOs);
 
-                // 기간별 가입자 탈퇴자 비교 1년
+                // 월별 가입자&탈퇴자 비교
                 List<MonthlyCountDTO> signUpChart = new ArrayList<>();
                 for (long j = 11; j >= 0; j--) {
                         YearMonth ym = YearMonth.now().minusMonths(j);
@@ -172,6 +180,64 @@ public class AdminService {
                                 (Long) result[3]);
 
                 return dto;
+        }
+
+        // 특정 유저 작성 게시글 이력 조회
+        public PageResultDTO<UserInfoPostDTO> searchBoardListByUserId(Long userId, PageRequestDTO pageRequestDTO) {
+                Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, 10);
+                Page<Object[]> result = adminPostRepository.searchBoardListByUserId(userId, pageable);
+
+                long totalCount = result.getTotalElements();
+                List<UserInfoPostDTO> dtoList = result.stream().map(obj -> {
+                        return entityToUserInfoPostDTO((String) obj[0], (Post) obj[1], (Long) obj[2]);
+                }).collect(Collectors.toList());
+
+                PageResultDTO<UserInfoPostDTO> pageResultDTO = PageResultDTO.<UserInfoPostDTO>withAll()
+                                .dtoList(dtoList)
+                                .totalCount(totalCount)
+                                .pageRequestDTO(pageRequestDTO)
+                                .build();
+
+                return pageResultDTO;
+        }
+
+        // 특정 유저 작성 댓글 이력 조회
+        public PageResultDTO<UserInfoReplyDTO> getReplyByUserId(Long userId, PageRequestDTO pageRequestDTO) {
+                Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, 10);
+                Page<Object[]> result = adminReplyRepository.getReplyByUserId(userId, pageable);
+
+                long totalCount = result.getTotalElements();
+                List<UserInfoReplyDTO> dtoList = result.stream().map(obj -> {
+                        return entityToUserInfoReplyDTO((String) obj[1], (Reply) obj[0]);
+                }).collect(Collectors.toList());
+
+                PageResultDTO<UserInfoReplyDTO> pageResultDTO = PageResultDTO.<UserInfoReplyDTO>withAll()
+                                .dtoList(dtoList)
+                                .totalCount(totalCount)
+                                .pageRequestDTO(pageRequestDTO)
+                                .build();
+
+                return pageResultDTO;
+        }
+
+        // 특정 유저 가입 모임 조회
+        public PageResultDTO<UserInfoCircleDTO> getJoinCircleByUserId(Long userId, PageRequestDTO pageRequestDTO) {
+                Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, 10);
+                Page<Object[]> result = adminCircleRepository.getJoinCircleByUserId(userId, pageable);
+
+                long totalCount = result.getTotalElements();
+                List<UserInfoCircleDTO> dtoList = result.stream().map(obj -> {
+                        return entityToUserInfoCircleDTO((Circle) obj[0], (String) obj[1], (String) obj[2],
+                                        (CircleMember) obj[3]);
+                }).collect(Collectors.toList());
+
+                PageResultDTO<UserInfoCircleDTO> pageResultDTO = PageResultDTO.<UserInfoCircleDTO>withAll()
+                                .dtoList(dtoList)
+                                .totalCount(totalCount)
+                                .pageRequestDTO(pageRequestDTO)
+                                .build();
+
+                return pageResultDTO;
         }
 
         // UserCountDTO
@@ -282,6 +348,43 @@ public class AdminService {
                                 .count(count)
                                 .build();
 
+                return dto;
+        }
+
+        // UserInfoPostDTO
+        private UserInfoPostDTO entityToUserInfoPostDTO(String boardName, Post post, Long countReply) {
+                UserInfoPostDTO dto = UserInfoPostDTO.builder()
+                                .boardName(boardName)
+                                .title(post.getTitle())
+                                .content(post.getContent())
+                                .createDate(post.getCreateDate())
+                                .countReply(countReply)
+                                .build();
+                return dto;
+        }
+
+        // UserInfoReplyDTO
+        private UserInfoReplyDTO entityToUserInfoReplyDTO(String title, Reply reply) {
+                UserInfoReplyDTO dto = UserInfoReplyDTO.builder()
+                                .title(title)
+                                .content(reply.getContent())
+                                .createDate(reply.getCreateDate())
+                                .build();
+
+                return dto;
+        }
+
+        // UserInfoCircleDTO
+        private UserInfoCircleDTO entityToUserInfoCircleDTO(Circle circle, String userName,
+                        String categoryName, CircleMember circleMember) {
+                UserInfoCircleDTO dto = UserInfoCircleDTO.builder()
+                                .userName(userName)
+                                .circleName(circle.getName())
+                                .currentMember(circle.getCurrentMember())
+                                .createDate(circleMember.getCreateDate())
+                                .categoryName(categoryName)
+                                .role(circleMember.getRole().toString())
+                                .build();
                 return dto;
         }
 }
