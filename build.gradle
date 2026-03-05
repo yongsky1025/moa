@@ -37,6 +37,11 @@ dependencies {
 	// 썸네일
 	implementation 'net.coobird:thumbnailator:0.4.21'
 	
+	// JWT
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
 	// entity <=> dto 서로 왔다갔다.
 	implementation 'org.modelmapper:modelmapper:3.2.6'
 	// 3.x => spring boot 4.x 버전만 가능(swagger-ui)

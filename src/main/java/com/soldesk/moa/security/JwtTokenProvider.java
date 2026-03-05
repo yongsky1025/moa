@@ -16,9 +16,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 @Component
 // JWT 생성/검증 담당 Provider(access/refresh)
 public class JwtTokenProvider {
