@@ -11,7 +11,7 @@ public class HomeController {
 
     @GetMapping("/")
     public String getHome() {
-        log.info("index 호출");
+        log.info("index 진입");
         return "index";
     }
 

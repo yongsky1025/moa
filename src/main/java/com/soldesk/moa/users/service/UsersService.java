@@ -1,7 +1,5 @@
 package com.soldesk.moa.users.service;
 
-import java.time.LocalDate;
-import java.time.Period;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +15,8 @@ import com.soldesk.moa.users.dto.SignUpRequestDTO;
 import com.soldesk.moa.users.dto.UserProfileResponseDTO;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserRole;
+import com.soldesk.moa.users.entity.constant.UserStatus;
+import com.soldesk.moa.users.exception.DuplicateNicknameException;
 import com.soldesk.moa.users.repository.UsersRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
 
+@Transactional
 @RequiredArgsConstructor
 @Log4j2
 @ToString
@@ -44,7 +45,7 @@ public class UsersService {
 
         // 닉네임 중복 체크 추가
         if (usersRepository.existsByNickname(dto.getNickname())) {
-            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+            throw new DuplicateNicknameException();
         }
 
         Users user = Users.builder()
@@ -61,6 +62,23 @@ public class UsersService {
                 .build();
 
         return usersRepository.save(user).getUserId();
+    }
+
+    // ================ 회원 탈퇴 관련 ===================
+    @Transactional
+    public void withdrawAccount(Long userId, String password) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+
+        // 비밀번호 확인
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+
+        // Soft Delete
+        user.changeUserStatus(UserStatus.WITHDRAWN);
+
+        log.info("회원 탈퇴 완료: userId={}, email={}", userId, user.getEmail());
     }
 
     // ================ 비밀번호 변경 관련 ===================
@@ -117,7 +135,7 @@ public class UsersService {
 
         // 2) 닉네임 중복 (선택)
         if (usersRepository.existsByNickname(nickname)) {
-            throw new RuntimeException("이미 사용 중인 닉네임입니다.");
+            throw new DuplicateNicknameException();
         }
 
         users.changeNickname(nickname);
@@ -149,9 +167,12 @@ public class UsersService {
 
     // ================ 세션 관련 ===================
     // 세션 정보 변경(필요 메서드)
+    // ================ ===================
+
     private Authentication getAuthentication() {
         SecurityContext context = SecurityContextHolder.getContext();
         Authentication authentication = context.getAuthentication();
         return authentication;
     }
+
 }

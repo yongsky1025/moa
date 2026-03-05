@@ -5,7 +5,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.soldesk.moa.users.dto.AuthUserDTO;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
@@ -24,12 +24,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 
         log.info("로그인 요청 : {}", email);
-        Users users = usersRepository.findByEmail(email)
+        Users user = usersRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다." + email));
 
         log.info("로그인 시도: {}", email);
 
-        AuthUserDTO authUserDTO = new AuthUserDTO(users);
+        AuthUserDTO authUserDTO = new AuthUserDTO(user);
 
         return authUserDTO;
 

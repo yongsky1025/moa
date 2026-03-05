@@ -27,8 +27,6 @@ public class SecurityConfig {
                                                 "/favicon.ico")
                                 .permitAll()
                                 .requestMatchers("/auth/**").permitAll()
-                                .requestMatchers("/users/**").permitAll()
-
                                 .requestMatchers("/auth/**", "/users/check-nickname").permitAll()
                                 .requestMatchers("/users/**").authenticated()
 

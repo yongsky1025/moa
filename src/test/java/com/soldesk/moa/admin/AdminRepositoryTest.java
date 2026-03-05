@@ -1,5 +1,6 @@
 package com.soldesk.moa.admin;
 
+import java.time.LocalDate;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Disabled;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.admin.repository.AdminRepository;
 import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
 
 @Disabled
@@ -34,6 +36,9 @@ public class AdminRepositoryTest {
                     .nickname("nicknick" + i)
                     .address("Seoul")
                     .userRole(UserRole.ADMIN)
+                    .userGender(UserGender.MALE)
+                    .birthDate(LocalDate.of(1999, 11, 23))
+                    .phone("010-0000-0000")
                     .build();
 
             adminRepository.save(users);

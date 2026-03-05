@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.annotation.Commit;
 
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserGender;
@@ -24,20 +25,74 @@ public class UsersRepositoryTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Disabled
     @Test
     public void usersInsertTest() {
         IntStream.rangeClosed(1, 10).forEach(i -> {
-            Users users = Users.builder()
-                    .email("user" + i + "@gmail.com")
-                    .name("user " + i)
+            boolean isAdmin = (i == 1);
+            String email = isAdmin ? "admin@gmail.com" : "user" + i + "@gmail.com";
+            if (usersRepository.existsByEmail(email)) {
+                return;
+            }
+
+            Users user = Users.builder()
+                    .email(email)
+                    .name(isAdmin ? "admin" : "user " + i)
                     .userGender(UserGender.MALE)
-                    .nickname("nickname" + i)
+                    .nickname(isAdmin ? "admin" : "nickname" + i)
                     .password(passwordEncoder.encode("1111"))
-                    .address("adress " + i)
+                    .address(isAdmin ? "admin address" : "adress " + i)
                     .birthDate(LocalDate.of(1999, 11, 23))
-                    .phone("010-1234-5678")
-                    .userRole(UserRole.USER)
+                    .phone(isAdmin ? "010-0000-0000" : "010-1234-5678")
+                    .userRole(isAdmin ? UserRole.ADMIN : UserRole.USER)
                     .build();
+            usersRepository.save(user);
+        });
+    }
+
+    // create - 관리자 생성
+    @Commit
+    @Test
+    public void createAdmin() {
+
+        IntStream.rangeClosed(1, 5).forEach(i -> {
+            Users users = Users.builder()
+                    .name("admin-" + i)
+                    .email("test" + i + "@google.com")
+                    .password(passwordEncoder.encode("1111"))
+                    .nickname("nicknick" + i)
+                    .address("Seoul")
+                    .userRole(UserRole.ADMIN)
+                    .userGender(UserGender.FEMALE)
+                    .birthDate(LocalDate.now().minusYears(i + 20))
+                    .phone("010-1111-1111")
+                    .build();
+
+            usersRepository.save(users);
+        });
+    }
+
+    // create - 일반 유저 더미데이터 생성
+    @Commit
+    @Test
+    public void createUsers() {
+        IntStream.rangeClosed(1, 925).forEach(i -> {
+            LocalDate birth = LocalDate.of((int) (Math.random() * 40 + 1970), (int) (Math.random() * 12 + 1),
+                    (int) (Math.random() * 28 + 1));
+            long random = Math.round(Math.random());
+            UserGender gender = random == 0 ? UserGender.MALE : UserGender.FEMALE;
+            Users users = Users.builder()
+                    .name("member-" + i)
+                    .email("member" + i + "@google.com")
+                    .password(passwordEncoder.encode("1111"))
+                    .nickname("member" + i)
+                    .address("Seoul")
+                    .birthDate(birth)
+                    .phone("010-1111-1111")
+                    .userRole(UserRole.USER)
+                    .userGender(gender)
+                    .build();
+
             usersRepository.save(users);
         });
     }

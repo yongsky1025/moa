@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetch("/users/me")
     .then((res) => {
       if (res.status === 401) {
-        window.location.href = "/users/login";
+        window.location.href = "/auth/login";
         return null;
       }
       if (!res.ok) {
@@ -22,17 +22,18 @@ document.addEventListener("DOMContentLoaded", () => {
       return res.json();
     })
     .then((profile) => {
+      const data = profile.data;
       if (!profile) return;
 
       const userGenderMap = { MALE: "남성", FEMALE: "여성" };
-      els.name.textContent = profile.name ?? "-";
-      els.email.textContent = profile.email ?? "-";
-      els.age.textContent = profile.age ?? "-";
-      els.nickname.textContent = profile.nickname ?? "-";
-      els.birthDate.textContent = profile.birthDate ?? "-";
-      els.phone.textContent = profile.phone ?? "-";
-      els.address.textContent = profile.address ?? "-";
-      els.userGender.textContent = userGenderMap[profile.userGender] ?? "-";
+      els.name.textContent = data.name ?? "-";
+      els.email.textContent = data.email ?? "-";
+      els.age.textContent = data.age ?? "-";
+      els.nickname.textContent = data.nickname ?? "-";
+      els.birthDate.textContent = data.birthDate ?? "-";
+      els.phone.textContent = data.phone ?? "-";
+      els.address.textContent = data.address ?? "-";
+      els.userGender.textContent = userGenderMap[data.userGender] ?? "-";
     })
     .catch((err) => {
       console.error(err);
