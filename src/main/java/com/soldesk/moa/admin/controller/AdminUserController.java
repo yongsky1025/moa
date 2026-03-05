@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RestController
 @Tag(name = "Admin user section", description = "Response MOA API")
 @RequiredArgsConstructor
-@RequestMapping("/admin/users")
+@RequestMapping("/api/admin/users")
 @Log4j2
 public class AdminUserController {
 

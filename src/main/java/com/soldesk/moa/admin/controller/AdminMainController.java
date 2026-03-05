@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RestController
 @Tag(name = "Admin main section", description = "Response MOA API")
 @RequiredArgsConstructor
-@RequestMapping("/admin")
+@RequestMapping("/api/admin")
 @Log4j2
 public class AdminMainController {
 
