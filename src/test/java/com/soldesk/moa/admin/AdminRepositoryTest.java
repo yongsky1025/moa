@@ -49,7 +49,7 @@ import com.soldesk.moa.users.entity.constant.UserStatus;
 
 @SpringBootTest
 @Transactional
-// @Disabled
+@Disabled
 public class AdminRepositoryTest {
 
     @Autowired

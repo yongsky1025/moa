@@ -12,7 +12,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.soldesk.moa.admin.dto.AdminCircleResponseDTO;
+import com.soldesk.moa.admin.dto.AdminCircleSearchDTO;
 import com.soldesk.moa.admin.dto.AdminMainDTO;
 import com.soldesk.moa.admin.dto.AdminUserResponseDTO;
 import com.soldesk.moa.admin.dto.AdminUserSearchDTO;
@@ -60,7 +63,7 @@ public class AdminService {
         private final AdminPostRepository adminPostRepository;
 
         // admin main page
-
+        @Transactional(readOnly = true)
         public AdminMainDTO mainDashBoard() {
 
                 // 유저 수, 성비
@@ -155,6 +158,7 @@ public class AdminService {
         }
 
         // 유저 정보 일람
+        @Transactional(readOnly = true)
         public PageResultDTO<AdminUserResponseDTO> getAllUserInfo(AdminUserSearchDTO searchDTO) {
                 Pageable pageable = PageRequest.of(searchDTO.getPage() - 1,
                                 searchDTO.getSize(), Sort.by("userId"));
@@ -174,6 +178,7 @@ public class AdminService {
         }
 
         // 유저 상세프로필(관리자용) 조회
+        @Transactional(readOnly = true)
         public UserInfoDTO getUserProfile(Long userId) {
                 Object[] result = adminUsersRepository.getUserProfile(userId);
                 UserInfoDTO dto = entityToUserInfoDTO((Users) result[0], (Long) result[1], (Long) result[2],
@@ -183,6 +188,7 @@ public class AdminService {
         }
 
         // 특정 유저 작성 게시글 이력 조회
+        @Transactional(readOnly = true)
         public PageResultDTO<UserInfoPostDTO> searchBoardListByUserId(Long userId, PageRequestDTO pageRequestDTO) {
                 Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, 10);
                 Page<Object[]> result = adminPostRepository.searchBoardListByUserId(userId, pageable);
@@ -202,6 +208,7 @@ public class AdminService {
         }
 
         // 특정 유저 작성 댓글 이력 조회
+        @Transactional(readOnly = true)
         public PageResultDTO<UserInfoReplyDTO> getReplyByUserId(Long userId, PageRequestDTO pageRequestDTO) {
                 Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, 10);
                 Page<Object[]> result = adminReplyRepository.getReplyByUserId(userId, pageable);
@@ -221,6 +228,7 @@ public class AdminService {
         }
 
         // 특정 유저 가입 모임 조회
+        @Transactional(readOnly = true)
         public PageResultDTO<UserInfoCircleDTO> getJoinCircleByUserId(Long userId, PageRequestDTO pageRequestDTO) {
                 Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, 10);
                 Page<Object[]> result = adminCircleRepository.getJoinCircleByUserId(userId, pageable);
@@ -235,6 +243,38 @@ public class AdminService {
                                 .dtoList(dtoList)
                                 .totalCount(totalCount)
                                 .pageRequestDTO(pageRequestDTO)
+                                .build();
+
+                return pageResultDTO;
+        }
+
+        // 모임 정보 일람
+        @Transactional(readOnly = true)
+        public PageResultDTO<AdminCircleResponseDTO> getAllCircleInfo(AdminCircleSearchDTO adminCircleSearchDTO) {
+                Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, 10);
+                Page<Object[]> result = adminCircleRepository.getCircleInfo(pageable, adminCircleSearchDTO);
+
+                long totalCount = result.getTotalElements();
+                List<AdminCircleResponseDTO> dtoList = result.stream().map(obj -> {
+                        Circle circle = (Circle) obj[0];
+                        String categoryName = (String) obj[1];
+                        String leaderName = (String) obj[2];
+
+                        return AdminCircleResponseDTO.builder()
+                                        .circleId(circle.getCircleId())
+                                        .categoryName(categoryName)
+                                        .circleName(circle.getName())
+                                        .leaderName(leaderName)
+                                        .currentMember(circle.getCurrentMember())
+                                        .maxMember(circle.getMaxMember())
+                                        .status(circle.getStatus().toString())
+                                        .build();
+                }).collect(Collectors.toList());
+
+                PageResultDTO<AdminCircleResponseDTO> pageResultDTO = PageResultDTO.<AdminCircleResponseDTO>withAll()
+                                .dtoList(dtoList)
+                                .totalCount(totalCount)
+                                .pageRequestDTO(adminCircleSearchDTO)
                                 .build();
 
                 return pageResultDTO;
