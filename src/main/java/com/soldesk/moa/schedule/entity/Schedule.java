@@ -2,7 +2,9 @@ package com.soldesk.moa.schedule.entity;
 
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
+import com.soldesk.moa.place.entity.Reservation;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -11,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,6 +21,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "schedule")
@@ -75,6 +80,10 @@ public class Schedule {
     // 경도
     @Column
     private Double longitude;
+
+    @OneToMany(mappedBy = "schedule", cascade = CascadeType.REMOVE)
+    @Builder.Default
+    private List<ScheduleTag> tags = new ArrayList<>();
 
     // admin 더미데이터 생성 임시용
     public void setCurrentMember(int currentMember) {
