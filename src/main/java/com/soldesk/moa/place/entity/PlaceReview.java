@@ -30,7 +30,7 @@ public class PlaceReview {
     private Long id;
 
     @Column(nullable = false)
-    private Integer rating;
+    private Integer rating; // 평점
 
     @Column(nullable = false)
     @Lob
