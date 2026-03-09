@@ -35,7 +35,7 @@ public class CircleRepositoryTest {
                 .build();
         entityManager.persist(category);
 
-        IntStream.rangeClosed(1, 20).forEach(i -> {
+        IntStream.rangeClosed(1, 17).forEach(i -> {
             Circle circle = Circle.builder()
                     .name("circle-" + i)
                     .description("test circle " + i)

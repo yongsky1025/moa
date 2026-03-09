@@ -41,7 +41,7 @@ public class Image {
     private String path;
 
     @Column(nullable = false)
-    private Long ord;
+    Long ord;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "board_id")
@@ -50,5 +50,8 @@ public class Image {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
     private Users user;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 942169c7c64477b9ae3b33cbb6aa4ac1d2b95d58
 }

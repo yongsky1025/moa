@@ -16,7 +16,14 @@
         <div class="wrap">
           <div class="topbar">
             <h1 class="title">자유게시판</h1>
-            <button class="btn" type="button" onclick="location.href = '/free/new'">글쓰기</button>
+            <button
+              class="btn"
+              type="button"
+              onclick="location.href = '/free/new'"
+              sec:authorize="hasAnyRole('ADMIN','USER')"
+            >
+              글쓰기
+            </button>
           </div>
 
           <div class="card">
@@ -28,7 +35,7 @@
                   <th class="col-author">작성자</th>
                   <th class="col-date">작성일</th>
                   <th class="col-views">조회수</th>
-                  <th class="col-views">댓글</th>
+                  <th class="col-replyCnt">댓글</th>
                 </tr>
               </thead>
               <tbody id="postTableBody"></tbody>

@@ -16,7 +16,9 @@
         <div class="wrap">
           <div class="topbar">
             <h1 class="title">공지사항 게시판</h1>
-            <button class="btn" type="button" onclick="location.href = '/notice/new'">글쓰기</button>
+            <button class="btn" type="button" onclick="location.href = '/notice/new'" sec:authorize="hasRole('ADMIN')">
+              글쓰기
+            </button>
           </div>
 
           <div class="card">
@@ -28,13 +30,13 @@
                   <th class="col-author">작성자</th>
                   <th class="col-date">작성일</th>
                   <th class="col-views">조회수</th>
-                  <th class="col-views"></th>
+                  <th class="col-replyCnt">댓글</th>
                 </tr>
               </thead>
               <tbody id="postTableBody"></tbody>
               <tbody id="emptyRow" style="display: none">
                 <tr>
-                  <td colspan="5" class="empty">게시글이 없습니다.</td>
+                  <td colspan="6" class="empty">게시글이 없습니다.</td>
                 </tr>
               </tbody>
             </table>

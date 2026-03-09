@@ -1,5 +1,11 @@
 .board-list-page {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Arial,
+    sans-serif;
   background: #f6f7f9;
   padding: 40px 0;
 }
@@ -59,13 +65,17 @@
   width: 70px;
 }
 .board-list-page .col-author {
-  width: 140px;
+  width: 100px;
 }
 .board-list-page .col-date {
   width: 120px;
 }
 .board-list-page .col-views {
-  width: 90px;
+  width: 70px;
+  text-align: right;
+}
+.board-list-page .col-replyCnt {
+  width: 60px;
   text-align: right;
 }
 .board-list-page .col-title a {

@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Log4j2
-@RequestMapping("/api/notice/posts")
+@RequestMapping("/api/notice")
 @RestController
 @RequiredArgsConstructor
 public class NoticePostRestController {
@@ -55,7 +55,7 @@ public class NoticePostRestController {
     @PostMapping
     public Long create(@RequestBody @Valid PostRequestDTO req,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        return postService.createGlobal(BoardType.NOTICE, auth.getUserId(), req);
+        return postService.createGlobal(BoardType.NOTICE, auth, req);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

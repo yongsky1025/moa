@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.soldesk.moa.board.entity.Board;
+import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.constant.BoardType;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
@@ -21,4 +22,5 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     Optional<Board> findByBoardIdAndBoardTypeAndCircleId_CircleId(Long boardId, BoardType type, Long circleId);
 
     List<Board> findByBoardTypeAndCircleId_CircleId(BoardType boardType, Long circleId);
+
 }

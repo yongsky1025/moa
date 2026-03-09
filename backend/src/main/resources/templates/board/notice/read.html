@@ -18,8 +18,8 @@
             <h1 class="title mb-0">공지사항</h1>
             <div class="d-flex gap-2">
               <button class="btn btn-secondary" type="button" onclick="location.href = '/notice'">목록</button>
-              <button class="btn btn-primary" id="editBtn" type="button">수정</button>
-              <button class="btn btn-danger" id="deleteBtn" type="button">삭제</button>
+              <button class="btn btn-primary" id="editBtn" type="button" sec:authorize="hasRole('ADMIN')">수정</button>
+              <button class="btn btn-danger" id="deleteBtn" type="button" sec:authorize="hasRole('ADMIN')">삭제</button>
             </div>
           </div>
 

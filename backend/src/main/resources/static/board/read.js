@@ -12,7 +12,7 @@ async function initReadPage() {
   const postId = getPostIdFromReadUrl(); // /{board}/{postId}
   if (!board || !postId) throw new Error("invalid path");
 
-  const post = await fetchJson(`/api/${board}/posts/${postId}`);
+  const post = await fetchJson(`/api/${board}/${postId}`);
   // 호출 성공하면 view count 증가
   await fetch(`/api/posts/${postId}/view`, { method: "POST", credentials: "same-origin" });
 
@@ -23,6 +23,12 @@ async function initReadPage() {
   setText("postAuthor", post.authorName ?? "작성자 - ");
   setText("postCreateDate", formatDate(post.createDate));
   setText("postViewCount", post.viewCount ?? 0);
+
+  const listBtn = document.getElementById("listBtn");
+  if (listBtn)
+    listBtn.addEventListener("click", () => {
+      location.href = `/${board}`;
+    });
 
   const editBtn = document.getElementById("editBtn");
   if (editBtn)
@@ -36,7 +42,7 @@ async function initReadPage() {
       if (!confirm("삭제할까요?")) return;
 
       try {
-        await fetchJson(`/api/${board}/posts/${postId}`, { method: "DELETE" });
+        await fetchJson(`/api/${board}/${postId}`, { method: "DELETE" });
 
         // ✅ 삭제 성공 → 목록으로
         window.location.assign(`/${board}`);

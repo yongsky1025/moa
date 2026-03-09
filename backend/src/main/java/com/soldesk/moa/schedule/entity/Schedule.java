@@ -81,6 +81,7 @@ public class Schedule {
     @Column
     private Double longitude;
 
+<<<<<<< HEAD
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.REMOVE)
     @Builder.Default
     private List<ScheduleTag> tags = new ArrayList<>();
@@ -88,5 +89,12 @@ public class Schedule {
     // admin 더미데이터 생성 임시용
     public void setCurrentMember(int currentMember) {
         this.currentMember = currentMember;
+=======
+    public void increaseCurrentMember() {
+        if (this.currentMember >= this.maxMember) {
+            throw new IllegalStateException("정원 초과");
+        }
+        this.currentMember++;
+>>>>>>> 942169c7c64477b9ae3b33cbb6aa4ac1d2b95d58
     }
 }

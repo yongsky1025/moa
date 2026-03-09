@@ -34,20 +34,27 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Log4j2
-@RequestMapping("/api/circles/{circleId}/boards/{boardId}/posts")
+@RequestMapping("/api/circle/{circleId}")
 @RestController
 @RequiredArgsConstructor
 public class CirclePostRestController {
 
     private final PostService postService;
 
-    @GetMapping
+    // 써클 전체 게시물
+    @GetMapping("/posts")
+    public List<PostResponseDTO> listAllBoards(@PathVariable("circleId") Long circleId) {
+        return postService.listCircleAllBoardsPosts(circleId);
+    }
+
+    // 써클 Board, Post 리스트
+    @GetMapping("/boards/{boardId}/posts")
     public List<PostResponseDTO> list(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId) {
         return postService.listCircle(circleId, boardId);
     }
 
-    @GetMapping("/{postId}")
+    @GetMapping("/boards/{boardId}/posts/{postId}")
     public PostResponseDTO read(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
             @PathVariable("postId") Long postId) {
@@ -55,7 +62,7 @@ public class CirclePostRestController {
     }
 
     // @PreAuthorize("isAuthenticated()")
-    @PostMapping
+    @PostMapping("/boards/{boardId}/posts")
     public Long create(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
             @RequestBody @Valid PostRequestDTO req,
@@ -64,7 +71,7 @@ public class CirclePostRestController {
     }
 
     // @PreAuthorize("isAuthenticated()")
-    @PutMapping("/{postId}")
+    @PutMapping("/boards/{boardId}/posts/{postId}")
     public Long update(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
             @PathVariable("postId") Long postId,
@@ -74,11 +81,11 @@ public class CirclePostRestController {
     }
 
     // @PreAuthorize("isAuthenticated()")
-    @DeleteMapping("/{postId}")
+    @DeleteMapping("/boards/{boardId}/posts/{postId}")
     public void delete(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
             @PathVariable("postId") Long postId,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        postService.deleteCircleAsOwner(circleId, boardId, postId, auth.getUserId());
+        postService.deleteCircleAsOwner(circleId, boardId, postId, auth);
     }
 }

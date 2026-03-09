@@ -12,7 +12,7 @@ async function initEditPage() {
   if (!board || !postId) throw new Error("invalid path");
 
   // 1) 기존 데이터 로드
-  const post = await fetchJson(`/api/${board}/posts/${postId}`);
+  const post = await fetchJson(`/api/${board}/${postId}`);
   const titleEl = document.getElementById("titleInput");
   const contentEl = document.getElementById("contentInput");
   if (titleEl) titleEl.value = post.title ?? "";
@@ -48,7 +48,7 @@ async function initEditPage() {
       setMessage("저장 중...");
 
       try {
-        await fetchJson(`/api/${board}/posts/${postId}`, {
+        await fetchJson(`/api/${board}/${postId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify({ title, content }),

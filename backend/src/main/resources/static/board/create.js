@@ -7,6 +7,12 @@ async function initCreatePage() {
   const board = getBoardKey(); // notice|free|support
   if (!board) throw new Error("invalid path");
 
+  const cancelBtn = document.getElementById("cancelBtn");
+  if (cancelBtn)
+    cancelBtn.addEventListener("click", () => {
+      location.href = `/${board}`;
+    });
+
   const saveBtn = document.getElementById("saveBtn");
   if (!saveBtn) return;
 
@@ -30,7 +36,7 @@ async function initCreatePage() {
     setMessage("등록 중...");
 
     try {
-      const createdId = await fetchJson(`/api/${board}/posts`, {
+      const createdId = await fetchJson(`/api/${board}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ title, content }),
