@@ -1,19 +1,14 @@
 package com.soldesk.moa.users.entity;
 
-import com.soldesk.moa.users.entity.constant.AuthProvider;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-// import com.soldesk.moa.board.entity.Board;
-
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.admin.temporary.Reply;
-import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.users.entity.constant.AuthProvider;
 import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
 import com.soldesk.moa.users.entity.constant.UserStatus;
@@ -60,7 +55,7 @@ public class Users extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String nickname;
 
-    @Column(nullable = true)
+    @Column(nullable = false)
     private LocalDate birthDate;
 
     @Column(nullable = true)
