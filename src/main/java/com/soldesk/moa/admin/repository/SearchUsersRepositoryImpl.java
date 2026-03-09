@@ -23,7 +23,7 @@ import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.JPQLQuery;
 import com.soldesk.moa.admin.dto.AdminUserResponseDTO;
 import com.soldesk.moa.admin.dto.AdminUserSearchDTO;
-import com.soldesk.moa.admin.temporary.QReply;
+import com.soldesk.moa.board.entity.QReply;
 import com.soldesk.moa.board.entity.QPost;
 import com.soldesk.moa.circle.entity.QCircleMember;
 import com.soldesk.moa.users.entity.QUsers;
@@ -187,11 +187,11 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
 
         JPQLQuery<Users> query = from(user)
                 .leftJoin(post).on(post.userId.eq(user))
-                .leftJoin(reply).on(reply.user.eq(user))
+                .leftJoin(reply).on(reply.userId.eq(user))
                 .leftJoin(circleMember).on(circleMember.user.eq(user))
                 .where(user.userId.eq(userId));
 
-        JPQLQuery<Tuple> tuple = query.select(user, post.userId.count(), reply.user.count(), circleMember.user.count());
+        JPQLQuery<Tuple> tuple = query.select(user, post.userId.count(), reply.userId.count(), circleMember.user.count());
 
         tuple.groupBy(user);
 

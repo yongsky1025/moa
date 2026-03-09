@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.JPQLQuery;
-import com.soldesk.moa.admin.temporary.QReply;
+import com.soldesk.moa.board.entity.QReply;
 import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.QBoard;
 import com.soldesk.moa.board.entity.QPost;
@@ -35,7 +35,7 @@ public class SearchPostRepositoryImpl extends QuerydslRepositorySupport
 
         JPQLQuery<Post> query = from(post)
                 .leftJoin(post.userId, user)
-                .leftJoin(reply).on(reply.post.eq(post))
+                .leftJoin(reply.postId, post)
                 .leftJoin(board).on(post.boardId.eq(board))
                 .where(user.userId.eq(userId));
 

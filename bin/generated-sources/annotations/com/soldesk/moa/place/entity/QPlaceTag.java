@@ -22,6 +22,8 @@ public class QPlaceTag extends EntityPathBase<PlaceTag> {
 
     public static final QPlaceTag placeTag = new QPlaceTag("placeTag");
 
+    public final NumberPath<Long> id = createNumber("id", Long.class);
+
     public final QPlace place;
 
     public final QTag tag;

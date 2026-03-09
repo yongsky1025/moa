@@ -1,4 +1,6 @@
-package com.soldesk.moa.place.entity;
+package com.soldesk.moa.schedule.entity;
+
+import com.soldesk.moa.place.entity.Tag;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -19,15 +21,15 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 @Builder
-public class PlaceTag {
+public class ScheduleTag {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "place_id")
-    private Place place;
+    @JoinColumn(name = "scheduleId")
+    private Schedule schedule;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "tag_id")

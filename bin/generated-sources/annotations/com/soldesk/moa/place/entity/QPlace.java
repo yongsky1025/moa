@@ -38,7 +38,7 @@ public class QPlace extends EntityPathBase<Place> {
 
     public final ListPath<PlaceReview, QPlaceReview> reviews = this.<PlaceReview, QPlaceReview>createList("reviews", PlaceReview.class, QPlaceReview.class, PathInits.DIRECT2);
 
-    public final ListPath<Tag, QTag> tags = this.<Tag, QTag>createList("tags", Tag.class, QTag.class, PathInits.DIRECT2);
+    public final ListPath<PlaceTag, QPlaceTag> tags = this.<PlaceTag, QPlaceTag>createList("tags", PlaceTag.class, QPlaceTag.class, PathInits.DIRECT2);
 
     public QPlace(String variable) {
         super(Place.class, forVariable(variable));

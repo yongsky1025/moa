@@ -37,7 +37,7 @@ import com.soldesk.moa.admin.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.repository.AdminScheduleMemberRepository;
 import com.soldesk.moa.admin.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.repository.AdminUsersRepository;
-import com.soldesk.moa.admin.temporary.Reply;
+import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
