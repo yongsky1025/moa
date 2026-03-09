@@ -41,9 +41,7 @@ public class UsersRepositoryTest {
                     .userGender(UserGender.MALE)
                     .nickname(isAdmin ? "admin" : "nickname" + i)
                     .password(passwordEncoder.encode("1111"))
-                    .address(isAdmin ? "admin address" : "adress " + i)
                     .birthDate(LocalDate.of(1999, 11, 23))
-                    .phone(isAdmin ? "010-0000-0000" : "010-1234-5678")
                     .userRole(isAdmin ? UserRole.ADMIN : UserRole.USER)
                     .build();
             usersRepository.save(user);
@@ -61,11 +59,9 @@ public class UsersRepositoryTest {
                     .email("test" + i + "@google.com")
                     .password(passwordEncoder.encode("1111"))
                     .nickname("nicknick" + i)
-                    .address("Seoul")
                     .userRole(UserRole.ADMIN)
                     .userGender(UserGender.FEMALE)
                     .birthDate(LocalDate.now().minusYears(i + 20))
-                    .phone("010-1111-1111")
                     .build();
 
             usersRepository.save(users);
@@ -86,9 +82,7 @@ public class UsersRepositoryTest {
                     .email("member" + i + "@google.com")
                     .password(passwordEncoder.encode("1111"))
                     .nickname("member" + i)
-                    .address("Seoul")
                     .birthDate(birth)
-                    .phone("010-1111-1111")
                     .userRole(UserRole.USER)
                     .userGender(gender)
                     .build();

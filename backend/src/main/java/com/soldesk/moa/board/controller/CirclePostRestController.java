@@ -20,7 +20,7 @@ import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.PostRepository;
 import com.soldesk.moa.board.service.BoardService;
 import com.soldesk.moa.board.service.PostService;
-import com.soldesk.moa.users.dto.AuthUserDTO;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
