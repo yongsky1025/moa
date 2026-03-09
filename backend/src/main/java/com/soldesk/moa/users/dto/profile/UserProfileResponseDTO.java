@@ -18,11 +18,7 @@ public class UserProfileResponseDTO {
 
     private String nickname;
 
-    private String address;
-
     private String email;
-
-    private String phone;
 
     private int age;
 

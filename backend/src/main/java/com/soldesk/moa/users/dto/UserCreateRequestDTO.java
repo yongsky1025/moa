@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @Getter
 public class UserCreateRequestDTO {
 
+    // TODO: admin 회원가입 임시 클래스?
     @NotBlank(message = "이름은 필수입니다.")
     @Size(max = 20, message = "이름은 20자 이내여야 합니다.")
     private String name;

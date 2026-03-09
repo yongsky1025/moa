@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.auth.dto.AuthUserDTO;
-import com.soldesk.moa.users.dto.profile.AddressUpdateRequestDTO;
 import com.soldesk.moa.users.dto.profile.NicknameUpdateRequestDTO;
-import com.soldesk.moa.users.dto.profile.PhoneUpdateRequestDTO;
 import com.soldesk.moa.users.dto.profile.UserProfileResponseDTO;
 import com.soldesk.moa.users.repository.UsersRepository;
 import com.soldesk.moa.users.service.ProfileService;
@@ -60,23 +58,4 @@ public class ProfileRestController {
         return ResponseEntity.ok().build();
     }
 
-    // 휴대전화 번호 변경
-    @PreAuthorize("isAuthenticated()")
-    @PutMapping("/profile/phone")
-    public ResponseEntity<?> changePhone(@AuthenticationPrincipal AuthUserDTO authUser,
-            @Valid @RequestBody PhoneUpdateRequestDTO phone) {
-        log.info("휴대전화 번호 변경 요청 {}", phone);
-        profileService.changePhone(authUser.getUserId(), phone.getPhone());
-        return ResponseEntity.ok().build();
-    }
-
-    // 주소 변경
-    @PreAuthorize("isAuthenticated()")
-    @PutMapping("/profile/address")
-    public ResponseEntity<?> changeAddress(@AuthenticationPrincipal AuthUserDTO authUser,
-            @Valid @RequestBody AddressUpdateRequestDTO address) {
-        log.info("주소 변경 요청 {}", authUser);
-        profileService.changeAddress(authUser.getUserId(), address.getAddress());
-        return ResponseEntity.ok().build();
-    }
 }

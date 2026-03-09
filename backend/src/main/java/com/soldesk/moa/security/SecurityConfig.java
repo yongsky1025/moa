@@ -72,10 +72,28 @@ public class SecurityConfig {
                                                                 "/fonts/**",
                                                                 "/favicon.ico")
                                                 .permitAll()
+
+                                                // ----------- user 시큐리티 파트 ---------
+
                                                 .requestMatchers("/api/auth/**").permitAll()
                                                 .requestMatchers("/api/users/profile/check-nickname").permitAll()
                                                 .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**")
                                                 .permitAll()
+
+                                                // ----------- 보드 시큐리티 파트 ----------
+                                                // 보드 css, js
+                                                .requestMatchers("/board/**").permitAll()
+                                                // board 열람 비회원도 허용(컨트롤러에서 crud 권한 설정예정)
+                                                .requestMatchers("/notice/**", "/free/**", "/support/**").permitAll()
+                                                .requestMatchers("/api/notice/posts/**", "/api/free/posts/**",
+                                                                "/api/support/posts/**")
+                                                .permitAll()
+                                                // board 써클 회원만 열람?(예정)
+                                                // .requestMatchers("/circle/**").permitAll()
+                                                // viewcount 비회원도 허용
+                                                .requestMatchers("/api/posts/*/view").permitAll()
+                                                // ----------- 보드 시큐리티 끝 ----------
+
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth2 -> oauth2
                                                 .authorizationEndpoint(endpoint -> endpoint

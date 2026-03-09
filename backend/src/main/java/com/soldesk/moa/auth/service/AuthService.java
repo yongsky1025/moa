@@ -44,12 +44,10 @@ public class AuthService {
                 .nickname(dto.getNickname())
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
-                .address(dto.getAddress())
                 .provider(AuthProvider.LOCAL)
                 .userRole(UserRole.USER)
                 .userGender(dto.getUserGender())
                 .birthDate(dto.getBirthDate())
-                .phone(dto.getPhone())
                 .age(dto.getAge())
                 .build();
 

@@ -28,9 +28,7 @@ public class ProfileService {
         return UserProfileResponseDTO.builder()
                 .name(user.getName())
                 .nickname(user.getNickname())
-                .address(user.getAddress())
                 .email(user.getEmail())
-                .phone(user.getPhone())
                 .userGender(user.getUserGender())
                 .birthDate(user.getBirthDate())
                 .age(user.getAge())
@@ -54,19 +52,4 @@ public class ProfileService {
         user.changeNickname(nickname);
     }
 
-    // 휴대전화 번호 변경
-    @Transactional
-    public void changePhone(Long userId, String phone) {
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
-        user.changePhone(phone);
-    }
-
-    // 주소 변경
-    @Transactional
-    public void changeAddress(Long userId, String address) {
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
-        user.changeAddress(address);
-    }
 }

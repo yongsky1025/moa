@@ -41,16 +41,9 @@ public class SignUpRequestDTO {
     @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,20}$", message = "비밀번호는 영문, 숫자, 특수문자 포함 8-20자 이내여야 합니다.")
     private String password;
 
-    @NotBlank(message = "주소를 입력해주세요.")
-    private String address;
-
     @NotNull(message = "생년월일을 입력해주세요.")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthDate;
-
-    @NotBlank(message = "필수")
-    @Pattern(regexp = "^01(?:0|1|[6-9])(?:-?\\d{3,4})-?\\d{4}$", message = "휴대전화 번호 형식이 올바르지 않습니다. 010-1234-5678")
-    private String phone;
 
     private UserGender userGender;
 

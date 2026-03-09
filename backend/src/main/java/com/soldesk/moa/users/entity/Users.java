@@ -61,13 +61,7 @@ public class Users extends BaseEntity {
     private String nickname;
 
     @Column(nullable = true)
-    private String address;
-
-    @Column(nullable = true)
     private LocalDate birthDate;
-
-    @Column(nullable = true)
-    private String phone;
 
     @Column(nullable = true)
     private int age;
@@ -123,16 +117,8 @@ public class Users extends BaseEntity {
         this.nickname = nickname;
     }
 
-    public void changeAddress(String address) {
-        this.address = address;
-    }
-
     public void changePassword(String password) {
         this.password = password;
-    }
-
-    public void changePhone(String phone) {
-        this.phone = phone;
     }
 
     public void changePublicId(String publicId) {
