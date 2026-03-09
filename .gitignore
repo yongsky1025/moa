@@ -1,6 +1,10 @@
 # File created using '.gitignore Generator' for Visual Studio Code: https://bit.ly/vscode-gig
-# Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,gradle,java
-# Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,gradle,java
+# Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,java,gradle,react
+# Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,java,gradle,react
+
+
+**/bin/
+
 
 ### Java ###
 # Compiled class file
@@ -28,9 +32,24 @@
 hs_err_pid*
 replay_pid*
 
+### react ###
+.DS_*
+logs
+**/*.backup.*
+**/*.back.*
+
+node_modules
+bower_components
+
+*.sublime*
+
+psd
+thumb
+sketch
+
 ### VisualStudioCode ###
 .vscode/*
-!.vscode/settings.json
+.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
@@ -74,8 +93,9 @@ $RECYCLE.BIN/
 *.lnk
 
 ### Gradle ###
-.gradle/
+.gradle
 **/build/
+!src/**/build/
 
 # Ignore Gradle GUI config
 gradle-app.setting
@@ -99,7 +119,7 @@ gradle-app.setting
 # Java heap dump
 *.hprof
 
-# End of https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,gradle,java
+# End of https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,java,gradle,react
 
 # Custom rules (everything added below won't be overriden by 'Generate .gitignore File' if you use 'Update' option)
 
