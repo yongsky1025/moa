@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+  <head th:replace="~{fragments/head :: head}"></head>
+
+  <body id="page-top">
+    <div id="wrapper">
+      <!-- Sidebar -->
+      <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+      <!-- Content Wrapper -->
+      <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+          <!-- Header -->
+          <div th:replace="~{fragments/header :: header}"></div>
+
+          <!-- Begin Page Content -->
+          <div class="container-fluid" layout:fragment="content">
+            <!-- 각 페이지(index 등) 내용이 여기에 꽂힘 -->
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div th:replace="~{fragments/footer :: footer}"></div>
+      </div>
+    </div>
+
+    <!-- 공통 스크립트 -->
+    <div th:replace="~{fragments/scripts :: scripts}"></div>
+  </body>
+</html>

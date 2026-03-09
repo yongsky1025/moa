@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>회원가입</title>
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:200,300,400,600,700,800,900" />
+    <link rel="stylesheet" href="/assets/vendor/fontawesome-free/css/all.min.css" />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/assets/css/sb-admin-2.min.css" />
+    <link rel="stylesheet" href="/assets/css/moa-theme.css" />
+  </head>
+  <body class="bg-gradient-primary">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+          <div class="card o-hidden border-0 shadow-lg my-5">
+            <div class="card-body p-5">
+              <div class="text-center">
+                <h1 class="h4 text-gray-900 mb-4">회원가입</h1>
+              </div>
+
+              <form class="user" id="signupForm" th:object="${signUpRequestDTO}" th:action="@{/auth/signup}" method="post">
+                <div class="form-group">
+                  <input th:field="*{email}" type="email" id="email" class="form-control form-control-user" name="email" placeholder="이메일" />
+                  <div class="text-danger" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                </div>
+                <div class="form-group">
+                  <input
+                    th:field="*{password}"
+                    type="password"
+                    id="password"
+                    class="form-control form-control-user"
+                    name="password"
+                    placeholder="비밀번호"
+                  />
+                  <div class="text-danger" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                </div>
+                <div class="form-group">
+                  <input
+                    th:field="*{nickname}"
+                    type="text"
+                    id="nickname"
+                    class="form-control form-control-user"
+                    name="nickname"
+                    placeholder="닉네임"
+                  />
+                  <div class="text-danger" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></div>
+                </div>
+                <div class="form-group">
+                  <input th:field="*{name}" type="text" id="name" class="form-control form-control-user" name="name" placeholder="이름" />
+                  <div class="text-danger" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                </div>
+                <div class="form-group">
+                  <input th:field="*{phone}" type="text" id="phone" class="form-control form-control-user" name="phone" placeholder="전화번호" />
+                  <div class="text-danger" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                </div>
+                <div class="form-group">
+                  <input
+                    th:field="*{birthDate}"
+                    type="date"
+                    id="birthDate"
+                    class="form-control form-control-user"
+                    name="birthDate"
+                    placeholder="생년월일"
+                  />
+                  <div class="text-danger" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></div>
+                </div>
+                <div class="form-group">
+                  <select th:field="*{userGender}" class="form-control" id="userGender" name="userGender">
+                    <option value="">성별</option>
+                    <option value="MALE">남성</option>
+                    <option value="FEMALE">여성</option>
+                  </select>
+                  <div class="text-danger" th:if="${#fields.hasErrors('userGender')}" th:errors="*{userGender}"></div>
+                </div>
+                <div class="form-group">
+                  <input th:field="*{address}" type="text" id="address" class="form-control form-control-user" name="address" placeholder="주소" />
+                  <div class="text-danger" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-user btn-block">회원가입</button>
+              </form>
+
+              <hr />
+              <div class="text-center">
+                <a class="small" th:href="@{/auth/login}">로그인</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/assets/vendor/jquery/jquery.min.js"></script>
+    <script src="/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="/assets/js/sb-admin-2.min.js"></script>
+  </body>
+</html>

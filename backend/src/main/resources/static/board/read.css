@@ -1,0 +1,135 @@
+/* /static/board/read.css */
+
+.board-read-page {
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Arial,
+    sans-serif;
+  background: #f6f7f9;
+  padding: 40px 0;
+}
+
+.board-read-page .wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.board-read-page .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.board-read-page .title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.board-read-page .btn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #111827;
+  color: white;
+  font-weight: 600;
+}
+
+.board-read-page .btn.secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.board-read-page .btn.danger {
+  background: #dc2626;
+  color: white;
+}
+
+.board-read-page .card {
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  padding: 24px;
+}
+
+.board-read-page h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
+.board-read-page .meta {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.board-read-page .meta span {
+  font-weight: 600;
+  color: #374151;
+}
+
+.board-read-page hr {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 20px 0;
+}
+
+.board-read-page .content {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #111827;
+  white-space: pre-wrap;
+}
+.board-read-page .card > .d-flex.gap-4.text-muted.mb-3 {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 16px;
+  row-gap: 4px;
+  align-items: start;
+}
+
+.board-read-page .card > .d-flex.gap-4.text-muted.mb-3 > div:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.board-read-page .card > .d-flex.gap-4.text-muted.mb-3 > div:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.board-read-page .card > .d-flex.gap-4.text-muted.mb-3 > div:nth-child(3) {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.board-read-page .content-box {
+  min-height: 220px; /* 내용이 짧아도 영역 확보 */
+  max-height: 520px; /* 너무 길면 카드가 과도하게 커지는 걸 방지 */
+  overflow: auto; /* 넘치면 스크롤 */
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.board-read-page .meta {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap; /* 좁은 화면에서 줄바꿈 */
+}
