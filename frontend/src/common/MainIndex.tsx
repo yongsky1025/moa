@@ -4,8 +4,8 @@ import Navbar from "../layout/Navbar";
 function MainIndex() {
   return (
     <>
-      <Navbar></Navbar>
-      <Footer></Footer>
+      <Navbar />
+      <Footer />
     </>
   );
 }
