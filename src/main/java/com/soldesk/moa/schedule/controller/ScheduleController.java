@@ -12,8 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.soldesk.moa.schedule.dto.ScheduleCreateRequestDTO;
 import com.soldesk.moa.schedule.dto.ScheduleResponseDTO;
 import com.soldesk.moa.schedule.service.ScheduleService;
-import com.soldesk.moa.users.dto.AuthUserDTO;
-import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

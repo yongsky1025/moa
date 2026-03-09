@@ -11,7 +11,7 @@ import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
 import com.soldesk.moa.circle.service.CircleService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
-import com.soldesk.moa.users.dto.AuthUserDTO;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,8 +54,10 @@ public class CircleController {
 
     // 서클 삭제
     @DeleteMapping("/{circleId}")
-    public ResponseEntity<Void> deleteCircle(@PathVariable Long circleId) {
-        circleService.deleteCircle(circleId);
+    public ResponseEntity<Void> deleteCircle(
+            @PathVariable Long circleId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+        circleService.deleteCircle(circleId, authUserDTO.getUserId());
         return ResponseEntity.noContent().build();
     }
 
@@ -63,9 +65,10 @@ public class CircleController {
     @PutMapping("/{circleId}")
     public ResponseEntity<CircleResponseDTO> updateCircle(
             @PathVariable Long circleId,
-            @RequestBody @Valid CircleUpdateRequestDTO request) {
+            @RequestBody @Valid CircleUpdateRequestDTO request,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
-        return ResponseEntity.ok(circleService.updateCircle(circleId, request));
+        return ResponseEntity.ok(circleService.updateCircle(circleId, request, authUserDTO.getUserId()));
     }
 
 }

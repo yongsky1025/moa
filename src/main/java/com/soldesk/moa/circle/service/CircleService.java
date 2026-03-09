@@ -1,7 +1,6 @@
 package com.soldesk.moa.circle.service;
 
-import java.util.List;
-
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,23 +67,37 @@ public class CircleService {
                 return new CircleResponseDTO(savedCircle);
         }
 
-        // 서클 삭제
+        // 서클 삭제 (리더만 가능)
         // 삭제 시 서클 멤버들에게 알림 처리 or 동의를 구하는 방식 추가
         @Transactional
-        public void deleteCircle(Long circleId) {
+        public void deleteCircle(Long circleId, Long userId) {
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 서클을 삭제할 수 있습니다."));
 
                 circleMemberRepository.deleteByCircle(circle);
                 circleRepository.delete(circle);
         }
 
-        // 서클 정보 수정
+        // 서클 정보 수정 (리더만 가능)
         @Transactional
-        public CircleResponseDTO updateCircle(Long circleId, CircleUpdateRequestDTO request) {
+        public CircleResponseDTO updateCircle(Long circleId, CircleUpdateRequestDTO request, Long userId) {
 
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 서클 정보를 수정할 수 있습니다."));
 
                 Circle updatedCircle = Circle.builder()
                                 .circleId(circle.getCircleId())

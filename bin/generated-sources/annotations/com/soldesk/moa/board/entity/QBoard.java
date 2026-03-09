@@ -24,25 +24,21 @@ public class QBoard extends EntityPathBase<Board> {
 
     public final com.soldesk.moa.common.entity.QBaseEntity _super = new com.soldesk.moa.common.entity.QBaseEntity(this);
 
-    public final QBoardCategory boardCategory;
-
     public final NumberPath<Long> boardId = createNumber("boardId", Long.class);
 
-    public final com.soldesk.moa.circle.entity.QCircle circle;
+    public final EnumPath<com.soldesk.moa.board.entity.constant.BoardType> boardType = createEnum("boardType", com.soldesk.moa.board.entity.constant.BoardType.class);
 
-    public final StringPath content = createString("content");
+    public final com.soldesk.moa.circle.entity.QCircle circleId;
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createDate = _super.createDate;
 
-    public final ListPath<Reply, QReply> replies = this.<Reply, QReply>createList("replies", Reply.class, QReply.class, PathInits.DIRECT2);
+    public final StringPath name = createString("name");
 
-    public final StringPath title = createString("title");
+    public final ListPath<Post, QPost> posts = this.<Post, QPost>createList("posts", Post.class, QPost.class, PathInits.DIRECT2);
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> updateDate = _super.updateDate;
-
-    public final com.soldesk.moa.users.entity.QUsers user;
 
     public QBoard(String variable) {
         this(Board.class, forVariable(variable), INITS);
@@ -62,9 +58,7 @@ public class QBoard extends EntityPathBase<Board> {
 
     public QBoard(Class<? extends Board> type, PathMetadata metadata, PathInits inits) {
         super(type, metadata, inits);
-        this.boardCategory = inits.isInitialized("boardCategory") ? new QBoardCategory(forProperty("boardCategory")) : null;
-        this.circle = inits.isInitialized("circle") ? new com.soldesk.moa.circle.entity.QCircle(forProperty("circle"), inits.get("circle")) : null;
-        this.user = inits.isInitialized("user") ? new com.soldesk.moa.users.entity.QUsers(forProperty("user")) : null;
+        this.circleId = inits.isInitialized("circleId") ? new com.soldesk.moa.circle.entity.QCircle(forProperty("circleId"), inits.get("circleId")) : null;
     }
 
 }

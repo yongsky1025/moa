@@ -22,13 +22,21 @@ public class QCircleMember extends EntityPathBase<CircleMember> {
 
     public static final QCircleMember circleMember = new QCircleMember("circleMember");
 
+    public final com.soldesk.moa.common.entity.QBaseEntity _super = new com.soldesk.moa.common.entity.QBaseEntity(this);
+
     public final QCircle circle;
+
+    //inherited
+    public final DateTimePath<java.time.LocalDateTime> createDate = _super.createDate;
 
     public final NumberPath<Long> id = createNumber("id", Long.class);
 
     public final EnumPath<com.soldesk.moa.circle.entity.constant.CircleRole> role = createEnum("role", com.soldesk.moa.circle.entity.constant.CircleRole.class);
 
     public final EnumPath<com.soldesk.moa.circle.entity.constant.CircleMemberStatus> status = createEnum("status", com.soldesk.moa.circle.entity.constant.CircleMemberStatus.class);
+
+    //inherited
+    public final DateTimePath<java.time.LocalDateTime> updateDate = _super.updateDate;
 
     public final com.soldesk.moa.users.entity.QUsers user;
 

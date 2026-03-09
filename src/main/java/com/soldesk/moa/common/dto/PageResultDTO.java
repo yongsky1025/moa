@@ -1,6 +1,5 @@
 package com.soldesk.moa.common.dto;
 
-import java.lang.instrument.Instrumentation;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -52,11 +51,11 @@ public class PageResultDTO<E> {
         // 다음 페이지 여부
         this.next = totalCount > end * pageRequestDTO.getSize();
 
-        // 이전페이지 번호
+        // 이전 페이지 번호
         if (prev) {
             this.prevPage = start - 1;
         }
-        // 다음페이지 번호
+        // 다음 페이지 번호
         if (next) {
             this.nextPage = end + 1;
         }
