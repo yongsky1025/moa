@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-MoaApplication<moa>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "com.soldesk.moa.MoaApplication",
+      "projectName": "moa",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}
