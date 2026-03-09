@@ -20,12 +20,14 @@ import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.soldesk.moa.admin.dto.AdminUserResponseDTO;
 import com.soldesk.moa.admin.dto.AdminUserSearchDTO;
 import com.soldesk.moa.admin.temporary.QReply;
 import com.soldesk.moa.board.entity.QPost;
 import com.soldesk.moa.circle.entity.QCircleMember;
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.users.entity.QUsers;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserGender;
@@ -87,6 +89,25 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
         List<Tuple> result = tuple.fetch();
 
         return result.stream().map(Tuple::toArray).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Tuple> findAgeRangeParticipation() {
+        QUsers user = QUsers.users;
+        QCircleMember circleMember = QCircleMember.circleMember;
+
+        NumberExpression<Integer> ageGroup = Expressions.numberTemplate(Integer.class,
+                "floor({0}/10)*10", user.age);
+
+        JPQLQuery<Users> query = from(user).join(circleMember).on(circleMember.user.eq(user))
+                .where(circleMember.status.eq(CircleMemberStatus.ACTIVE));
+
+        JPQLQuery<Tuple> tuple = query.select(ageGroup, user.userGender, user.countDistinct());
+
+        tuple.groupBy(ageGroup, user.userGender);
+        tuple.orderBy(ageGroup.asc());
+
+        return tuple.fetch();
     }
 
     @Override

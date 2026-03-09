@@ -23,6 +23,7 @@ import com.soldesk.moa.admin.dto.CircleDataDTO;
 import com.soldesk.moa.admin.dto.CircleSummaryDTO;
 import com.soldesk.moa.admin.dto.DashboardChartDTO;
 import com.soldesk.moa.admin.dto.MonthlyCountDTO;
+import com.soldesk.moa.admin.dto.PopularCircleDTO;
 import com.soldesk.moa.admin.dto.UserCountDTO;
 import com.soldesk.moa.admin.dto.UserInfoCircleDTO;
 import com.soldesk.moa.admin.dto.UserInfoDTO;
@@ -248,7 +249,7 @@ public class AdminService {
                 return pageResultDTO;
         }
 
-        // 모임 정보 일람
+        // 모임 리스트 일람
         @Transactional(readOnly = true)
         public PageResultDTO<AdminCircleResponseDTO> getAllCircleInfo(AdminCircleSearchDTO adminCircleSearchDTO) {
                 Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, 10);
@@ -278,6 +279,21 @@ public class AdminService {
                                 .build();
 
                 return pageResultDTO;
+        }
+
+        // 인기모임 top5
+        @Transactional(readOnly = true)
+        public List<PopularCircleDTO> findPopularCircles() {
+                LocalDateTime since = LocalDateTime.now().minusDays(7);
+                List<Circle> circles = adminCircleRepository.findPopularCircles(since, 5);
+
+                return circles.stream().map(c -> PopularCircleDTO.builder()
+                                .circleId(c.getCircleId())
+                                .circleName(c.getName())
+                                .categoryName(c.getCategory().getCategoryName())
+                                .currentMember(c.getCurrentMember())
+                                .build()).collect(Collectors.toList());
+
         }
 
         // UserCountDTO

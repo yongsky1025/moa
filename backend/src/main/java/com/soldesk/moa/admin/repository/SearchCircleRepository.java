@@ -1,9 +1,13 @@
 package com.soldesk.moa.admin.repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.soldesk.moa.admin.dto.AdminCircleSearchDTO;
+import com.soldesk.moa.circle.entity.Circle;
 
 public interface SearchCircleRepository {
 
@@ -13,4 +17,11 @@ public interface SearchCircleRepository {
     // 전체 모임 정보 조회(필터,검색)
     Page<Object[]> getCircleInfo(Pageable pageable, AdminCircleSearchDTO adminCircleSearchDTO);
 
+    // 인기모임 top5(인원, 최근 일정 수, 최근 가입자 수 기반 점수/7일)
+    List<Circle> findPopularCircles(LocalDateTime since, int limit);
+
+    // 모임 생존률
+    Long countTotalCircle();
+
+    Long countActiveCircle(LocalDateTime since);
 }
