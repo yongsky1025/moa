@@ -13,7 +13,9 @@ import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.repository.PostRepository;
+import com.soldesk.moa.board.repository.ReplyRepository;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
@@ -28,98 +30,129 @@ import lombok.extern.log4j.Log4j2;
 public class PostService {
 
         private final PostRepository postRepository;
+        private final ReplyRepository replyRepository;
         private final BoardRepository boardRepository;
         private final UsersRepository usersRepository;
         private final CircleMemberRepository circleMemberRepository; // 선택
 
         // ===== Global =====
 
+        // // 글로벌 게시판 리스트
+        // public List<PostResponseDTO> listGlobal(BoardType type) {
+        // return postRepository.findGlobalPosts(type).stream()
+        // .map(this::toPostResponse)
+        // .toList();
+        // }
+
+        // 글로벌 게시판 리스트(댓글 포함)
         public List<PostResponseDTO> listGlobal(BoardType type) {
-                return postRepository.findGlobalPosts(type).stream()
-                                .map(this::toPostResponse)
+                return postRepository.findGlobalPostsWithReplyCount(type).stream()
+                                .map(this::toPostResponseWithCount)
                                 .toList();
         }
 
         public PostResponseDTO readGlobal(BoardType type, Long postId) {
-                Post p = postRepository.findGlobalPost(type, postId)
+                Post post = postRepository.findGlobalPost(type, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
-                return toPostResponse(p);
+                return toPostResponse(post);
         }
 
         @Transactional
-        public Long createGlobal(BoardType type, Long userId, PostRequestDTO req) {
+        public Long createGlobal(BoardType type, AuthUserDTO auth, PostRequestDTO req) {
                 Board board = boardRepository.findByBoardTypeAndCircleIdIsNull(type)
                                 .orElseThrow(() -> new NotFoundException("global board not found"));
 
-                Users user = usersRepository.findById(userId)
+                Users user = usersRepository.findById(auth.getUserId())
                                 .orElseThrow(() -> new NotFoundException("user not found"));
 
-                Post p = Post.builder()
+                Post post = Post.builder()
                                 .boardId(board)
                                 .title(req.getTitle())
                                 .content(req.getContent())
                                 .userId(user)
                                 .build();
 
-                return postRepository.save(p).getPostId();
+                return postRepository.save(post).getPostId();
         }
 
         @Transactional
         public Long updateGlobal(BoardType type, Long postId, PostRequestDTO req) {
-                Post p = postRepository.findGlobalPost(type, postId)
+                Post post = postRepository.findGlobalPost(type, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
-                p.changeTitle(req.getTitle());
-                p.changeContent(req.getContent());
-                return p.getPostId();
+                post.changeTitle(req.getTitle());
+                post.changeContent(req.getContent());
+                return post.getPostId();
         }
 
         @Transactional
         public void deleteGlobal(BoardType type, Long postId) {
-                Post p = postRepository.findGlobalPost(type, postId)
+                Post post = postRepository.findGlobalPost(type, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
-                postRepository.delete(p);
+                deletePostWithReplies(post);
         }
 
         // ===== FREE (작성자 검증) =====
 
         @Transactional
-        public Long updateFreeAsOwner(Long postId, Long userId, PostRequestDTO req) {
-                Post p = postRepository.findGlobalPost(BoardType.FREE, postId)
+        public Long updateFreeAsOwner(Long postId, AuthUserDTO auth, PostRequestDTO req) {
+                Post post = postRepository.findGlobalPost(BoardType.FREE, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
 
-                if (!isOwner(p, userId)) {
+                if (!isOwner(post, auth.getUserId()) && !isAdmin(auth)) {
                         throw new ForbiddenException("not owner");
                 }
 
-                p.changeTitle(req.getTitle());
-                p.changeContent(req.getContent());
-                return p.getPostId();
+                post.changeTitle(req.getTitle());
+                post.changeContent(req.getContent());
+                return post.getPostId();
         }
 
         @Transactional
-        public void deleteFreeAsOwner(Long postId, Long userId) {
-                Post p = postRepository.findGlobalPost(BoardType.FREE, postId)
+        public void deleteFreeAsOwner(Long postId, AuthUserDTO auth) {
+                Post post = postRepository.findGlobalPost(BoardType.FREE, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
 
-                if (!isOwner(p, userId)) {
+                if (!isOwner(post, auth.getUserId()) && !isAdmin(auth)) {
                         throw new ForbiddenException("not owner");
                 }
 
-                postRepository.delete(p);
+                deletePostWithReplies(post);
         }
 
         // ===== Circle =====
 
+        // // 써클보드 게시글 리스트
+        // public List<PostResponseDTO> listCircle(Long circleId, Long boardId) {
+        // return postRepository.findCirclePosts(circleId, boardId).stream()
+        // .map(this::toPostResponse)
+        // .toList();
+        // }
+
+        // 써클보드 게시글 리스트(댓글 포함)
         public List<PostResponseDTO> listCircle(Long circleId, Long boardId) {
-                return postRepository.findCirclePosts(circleId, boardId).stream()
-                                .map(this::toPostResponse)
+                return postRepository.findCirclePostsWithReplyCount(circleId, boardId).stream()
+                                .map(this::toPostResponseWithCount)
+                                .toList();
+        }
+
+        // // 써클보드 전체 게시글 리스트
+        // public List<PostResponseDTO> listCircleAllBoardsPosts(Long circleId) {
+        // return postRepository.findCirclePostsAllBoards(circleId).stream()
+        // .map(this::toPostResponse)
+        // .toList();
+        // }
+
+        // 써클보드 전체 게시글 리스트(댓글 포함)
+        public List<PostResponseDTO> listCircleAllBoardsPosts(Long circleId) {
+                return postRepository.findCirclePostsAllBoardsWithReplyCount(circleId).stream()
+                                .map(this::toPostResponseWithCount)
                                 .toList();
         }
 
         public PostResponseDTO readCircle(Long circleId, Long boardId, Long postId) {
-                Post p = postRepository.findCirclePost(circleId, boardId, postId)
+                Post post = postRepository.findCirclePost(circleId, boardId, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
-                return toPostResponse(p);
+                return toPostResponse(post);
         }
 
         @Transactional
@@ -139,7 +172,7 @@ public class PostService {
                 Users user = usersRepository.findById(userId)
                                 .orElseThrow(() -> new NotFoundException("user not found"));
 
-                Post p = Post
+                Post post = Post
                                 .builder()
                                 .boardId(board)
                                 .title(req.getTitle())
@@ -147,36 +180,36 @@ public class PostService {
                                 .userId(user)
                                 .build();
 
-                return postRepository.save(p).getPostId();
+                return postRepository.save(post).getPostId();
         }
 
         @Transactional
         public Long updateCircleAsOwner(Long circleId, Long boardId, Long postId, Long userId, PostRequestDTO req) {
-                Post p = postRepository.findCirclePost(circleId, boardId, postId)
+                Post post = postRepository.findCirclePost(circleId, boardId, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
 
-                if (!isOwner(p, userId)) {
+                if (!isOwner(post, userId)) {
                         throw new ForbiddenException("not owner");
                 }
 
-                p.changeTitle(req.getTitle());
-                p.changeContent(req.getContent());
-                return p.getPostId();
+                post.changeTitle(req.getTitle());
+                post.changeContent(req.getContent());
+                return post.getPostId();
         }
 
         @Transactional
-        public void deleteCircleAsOwner(Long circleId, Long boardId, Long postId, Long userId) {
-                Post p = postRepository.findCirclePost(circleId, boardId, postId)
+        public void deleteCircleAsOwner(Long circleId, Long boardId, Long postId, AuthUserDTO auth) {
+                Post post = postRepository.findCirclePost(circleId, boardId, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
 
-                if (!isOwner(p, userId)) {
+                if (!isOwner(post, auth.getUserId()) && !isAdmin(auth)) {
                         throw new ForbiddenException("not owner");
                 }
 
-                postRepository.delete(p);
+                deletePostWithReplies(post);
         }
 
-        // 조회수 증가
+        // 세션 조회수 증가
         @Transactional
         public void increaseViewCountOnce(Long postId, HttpSession session) {
                 String key = "viewed:post:" + postId;
@@ -188,11 +221,22 @@ public class PostService {
         }
 
         // ===== helpers =====
+        // 작성자 확인
+        private boolean isOwner(Post post, Long userId) {
 
-        private boolean isOwner(Post p, Long userId) {
+                return Objects.equals(post.getUserId().getUserId(), userId);
+        }
 
-                return Objects.equals(p.getUserId().getUserId(), userId);
+        // 로그인 ADMIN확인
+        private boolean isAdmin(AuthUserDTO auth) {
 
+                return auth.getAuthorities().stream()
+                                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        }
+
+        private void deletePostWithReplies(Post post) {
+                replyRepository.deleteByPostId_PostId(post.getPostId());
+                postRepository.delete(post);
         }
 
         private PostResponseDTO toPostResponse(Post p) {
@@ -208,4 +252,22 @@ public class PostService {
                                 .updateDate(p.getUpdateDate())
                                 .build();
         }
+
+        private PostResponseDTO toPostResponseWithCount(Object[] row) {
+                Post p = (Post) row[0];
+                long replyCount = (long) row[1];
+
+                return PostResponseDTO.builder()
+                                .boardId(p.getBoardId().getBoardId())
+                                .postId(p.getPostId())
+                                .title(p.getTitle())
+                                .content(p.getContent())
+                                .authorName(p.getUserId().getName())
+                                .viewCount(p.getViewCount())
+                                .createDate(p.getCreateDate())
+                                .updateDate(p.getUpdateDate())
+                                .replyCount(replyCount)
+                                .build();
+        }
+
 }

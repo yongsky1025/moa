@@ -8,7 +8,6 @@ import com.querydsl.core.types.PathMetadata;
 import javax.annotation.processing.Generated;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.PathInits;
-import com.soldesk.moa.admin.temporary.Reply;
 
 
 /**
@@ -25,19 +24,25 @@ public class QReply extends EntityPathBase<Reply> {
 
     public final com.soldesk.moa.common.entity.QBaseEntity _super = new com.soldesk.moa.common.entity.QBaseEntity(this);
 
-    public final QBoard board;
-
     public final StringPath content = createString("content");
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createDate = _super.createDate;
+
+    public final BooleanPath deleted = createBoolean("deleted");
+
+    public final NumberPath<Integer> depth = createNumber("depth", Integer.class);
+
+    public final QReply parentId;
+
+    public final QPost postId;
 
     public final NumberPath<Long> replyId = createNumber("replyId", Long.class);
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> updateDate = _super.updateDate;
 
-    public final com.soldesk.moa.users.entity.QUsers user;
+    public final com.soldesk.moa.users.entity.QUsers userId;
 
     public QReply(String variable) {
         this(Reply.class, forVariable(variable), INITS);
@@ -57,8 +62,9 @@ public class QReply extends EntityPathBase<Reply> {
 
     public QReply(Class<? extends Reply> type, PathMetadata metadata, PathInits inits) {
         super(type, metadata, inits);
-        this.board = inits.isInitialized("board") ? new QBoard(forProperty("board"), inits.get("board")) : null;
-        this.user = inits.isInitialized("user") ? new com.soldesk.moa.users.entity.QUsers(forProperty("user")) : null;
+        this.parentId = inits.isInitialized("parentId") ? new QReply(forProperty("parentId"), inits.get("parentId")) : null;
+        this.postId = inits.isInitialized("postId") ? new QPost(forProperty("postId"), inits.get("postId")) : null;
+        this.userId = inits.isInitialized("userId") ? new com.soldesk.moa.users.entity.QUsers(forProperty("userId")) : null;
     }
 
 }

@@ -26,6 +26,7 @@ import com.soldesk.moa.auth.dto.AuthUserDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -35,8 +36,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+@Tag(name = "Response Circle Board", description = "써클 보드 API")
 @Log4j2
-@RequestMapping("/api/circles/{circleId}/boards")
+@RequestMapping("/api/circle/{circleId}/boards")
 @RestController
 @RequiredArgsConstructor
 public class CircleBoardRestController {
@@ -44,6 +46,7 @@ public class CircleBoardRestController {
     private final BoardService boardService;
 
     // 써클 내 게시판 목록
+    @Operation(summary = "Circle/Board 리스트 조회", description = "해당 써클의 게시판 리스트 조회 API")
     @GetMapping
     public List<BoardResponseDTO> list(@PathVariable("circleId") Long circleId) {
         return boardService.listCircleBoards(circleId);
@@ -51,6 +54,7 @@ public class CircleBoardRestController {
 
     // 게시판 생성 (일단 로그인만 컷, 방장/관리자 확장은 나중에)
     // @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Circle/Board 생성", description = "해당 써클의 게시판 추가 API")
     @PostMapping
     public Long create(@PathVariable("circleId") Long circleId,
             @RequestBody @Valid BoardRequestDTO req,
@@ -65,6 +69,7 @@ public class CircleBoardRestController {
 
     // 게시판 이름 변경
     // @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Circle/Board 수정", description = "해당 써클의 게시판 수정 - 제목 API")
     @PutMapping("/{boardId}")
     public Long update(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
@@ -76,6 +81,7 @@ public class CircleBoardRestController {
 
     // 게시판 삭제
     // @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Circle/Board 삭제", description = "해당 써클의 게시판 삭제 API")
     @DeleteMapping("/{boardId}")
     public void delete(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,

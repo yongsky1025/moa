@@ -38,6 +38,8 @@ public class PostResponseDTO {
 
     private int viewCount;
 
+    private long replyCount;
+
     private LocalDateTime createDate;
 
     private LocalDateTime updateDate;
