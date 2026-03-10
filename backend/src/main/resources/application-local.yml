@@ -15,17 +15,3 @@ spring:
 
 cors:
   allowed-origins: http://localhost:5173
-
-app:
-  cookie:
-    secure: false
-    same-site: Lax
-
-logging:
-  level:
-    org:
-      hibernate:
-        SQL: debug
-        orm:
-          jdbc:
-            bind: trace
