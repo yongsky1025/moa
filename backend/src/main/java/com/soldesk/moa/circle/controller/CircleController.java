@@ -1,5 +1,7 @@
 package com.soldesk.moa.circle.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -23,6 +25,14 @@ import lombok.RequiredArgsConstructor;
 public class CircleController {
 
     private final CircleService circleService;
+
+    // 내가 가입한 서클 목록 조회
+    @GetMapping("/me")
+    public ResponseEntity<List<CircleResponseDTO>> getMyCircles(
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(circleService.getMyCircles(authUserDTO.getUserId()));
+    }
 
     // 서클 생성
     @PostMapping
