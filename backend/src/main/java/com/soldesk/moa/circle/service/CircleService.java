@@ -4,6 +4,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
@@ -48,7 +50,7 @@ public class CircleService {
                                 .description(request.getDescription())
                                 .maxMember(request.getMaxMember())
                                 .currentMember(1) // 최초 멤버 = 생성자
-                                .status(CircleStatus.OPEN) // 기본 OPEN
+                                .status(CircleStatus.PENDING) // 관리자 승인 대기
                                 .category(circleCategory)
                                 .build();
 
@@ -119,6 +121,61 @@ public class CircleService {
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
 
                 return CircleResponseDTO.from(circle);
+        }
+
+        // [Admin] 보류 중인 서클 목록 조회
+        @Transactional(readOnly = true)
+        public List<CircleResponseDTO> getPendingCircles() {
+                return circleRepository.findByStatus(CircleStatus.PENDING)
+                                .stream()
+                                .map(CircleResponseDTO::new)
+                                .toList();
+        }
+
+        // [Admin] 서클 승인
+        @Transactional
+        public CircleResponseDTO approveCircle(Long circleId) {
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                if (circle.getStatus() != CircleStatus.PENDING) {
+                        throw new IllegalStateException("보류 상태인 서클만 승인할 수 있습니다.");
+                }
+
+                Circle approved = Circle.builder()
+                                .circleId(circle.getCircleId())
+                                .name(circle.getName())
+                                .description(circle.getDescription())
+                                .maxMember(circle.getMaxMember())
+                                .currentMember(circle.getCurrentMember())
+                                .status(CircleStatus.OPEN)
+                                .category(circle.getCategory())
+                                .build();
+
+                return new CircleResponseDTO(circleRepository.save(approved));
+        }
+
+        // [Admin] 서클 거절
+        @Transactional
+        public void rejectCircle(Long circleId) {
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                if (circle.getStatus() != CircleStatus.PENDING) {
+                        throw new IllegalStateException("보류 상태인 서클만 거절할 수 있습니다.");
+                }
+
+                Circle rejected = Circle.builder()
+                                .circleId(circle.getCircleId())
+                                .name(circle.getName())
+                                .description(circle.getDescription())
+                                .maxMember(circle.getMaxMember())
+                                .currentMember(circle.getCurrentMember())
+                                .status(CircleStatus.REJECTED)
+                                .category(circle.getCategory())
+                                .build();
+
+                circleRepository.save(rejected);
         }
 
         // 서클 리스트 조회

@@ -1,6 +1,5 @@
 package com.soldesk.moa.circle.entity;
 
-import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.common.entity.BaseEntity;
 

@@ -19,6 +19,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import com.soldesk.moa.schedule.entity.constant.ScheduleStatus;
+
 @Entity
 @Table(name = "schedule")
 @Getter
@@ -77,6 +79,17 @@ public class Schedule {
     @Column
     private Double longitude;
     //////////////////////////////////////////////////
+
+    public ScheduleStatus getStatus() {
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(startAt)) {
+            return ScheduleStatus.UPCOMING;
+        } else if (now.isAfter(endAt)) {
+            return ScheduleStatus.COMPLETED;
+        } else {
+            return ScheduleStatus.IN_PROGRESS;
+        }
+    }
 
     public void increaseCurrentMember() {
         if (this.currentMember >= this.maxMember) {

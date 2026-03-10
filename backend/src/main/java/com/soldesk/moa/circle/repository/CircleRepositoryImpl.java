@@ -7,6 +7,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.QCircle;
 import com.soldesk.moa.circle.entity.QCircleCategory;
+import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 
@@ -78,13 +79,13 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
     // 서클이 모집중일까 아닐까??
     private BooleanExpression statusFilter(String type) {
         if (type == null || type.isBlank()) {
-            return null; // 기본은 상태 조건 없음
+            // 기본: PENDING, REJECTED 제외 (승인된 서클만 공개)
+            return QCircle.circle.status.notIn(CircleStatus.PENDING, CircleStatus.REJECTED);
         }
 
         // type=OPEN 일 때만 모집중 필터
         if ("OPEN".equalsIgnoreCase(type)) {
-            return QCircle.circle.status.eq(
-                    com.soldesk.moa.circle.entity.constant.CircleStatus.OPEN);
+            return QCircle.circle.status.eq(CircleStatus.OPEN);
         }
 
         return null;
