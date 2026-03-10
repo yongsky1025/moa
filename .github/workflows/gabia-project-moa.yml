@@ -1,65 +1,121 @@
-# This workflow will build a Java project and deploy it to an Azure Functions App on Windows or Linux when a commit is pushed to your default branch.
-#
-# This workflow assumes you have already created the target Azure Functions app.
-# For instructions see https://learn.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-java
-#
-# To configure this workflow:
-# 1. Set up the following secrets in your repository:
-#   - AZURE_FUNCTIONAPP_PUBLISH_PROFILE
-# 2. Change env variables for your configuration.
-#
-# For more information on:
-#   - GitHub Actions for Azure: https://github.com/Azure/Actions
-#   - Azure Functions Action: https://github.com/Azure/functions-action
-#   - Publish Profile: https://github.com/Azure/functions-action#using-publish-profile-as-deployment-credential-recommended
-#   - Azure Service Principal for RBAC: https://github.com/Azure/functions-action#using-azure-service-principal-for-rbac-as-deployment-credential
-#
-# For more samples to get started with GitHub Action workflows to deploy to Azure: https://github.com/Azure/actions-workflow-samples/tree/master/FunctionApp
-
-name: Deploy Java project to Azure Function App
+name: Deploy Frontend + Backend (Docker)
 
 on:
   push:
     branches: ["main"]
-
-env:
-  AZURE_FUNCTIONAPP_NAME: 'your-app-name'   # set this to your function app name on Azure
-  POM_XML_DIRECTORY: '.'                    # set this to the directory which contains pom.xml file
-  DISTRIBUTION: 'zulu'                      # set this to the java version to use (e.g. 'zulu', 'temurin', 'microsoft')
-  JAVA_VERSION: '8'                         # set this to the java version to use (e.g. '8', '11', '17')
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - ".github/workflows/gabia-project-moa.yml"
 
 jobs:
-  build-and-deploy:
-    runs-on: windows-latest # For Linux, use ubuntu-latest
-    environment: dev
+  deploy:
+    runs-on: ubuntu-latest
+
     steps:
-    - name: 'Checkout GitHub Action'
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # If you want to use Azure RBAC instead of Publish Profile, then uncomment the task below
-    # - name: 'Login via Azure CLI'
-    #   uses: azure/login@v1
-    #   with:
-    #     creds: ${{ secrets.AZURE_RBAC_CREDENTIALS }} # set up AZURE_RBAC_CREDENTIALS secrets in your repository
+      # ---------- Frontend (Vite) ----------
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
 
-    - name: Setup Java Sdk ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        distribution: ${{ env.DISTRIBUTION }}
-        java-version: ${{ env.JAVA_VERSION }}
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
 
-    - name: 'Restore Project Dependencies Using Mvn'
-      shell: pwsh # For Linux, use bash
-      run: |
-        pushd './${{ env.POM_XML_DIRECTORY }}'
-        mvn clean package
-        popd
+      # ---------- Backend (Spring Boot) ----------
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "gradle"
 
-    - name: 'Run Azure Functions Action'
-      uses: Azure/functions-action@v1
-      id: fa
-      with:
-        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-        package: '${{ env.POM_XML_DIRECTORY }}' # if there are multiple function apps in same project, then this path will be like './${{ env.POM_XML_DIRECTORY }}/target/azure-functions/${{ env.POM_FUNCTIONAPP_NAME }'
-        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }} # Remove publish-profile to use Azure RBAC
-        respect-pom-xml: true
+      # gradlew 실행 권한 부여
+      - name: Build backend
+        working-directory: backend
+        run: |
+          chmod +x gradlew
+          ./gradlew clean build -x test
+
+      # ---------- Prepare artifacts ----------
+      - name: Prepare artifacts
+        run: |
+          set -e  # 에러 발생 시 즉시 종료
+          mkdir -p artifacts/frontend artifacts/backend
+
+          # frontend dist
+          cp -r frontend/dist/* artifacts/frontend/
+
+          # backend jar -> app.jar (plain.jar 제외)
+          JAR_PATH=$(ls backend/build/libs/*.jar | grep -v -- '-plain\.jar' | head -n 1)
+          if [ -z "$JAR_PATH" ]; then
+            echo "No runnable jar found in moa/backend/build/libs"
+            ls -al backend/build/libs || true
+            exit 1
+          fi
+
+          cp "$JAR_PATH" artifacts/backend/app.jar
+          cp backend/Dockerfile artifacts/backend/Dockerfile
+          cp backend/docker-compose.yml artifacts/backend/docker-compose.yml
+
+      # ---------- Deploy ----------
+      - name: Install ssh + rsync
+        run: sudo apt-get update && sudo apt-get install -y openssh-client rsync
+
+      - name: Combined Deploy (Frontend + Backend)
+        env:
+          HOST: ${{ secrets.SERVER_HOST }} # 공용
+          PORT: ${{ secrets.SERVER_PORT }} # 22
+          USER: ${{ secrets.SERVER_USER }} # deploy
+          FE_DIR: ${{ secrets.DEPLOY_FRONTEND_DIR }} # /var/www/moa
+          BE_DIR: ${{ secrets.DEPLOY_BACKEND_DIR }} # /home/apps/moa
+        run: |
+          # 1. SSH 키 설정
+          mkdir -p ~/.ssh
+          rm -f ~/.ssh/cm-* # 기존에 남아있을지 모르는 연결 소켓 삭제
+          cat << 'EOF' > ./private_key
+          ${{ secrets.SERVER_SSH}}
+          EOF
+          chmod 600 ./private_key
+
+          # 2. 공통 SSH 옵션 설정 (재사용을 위한 소켓 설정 포함)
+          # ControlMaster를 쓰면 첫 연결 이후는 세션 생성 생략 가능 (속도 개선)
+          SSH_OPTS="-p $PORT -i ./private_key -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/cm-%r@%h:%p -o ControlPersist=60s"
+
+          # 3. 데이터 전송 (rsync 연달아 실행)
+          echo ">>> 전송 시작: Frontend"
+          rsync -avz --delete -e "ssh $SSH_OPTS" artifacts/frontend/ $USER@$HOST:$FE_DIR/
+
+          echo ">>> 전송 시작: Backend"
+          rsync -avz --delete -e "ssh $SSH_OPTS" artifacts/backend/ $USER@$HOST:$BE_DIR/
+
+          # 4. 서버 원격 명령 실행 (Docker 및 Nginx)
+          echo ">>> 서버 리스타트 및 설정 적용"
+          ssh $SSH_OPTS $USER@$HOST "bash -lc '
+            cd $BE_DIR
+
+            export MYSQL_ROOT_PASSWORD=\"${{ secrets.MYSQL_ROOT_PASSWORD }}\"
+            export MYSQL_PASSWORD=\"${{ secrets.MYSQL_PASSWORD }}\"
+            
+            # 컨테이너 갱신
+            docker compose up -d --build
+            docker image prune -f
+            
+            # Nginx 리로드 (정적 파일 및 프록시 설정 반영)
+            sudo systemctl reload nginx
+          '"
+
+          # 5. 보안을 위해 키 삭제
+          rm ./private_key
+          rm -f ~/.ssh/cm-*
+
+# 서버 원격 명령 실행
+# export OPENAI_API_KEY=\"${{ secrets.OPENAI_API_KEY }}\"
