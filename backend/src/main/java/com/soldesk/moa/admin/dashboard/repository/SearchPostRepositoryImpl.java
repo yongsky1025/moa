@@ -1,5 +1,7 @@
 package com.soldesk.moa.admin.dashboard.repository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,13 +11,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringTemplate;
 import com.querydsl.jpa.JPQLQuery;
+import com.querydsl.jpa.JPQLQueryFactory;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.QBoard;
 import com.soldesk.moa.board.entity.QPost;
 import com.soldesk.moa.board.entity.QReply;
 import com.soldesk.moa.users.entity.QUsers;
 
+import jakarta.persistence.EntityManager;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
@@ -56,6 +63,26 @@ public class SearchPostRepositoryImpl extends QuerydslRepositorySupport
         List<Object[]> list = result.stream().map(Tuple::toArray).collect(Collectors.toList());
 
         return new PageImpl<>(list, pageable, count);
+    }
+
+    @Override
+    public List<Tuple> countPostsGroupedByDay(LocalDate from) {
+        QPost post = QPost.post;
+
+        LocalDateTime fromDt = from.atStartOfDay();
+
+        EntityManager em = getEntityManager();
+        JPQLQueryFactory queryFactory = new JPAQueryFactory(em);
+
+        StringTemplate dateExpr = Expressions.stringTemplate("DATE({0})", post.createDate);
+
+        return queryFactory
+                .select(dateExpr, post.postId.count())
+                .from(post)
+                .where(post.createDate.goe(fromDt))
+                .groupBy(dateExpr)
+                .orderBy(dateExpr.asc())
+                .fetch();
     }
 
 }

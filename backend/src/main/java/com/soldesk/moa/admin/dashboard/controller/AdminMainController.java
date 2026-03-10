@@ -4,12 +4,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.admin.dashboard.dto.AdminMainDTO;
+import com.soldesk.moa.admin.dashboard.dto.PostActivitySummaryDTO;
 import com.soldesk.moa.admin.dashboard.service.AdminService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
@@ -26,6 +29,13 @@ public class AdminMainController {
     public AdminMainDTO getAdminMain() {
         log.info("admin main page");
         return adminService.mainDashBoard();
+    }
+
+    @GetMapping("/post-activity")
+    @Operation(summary = "admin main data - post", description = "게시글 활동 data")
+    public ResponseEntity<PostActivitySummaryDTO> getMethodName() {
+        log.info("admin main page - 게시글 활동");
+        return ResponseEntity.ok(adminService.postActivitySummary());
     }
 
 }

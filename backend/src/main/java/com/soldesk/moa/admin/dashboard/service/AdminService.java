@@ -1,11 +1,15 @@
 package com.soldesk.moa.admin.dashboard.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.querydsl.core.Tuple;
 import com.soldesk.moa.admin.dashboard.dto.AdminCircleResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.AdminCircleSearchDTO;
 import com.soldesk.moa.admin.dashboard.dto.AdminMainDTO;
@@ -21,9 +26,11 @@ import com.soldesk.moa.admin.dashboard.dto.AdminUserResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
 import com.soldesk.moa.admin.dashboard.dto.CircleDataDTO;
 import com.soldesk.moa.admin.dashboard.dto.CircleSummaryDTO;
+import com.soldesk.moa.admin.dashboard.dto.DailyCountDTO;
 import com.soldesk.moa.admin.dashboard.dto.DashboardChartDTO;
 import com.soldesk.moa.admin.dashboard.dto.MonthlyCountDTO;
 import com.soldesk.moa.admin.dashboard.dto.PopularCircleDTO;
+import com.soldesk.moa.admin.dashboard.dto.PostActivitySummaryDTO;
 import com.soldesk.moa.admin.dashboard.dto.UserCountDTO;
 import com.soldesk.moa.admin.dashboard.dto.UserInfoCircleDTO;
 import com.soldesk.moa.admin.dashboard.dto.UserInfoDTO;
@@ -290,6 +297,59 @@ public class AdminService {
                                 .score((Double) c[4])
                                 .build()).collect(Collectors.toList());
 
+        }
+
+        // 게시글 활동
+        @Transactional(readOnly = true)
+        public PostActivitySummaryDTO postActivitySummary() {
+                LocalDate today = LocalDate.now();
+                LocalDateTime start = today.atStartOfDay();
+                LocalDateTime end = today.atTime(LocalTime.MAX);
+                LocalDate weekAgo = today.minusDays(6);
+
+                // 오늘의 통계
+                long todayPostCount = adminPostRepository.countTodayPosts(start, end);
+                long todayReplyCount = adminReplyRepository.countTodayReplies(start, end);
+
+                // 주간 통계
+                List<DailyCountDTO> weeklyPosts = postActivitytoDto(adminPostRepository.countPostsGroupedByDay(weekAgo),
+                                today);
+                List<DailyCountDTO> weeklyReplis = postActivitytoDto(
+                                adminReplyRepository.countRepliesGroupedByDay(weekAgo), today);
+
+                return PostActivitySummaryDTO.builder()
+                                .todayPostCount(todayPostCount)
+                                .todayReplyCount(todayReplyCount)
+                                .weeklyPosts(weeklyPosts)
+                                .weeklyReplis(weeklyReplis)
+                                .build();
+        }
+
+        // 일별 카운트 반환 전용 메소드
+        @Transactional(readOnly = true)
+        public List<DailyCountDTO> postActivitytoDto(List<Tuple> tuples, LocalDate today) {
+
+                // mapping
+                return IntStream.rangeClosed(0, 6)
+                                .mapToObj(i -> today.minusDays(6 - i))
+                                .map(date -> {
+                                        long count = tuples.stream()
+                                                        .filter(t -> {
+                                                                String dateStr = t.get(0, String.class);
+                                                                if (dateStr == null)
+                                                                        return false;
+                                                                return date.equals(LocalDate.parse(dateStr));
+                                                        })
+                                                        .map(t -> t.get(1, Long.class))
+                                                        .findFirst()
+                                                        .orElse(0L);
+
+                                        return DailyCountDTO.builder()
+                                                        .date(date)
+                                                        .count(count)
+                                                        .build();
+                                })
+                                .collect(Collectors.toList());
         }
 
         // UserCountDTO
