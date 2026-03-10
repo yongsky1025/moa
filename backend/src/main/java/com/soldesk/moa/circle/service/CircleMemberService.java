@@ -212,6 +212,41 @@ public class CircleMemberService {
                 circle.decreaseMember();
         }
 
+        // 멤버 강퇴 (리더만 가능)
+        @Transactional
+        public void kickMember(Long circleId, Long memberId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                // 리더 확인
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 멤버를 강퇴할 수 있습니다."));
+
+                // 강퇴 대상 조회
+                CircleMember target = circleMemberRepository.findById(memberId)
+                                .orElseThrow(() -> new IllegalArgumentException("멤버가 존재하지 않습니다."));
+
+                if (!target.getCircle().getCircleId().equals(circleId)) {
+                        throw new IllegalArgumentException("해당 서클의 멤버가 아닙니다.");
+                }
+
+                if (target.getStatus() != CircleMemberStatus.ACTIVE) {
+                        throw new IllegalStateException("활동 중인 멤버만 강퇴할 수 있습니다.");
+                }
+
+                if (target.getRole() == CircleRole.LEADER) {
+                        throw new IllegalStateException("리더는 강퇴할 수 없습니다.");
+                }
+
+                target.changeStatus(CircleMemberStatus.KICKED);
+                circle.decreaseMember();
+        }
+
         // 리더 권한 위임
         @Transactional
         public void delegateLeader(
