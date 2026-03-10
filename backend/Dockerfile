@@ -2,7 +2,7 @@
 # FROM / WORKDIR / COPY / EXPOSE / ENTRYPOINT (주 명령어)
 # 자동완성됨
 # 사용할 JDK 버전 지정
-FROM eclipse-temurin:17-jdk   
+FROM eclipse-temurin:17-jdk
 
 # 가비아 서버 폴더명 지정
 WORKDIR /app
