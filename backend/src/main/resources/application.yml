@@ -5,7 +5,7 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/moa
-    username: root
+    username: team_moa
     password: 12345
   # 테이블 자동 생성 여부
   jpa:
