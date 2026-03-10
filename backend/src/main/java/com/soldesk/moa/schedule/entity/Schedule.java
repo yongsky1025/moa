@@ -2,9 +2,7 @@ package com.soldesk.moa.schedule.entity;
 
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
-import com.soldesk.moa.place.entity.Reservation;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,7 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,8 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "schedule")
@@ -69,6 +64,7 @@ public class Schedule {
     @Column(nullable = false)
     private LocalDateTime endAt;
 
+    // 주소는 테이블을 따로 빼자//////////////////////
     // 위치 정보 (주소 / 장소명)
     @Column(length = 255)
     private String address;
@@ -80,21 +76,19 @@ public class Schedule {
     // 경도
     @Column
     private Double longitude;
+    //////////////////////////////////////////////////
 
-<<<<<<< HEAD
-    @OneToMany(mappedBy = "schedule", cascade = CascadeType.REMOVE)
-    @Builder.Default
-    private List<ScheduleTag> tags = new ArrayList<>();
-
-    // admin 더미데이터 생성 임시용
-    public void setCurrentMember(int currentMember) {
-        this.currentMember = currentMember;
-=======
     public void increaseCurrentMember() {
         if (this.currentMember >= this.maxMember) {
             throw new IllegalStateException("정원 초과");
         }
         this.currentMember++;
->>>>>>> 942169c7c64477b9ae3b33cbb6aa4ac1d2b95d58
+    }
+
+    public void decreaseCurrentMember() {
+        if (this.currentMember <= 0) {
+            throw new IllegalStateException("현재 인원이 0명입니다.");
+        }
+        this.currentMember--;
     }
 }

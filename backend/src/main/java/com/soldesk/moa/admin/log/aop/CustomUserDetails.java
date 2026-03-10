@@ -10,7 +10,7 @@ import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;
 
-@Component
+// @Component  // Users는 @Entity라 Bean으로 주입 불가 - 직접 new CustomUserDetails(user)로 생성해야 함
 @RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
     private final Users user;

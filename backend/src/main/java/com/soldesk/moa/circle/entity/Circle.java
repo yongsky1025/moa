@@ -58,4 +58,11 @@ public class Circle extends BaseEntity {
             this.status = CircleStatus.FULL;
         }
     }
+
+    // 멤버 탈퇴시 현재 인원 감소
+    public void decreaseMember() {
+        if (this.currentMember > 0) {
+            this.currentMember--;
+        }
+    }
 }

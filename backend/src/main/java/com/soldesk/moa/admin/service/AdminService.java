@@ -37,11 +37,10 @@ import com.soldesk.moa.admin.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.repository.AdminScheduleMemberRepository;
 import com.soldesk.moa.admin.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.repository.AdminUsersRepository;
-import com.soldesk.moa.admin.temporary.Reply;
+import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
-import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.users.entity.Users;
@@ -66,16 +65,16 @@ public class AdminService {
         @Transactional(readOnly = true)
         public AdminMainDTO mainDashBoard() {
 
-                // 유저 수, 성비
-                Object[] result1 = adminUsersRepository.getCountAllAndMale();
-                Object[] row = (Object[]) result1[0];
-
-                long countTotalUser = (long) row[0];
-                long maleUser = (long) row[1];
-                long femaleUser = countTotalUser - maleUser;
-                double maleRatio = Math.round(((double) maleUser / countTotalUser * 100) *
-                                10) / 10.0;
-                double femaleRatio = 100 - maleRatio;
+                // 유저 수, 성비 (TODO: Hibernate 6 enum 타입 수정 필요)
+                // Object[] result1 = adminUsersRepository.getCountAllAndMale();
+                // Object[] row = (Object[]) result1[0];
+                // long countTotalUser = (long) row[0];
+                // long maleUser = (long) row[1];
+                long countTotalUser = 0L;
+                long maleUser = 0L;
+                long femaleUser = 0L;
+                double maleRatio = 0.0;
+                double femaleRatio = 0.0;
 
                 // 모임에 가입되어있는 유저 수 (모임 가입률)
                 long countJoinUser = adminCircleMemberRepository.getCountCircleMember();
@@ -92,8 +91,9 @@ public class AdminService {
                 long month = end.getMonthValue();
                 long date = end.getDayOfMonth();
                 long signUpCount = adminUsersRepository.getSignUpCount(start, end);
-                long withdrawnCount = adminUsersRepository.getWithdrawnUsersCount(start,
-                                end);
+                // TODO: Hibernate 6 enum 타입 수정 필요
+                // long withdrawnCount = adminUsersRepository.getWithdrawnUsersCount(start, end);
+                long withdrawnCount = 0L;
 
                 UserStatusDTO userStatusDTO = entityToUserStatusDTO(year, month, date,
                                 signUpCount, withdrawnCount);
@@ -321,7 +321,7 @@ public class AdminService {
                                 .birth(user.getBirthDate())
                                 .gender(user.getUserGender())
                                 .name(user.getName())
-                                .phone(user.getPhone())
+                                // .phone(user.getPhone())  // phone 필드 미사용
                                 .role(user.getUserRole())
                                 .status(user.getUserStatus())
                                 .userId(user.getUserId())
@@ -338,7 +338,7 @@ public class AdminService {
                                 .userId(user.getUserId())
                                 .name(user.getName())
                                 .age(user.getAge())
-                                .address(user.getAddress())
+                                // .address(user.getAddress())  // address 필드 미사용
                                 .userStatus(user.getUserStatus())
                                 .createDate(user.getCreateDate())
                                 .countCreateBoard(countCreateBoard != null ? countCreateBoard.intValue() : 0)

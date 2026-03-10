@@ -20,14 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.admin.dto.AdminUserSearchDTO;
 import com.soldesk.moa.admin.repository.AdminBoardRepository;
-import com.soldesk.moa.admin.repository.AdminPostRepository;
 import com.soldesk.moa.admin.repository.AdminCircleMemberRepository;
 import com.soldesk.moa.admin.repository.AdminCircleRepository;
+import com.soldesk.moa.admin.repository.AdminPostRepository;
 import com.soldesk.moa.admin.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.repository.AdminScheduleMemberRepository;
 import com.soldesk.moa.admin.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.repository.AdminUsersRepository;
-import com.soldesk.moa.admin.temporary.Reply;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.constant.BoardType;
@@ -38,10 +37,7 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleCategoryRepository;
-import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
-import com.soldesk.moa.schedule.entity.ScheduleMember;
-import com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
@@ -72,6 +68,7 @@ public class AdminRepositoryTest {
     private AdminScheduleMemberRepository adminScheduleMemberRepository;
 
     // create - 관리자 생성
+    @Disabled
     @Commit
     @Test
     public void createAdmin() {
@@ -82,11 +79,9 @@ public class AdminRepositoryTest {
                     .email("test" + i + "@google.com")
                     .password("1111")
                     .nickname("nicknick" + i)
-                    .address("Seoul")
                     .userRole(UserRole.ADMIN)
                     .userGender(UserGender.FEMALE)
                     .birthDate(LocalDate.now().minusYears(i + 20))
-                    .phone("010-1111-1111")
                     .build();
 
             adminUsersRepository.save(users);
@@ -107,9 +102,7 @@ public class AdminRepositoryTest {
                     .email("member" + i + "naver.com")
                     .password("1111")
                     .nickname("hehehehe" + i)
-                    .address("Seoul")
                     .birthDate(birth)
-                    .phone("010-1111-1111")
                     .userRole(UserRole.USER)
                     .userGender(gender)
                     .build();
@@ -227,25 +220,25 @@ public class AdminRepositoryTest {
     }
 
     // reply 생성
-    @Test
-    @Commit
-    public void createReply() {
-        IntStream.rangeClosed(1, 400).forEach(i -> {
-            long userIdx = (long) (Math.random() * 815 + 1);
-            Users user = adminUsersRepository.findById(userIdx).get();
+    // @Test
+    // @Commit
+    // public void createReply() {
+    // IntStream.rangeClosed(1, 400).forEach(i -> {
+    // long userIdx = (long) (Math.random() * 815 + 1);
+    // Users user = adminUsersRepository.findById(userIdx).get();
 
-            long boardIdx = (long) (Math.random() * 30 + 1);
-            Post post = adminBoardRepository.findById(boardIdx).get();
+    // long boardIdx = (long) (Math.random() * 30 + 1);
+    // Post post = adminBoardRepository.findById(boardIdx).get();
 
-            Reply reply = Reply.builder()
-                    .content("it was so good!")
-                    .user(user)
-                    .post(post)
-                    .build();
+    // Reply reply = Reply.builder()
+    // .content("it was so good!")
+    // .user(user)
+    // .post(post)
+    // .build();
 
-            adminReplyRepository.save(reply);
-        });
-    }
+    // adminReplyRepository.save(reply);
+    // });
+    // }
 
     // 일정 생성
     @Test
@@ -280,27 +273,28 @@ public class AdminRepositoryTest {
     }
 
     // 일정에 참가하는 멤버 생성
-    @Test
-    @Commit
-    public void createScheduleMember() {
-        IntStream.rangeClosed(1, 241).forEach(i -> {
-            List<CircleMember> circleMembers = adminCircleMemberRepository.findAll();
-            CircleMember circleMember = circleMembers.get((int) (Math.random() * circleMembers.size()));
-            List<Schedule> schedules = adminScheduleRepository.findAll();
-            Schedule schedule = schedules.get((int) (Math.random() * schedules.size()));
+    // @Test
+    // @Commit
+    // public void createScheduleMember() {
+    // IntStream.rangeClosed(1, 241).forEach(i -> {
+    // List<CircleMember> circleMembers = adminCircleMemberRepository.findAll();
+    // CircleMember circleMember = circleMembers.get((int) (Math.random() *
+    // circleMembers.size()));
+    // List<Schedule> schedules = adminScheduleRepository.findAll();
+    // Schedule schedule = schedules.get((int) (Math.random() * schedules.size()));
 
-            if (schedule.getCurrentMember() < schedule.getMaxMember()) {
-                ScheduleMember scheduleMember = ScheduleMember.builder()
-                        .schedule(schedule)
-                        .circleMember(circleMember)
-                        .status(ScheduleMemberStatus.JOIN)
-                        .build();
-                adminScheduleMemberRepository.save(scheduleMember);
-                schedule.setCurrentMember(schedule.getCurrentMember() + 1);
-            }
+    // if (schedule.getCurrentMember() < schedule.getMaxMember()) {
+    // ScheduleMember scheduleMember = ScheduleMember.builder()
+    // .schedule(schedule)
+    // .circleMember(circleMember)
+    // .status(ScheduleMemberStatus.JOIN)
+    // .build();
+    // adminScheduleMemberRepository.save(scheduleMember);
+    // schedule.setCurrentMember(schedule.getCurrentMember() + 1);
+    // }
 
-        });
-    }
+    // });
+    // }
 
     // circle_member status column 추가
     @Test
@@ -332,9 +326,6 @@ public class AdminRepositoryTest {
         // nickname 수정
         Users user = adminUsersRepository.findById(3L).orElseThrow();
         user.changeNickname("update nickname!");
-
-        // address 수정
-        user.changeAddress("Busan");
 
         // pwd 수정
         user.changePassword("2222");
@@ -405,31 +396,31 @@ public class AdminRepositoryTest {
     }
 
     // 성비 구하기 위한 전체 유저 수 / 남자 유저 수 조회 (현재 활동 중)
-    @Test
-    public void getCountAllAndMale() {
+    // @Test
+    // public void getCountAllAndMale() {
 
-        Object[] result = adminUsersRepository.getCountAllAndMale();
-        Object[] row = (Object[]) result[0];
+    // Object[] result = adminUsersRepository.getCountAllAndMale();
+    // Object[] row = (Object[]) result[0];
 
-        System.out.println("all : " + row[0]);
-        System.out.println("male : " + row[1]);
-    }
+    // System.out.println("all : " + row[0]);
+    // System.out.println("male : " + row[1]);
+    // }
 
     // 전체 유저 수 조회 & 모임 가입 유저 수 조회
-    @Test
-    public void getAllUser() {
-        // long countUsers = adminUsersRepository.findAll().size()
-        // - adminUsersRepository.findByUserStatus(UserStatus.WITHDRAWN).size();
-        Object[] result = adminUsersRepository.getCountAllAndMale();
-        Object[] row = (Object[]) result[0];
-        System.out.println(row[0]);
+    // @Test
+    // public void getAllUser() {
+    // // long countUsers = adminUsersRepository.findAll().size()
+    // // - adminUsersRepository.findByUserStatus(UserStatus.WITHDRAWN).size();
+    // Object[] result = adminUsersRepository.getCountAllAndMale();
+    // Object[] row = (Object[]) result[0];
+    // System.out.println(row[0]);
 
-        // long countCMs =
-        // adminCircleMemberRepository.findgetCountCircleMemberAll().size()
-        // - adminUsersRepository.findByUserStatus(UserStatus.WITHDRAWN).size();
-        long countCMs = adminCircleMemberRepository.findAll().size();
-        System.out.println(countCMs);
-    }
+    // // long countCMs =
+    // // adminCircleMemberRepository.findgetCountCircleMemberAll().size()
+    // // - adminUsersRepository.findByUserStatus(UserStatus.WITHDRAWN).size();
+    // long countCMs = adminCircleMemberRepository.findAll().size();
+    // System.out.println(countCMs);
+    // }
 
     // ?년?월 가입자 조회
     @Test
@@ -453,38 +444,38 @@ public class AdminRepositoryTest {
     }
 
     // 탈퇴자 수 조회(임의의 기간)
-    @Test
-    public void getWithdrawnUsers() {
-        // 최근 3개월
-        LocalDateTime start = LocalDateTime.of(2025, 11, 1, 0, 0, 0);
-        LocalDateTime end = LocalDateTime.now();
-        Long result = adminUsersRepository.getWithdrawnUsersCount(start, end);
-        System.out.println(result);
-    }
+    // @Test
+    // public void getWithdrawnUsers() {
+    // // 최근 3개월
+    // LocalDateTime start = LocalDateTime.of(2025, 11, 1, 0, 0, 0);
+    // LocalDateTime end = LocalDateTime.now();
+    // Long result = adminUsersRepository.getWithdrawnUsersCount(start, end);
+    // System.out.println(result);
+    // }
 
     // 탈퇴자의 정보 조회(기간 검색)
-    @Test
-    public void getWithdrawnUsersInfo() {
-        // 최근 3개월
-        LocalDateTime start = LocalDateTime.of(2025, 11, 1, 0, 0, 0);
-        LocalDateTime end = LocalDateTime.now();
-        List<Users> result = adminUsersRepository.getWithdrawnUsersInfo(start, end);
-        // 여기서 탈퇴자 수도 조회 가능하다
-        System.out.println(result.size());
-        result.forEach(System.out::println);
+    // @Test
+    // public void getWithdrawnUsersInfo() {
+    // // 최근 3개월
+    // LocalDateTime start = LocalDateTime.of(2025, 11, 1, 0, 0, 0);
+    // LocalDateTime end = LocalDateTime.now();
+    // List<Users> result = adminUsersRepository.getWithdrawnUsersInfo(start, end);
+    // // 여기서 탈퇴자 수도 조회 가능하다
+    // System.out.println(result.size());
+    // result.forEach(System.out::println);
 
-    }
+    // }
 
     /// 월별 탈퇴자 수 조회
-    @Test
-    public void countWithdrawnGroupByMonth() {
-        List<Object[]> result = adminUsersRepository.countWithdrawnGroupByMonth();
-        result.forEach(obj -> {
-            System.out.println("year : " + obj[0]);
-            System.out.println("month : " + obj[1]);
-            System.out.println("count : " + obj[2]);
-        });
-    }
+    // @Test
+    // public void countWithdrawnGroupByMonth() {
+    // List<Object[]> result = adminUsersRepository.countWithdrawnGroupByMonth();
+    // result.forEach(obj -> {
+    // System.out.println("year : " + obj[0]);
+    // System.out.println("month : " + obj[1]);
+    // System.out.println("count : " + obj[2]);
+    // });
+    // }
 
     // 총 모임 개수 조회
     @Test

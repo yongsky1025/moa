@@ -48,7 +48,7 @@ public class Place {
 
     @OneToMany(mappedBy = "place")
     @Builder.Default
-    private List<Tag> tags = new ArrayList<>();
+    private List<PlaceTag> tags = new ArrayList<>();
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.REMOVE)
     @Builder.Default

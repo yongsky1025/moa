@@ -61,4 +61,40 @@ public class CircleMemberRepositoryImpl
                 return status == null ? null
                                 : QCircleMember.circleMember.status.eq(status);
         }
+
+        @Override
+        public PageResultDTO<CircleMember> findActiveMembers(
+                        Long circleId,
+                        PageRequestDTO pageRequestDTO) {
+
+                QCircleMember member = QCircleMember.circleMember;
+
+                int page = pageRequestDTO.getPage() - 1;
+                int size = pageRequestDTO.getSize();
+
+                List<CircleMember> content = queryFactory
+                                .selectFrom(member)
+                                .join(member.user).fetchJoin()
+                                .where(
+                                                member.circle.circleId.eq(circleId),
+                                                member.status.eq(CircleMemberStatus.ACTIVE))
+                                .offset((long) page * size)
+                                .limit(size)
+                                .fetch();
+
+                Long total = queryFactory
+                                .select(member.count())
+                                .from(member)
+                                .where(
+                                                member.circle.circleId.eq(circleId),
+                                                member.status.eq(CircleMemberStatus.ACTIVE))
+                                .fetchOne();
+
+                return PageResultDTO.<CircleMember>withAll()
+                                .dtoList(content)
+                                .pageRequestDTO(pageRequestDTO)
+                                .totalCount(total == null ? 0 : total)
+                                .build();
+        }
+
 }

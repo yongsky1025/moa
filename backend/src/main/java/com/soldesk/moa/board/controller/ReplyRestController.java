@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.soldesk.moa.board.dto.ReplyRequestDTO;
 import com.soldesk.moa.board.dto.ReplyResponseDTO;
 import com.soldesk.moa.board.service.ReplyService;
-import com.soldesk.moa.users.dto.AuthUserDTO;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

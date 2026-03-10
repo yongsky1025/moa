@@ -15,7 +15,7 @@ import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.repository.PostRepository;
 import com.soldesk.moa.board.repository.ReplyRepository;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
-import com.soldesk.moa.users.dto.AuthUserDTO;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 

@@ -1,26 +1,34 @@
 package com.soldesk.moa.users.entity;
 
+import com.soldesk.moa.users.entity.constant.AuthProvider;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+// import com.soldesk.moa.board.entity.Board;
+
+import com.soldesk.moa.board.entity.Post;
+import com.soldesk.moa.board.entity.Reply;
+import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.common.entity.Image;
-import com.soldesk.moa.users.entity.constant.AuthProvider;
 import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
 import com.soldesk.moa.users.entity.constant.UserStatus;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -34,7 +42,8 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = { "images", "posts", "replies", "circleMembers" })
+@ToString(exclude = { "images", "posts", "replies", "circleMembers",
+        "energyProfile" })
 @Table(name = "users")
 @Entity
 public class Users extends BaseEntity {
@@ -78,18 +87,23 @@ public class Users extends BaseEntity {
     @Column(name = "public_id", nullable = false, unique = true, length = 36)
     private String publicId;
 
-    // 사용자 id(공개용) - 회원 가입 시 entity에서 자동으로 생성
-    @PrePersist
-    public void prePersist() {
-        if (this.publicId == null) {
-            this.publicId = UUID.randomUUID().toString();
-        }
-    }
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private UserStatus userStatus = UserStatus.ACTIVE;
+
+    // === 추가된 필드 ===
+
+    // 개인정보 동의 시점 (가입 시 필수)
+    @Column(nullable = false)
+    private LocalDateTime privacyAgreedAt;
+
+    // 온보딩(에너지 프로필) 완료 시점 (null이면 미완료)
+    private LocalDateTime onboardingCompletedAt;
+
+    // 에너지 프로필 (1:1)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private UsersEnergyProfile energyProfile;
 
     @OneToMany(mappedBy = "user")
     @Builder.Default
@@ -107,6 +121,8 @@ public class Users extends BaseEntity {
 
     // 회원 탈퇴(withdrawn) 일시
     private LocalDateTime withdrawnAt;
+
+    // === 메서드 ===
 
     public void changeNickname(String nickname) {
         this.nickname = nickname;
@@ -143,9 +159,17 @@ public class Users extends BaseEntity {
         this.withdrawnAt = LocalDateTime.now();
     }
 
+    public void completeOnboarding() {
+        this.onboardingCompletedAt = LocalDateTime.now();
+    }
+
     @PrePersist
     @PreUpdate
     public void addAge() {
+        // publicId 초기화 (최초 저장 시에만 생성)
+        if (this.publicId == null) {
+            this.publicId = UUID.randomUUID().toString();
+        }
         if (birthDate == null) {
             return;
         }

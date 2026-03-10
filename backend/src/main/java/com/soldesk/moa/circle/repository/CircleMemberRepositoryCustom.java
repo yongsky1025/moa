@@ -10,4 +10,8 @@ public interface CircleMemberRepositoryCustom {
             Long circleId,
             CircleMemberStatus status,
             PageRequestDTO pageRequestDTO);
+
+    PageResultDTO<CircleMember> findActiveMembers(
+        Long circleId,
+        PageRequestDTO pageRequestDTO);
 }

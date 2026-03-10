@@ -1,7 +1,6 @@
 package com.soldesk.moa.circle.service;
 
-import java.util.List;
-
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,11 +10,16 @@ import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleCategory;
 import com.soldesk.moa.circle.entity.CircleMember;
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleCategoryRepository;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.common.dto.PageRequestDTO;
+import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.users.repository.UsersRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,10 +31,14 @@ public class CircleService {
         private final CircleRepository circleRepository;
         private final CircleCategoryRepository categoryRepository;
         private final CircleMemberRepository circleMemberRepository;
+        private final UsersRepository usersRepository;
 
         // 서클 생성
         @Transactional
-        public CircleResponseDTO createCircle(CircleCreateRequestDTO request) {
+        public CircleResponseDTO createCircle(CircleCreateRequestDTO request, Long userId) {
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
 
                 CircleCategory circleCategory = categoryRepository.findById(request.getCategoryId())
                                 .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
@@ -46,10 +54,12 @@ public class CircleService {
 
                 Circle savedCircle = circleRepository.save(circle);
 
-                // 3. CircleMember 생성 (모임장)
+                // CircleMember 생성 (리더)
                 CircleMember leader = CircleMember.builder()
                                 .circle(savedCircle)
+                                .user(loginUser)
                                 .role(CircleRole.LEADER)
+                                .status(CircleMemberStatus.ACTIVE)
                                 .build();
 
                 circleMemberRepository.save(leader);
@@ -57,27 +67,37 @@ public class CircleService {
                 return new CircleResponseDTO(savedCircle);
         }
 
-        @Transactional(readOnly = true)
-        public List<CircleResponseDTO> getCircles() {
-                return circleRepository.findAll()
-                                .stream()
-                                .map(CircleResponseDTO::new)
-                                .toList();
-        }
-
+        // 서클 삭제 (리더만 가능)
+        // 삭제 시 서클 멤버들에게 알림 처리 or 동의를 구하는 방식 추가
         @Transactional
-        public void deleteCircle(Long circleId) {
+        public void deleteCircle(Long circleId, Long userId) {
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
 
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 서클을 삭제할 수 있습니다."));
+
+                circleMemberRepository.deleteByCircle(circle);
                 circleRepository.delete(circle);
         }
 
+        // 서클 정보 수정 (리더만 가능)
         @Transactional
-        public CircleResponseDTO updateCircle(Long circleId, CircleUpdateRequestDTO request) {
+        public CircleResponseDTO updateCircle(Long circleId, CircleUpdateRequestDTO request, Long userId) {
 
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 서클 정보를 수정할 수 있습니다."));
 
                 Circle updatedCircle = Circle.builder()
                                 .circleId(circle.getCircleId())
@@ -92,12 +112,35 @@ public class CircleService {
                 return new CircleResponseDTO(circleRepository.save(updatedCircle));
         }
 
+        // 서클 상세 정보
         @Transactional(readOnly = true)
-        public List<CircleResponseDTO> getCirclesByCategory(Long categoryId) {
+        public CircleResponseDTO getCircle(Long circleId) {
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
 
-                return circleRepository.findByCategory_CategoryId(categoryId)
-                                .stream()
-                                .map(CircleResponseDTO::new)
-                                .toList();
+                return CircleResponseDTO.from(circle);
         }
+
+        // 서클 리스트 조회
+        @Transactional(readOnly = true)
+        public PageResultDTO<CircleResponseDTO> getCircles(
+                        Long categoryId,
+                        PageRequestDTO pageRequestDTO) {
+
+                PageResultDTO<Circle> result = circleRepository.findByCategory_CategoryId(
+                                categoryId,
+                                pageRequestDTO);
+
+                // 엔티티 → DTO 변환
+                return PageResultDTO.<CircleResponseDTO>withAll()
+                                .dtoList(
+                                                result.getDtoList()
+                                                                .stream()
+                                                                .map(CircleResponseDTO::new)
+                                                                .toList())
+                                .pageRequestDTO(pageRequestDTO)
+                                .totalCount(result.getTotalCount())
+                                .build();
+        }
+
 }
