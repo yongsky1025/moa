@@ -1,13 +1,11 @@
 spring:
   application:
     name: moa
-
-  # git secret작업 예정
-  # profiles:
-  #   include: oauth2
+  profiles:
+    include: oauth2
 
 jwt:
-  secret: 238ef5a0a77a9d3335b778313550888ce82f391d84b5cc4f9de6d4bb74335f883515c43a547e306f608572196b0c04fff6be43336909bcc13bcd404cc7a2d2bf
+  secret: ${JWT_SECRET}
   access-exp-ms: 1800000
   refresh-exp-ms: 1209600000
 
