@@ -105,6 +105,17 @@ jobs:
             export MYSQL_ROOT_PASSWORD=\"${{ secrets.MYSQL_ROOT_PASSWORD }}\"
             export MYSQL_PASSWORD=\"${{ secrets.MYSQL_PASSWORD }}\"
             
+            export JWT_SECRET=\"${{ secrets.JWT_SECRET }}\"
+
+            export GOOGLE_CLIENT_ID=\"${{ secrets.GOOGLE_CLIENT_ID }}\"
+            export GOOGLE_CLIENT_SECRET=\"${{ secrets.GOOGLE_CLIENT_SECRET }}\"
+
+            export KAKAO_CLIENT_ID=\"${{ secrets.KAKAO_CLIENT_ID }}\"
+            export KAKAO_CLIENT_SECRET=\"${{ secrets.KAKAO_CLIENT_SECRET }}\"
+
+            export NAVER_CLIENT_ID=\"${{ secrets.NAVER_CLIENT_ID }}\"
+            export NAVER_CLIENT_SECRET=\"${{ secrets.NAVER_CLIENT_SECRET }}\"
+            
             # 컨테이너 갱신
             docker compose up -d --build
             docker image prune -f
