@@ -11,7 +11,7 @@ import com.soldesk.moa.circle.service.CircleService;
 
 import lombok.RequiredArgsConstructor;
 
-@RestController
+@RestController("circleAdminController")
 @RequestMapping("/admin/circles")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")

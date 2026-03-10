@@ -61,7 +61,7 @@ public class Schedule {
     // 일정 시작
     @Column(nullable = false)
     private LocalDateTime startAt;
-
+    
     // 일정 종료
     @Column(nullable = false)
     private LocalDateTime endAt;
