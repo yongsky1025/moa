@@ -18,18 +18,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.soldesk.moa.admin.dto.AdminUserSearchDTO;
-import com.soldesk.moa.admin.repository.AdminBoardRepository;
-import com.soldesk.moa.admin.repository.AdminPostRepository;
-import com.soldesk.moa.admin.repository.AdminCircleMemberRepository;
-import com.soldesk.moa.admin.repository.AdminCircleRepository;
-import com.soldesk.moa.admin.repository.AdminReplyRepository;
-import com.soldesk.moa.admin.repository.AdminScheduleMemberRepository;
-import com.soldesk.moa.admin.repository.AdminScheduleRepository;
-import com.soldesk.moa.admin.repository.AdminUsersRepository;
-import com.soldesk.moa.admin.temporary.Reply;
+import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
+import com.soldesk.moa.admin.dashboard.repository.AdminBoardRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminCircleMemberRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminCircleRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminPostRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminReplyRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminScheduleMemberRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.Post;
+import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleCategory;
@@ -226,26 +226,26 @@ public class AdminRepositoryTest {
         });
     }
 
-    // reply 생성
-    @Test
-    @Commit
-    public void createReply() {
-        IntStream.rangeClosed(1, 400).forEach(i -> {
-            long userIdx = (long) (Math.random() * 815 + 1);
-            Users user = adminUsersRepository.findById(userIdx).get();
+    // // reply 생성
+    // @Test
+    // @Commit
+    // public void createReply() {
+    // IntStream.rangeClosed(1, 400).forEach(i -> {
+    // long userIdx = (long) (Math.random() * 815 + 1);
+    // Users user = adminUsersRepository.findById(userIdx).get();
 
-            long boardIdx = (long) (Math.random() * 30 + 1);
-            Post post = adminBoardRepository.findById(boardIdx).get();
+    // long boardIdx = (long) (Math.random() * 30 + 1);
+    // Post post = adminBoardRepository.findById(boardIdx).get();
 
-            Reply reply = Reply.builder()
-                    .content("it was so good!")
-                    .user(user)
-                    .post(post)
-                    .build();
+    // Reply reply = Reply.builder()
+    // .content("it was so good!")
+    // .userId(user)
+    // .postId(post)
+    // .build();
 
-            adminReplyRepository.save(reply);
-        });
-    }
+    // adminReplyRepository.save(reply);
+    // });
+    // }
 
     // 일정 생성
     @Test

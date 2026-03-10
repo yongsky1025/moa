@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.entity.ScheduleMember;
-import com.soldesk.moa.users.entity.Users;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,7 +24,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@ToString
+@ToString(exclude = { "place", "schedule", "scheduleMember" })
 public class Reservation {
 
     @Id

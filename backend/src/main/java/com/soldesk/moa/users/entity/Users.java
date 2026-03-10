@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.soldesk.moa.admin.temporary.Reply;
 import com.soldesk.moa.board.entity.Post;
+import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.common.entity.Image;
@@ -89,7 +89,7 @@ public class Users extends BaseEntity {
     @Builder.Default
     private List<Post> posts = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "userId")
     @Builder.Default
     private List<Reply> replies = new ArrayList<>();
 

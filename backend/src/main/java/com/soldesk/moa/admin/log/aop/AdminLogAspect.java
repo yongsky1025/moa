@@ -49,10 +49,10 @@ public class AdminLogAspect {
             return null;
         }
 
-        // Object principal = authentication.getPrincipal();
-        // if (principal instanceof CustomUserDetails userDetails) {
-        // return authUserDTO.getUserId;
-        // }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof CustomUserDetails userDetails) {
+            return userDetails.getUserId();
+        }
 
         return null;
     }
