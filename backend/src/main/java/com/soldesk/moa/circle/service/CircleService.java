@@ -123,6 +123,15 @@ public class CircleService {
                 return CircleResponseDTO.from(circle);
         }
 
+        // 내가 가입한 서클 목록 조회 (ACTIVE 상태)
+        @Transactional(readOnly = true)
+        public List<CircleResponseDTO> getMyCircles(Long userId) {
+                return circleMemberRepository.findByUser_UserIdAndStatus(userId, CircleMemberStatus.ACTIVE)
+                                .stream()
+                                .map(cm -> new CircleResponseDTO(cm.getCircle()))
+                                .toList();
+        }
+
         // [Admin] 보류 중인 서클 목록 조회
         @Transactional(readOnly = true)
         public List<CircleResponseDTO> getPendingCircles() {
