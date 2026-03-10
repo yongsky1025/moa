@@ -46,7 +46,24 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       # OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+      #jwt 토큰
+      JWT_SECRET: ${JWT_SECRET}
+
+      #구글 소셜 토큰
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+
+      #카카오 소셜 토큰
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+
+      #네이버 소셜 토큰
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
+
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/moadb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
+
       SPRING_DATASOURCE_USERNAME: team_moa
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
