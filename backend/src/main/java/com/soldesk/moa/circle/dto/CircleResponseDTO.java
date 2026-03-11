@@ -13,6 +13,7 @@ public class CircleResponseDTO {
     private CircleStatus status;
     private int maxMember;
     private int currentMember;
+    private Long categoryId;
     private String categoryName;
 
     public static CircleResponseDTO from(Circle circle) {
@@ -26,6 +27,7 @@ public class CircleResponseDTO {
         this.status = circle.getStatus();
         this.maxMember = circle.getMaxMember();
         this.currentMember = circle.getCurrentMember();
+        this.categoryId = circle.getCategory().getCategoryId();
         this.categoryName = circle.getCategory().getCategoryName();
     }
 }
