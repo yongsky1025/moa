@@ -70,7 +70,10 @@ public class SecurityConfig {
                                                                 "/images/**",
                                                                 "/vendor/**",
                                                                 "/fonts/**",
-                                                                "/favicon.ico")
+                                                                "/favicon.ico",
+                                                                "/swagger-ui.html",
+                                                                "/swagger-ui/**",
+                                                                "/v3/api-docs/**")
                                                 .permitAll()
 
                                                 // ----------- user 시큐리티 파트 ---------
