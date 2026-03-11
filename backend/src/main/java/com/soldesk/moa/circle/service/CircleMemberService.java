@@ -16,6 +16,10 @@ import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
+import java.time.LocalDateTime;
+
+import com.soldesk.moa.schedule.entity.ScheduleMember;
+import com.soldesk.moa.schedule.repository.ScheduleMemberRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
@@ -29,6 +33,7 @@ public class CircleMemberService {
         private final CircleMemberRepository circleMemberRepository;
         private final CircleRepository circleRepository;
         private final UsersRepository usersRepository;
+        private final ScheduleMemberRepository scheduleMemberRepository;
 
         // 서클 가입 신청
         @Transactional
@@ -214,6 +219,15 @@ public class CircleMemberService {
                         throw new IllegalStateException("리더는 탈퇴할 수 없습니다. 리더를 위임하세요.");
                 }
 
+                // 아직 시작하지 않은 일정 참여 기록 정리
+                LocalDateTime now = LocalDateTime.now();
+                for (ScheduleMember sm : scheduleMemberRepository.findByCircleMember(member)) {
+                        if (sm.getSchedule().getStartAt().isAfter(now)) {
+                                sm.getSchedule().decreaseCurrentMember();
+                                scheduleMemberRepository.delete(sm);
+                        }
+                }
+
                 member.changeStatus(CircleMemberStatus.LEFT);
                 circle.decreaseMember();
         }
@@ -247,6 +261,15 @@ public class CircleMemberService {
 
                 if (target.getRole() == CircleRole.LEADER) {
                         throw new IllegalStateException("리더는 강퇴할 수 없습니다.");
+                }
+
+                // 아직 시작하지 않은 일정 참여 기록 정리
+                LocalDateTime now = LocalDateTime.now();
+                for (ScheduleMember sm : scheduleMemberRepository.findByCircleMember(target)) {
+                        if (sm.getSchedule().getStartAt().isAfter(now)) {
+                                sm.getSchedule().decreaseCurrentMember();
+                                scheduleMemberRepository.delete(sm);
+                        }
                 }
 
                 target.changeStatus(CircleMemberStatus.KICKED);
