@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MapPin, CalendarDays, Heart, Star, Users } from 'lucide-react';
-import Navbar from './layout/Navbar';
-import Footer from './layout/Footer';
+import Navbar from '../../common/layout/Navbar';
+import Footer from '../../common/layout/Footer';
 
 const categories = [
   '전체',
