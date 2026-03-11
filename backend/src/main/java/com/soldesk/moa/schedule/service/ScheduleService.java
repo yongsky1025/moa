@@ -86,6 +86,7 @@ public class ScheduleService {
                                 .build();
 
                 scheduleMemberRepository.save(creatorMember);
+                saved.increaseCurrentMember();
 
                 return new ScheduleResponseDTO(saved);
         }
