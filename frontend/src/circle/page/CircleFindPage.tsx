@@ -122,17 +122,17 @@ const socialings = [
   },
 ];
 
-interface MeetingFindPageProps {
+interface CircleFindPageProps {
   isLoggedIn: boolean;
   onToggleLogin: () => void;
   isAdmin?: boolean;
 }
 
-export default function MeetingFindPage({
+export default function CircleFindPage({
   isLoggedIn,
   onToggleLogin,
   isAdmin,
-}: MeetingFindPageProps) {
+}: CircleFindPageProps) {
   const [activeCategory, setActiveCategory] = useState('전체');
   const [likedItems, setLikedItems] = useState<Set<number>>(new Set());
 

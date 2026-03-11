@@ -9,10 +9,10 @@ export interface NavbarProps {
 
 const dropdownItems: Record<string, { label: string; href: string }[]> = {
   '모임 찾기': [
-    { label: '전체 모임', href: '/meetings' },
-    { label: '카테고리별', href: '/meetings' },
-    { label: '지역별', href: '/meetings' },
-    { label: '날짜별', href: '/meetings' },
+    { label: '전체 모임', href: '/circles' },
+    { label: '카테고리별', href: '/circles' },
+    { label: '지역별', href: '/circles' },
+    { label: '날짜별', href: '/circles' },
   ],
   커뮤니티: [
     { label: '자유게시판', href: '#' },
@@ -47,7 +47,7 @@ export default function Navbar({
     '장소 추천',
   ];
   const navLinks: Record<string, string> = {
-    '모임 찾기': '/meetings',
+    '모임 찾기': '/circles',
     커뮤니티: '#',
     '에너지 테스트': '#',
     '내 에너지': '#',
