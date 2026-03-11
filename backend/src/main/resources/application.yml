@@ -10,7 +10,7 @@ spring:
   # 테이블 자동 생성 여부
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
       # sql 구문 예쁘게 출력
     properties:
       hibernate:
