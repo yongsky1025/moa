@@ -297,6 +297,11 @@ public class ScheduleService {
                                 .findByScheduleAndCircleMember(schedule, member)
                                 .orElseThrow(() -> new IllegalStateException("참여하지 않은 일정입니다."));
 
+                // 생성자는 참여 취소 불가 (일정 삭제 사용)
+                if (schedule.getCreator().equals(member)) {
+                        throw new IllegalStateException("일정 생성자는 참여를 취소할 수 없습니다. 일정을 삭제해 주세요.");
+                }
+
                 // 참여 기록 삭제
                 scheduleMemberRepository.delete(scheduleMember);
 
