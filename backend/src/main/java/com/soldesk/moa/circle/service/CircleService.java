@@ -102,11 +102,20 @@ public class CircleService {
                                 .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
                                 .orElseThrow(() -> new AccessDeniedException("리더만 서클 정보를 수정할 수 있습니다."));
 
+                int newMaxMember = (request.getMaxMember() != null)
+                                ? request.getMaxMember()
+                                : circle.getMaxMember();
+
+                if (newMaxMember < circle.getCurrentMember()) {
+                        throw new IllegalArgumentException(
+                                "최대 인원은 현재 인원(" + circle.getCurrentMember() + "명) 이상이어야 합니다.");
+                }
+
                 Circle updatedCircle = Circle.builder()
                                 .circleId(circle.getCircleId())
                                 .name(request.getName())
                                 .description(request.getDescription())
-                                .maxMember(circle.getMaxMember())
+                                .maxMember(newMaxMember)
                                 .currentMember(circle.getCurrentMember())
                                 .status(circle.getStatus())
                                 .category(circle.getCategory())
