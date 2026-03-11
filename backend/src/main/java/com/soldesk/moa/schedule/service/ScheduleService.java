@@ -110,6 +110,11 @@ public class ScheduleService {
                                                 CircleMemberStatus.ACTIVE)
                                 .orElseThrow(() -> new AccessDeniedException("서클 멤버만 참여 가능합니다."));
 
+                // 일정 시작 24시간 전까지만 참여 가능
+                if (LocalDateTime.now().isAfter(schedule.getStartAt().minusDays(1))) {
+                        throw new IllegalStateException("일정 시작 24시간 전까지만 참여할 수 있습니다.");
+                }
+
                 // 이미 참여했는지 확인
                 if (scheduleMemberRepository
                                 .existsByScheduleAndCircleMember(schedule, member)) {
