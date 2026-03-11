@@ -11,6 +11,7 @@ import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
+import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageRequestDTO;
@@ -38,6 +39,11 @@ public class CircleMemberService {
 
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                // 서클 상태 체크 (OPEN인 서클만 가입 신청 가능)
+                if (circle.getStatus() != CircleStatus.OPEN) {
+                        throw new IllegalStateException("가입 신청은 모집 중인 서클만 가능합니다.");
+                }
 
                 // 이미 가입 or 신청 여부 체크
                 boolean exists = circleMemberRepository
