@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.Query;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
@@ -31,176 +32,199 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class SearchCircleRepositoryImpl extends QuerydslRepositorySupport
-        implements SearchCircleRepository {
+                implements SearchCircleRepository {
 
-    public SearchCircleRepositoryImpl() {
-        super(Circle.class);
-    }
-
-    @Override
-    public Page<Object[]> getJoinCircleByUserId(Long userId, Pageable pageable) {
-        QUsers user = QUsers.users;
-        QCircleMember circleMember = QCircleMember.circleMember;
-        QCircle circle = QCircle.circle;
-        QCircleCategory category = QCircleCategory.circleCategory;
-
-        JPQLQuery<Circle> query = from(circle)
-                .leftJoin(circleMember).on(circleMember.circle.eq(circle))
-                .leftJoin(user).on(circleMember.user.eq(user))
-                .leftJoin(category).on(circle.category.eq(category))
-                .where(user.userId.eq(userId));
-
-        JPQLQuery<Tuple> tuple = query.select(circle, user.name,
-                category.categoryName, circleMember);
-
-        tuple.orderBy(circle.circleId.asc());
-
-        tuple.offset(pageable.getOffset());
-        tuple.limit(pageable.getPageSize());
-
-        log.info(query);
-
-        List<Tuple> result = tuple.fetch();
-        long count = tuple.fetchCount();
-
-        List<Object[]> list = result.stream().map(Tuple::toArray).collect(Collectors.toList());
-
-        return new PageImpl<>(list, pageable, count);
-    }
-
-    @Override
-    public Page<Object[]> getCircleInfo(Pageable pageable, AdminCircleSearchDTO adminCircleSearchDTO) {
-        QCircle circle = QCircle.circle;
-        QCircleCategory circleCategory = QCircleCategory.circleCategory;
-        QCircleMember circleMember = QCircleMember.circleMember;
-
-        JPQLQuery<Circle> query = from(circle)
-                .join(circleCategory).on(circle.category.eq(circleCategory));
-
-        // subquery
-        JPQLQuery<String> circleMemberSubQuery = JPAExpressions.select(circleMember.user.name)
-                .from(circleMember)
-                .where(circleMember.circle.eq(circle).and(circleMember.role.eq(CircleRole.LEADER)));
-
-        JPQLQuery<Tuple> tuple = query.select(circle.circleId, circleCategory.categoryName, circle.name,
-                circleMemberSubQuery, circle.currentMember, circle.maxMember, circle.status);
-
-        BooleanBuilder builder = new BooleanBuilder();
-
-        // 필터링
-        if (adminCircleSearchDTO.getStatus() != null) {
-            builder.and(circle.status.eq(adminCircleSearchDTO.getStatus()));
-        }
-        if (adminCircleSearchDTO.getCategoryName() != null) {
-            builder.and(circle.category.categoryName.eq(adminCircleSearchDTO.getCategoryName()));
+        public SearchCircleRepositoryImpl() {
+                super(Circle.class);
         }
 
-        // 조건 검색
-        // type => id , name , leader
+        @Override
+        public Page<Object[]> getJoinCircleByUserId(Long userId, Pageable pageable) {
+                QUsers user = QUsers.users;
+                QCircleMember circleMember = QCircleMember.circleMember;
+                QCircle circle = QCircle.circle;
+                QCircleCategory category = QCircleCategory.circleCategory;
 
-        if (adminCircleSearchDTO.getKeyword() != null && !adminCircleSearchDTO.getKeyword().isEmpty()) {
+                JPQLQuery<Circle> query = from(circle)
+                                .leftJoin(circleMember).on(circleMember.circle.eq(circle))
+                                .leftJoin(user).on(circleMember.user.eq(user))
+                                .leftJoin(category).on(circle.category.eq(category))
+                                .where(user.userId.eq(userId));
 
-            switch (adminCircleSearchDTO.getType()) {
-                case "id":
-                    builder.and(circle.circleId.eq(Long.parseLong(adminCircleSearchDTO.getKeyword())));
-                    break;
-                case "name":
-                    builder.and(circle.name.eq(adminCircleSearchDTO.getKeyword()));
-                    break;
-                case "leader":
-                    builder.and(circleMemberSubQuery.contains(adminCircleSearchDTO.getKeyword()));
-                    break;
-            }
+                JPQLQuery<Tuple> tuple = query.select(circle, user.name,
+                                category.categoryName, circleMember);
+
+                tuple.orderBy(circle.circleId.asc());
+
+                tuple.offset(pageable.getOffset());
+                tuple.limit(pageable.getPageSize());
+
+                log.info(query);
+
+                List<Tuple> result = tuple.fetch();
+                long count = tuple.fetchCount();
+
+                List<Object[]> list = result.stream().map(Tuple::toArray).collect(Collectors.toList());
+
+                return new PageImpl<>(list, pageable, count);
         }
 
-        tuple.where(builder);
-        tuple.orderBy(circle.circleId.asc());
+        @Override
+        public Page<Object[]> getCircleInfo(Pageable pageable, AdminCircleSearchDTO adminCircleSearchDTO) {
+                QCircle circle = QCircle.circle;
+                QCircleCategory circleCategory = QCircleCategory.circleCategory;
+                QCircleMember circleMember = QCircleMember.circleMember;
 
-        tuple.offset(pageable.getOffset());
-        tuple.limit(pageable.getPageSize());
+                JPQLQuery<Circle> query = from(circle)
+                                .join(circleCategory).on(circle.category.eq(circleCategory));
 
-        log.info(query);
+                // subquery
+                JPQLQuery<String> circleMemberSubQuery = JPAExpressions.select(circleMember.user.name)
+                                .from(circleMember)
+                                .where(circleMember.circle.eq(circle).and(circleMember.role.eq(CircleRole.LEADER)));
 
-        List<Tuple> result = tuple.fetch();
-        List<Object[]> list = result.stream().map(Tuple::toArray).collect(Collectors.toList());
+                JPQLQuery<Tuple> tuple = query.select(circle.circleId, circleCategory.categoryName, circle.name,
+                                circleMemberSubQuery, circle.currentMember, circle.maxMember, circle.status);
 
-        // count query 분리
-        long count = from(circle)
-                .join(circleCategory).on(circle.category.eq(circleCategory))
-                .where(builder)
-                .select(circle.count())
-                .fetchOne();
+                BooleanBuilder builder = new BooleanBuilder();
 
-        return new PageImpl<>(list, pageable, count);
-    }
+                // 필터링
+                if (adminCircleSearchDTO.getStatus() != null) {
+                        builder.and(circle.status.eq(adminCircleSearchDTO.getStatus()));
+                }
+                if (adminCircleSearchDTO.getCategoryName() != null) {
+                        builder.and(circle.category.categoryName.eq(adminCircleSearchDTO.getCategoryName()));
+                }
 
-    // 인기모임
-    @Override
-    public List<Object[]> findPopularCircles(LocalDateTime since, int limit) {
+                // 조건 검색
+                // type => id , name , leader
 
-        QCircle circle = QCircle.circle;
-        QCircleMember circleMember = QCircleMember.circleMember;
-        QSchedule schedule = QSchedule.schedule;
-        QCircleCategory category = QCircleCategory.circleCategory;
+                if (adminCircleSearchDTO.getKeyword() != null && !adminCircleSearchDTO.getKeyword().isEmpty()) {
 
-        // 최근 가입자 수
-        NumberExpression<Long> recentJoinCount = Expressions.numberTemplate(Long.class, "{0}",
-                JPAExpressions.select(circleMember.count())
-                        .from(circleMember)
-                        .where(circleMember.circle.eq(circle)
-                                .and(circleMember.status.eq(CircleMemberStatus.ACTIVE))
-                                .and(circleMember.createDate.goe(since))));
+                        switch (adminCircleSearchDTO.getType()) {
+                                case "id":
+                                        builder.and(circle.circleId
+                                                        .eq(Long.parseLong(adminCircleSearchDTO.getKeyword())));
+                                        break;
+                                case "name":
+                                        builder.and(circle.name.eq(adminCircleSearchDTO.getKeyword()));
+                                        break;
+                                case "leader":
+                                        builder.and(circleMemberSubQuery.contains(adminCircleSearchDTO.getKeyword()));
+                                        break;
+                        }
+                }
 
-        // 일정 수
-        NumberExpression<Long> scheduleCount = Expressions.numberTemplate(Long.class,
-                "({0})",
-                JPAExpressions
-                        .select(schedule.count())
-                        .from(schedule)
-                        .where(schedule.circle.eq(circle)));
+                tuple.where(builder);
+                tuple.orderBy(circle.circleId.asc());
 
-        // 점수 계산
-        NumberExpression<Double> score = circle.currentMember.doubleValue().multiply(0.5)
-                .add(recentJoinCount.doubleValue().multiply(0.2))
-                .add(scheduleCount.doubleValue().multiply(0.3));
+                tuple.offset(pageable.getOffset());
+                tuple.limit(pageable.getPageSize());
 
-        JPQLQuery<Circle> query = from(circle).join(category).on(circle.category.eq(category));
+                log.info(query);
 
-        JPQLQuery<Tuple> tuple = query.select(circle.circleId, circle.name, category.categoryName, circle.currentMember,
-                score);
+                List<Tuple> result = tuple.fetch();
+                List<Object[]> list = result.stream().map(Tuple::toArray).collect(Collectors.toList());
 
-        tuple.groupBy(circle.circleId);
-        tuple.orderBy(score.desc());
-        tuple.limit(limit);
+                // count query 분리
+                long count = from(circle)
+                                .join(circleCategory).on(circle.category.eq(circleCategory))
+                                .where(builder)
+                                .select(circle.count())
+                                .fetchOne();
 
-        List<Tuple> result = tuple.fetch();
+                return new PageImpl<>(list, pageable, count);
+        }
 
-        return result.stream().map(Tuple::toArray).collect(Collectors.toList());
-    }
+        // 인기모임
+        @Override
+        public List<Object[]> findPopularCircles(LocalDateTime since, int limit) {
 
-    @Override
-    public Long countTotalCircle() {
-        QCircle circle = QCircle.circle;
+                QCircle circle = QCircle.circle;
+                QCircleMember circleMember = QCircleMember.circleMember;
+                QSchedule schedule = QSchedule.schedule;
+                QCircleCategory category = QCircleCategory.circleCategory;
 
-        JPAQueryFactory queryFactory = new JPAQueryFactory(getEntityManager());
+                // 최근 가입자 수
+                NumberExpression<Long> recentJoinCount = Expressions.numberTemplate(Long.class, "{0}",
+                                JPAExpressions.select(circleMember.count())
+                                                .from(circleMember)
+                                                .where(circleMember.circle.eq(circle)
+                                                                .and(circleMember.status.eq(CircleMemberStatus.ACTIVE))
+                                                                .and(circleMember.createDate.goe(since))));
 
-        return queryFactory.select(circle.count())
-                .from(circle)
-                .fetchOne();
-    }
+                // 일정 수
+                NumberExpression<Long> scheduleCount = Expressions.numberTemplate(Long.class,
+                                "({0})",
+                                JPAExpressions
+                                                .select(schedule.count())
+                                                .from(schedule)
+                                                .where(schedule.circle.eq(circle)));
 
-    @Override
-    public Long countActiveCircle(LocalDateTime since) {
-        QCircle circle = QCircle.circle;
-        QSchedule schedule = QSchedule.schedule;
+                // 점수 계산
+                NumberExpression<Double> score = circle.currentMember.doubleValue().multiply(0.5)
+                                .add(recentJoinCount.doubleValue().multiply(0.2))
+                                .add(scheduleCount.doubleValue().multiply(0.3));
 
-        JPAQueryFactory queryFactory = new JPAQueryFactory(getEntityManager());
+                JPQLQuery<Circle> query = from(circle).join(category).on(circle.category.eq(category));
 
-        return queryFactory.select(circle.countDistinct())
-                .from(circle)
-                .leftJoin(schedule).on(schedule.circle.eq(circle).and(schedule.startAt.goe(since)))
-                .where(schedule.scheduleId.isNotNull())
-                .fetchOne();
-    }
+                JPQLQuery<Tuple> tuple = query.select(circle.circleId, circle.name, category.categoryName,
+                                circle.currentMember,
+                                score);
+
+                tuple.groupBy(circle.circleId);
+                tuple.orderBy(score.desc());
+                tuple.limit(limit);
+
+                List<Tuple> result = tuple.fetch();
+
+                return result.stream().map(Tuple::toArray).collect(Collectors.toList());
+        }
+
+        @Override
+        public Long countTotalCircle() {
+                QCircle circle = QCircle.circle;
+
+                JPAQueryFactory queryFactory = new JPAQueryFactory(getEntityManager());
+
+                return queryFactory.select(circle.count())
+                                .from(circle)
+                                .fetchOne();
+        }
+
+        @Override
+        public Long countActiveCircle(LocalDateTime since) {
+                QCircle circle = QCircle.circle;
+                QSchedule schedule = QSchedule.schedule;
+
+                JPAQueryFactory queryFactory = new JPAQueryFactory(getEntityManager());
+
+                return queryFactory.select(circle.countDistinct())
+                                .from(circle)
+                                .leftJoin(schedule).on(schedule.circle.eq(circle).and(schedule.startAt.goe(since)))
+                                .where(schedule.scheduleId.isNotNull())
+                                .fetchOne();
+        }
+
+        @Override
+        public List<Object[]> findCircleCreateActivity(LocalDateTime since) {
+
+                QCircle circle = QCircle.circle;
+
+                NumberExpression<Integer> hour = Expressions.numberTemplate(Integer.class, "hour({0})",
+                                circle.createDate);
+
+                NumberExpression<Integer> day = Expressions.numberTemplate(Integer.class, "dayofweek({0})",
+                                circle.createDate);
+
+                JPQLQuery<Circle> query = from(circle).where(circle.createDate.goe(since));
+
+                JPQLQuery<Tuple> tuple = query.select(day, hour, circle.count());
+
+                tuple.groupBy(day, hour);
+                List<Tuple> list = tuple.fetch();
+
+                return list.stream().map(Tuple::toArray).collect(Collectors.toList());
+        }
 
 }

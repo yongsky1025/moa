@@ -1,5 +1,6 @@
 package com.soldesk.moa.admin.dashboard.repository;
 
+import java.beans.Expression;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport
 
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.StringTemplate;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.JPQLQueryFactory;
@@ -83,6 +85,23 @@ public class SearchPostRepositoryImpl extends QuerydslRepositorySupport
                 .groupBy(dateExpr)
                 .orderBy(dateExpr.asc())
                 .fetch();
+    }
+
+    @Override
+    public List<Object[]> findPostActivity(LocalDateTime since) {
+        QPost post = QPost.post;
+
+        NumberExpression<Integer> day = Expressions.numberTemplate(Integer.class, "dayofweek({0})", post.createDate);
+        NumberExpression<Integer> hour = Expressions.numberTemplate(Integer.class, "hour({0})", post.createDate);
+
+        JPQLQuery<Post> query = from(post).where(post.createDate.goe(since));
+
+        JPQLQuery<Tuple> tuple = query.select(day, hour, post.postId.count());
+
+        tuple.groupBy(day, hour);
+        List<Tuple> list = tuple.fetch();
+
+        return list.stream().map(Tuple::toArray).collect(Collectors.toList());
     }
 
 }

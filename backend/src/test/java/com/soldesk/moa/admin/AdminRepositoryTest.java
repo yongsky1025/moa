@@ -29,7 +29,6 @@ import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleCategory;
@@ -38,7 +37,6 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleCategoryRepository;
-import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.entity.ScheduleMember;
 import com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus;
@@ -49,7 +47,7 @@ import com.soldesk.moa.users.entity.constant.UserStatus;
 
 @SpringBootTest
 @Transactional
-@Disabled
+// @Disabled
 public class AdminRepositoryTest {
 
     @Autowired
@@ -70,6 +68,8 @@ public class AdminRepositoryTest {
     private AdminScheduleRepository adminScheduleRepository;
     @Autowired
     private AdminScheduleMemberRepository adminScheduleMemberRepository;
+    @Autowired
+    private AdminPostRepository adminPostRepository;
 
     // create - 관리자 생성
     @Commit
@@ -613,5 +613,18 @@ public class AdminRepositoryTest {
             System.out.println(result.getTotalElements());
             System.out.println(result.getTotalPages());
         });
+    }
+
+    // 시간대별 활동량
+    @Test
+    public void findActivity() {
+        LocalDateTime since = LocalDateTime.now().minusMonths(2);
+
+        List<Object[]> result = adminPostRepository.findPostActivity(since);
+
+        for (Object[] objects : result) {
+            System.out.printf("day: %s, hour: %s, activity_count: %s\n", objects[0].toString(), objects[1].toString(),
+                    objects[2].toString());
+        }
     }
 }

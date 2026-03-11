@@ -23,4 +23,7 @@ public interface SearchCircleRepository {
     Long countTotalCircle();
 
     Long countActiveCircle(LocalDateTime since);
+
+    // 시간대별 활동량 - 모임(생성)
+    List<Object[]> findCircleCreateActivity(LocalDateTime since);
 }

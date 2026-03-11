@@ -29,4 +29,8 @@ public interface SearchUsersRepository {
 
     // 유저 상세 조회
     Object[] getUserProfile(Long userId);
+
+    // 시간대별 활동량 - 회원(가입기준)
+    List<Object[]> findUserRegisterActivity(LocalDateTime since);
+
 }

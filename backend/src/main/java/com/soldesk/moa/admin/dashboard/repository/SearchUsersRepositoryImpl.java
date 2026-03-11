@@ -13,19 +13,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Query;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.DatePath;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
-import com.querydsl.core.types.dsl.StringExpression;
-import com.querydsl.core.types.dsl.StringExpressions;
 import com.querydsl.jpa.JPQLQuery;
-import com.soldesk.moa.admin.dashboard.dto.AdminUserResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
 import com.soldesk.moa.board.entity.QPost;
 import com.soldesk.moa.board.entity.QReply;
@@ -34,7 +29,6 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.users.entity.QUsers;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserGender;
-import com.soldesk.moa.users.entity.constant.UserRole;
 import com.soldesk.moa.users.entity.constant.UserStatus;
 
 import lombok.extern.log4j.Log4j2;
@@ -232,6 +226,28 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
         Tuple result = tuple.fetchFirst();
 
         return result.toArray();
+    }
+
+    @Override
+    public List<Object[]> findUserRegisterActivity(LocalDateTime since) {
+
+        QUsers user = QUsers.users;
+
+        NumberExpression<Integer> hour = Expressions.numberTemplate(Integer.class, "hour({0})",
+                user.createDate);
+
+        NumberExpression<Integer> day = Expressions.numberTemplate(Integer.class, "dayofweek({0})",
+                user.createDate);
+
+        JPQLQuery<Users> query = from(user).where(user.createDate.goe(since));
+
+        JPQLQuery<Tuple> tuple = query.select(day, hour, user.count());
+
+        tuple.groupBy(day, hour);
+        List<Tuple> list = tuple.fetch();
+
+        return list.stream().map(Tuple::toArray).collect(Collectors.toList());
+
     }
 
 }
