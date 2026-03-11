@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import com.soldesk.moa.circle.dto.CircleCategoryResponseDTO;
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
@@ -185,6 +186,15 @@ public class CircleService {
                                 .build();
 
                 circleRepository.save(rejected);
+        }
+
+        // 카테고리 전체 목록 조회
+        @Transactional(readOnly = true)
+        public List<CircleCategoryResponseDTO> getCategories() {
+                return categoryRepository.findAll()
+                                .stream()
+                                .map(CircleCategoryResponseDTO::new)
+                                .toList();
         }
 
         // 서클 리스트 조회

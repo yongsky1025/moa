@@ -7,6 +7,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import com.soldesk.moa.circle.dto.CircleCategoryResponseDTO;
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
@@ -25,6 +26,12 @@ import lombok.RequiredArgsConstructor;
 public class CircleController {
 
     private final CircleService circleService;
+
+    // 카테고리 전체 목록 조회
+    @GetMapping("/categories")
+    public ResponseEntity<List<CircleCategoryResponseDTO>> getCategories() {
+        return ResponseEntity.ok(circleService.getCategories());
+    }
 
     // 내가 가입한 서클 목록 조회
     @GetMapping("/me")
