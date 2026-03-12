@@ -3,7 +3,9 @@ package com.soldesk.moa.circle.service;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 import com.soldesk.moa.circle.dto.CircleCategoryResponseDTO;
@@ -21,6 +23,7 @@ import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.common.entity.Image;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
@@ -35,10 +38,11 @@ public class CircleService {
         private final CircleCategoryRepository categoryRepository;
         private final CircleMemberRepository circleMemberRepository;
         private final UsersRepository usersRepository;
+        private final CircleImageService circleImageService;
 
-        // 서클 생성
+        // 서클 생성 (POST multipart - Tomcat이 POST multipart 정상 처리)
         @Transactional
-        public CircleResponseDTO createCircle(CircleCreateRequestDTO request, Long userId) {
+        public CircleResponseDTO createCircle(CircleCreateRequestDTO request, MultipartFile imageFile, Long userId) {
 
                 Users loginUser = usersRepository.findById(userId)
                                 .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
@@ -46,18 +50,27 @@ public class CircleService {
                 CircleCategory circleCategory = categoryRepository.findById(request.getCategoryId())
                                 .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
 
+                Image coverImage = null;
+                if (imageFile != null && !imageFile.isEmpty()) {
+                        try {
+                                coverImage = circleImageService.saveCoverImage(imageFile, userId);
+                        } catch (IOException e) {
+                                throw new IllegalStateException("이미지 업로드에 실패했습니다: " + e.getMessage());
+                        }
+                }
+
                 Circle circle = Circle.builder()
                                 .name(request.getName())
                                 .description(request.getDescription())
                                 .maxMember(request.getMaxMember())
-                                .currentMember(1) // 최초 멤버 = 생성자
-                                .status(CircleStatus.PENDING) // 관리자 승인 대기
+                                .currentMember(1)
+                                .status(CircleStatus.PENDING)
                                 .category(circleCategory)
+                                .coverImage(coverImage)
                                 .build();
 
                 Circle savedCircle = circleRepository.save(circle);
 
-                // CircleMember 생성 (리더)
                 CircleMember leader = CircleMember.builder()
                                 .circle(savedCircle)
                                 .user(loginUser)
@@ -71,7 +84,6 @@ public class CircleService {
         }
 
         // 서클 삭제 (리더만 가능)
-        // 삭제 시 서클 멤버들에게 알림 처리 or 동의를 구하는 방식 추가
         @Transactional
         public void deleteCircle(Long circleId, Long userId) {
                 Circle circle = circleRepository.findById(circleId)
@@ -88,7 +100,8 @@ public class CircleService {
                 circleRepository.delete(circle);
         }
 
-        // 서클 정보 수정 (리더만 가능)
+        // 서클 정보 수정 (리더만 가능, JSON)
+        // 이미지 변경은 uploadCoverImage 사용
         @Transactional
         public CircleResponseDTO updateCircle(Long circleId, CircleUpdateRequestDTO request, Long userId) {
 
@@ -111,7 +124,32 @@ public class CircleService {
                                 "최대 인원은 현재 인원(" + circle.getCurrentMember() + "명) 이상이어야 합니다.");
                 }
 
-                circle.update(request.getName(), request.getDescription(), newMaxMember);
+                // 이미지는 변경하지 않음 (null 전달 → update() 내부에서 기존 이미지 유지)
+                circle.update(request.getName(), request.getDescription(), newMaxMember, null);
+
+                return new CircleResponseDTO(circle);
+        }
+
+        // 서클 대표 이미지 업로드/교체 (리더만 가능, POST multipart)
+        @Transactional
+        public CircleResponseDTO uploadCoverImage(Long circleId, MultipartFile imageFile, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 이미지를 변경할 수 있습니다."));
+
+                try {
+                        Image newImage = circleImageService.saveCoverImage(imageFile, userId);
+                        circle.update(circle.getName(), circle.getDescription(), circle.getMaxMember(), newImage);
+                } catch (IOException e) {
+                        throw new IllegalStateException("이미지 업로드에 실패했습니다: " + e.getMessage());
+                }
 
                 return new CircleResponseDTO(circle);
         }
@@ -161,6 +199,7 @@ public class CircleService {
                                 .currentMember(circle.getCurrentMember())
                                 .status(CircleStatus.OPEN)
                                 .category(circle.getCategory())
+                                .coverImage(circle.getCoverImage())
                                 .build();
 
                 return new CircleResponseDTO(circleRepository.save(approved));
@@ -184,6 +223,7 @@ public class CircleService {
                                 .currentMember(circle.getCurrentMember())
                                 .status(CircleStatus.REJECTED)
                                 .category(circle.getCategory())
+                                .coverImage(circle.getCoverImage())
                                 .build();
 
                 circleRepository.save(rejected);
@@ -208,7 +248,6 @@ public class CircleService {
                                 categoryId,
                                 pageRequestDTO);
 
-                // 엔티티 → DTO 변환
                 return PageResultDTO.<CircleResponseDTO>withAll()
                                 .dtoList(
                                                 result.getDtoList()

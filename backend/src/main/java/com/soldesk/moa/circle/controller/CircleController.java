@@ -2,10 +2,12 @@ package com.soldesk.moa.circle.controller;
 
 import java.util.List;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.soldesk.moa.circle.dto.CircleCategoryResponseDTO;
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
@@ -41,15 +43,16 @@ public class CircleController {
         return ResponseEntity.ok(circleService.getMyCircles(authUserDTO.getUserId()));
     }
 
-    // 서클 생성
-    @PostMapping
+    // 서클 생성 (multipart/form-data, POST는 Tomcat이 multipart 정상 처리)
+    // - data 파트: CircleCreateRequestDTO (JSON)
+    // - image 파트: 대표 이미지 파일 (선택)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CircleResponseDTO> createCircle(
-            @RequestBody @Valid CircleCreateRequestDTO request,
+            @RequestPart("data") @Valid CircleCreateRequestDTO request,
+            @RequestPart(value = "image", required = false) MultipartFile image,
             @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
-        Long userId = authUserDTO.getUserId();
-
-        return ResponseEntity.ok(circleService.createCircle(request, userId));
+        return ResponseEntity.ok(circleService.createCircle(request, image, authUserDTO.getUserId()));
     }
 
     // 서클 상세 조회
@@ -78,7 +81,8 @@ public class CircleController {
         return ResponseEntity.noContent().build();
     }
 
-    // 서클 수정 (이름, 설명만)
+    // 서클 수정 (JSON, 기존 방식 유지)
+    // - 이미지 변경은 별도 POST /{circleId}/image 사용
     @PutMapping("/{circleId}")
     public ResponseEntity<CircleResponseDTO> updateCircle(
             @PathVariable Long circleId,
@@ -86,6 +90,16 @@ public class CircleController {
             @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
         return ResponseEntity.ok(circleService.updateCircle(circleId, request, authUserDTO.getUserId()));
+    }
+
+    // 서클 대표 이미지 업로드/교체 (POST는 multipart 정상 처리)
+    @PostMapping(value = "/{circleId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CircleResponseDTO> uploadCoverImage(
+            @PathVariable Long circleId,
+            @RequestPart("image") MultipartFile image,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(circleService.uploadCoverImage(circleId, image, authUserDTO.getUserId()));
     }
 
 }
