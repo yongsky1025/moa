@@ -111,17 +111,9 @@ public class CircleService {
                                 "최대 인원은 현재 인원(" + circle.getCurrentMember() + "명) 이상이어야 합니다.");
                 }
 
-                Circle updatedCircle = Circle.builder()
-                                .circleId(circle.getCircleId())
-                                .name(request.getName())
-                                .description(request.getDescription())
-                                .maxMember(newMaxMember)
-                                .currentMember(circle.getCurrentMember())
-                                .status(circle.getStatus())
-                                .category(circle.getCategory())
-                                .build();
+                circle.update(request.getName(), request.getDescription(), newMaxMember);
 
-                return new CircleResponseDTO(circleRepository.save(updatedCircle));
+                return new CircleResponseDTO(circle);
         }
 
         // 서클 상세 정보

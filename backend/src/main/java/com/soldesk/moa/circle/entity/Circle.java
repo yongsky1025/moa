@@ -64,4 +64,15 @@ public class Circle extends BaseEntity {
             this.currentMember--;
         }
     }
+
+    // 서클 정보 수정 (리더 전용)
+    public void update(String name, String description, int maxMember) {
+        this.name = name;
+        this.description = description;
+        this.maxMember = maxMember;
+        // 정원을 늘려서 현재 인원보다 많아지면 FULL → OPEN
+        if (this.status == CircleStatus.FULL && maxMember > this.currentMember) {
+            this.status = CircleStatus.OPEN;
+        }
+    }
 }
