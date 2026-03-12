@@ -109,15 +109,13 @@ public class Users extends BaseEntity {
     @Builder.Default
     private List<Image> images = new ArrayList<>();
 
-    // 임시로 보류
-    // @OneToMany(mappedBy = "")
-    // @Builder.Default
-    // private List<Board> boards = new ArrayList<>();
+    @OneToMany(mappedBy = "userId")
+    @Builder.Default
+    private List<Post> posts = new ArrayList<>();
 
-    // // 작성한 게시글 추가
-    // @OneToMany(mappedBy = "")
-    // @Builder.Default
-    // private List<Post> posts = new ArrayList<>();
+    @OneToMany(mappedBy = "userId")
+    @Builder.Default
+    private List<Reply> replies = new ArrayList<>();
 
     // 회원 탈퇴(withdrawn) 일시
     private LocalDateTime withdrawnAt;

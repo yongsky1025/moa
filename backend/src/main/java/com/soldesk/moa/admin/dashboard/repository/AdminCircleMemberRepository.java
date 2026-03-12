@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import com.soldesk.moa.circle.entity.CircleMember;
 
-public interface AdminCircleMemberRepository extends JpaRepository<CircleMember, Long> {
+public interface AdminCircleMemberRepository extends JpaRepository<CircleMember, Long>, SearchCircleMemberRepository {
 
     // 모임에 가입되어있는(현재 활동 중, 승인대기x, 하나 이상) 유저 수
     @Query("select distinct count(cm) from CircleMember cm where cm.status = 'active'")

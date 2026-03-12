@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.querydsl.core.Tuple;
 import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
 import com.soldesk.moa.users.entity.Users;
 
@@ -20,9 +21,16 @@ public interface SearchUsersRepository {
     // 연령대별 유저 수 & 성비 조회(탈퇴자x)
     List<Object[]> getAgeGroup();
 
+    // 연령대별 모임 참여 유저 수 조회
+    List<Tuple> findAgeRangeParticipation();
+
     // 전체 유저 정보 조회(검색,필터)
     Page<Users> getUsersInfo(Pageable pageable, AdminUserSearchDTO searchDTO);
 
     // 유저 상세 조회
     Object[] getUserProfile(Long userId);
+
+    // 시간대별 활동량 - 회원(가입기준)
+    List<Object[]> findUserRegisterActivity(LocalDateTime since);
+
 }
