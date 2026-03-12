@@ -410,7 +410,7 @@ public class AdminService {
                                 .userId(user.getUserId())
                                 .name(user.getName())
                                 .age(user.getAge())
-                                .address(user.getAddress())
+                                // .address(user.getAddress())
                                 .userStatus(user.getUserStatus())
                                 .createDate(user.getCreateDate())
                                 .countCreateBoard(countCreateBoard != null ? countCreateBoard.intValue() : 0)

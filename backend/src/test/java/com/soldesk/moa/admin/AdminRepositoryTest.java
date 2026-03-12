@@ -82,11 +82,11 @@ public class AdminRepositoryTest {
                     .email("test" + i + "@google.com")
                     .password("1111")
                     .nickname("nicknick" + i)
-                    .address("Seoul")
+                    // .address("Seoul")
                     .userRole(UserRole.ADMIN)
                     .userGender(UserGender.FEMALE)
                     .birthDate(LocalDate.now().minusYears(i + 20))
-                    .phone("010-1111-1111")
+                    // .phone("010-1111-1111")
                     .build();
 
             adminUsersRepository.save(users);
@@ -107,9 +107,9 @@ public class AdminRepositoryTest {
                     .email("member" + i + "naver.com")
                     .password("1111")
                     .nickname("hehehehe" + i)
-                    .address("Seoul")
+                    // .address("Seoul")
                     .birthDate(birth)
-                    .phone("010-1111-1111")
+                    // .phone("010-1111-1111")
                     .userRole(UserRole.USER)
                     .userGender(gender)
                     .build();
@@ -334,7 +334,7 @@ public class AdminRepositoryTest {
         user.changeNickname("update nickname!");
 
         // address 수정
-        user.changeAddress("Busan");
+        // user.changeAddress("Busan");
 
         // pwd 수정
         user.changePassword("2222");
