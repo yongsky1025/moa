@@ -21,6 +21,12 @@ export default function CircleDetailPage() {
   const { circleId } = useParams<{ circleId: string }>();
   const cid = Number(circleId);
   const navigate = useNavigate();
+
+  // circleId가 유효하지 않으면 목록으로
+  if (!circleId || isNaN(cid)) {
+    navigate('/circle', { replace: true });
+    return null;
+  }
   const { user, isLoggedIn } = useSelector((s: RootState) => s.auth);
 
   const [circle, setCircle] = useState<CircleResponse | null>(null);
@@ -132,7 +138,16 @@ export default function CircleDetailPage() {
         )}
 
         {/* 서클 헤더 카드 */}
-        <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 28, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: 16 }}>
+        <div style={{ backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: 16 }}>
+          {/* 대표 이미지 */}
+          {circle.coverImageUrl && (
+            <img
+              src={circle.coverImageUrl}
+              alt={circle.name}
+              style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block' }}
+            />
+          )}
+          <div style={{ padding: 28 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -203,6 +218,7 @@ export default function CircleDetailPage() {
                 로그인 후 가입 신청
               </button>
             )}
+          </div>
           </div>
         </div>
 

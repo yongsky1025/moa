@@ -11,6 +11,7 @@ export interface CircleResponse {
   currentMember: number;
   categoryId: number;
   categoryName: string;
+  coverImageUrl?: string;
 }
 
 export interface CircleCreateRequest {

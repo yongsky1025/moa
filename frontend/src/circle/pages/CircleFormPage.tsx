@@ -23,6 +23,9 @@ export default function CircleFormPage() {
   });
   const [currentMember, setCurrentMember] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState('');       // 새로 선택한 파일 미리보기
+  const [existingImageUrl, setExistingImageUrl] = useState(''); // 수정 시 기존 이미지
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -57,12 +60,21 @@ export default function CircleFormPage() {
           categoryId: c.categoryId,
         });
         setCurrentMember(c.currentMember);
+        if (c.coverImageUrl) setExistingImageUrl(c.coverImageUrl);
       } catch {
         setError('서클 정보를 불러올 수 없습니다.');
       }
     };
     fetchCircle();
   }, [isEdit, circleId]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -76,11 +88,16 @@ export default function CircleFormPage() {
     setLoading(true);
     try {
       if (isEdit) {
+        // 텍스트 수정 (JSON PUT)
         await circleApi.updateCircle(Number(circleId), {
           name: form.name,
           description: form.description,
           maxMember: form.maxMember,
         });
+        // 이미지가 새로 선택됐으면 별도 POST로 업로드
+        if (imageFile) {
+          await circleApi.uploadCoverImage(Number(circleId), imageFile);
+        }
         navigate(`/circle/${circleId}`);
       } else {
         const res = await circleApi.createCircle({
@@ -88,8 +105,8 @@ export default function CircleFormPage() {
           description: form.description,
           maxMember: form.maxMember,
           categoryId: form.categoryId,
-        });
-        navigate(`/circle/${res.data.circleId}`);
+        }, imageFile ?? undefined);
+        navigate(res.data?.circleId ? `/circle/${res.data.circleId}` : '/circle');
       }
     } catch (e) {
       setError(getErrorMessage(e));
@@ -154,6 +171,27 @@ export default function CircleFormPage() {
                 rows={4}
                 style={{ ...inputStyle, resize: 'vertical' }}
                 placeholder="서클을 소개해주세요"
+              />
+            </div>
+
+            {/* 대표 이미지 */}
+            <div>
+              <label style={labelStyle}>
+                대표 이미지 <span style={{ color: '#aaa', fontWeight: 400 }}>(선택, 최대 10MB)</span>
+              </label>
+              {/* 미리보기: 새 파일 선택 > 기존 이미지 순으로 표시 */}
+              {(previewUrl || existingImageUrl) && (
+                <img
+                  src={previewUrl || existingImageUrl}
+                  alt="대표 이미지 미리보기"
+                  style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }}
+                />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{ ...inputStyle, padding: '8px 12px', cursor: 'pointer' }}
               />
             </div>
 

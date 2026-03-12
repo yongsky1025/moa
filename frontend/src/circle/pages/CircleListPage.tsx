@@ -213,8 +213,18 @@ export default function CircleListPage() {
                       onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)')}
                       onMouseLeave={(e) => (e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)')}
                     >
-                      {/* 카드 상단: 그라데이션 + 뱃지 */}
-                      <div style={{ position: 'relative', height: 120, background: bgGradient }}>
+                      {/* 카드 상단: 대표 이미지 또는 그라데이션 */}
+                      <div style={{
+                        position: 'relative', height: 120,
+                        background: circle.coverImageUrl ? 'none' : bgGradient,
+                      }}>
+                        {circle.coverImageUrl && (
+                          <img
+                            src={circle.coverImageUrl}
+                            alt={circle.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        )}
                         <div
                           style={{
                             position: 'absolute',

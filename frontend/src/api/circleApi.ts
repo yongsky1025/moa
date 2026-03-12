@@ -25,13 +25,24 @@ export const circleApi = {
   getCircle: (circleId: number) =>
     api.get<CircleResponse>(`/circles/${circleId}`),
 
-  // 서클 생성
-  createCircle: (data: CircleCreateRequest) =>
-    api.post<CircleResponse>('/circles', data),
+  // 서클 생성 (multipart/form-data)
+  createCircle: (data: CircleCreateRequest, imageFile?: File) => {
+    const formData = new FormData();
+    formData.append('data', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+    if (imageFile) formData.append('image', imageFile);
+    return api.post<CircleResponse>('/circles', formData);
+  },
 
-  // 서클 수정
+  // 서클 수정 (JSON, PUT multipart는 Tomcat 미지원)
   updateCircle: (circleId: number, data: CircleUpdateRequest) =>
     api.put<CircleResponse>(`/circles/${circleId}`, data),
+
+  // 서클 대표 이미지 업로드/교체 (POST multipart)
+  uploadCoverImage: (circleId: number, imageFile: File) => {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    return api.post<CircleResponse>(`/circles/${circleId}/image`, formData);
+  },
 
   // 서클 삭제
   deleteCircle: (circleId: number) =>
