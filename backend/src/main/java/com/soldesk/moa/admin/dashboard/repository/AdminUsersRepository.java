@@ -12,7 +12,7 @@ import com.soldesk.moa.users.entity.constant.UserStatus;
 public interface AdminUsersRepository extends JpaRepository<Users, Long>, SearchUsersRepository {
 
     // 현재 활동 중인 총 유저 수 & 남자 유저 (성비)
-    @Query("select count(u.userId), count(case when u.userGender = 0 then 1 end) from Users u where u.userStatus = 'active'")
+    @Query("select count(u.userId), count(case when u.userGender = 'male' then 1 end) from Users u where u.userStatus = 'active'")
     Object[] getCountAllAndMale();
 
     // ?년 ?월 가입자 정보 조회
