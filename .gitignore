@@ -275,4 +275,3 @@ src/main/resources/application.properties
 bin/main/application-oauth2.yml
 src/main/resources/application-oauth2.yml
 backend/src/main/resources/application.yml
-backend/src/main/resources/application.yml
