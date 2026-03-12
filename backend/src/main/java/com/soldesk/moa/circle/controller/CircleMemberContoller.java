@@ -88,6 +88,17 @@ public class CircleMemberContoller {
                 return ResponseEntity.noContent().build();
         }
 
+        // 강퇴 (리더만 가능)
+        @DeleteMapping("/{memberId}/kick")
+        public ResponseEntity<Void> kickMember(
+                        @PathVariable Long circleId,
+                        @PathVariable Long memberId,
+                        @AuthenticationPrincipal AuthUserDTO authUser) {
+
+                circleMemberService.kickMember(circleId, memberId, authUser.getUserId());
+                return ResponseEntity.noContent().build();
+        }
+
         // 리더 권한 위임
         @PostMapping("/{memberId}/delegate")
         public ResponseEntity<Void> delegateLeader(

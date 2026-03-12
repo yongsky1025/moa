@@ -16,6 +16,9 @@ import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleCategoryRepository;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.chat.service.ChatRoomService;
+import com.soldesk.moa.notification.domain.NotificationType;
+import com.soldesk.moa.notification.service.NotificationService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.users.entity.Users;
@@ -32,6 +35,8 @@ public class CircleService {
         private final CircleCategoryRepository categoryRepository;
         private final CircleMemberRepository circleMemberRepository;
         private final UsersRepository usersRepository;
+        private final ChatRoomService chatRoomService;
+        private final NotificationService notificationService;
 
         // 서클 생성
         @Transactional
@@ -64,6 +69,9 @@ public class CircleService {
 
                 circleMemberRepository.save(leader);
 
+                // 모임 생성 시 그룹 채팅방 자동 생성 + 모임장 입장
+                chatRoomService.getOrCreateGroupRoom(savedCircle.getCircleId(), userId);
+
                 return new CircleResponseDTO(savedCircle);
         }
 
@@ -80,6 +88,17 @@ public class CircleService {
                 circleMemberRepository
                                 .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
                                 .orElseThrow(() -> new AccessDeniedException("리더만 서클을 삭제할 수 있습니다."));
+
+                // ACTIVE 멤버들에게 모임 해산 알림 전송 (리더 제외)
+                circleMemberRepository.findByCircleAndStatus(circle, CircleMemberStatus.ACTIVE).stream()
+                                .filter(m -> !m.getUser().getUserId().equals(userId))
+                                .forEach(m -> notificationService.send(
+                                                m.getUser().getUserId(),
+                                                NotificationType.CIRCLE_DISBANDED,
+                                                "'" + circle.getName() + "' 모임이 해산되었습니다."));
+
+                // 그룹 채팅방 삭제
+                chatRoomService.deleteGroupRoom(circleId);
 
                 circleMemberRepository.deleteByCircle(circle);
                 circleRepository.delete(circle);

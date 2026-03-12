@@ -6,6 +6,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.soldesk.moa.chat.service.ChatRoomService;
+import com.soldesk.moa.notification.domain.NotificationType;
+import com.soldesk.moa.notification.service.NotificationService;
 import com.soldesk.moa.circle.dto.CircleMemberResponseDTO;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
@@ -28,6 +31,8 @@ public class CircleMemberService {
         private final CircleMemberRepository circleMemberRepository;
         private final CircleRepository circleRepository;
         private final UsersRepository usersRepository;
+        private final ChatRoomService chatRoomService;
+        private final NotificationService notificationService;
 
         // 서클 가입 신청
         @Transactional
@@ -68,6 +73,14 @@ public class CircleMemberService {
                                 .build();
 
                 circleMemberRepository.save(member);
+
+                // 리더에게 가입 신청 알림
+                circleMemberRepository.findByCircleAndRole(circle, CircleRole.LEADER)
+                        .ifPresent(leader -> notificationService.send(
+                                leader.getUser().getUserId(),
+                                NotificationType.JOIN_REQUEST,
+                                loginUser.getNickname() + "님이 '" + circle.getName() + "' 모임에 가입 신청했습니다."
+                        ));
         }
 
         // 멤버 상태 변경 (가입 대기중 => 승인 or 거절)
@@ -117,12 +130,26 @@ public class CircleMemberService {
 
                         member.changeStatus(CircleMemberStatus.ACTIVE);
                         member.getCircle().increaseMember();
+                        // 승인 시 모임 채팅방 자동 입장
+                        chatRoomService.getOrCreateGroupRoom(circleId, member.getUser().getUserId());
+                        // 신청자에게 승인 알림
+                        notificationService.send(
+                                member.getUser().getUserId(),
+                                NotificationType.JOIN_APPROVED,
+                                "'" + member.getCircle().getName() + "' 모임 가입이 승인되었습니다."
+                        );
                         return;
                 }
 
                 // 거절 처리
                 if (status == CircleMemberStatus.REJECTED) {
                         member.changeStatus(CircleMemberStatus.REJECTED);
+                        // 신청자에게 거절 알림
+                        notificationService.send(
+                                member.getUser().getUserId(),
+                                NotificationType.JOIN_REJECTED,
+                                "'" + member.getCircle().getName() + "' 모임 가입이 거절되었습니다."
+                        );
                         return;
                 }
 
@@ -210,6 +237,55 @@ public class CircleMemberService {
 
                 member.changeStatus(CircleMemberStatus.LEFT);
                 circle.decreaseMember();
+                // 탈퇴 시 모임 채팅방 자동 나가기
+                chatRoomService.leaveGroupRoom(circleId, userId);
+        }
+
+        // 강퇴 (리더만 가능)
+        @Transactional
+        public void kickMember(Long circleId, Long targetMemberId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                // 리더 권한 체크
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(
+                                                circle,
+                                                usersRepository.findById(userId)
+                                                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다.")),
+                                                CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 강퇴할 수 있습니다."));
+
+                // 강퇴 대상 조회
+                CircleMember target = circleMemberRepository.findById(targetMemberId)
+                                .orElseThrow(() -> new IllegalArgumentException("멤버가 존재하지 않습니다."));
+
+                // 같은 서클인지 검증
+                if (!target.getCircle().getCircleId().equals(circleId)) {
+                        throw new IllegalArgumentException("같은 서클의 멤버만 강퇴할 수 있습니다.");
+                }
+
+                // ACTIVE 멤버만 강퇴 가능
+                if (target.getStatus() != CircleMemberStatus.ACTIVE) {
+                        throw new IllegalStateException("활동 중인 멤버만 강퇴할 수 있습니다.");
+                }
+
+                // 리더 강퇴 방지
+                if (target.getRole() == CircleRole.LEADER) {
+                        throw new IllegalStateException("리더는 강퇴할 수 없습니다.");
+                }
+
+                target.changeStatus(CircleMemberStatus.KICKED);
+                circle.decreaseMember();
+                // 강퇴 시 모임 채팅방 자동 퇴장
+                chatRoomService.leaveGroupRoom(circleId, target.getUser().getUserId());
+                // 강퇴된 멤버에게 알림
+                notificationService.send(
+                        target.getUser().getUserId(),
+                        NotificationType.KICKED,
+                        "'" + circle.getName() + "' 모임에서 강퇴되었습니다."
+                );
         }
 
         // 리더 권한 위임

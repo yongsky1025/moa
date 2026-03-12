@@ -6,6 +6,9 @@ import com.soldesk.moa.chat.dto.response.UnreadCountResponse;
 import com.soldesk.moa.chat.exception.ChatErrorCode;
 import com.soldesk.moa.chat.exception.ChatException;
 import com.soldesk.moa.chat.repository.ChatMessageRepository;
+import com.soldesk.moa.chat.repository.ChatRoomMemberRepository;
+import com.soldesk.moa.notification.domain.NotificationType;
+import com.soldesk.moa.notification.service.NotificationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -16,10 +19,15 @@ public class ChatMessageService {
 
     private final ChatRoomService roomService;
     private final ChatMessageRepository messageRepo;
+    private final ChatRoomMemberRepository memberRepo;
+    private final NotificationService notificationService;
 
-    public ChatMessageService(ChatRoomService roomService, ChatMessageRepository messageRepo) {
+    public ChatMessageService(ChatRoomService roomService, ChatMessageRepository messageRepo,
+                              ChatRoomMemberRepository memberRepo, NotificationService notificationService) {
         this.roomService = roomService;
         this.messageRepo = messageRepo;
+        this.memberRepo = memberRepo;
+        this.notificationService = notificationService;
     }
 
     /** 메시지 저장 후 응답 반환 (WebSocket / REST 공통) */
@@ -32,6 +40,16 @@ public class ChatMessageService {
         roomService.assertMember(roomId, senderId);
 
         ChatMessage saved = messageRepo.save(ChatMessage.of(roomId, senderId, content));
+
+        // 발신자 제외 채팅방 멤버들에게 알림 전송
+        memberRepo.findByRoomId(roomId).stream()
+                .filter(m -> !m.getUserId().equals(senderId))
+                .forEach(m -> notificationService.send(
+                        m.getUserId(),
+                        NotificationType.CHAT_MESSAGE,
+                        "새 메시지가 도착했습니다: " + content
+                ));
+
         return toResponse(saved);
     }
 

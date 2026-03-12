@@ -1,5 +1,7 @@
 package com.soldesk.moa.auth.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +50,7 @@ public class AuthService {
                 .userRole(UserRole.USER)
                 .userGender(dto.getUserGender())
                 .birthDate(dto.getBirthDate())
-                .age(dto.getAge())
+                .privacyAgreedAt(LocalDateTime.now())
                 .build();
 
         usersRepository.save(user);
