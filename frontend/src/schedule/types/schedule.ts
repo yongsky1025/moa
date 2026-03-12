@@ -1,0 +1,24 @@
+export type ScheduleStatus = 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
+
+export interface ScheduleResponse {
+  scheduleId: number;
+  title: string;
+  description: string;
+  startAt: string;
+  endAt: string;
+  maxMember: number;
+  status: ScheduleStatus;
+}
+
+export interface ScheduleCreateRequest {
+  title: string;
+  description: string;
+  startAt: string;
+  endAt: string;
+  maxMember: number;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export type ScheduleUpdateRequest = ScheduleCreateRequest;
