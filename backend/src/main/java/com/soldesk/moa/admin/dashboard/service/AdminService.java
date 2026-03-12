@@ -393,7 +393,7 @@ public class AdminService {
                                 .birth(user.getBirthDate())
                                 .gender(user.getUserGender())
                                 .name(user.getName())
-                                .phone(user.getPhone())
+                                // .phone(user.getPhone())
                                 .role(user.getUserRole())
                                 .status(user.getUserStatus())
                                 .userId(user.getUserId())

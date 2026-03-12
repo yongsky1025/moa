@@ -25,7 +25,7 @@ public class AdminUserResponseDTO {
 
     private LocalDate birth;
 
-    private String phone;
+    // private String phone;
 
     private UserGender gender;
 
