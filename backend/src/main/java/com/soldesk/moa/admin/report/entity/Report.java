@@ -27,7 +27,7 @@ import lombok.ToString;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@ToString(exclude = { "reporter" })
 @Builder
 public class Report extends BaseEntity {
 
@@ -36,7 +36,7 @@ public class Report extends BaseEntity {
     private Long id;
 
     // 신고한 유저
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reporter_id", nullable = false)
     private Users reporter;
 
@@ -69,8 +69,7 @@ public class Report extends BaseEntity {
     @Column(length = 500)
     private String adminNote;
 
-    // === 상태 변경 메서드 ===
-
+    // 이하 메소드
     public void setStatus(ReportStatus status) {
         this.status = status;
     }

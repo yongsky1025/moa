@@ -57,4 +57,9 @@ public class Circle extends BaseEntity {
             this.status = CircleStatus.FULL;
         }
     }
+
+    // admin - status 변경 메소드입니다(신고/제재용)
+    public void setStatus(CircleStatus status) {
+        this.status = status;
+    }
 }

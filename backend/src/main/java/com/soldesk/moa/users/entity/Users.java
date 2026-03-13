@@ -119,6 +119,11 @@ public class Users extends BaseEntity {
     // 회원 탈퇴(withdrawn) 일시
     private LocalDateTime withdrawnAt;
 
+    // --- 신고/제재용 컬럼 ---
+    @Column(nullable = false)
+    @Builder.Default
+    private int warningCount = 0;
+
     // === 메서드 ===
 
     public void changeNickname(String nickname) {
@@ -178,4 +183,13 @@ public class Users extends BaseEntity {
         }
     }
 
+    // 신고/제재용 메소드
+    public void increaseWarningCount() {
+        this.warningCount++;
+    }
+
+    public void decreaseWarningCount() {
+        if (this.warningCount > 0)
+            this.warningCount--;
+    }
 }

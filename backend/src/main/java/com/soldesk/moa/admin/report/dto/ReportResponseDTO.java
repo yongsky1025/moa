@@ -10,13 +10,13 @@ import lombok.Builder;
 
 @Builder
 public record ReportResponseDTO(
-        long reportId,
-        String reporterName,
-        ReportTargetType targetType,
-        long targetId,
-        ReportCategory category,
-        ReportStatus status,
-        String adminNote,
-        LocalDateTime createdAt) {
+                long reportId,
+                String reporterName,
+                ReportTargetType targetType,
+                long targetId,
+                ReportCategory category,
+                ReportStatus status,
+                String adminNote,
+                LocalDateTime createdAt) {
 
 }

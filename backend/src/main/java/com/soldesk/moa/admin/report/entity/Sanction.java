@@ -3,7 +3,9 @@ package com.soldesk.moa.admin.report.entity;
 import java.time.LocalDateTime;
 
 import com.soldesk.moa.admin.report.entity.constant.ReportTargetType;
+import com.soldesk.moa.admin.report.entity.constant.SanctionState;
 import com.soldesk.moa.admin.report.entity.constant.SanctionType;
+import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.users.entity.Users;
 
 import jakarta.persistence.Column;
@@ -26,13 +28,13 @@ import lombok.ToString;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@ToString(exclude = { "report", "targetUser", "admin" })
 @Builder
-public class Sanction {
+public class Sanction extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long sanctionId;
+    private Long id;
 
     // 연관 신고 (관리자 직권 제재 시 null 가능)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -73,15 +75,38 @@ public class Sanction {
 
     private LocalDateTime endAt;
 
-    // 활성 여부 (해제 시 false)
+    // 제재 상태
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private boolean isActive = true;
+    private SanctionState sanctionState = SanctionState.ACTIVE;
 
-    // === 메서드 ===
+    // 취소 관련 (CANCELLED 시에만 값이 들어옴)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cancelled_by")
+    private Users cancelledBy;
 
+    @Column(length = 500)
+    private String cancelReason;
+
+    private LocalDateTime cancelledAt;
+
+    // 이하 메소드
+    // 제재 정상 해제
     public void lift() {
-        this.isActive = false;
+        this.sanctionState = SanctionState.LIFTED;
+    }
+
+    public boolean isActive() {
+        return this.sanctionState == SanctionState.ACTIVE;
+    }
+
+    // 취소 (관리자 실수)
+    public void cancel(Users cancelledBy, String cancelReason) {
+        this.sanctionState = SanctionState.CANCELLED;
+        this.cancelledBy = cancelledBy;
+        this.cancelReason = cancelReason;
+        this.cancelledAt = LocalDateTime.now();
     }
 
     // 제재 만료 여부 체크 (스케줄러에서 사용)

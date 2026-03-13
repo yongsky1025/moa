@@ -17,14 +17,13 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/report")
-@Tag(name = "Admin report section", description = "Response MOA API")
+@Tag(name = "Admin stats section", description = "Response MOA API")
 @Log4j2
-public class AdminReportController {
+public class AdminStatsController {
     private final AdminStatisticsService adminStatisticsService;
 
     @GetMapping("/age-distribution")

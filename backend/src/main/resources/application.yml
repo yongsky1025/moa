@@ -38,3 +38,4 @@ logging:
       springframework:
         security:
           web: trace
+    "[com.soldesk.moa]": debug

@@ -49,6 +49,11 @@ public class Post extends BaseEntity {
     @JoinColumn(name = "board_id", nullable = false)
     private Board boardId;
 
+    // 신고/제재용 컬럼추가(soft delete)
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
+
     // setter
     // 수정용
     public void changeTitle(String title) {
@@ -57,6 +62,15 @@ public class Post extends BaseEntity {
 
     public void changeContent(String content) {
         this.content = content;
+    }
+
+    // 신고/제재용 메소드 추가
+    public void markDeleted() {
+        this.deleted = true;
+    }
+
+    public void restore() {
+        this.deleted = false;
     }
 
 }
