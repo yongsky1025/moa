@@ -13,8 +13,8 @@ import lombok.ToString;
 @Builder
 public class AdminCircleResponseDTO {
     private Long circleId;
-    private String categoryName;
     private String circleName;
+    private String categoryName;
     private String leaderName;
     private Integer currentMember;
     private Integer maxMember;

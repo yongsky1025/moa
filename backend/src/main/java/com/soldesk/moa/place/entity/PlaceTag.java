@@ -17,7 +17,7 @@ import lombok.ToString;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@ToString(exclude = { "place", "tag" })
 @Builder
 public class PlaceTag {
 

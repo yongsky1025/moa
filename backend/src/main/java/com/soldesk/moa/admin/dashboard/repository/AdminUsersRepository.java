@@ -12,11 +12,8 @@ import com.soldesk.moa.users.entity.constant.UserStatus;
 public interface AdminUsersRepository extends JpaRepository<Users, Long>, SearchUsersRepository {
 
     // 현재 활동 중인 총 유저 수 & 남자 유저 (성비)
-    // TODO: Hibernate 6 enum 타입 불일치 수정 필요 (u.userGender = 0, u.userStatus =
-    // 'active')
-    // @Query("select count(u.userId), count(case when u.userGender = 0 then 1 end)
-    // from Users u where u.userStatus = 'active'")
-    // Object[] getCountAllAndMale();
+    @Query("select count(u.userId), count(case when u.userGender = 'male' then 1 end) from Users u where u.userStatus = 'active'")
+    Object[] getCountAllAndMale();
 
     // ?년 ?월 가입자 정보 조회
     @Query("select u from Users u where year(u.createDate) = ?1 and month(u.createDate) = ?2")
@@ -30,24 +27,18 @@ public interface AdminUsersRepository extends JpaRepository<Users, Long>, Search
     List<Users> findByUserStatus(UserStatus userStatus);
 
     // 탈퇴자 수 조회(기간검색조회)
-    // TODO: Hibernate 6 enum 타입 불일치 수정 필요 (u.userStatus = 'withdrawn' →
-    // 'WITHDRAWN')
-    // @Query("select count(u) from Users u where u.userStatus = 'withdrawn' and
-    // u.withdrawnAt between :start and :end")
-    // Long getWithdrawnUsersCount(LocalDateTime start, LocalDateTime end);
+    @Query("select count(u) from Users u where u.userStatus = 'withdrawn' and u.withdrawnAt between :start and :end")
+    Long getWithdrawnUsersCount(LocalDateTime start, LocalDateTime end);
 
     // 탈퇴자 정보 조회(기간검색조회)
-    // TODO: Hibernate 6 enum 타입 불일치 수정 필요
-    // @Query("select u from Users u where u.userStatus = 'withdrawn' and
-    // u.withdrawnAt between :start and :end")
-    // List<Users> getWithdrawnUsersInfo(LocalDateTime start, LocalDateTime end);
+    @Query("select u from Users u where u.userStatus = 'withdrawn' and u.withdrawnAt between :start and :end")
+    List<Users> getWithdrawnUsersInfo(LocalDateTime start, LocalDateTime end);
 
     // 역대 월별 탈퇴자 수 조회
-    // TODO: Hibernate 6 enum 타입 불일치 수정 필요
-    // @Query("select year(u.withdrawnAt), month(u.withdrawnAt), count(u)" +
-    // " from Users u where u.userStatus = 'withdrawn'" +
-    // " group by year(u.withdrawnAt), month(u.withdrawnAt)" +
-    // " order by year(u.withdrawnAt) desc, month(u.withdrawnAt) desc")
-    // List<Object[]> countWithdrawnGroupByMonth();
+    @Query("select year(u.withdrawnAt), month(u.withdrawnAt), count(u)" +
+            " from Users u where u.userStatus = 'withdrawn'" +
+            " group by year(u.withdrawnAt), month(u.withdrawnAt)" +
+            " order by year(u.withdrawnAt) desc, month(u.withdrawnAt) desc")
+    List<Object[]> countWithdrawnGroupByMonth();
 
 }

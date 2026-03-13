@@ -1,11 +1,15 @@
 package com.soldesk.moa.admin.dashboard.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.querydsl.core.Tuple;
 import com.soldesk.moa.admin.dashboard.dto.AdminCircleResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.AdminCircleSearchDTO;
 import com.soldesk.moa.admin.dashboard.dto.AdminMainDTO;
@@ -21,8 +26,11 @@ import com.soldesk.moa.admin.dashboard.dto.AdminUserResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
 import com.soldesk.moa.admin.dashboard.dto.CircleDataDTO;
 import com.soldesk.moa.admin.dashboard.dto.CircleSummaryDTO;
+import com.soldesk.moa.admin.dashboard.dto.DailyCountDTO;
 import com.soldesk.moa.admin.dashboard.dto.DashboardChartDTO;
 import com.soldesk.moa.admin.dashboard.dto.MonthlyCountDTO;
+import com.soldesk.moa.admin.dashboard.dto.PopularCircleDTO;
+import com.soldesk.moa.admin.dashboard.dto.PostActivitySummaryDTO;
 import com.soldesk.moa.admin.dashboard.dto.UserCountDTO;
 import com.soldesk.moa.admin.dashboard.dto.UserInfoCircleDTO;
 import com.soldesk.moa.admin.dashboard.dto.UserInfoDTO;
@@ -37,8 +45,8 @@ import com.soldesk.moa.admin.dashboard.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminScheduleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
-import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.board.entity.Post;
+import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.common.dto.PageRequestDTO;
@@ -249,28 +257,24 @@ public class AdminService {
                 return pageResultDTO;
         }
 
-        // 모임 정보 일람
+        // 모임 리스트 일람
         @Transactional(readOnly = true)
         public PageResultDTO<AdminCircleResponseDTO> getAllCircleInfo(AdminCircleSearchDTO adminCircleSearchDTO) {
                 Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, 10);
                 Page<Object[]> result = adminCircleRepository.getCircleInfo(pageable, adminCircleSearchDTO);
 
                 long totalCount = result.getTotalElements();
-                List<AdminCircleResponseDTO> dtoList = result.stream().map(obj -> {
-                        Circle circle = (Circle) obj[0];
-                        String categoryName = (String) obj[1];
-                        String leaderName = (String) obj[2];
+                List<AdminCircleResponseDTO> dtoList = result.stream().map(obj ->
 
-                        return AdminCircleResponseDTO.builder()
-                                        .circleId(circle.getCircleId())
-                                        .categoryName(categoryName)
-                                        .circleName(circle.getName())
-                                        .leaderName(leaderName)
-                                        .currentMember(circle.getCurrentMember())
-                                        .maxMember(circle.getMaxMember())
-                                        .status(circle.getStatus().toString())
-                                        .build();
-                }).collect(Collectors.toList());
+                AdminCircleResponseDTO.builder()
+                                .circleId((Long) obj[0])
+                                .categoryName((String) obj[1])
+                                .circleName((String) obj[2])
+                                .leaderName((String) obj[3])
+                                .currentMember((Integer) obj[4])
+                                .maxMember((Integer) obj[5])
+                                .status(obj[6].toString())
+                                .build()).collect(Collectors.toList());
 
                 PageResultDTO<AdminCircleResponseDTO> pageResultDTO = PageResultDTO.<AdminCircleResponseDTO>withAll()
                                 .dtoList(dtoList)
@@ -279,6 +283,75 @@ public class AdminService {
                                 .build();
 
                 return pageResultDTO;
+        }
+
+        // 인기모임 top5
+        @Transactional(readOnly = true)
+        public List<PopularCircleDTO> findPopularCircles() {
+                LocalDateTime since = LocalDateTime.now().minusDays(7);
+                List<Object[]> circles = adminCircleRepository.findPopularCircles(since, 5);
+
+                return circles.stream().map(c -> PopularCircleDTO.builder()
+                                .circleId((Long) c[0])
+                                .circleName((String) c[1])
+                                .categoryName((String) c[2])
+                                .currentMember((Integer) c[3])
+                                .score((Double) c[4])
+                                .build()).collect(Collectors.toList());
+
+        }
+
+        // 게시글 활동
+        @Transactional(readOnly = true)
+        public PostActivitySummaryDTO postActivitySummary() {
+                LocalDate today = LocalDate.now();
+                LocalDateTime start = today.atStartOfDay();
+                LocalDateTime end = today.atTime(LocalTime.MAX);
+                LocalDate weekAgo = today.minusDays(6);
+
+                // 오늘의 통계
+                long todayPostCount = adminPostRepository.countTodayPosts(start, end);
+                long todayReplyCount = adminReplyRepository.countTodayReplies(start, end);
+
+                // 주간 통계
+                List<DailyCountDTO> weeklyPosts = postActivitytoDto(adminPostRepository.countPostsGroupedByDay(weekAgo),
+                                today);
+                List<DailyCountDTO> weeklyReplis = postActivitytoDto(
+                                adminReplyRepository.countRepliesGroupedByDay(weekAgo), today);
+
+                return PostActivitySummaryDTO.builder()
+                                .todayPostCount(todayPostCount)
+                                .todayReplyCount(todayReplyCount)
+                                .weeklyPosts(weeklyPosts)
+                                .weeklyReplis(weeklyReplis)
+                                .build();
+        }
+
+        // 일별 카운트 반환 전용 메소드
+        @Transactional(readOnly = true)
+        public List<DailyCountDTO> postActivitytoDto(List<Tuple> tuples, LocalDate today) {
+
+                // mapping
+                return IntStream.rangeClosed(0, 6)
+                                .mapToObj(i -> today.minusDays(6 - i))
+                                .map(date -> {
+                                        long count = tuples.stream()
+                                                        .filter(t -> {
+                                                                String dateStr = t.get(0, String.class);
+                                                                if (dateStr == null)
+                                                                        return false;
+                                                                return date.equals(LocalDate.parse(dateStr));
+                                                        })
+                                                        .map(t -> t.get(1, Long.class))
+                                                        .findFirst()
+                                                        .orElse(0L);
+
+                                        return DailyCountDTO.builder()
+                                                        .date(date)
+                                                        .count(count)
+                                                        .build();
+                                })
+                                .collect(Collectors.toList());
         }
 
         // UserCountDTO

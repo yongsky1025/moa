@@ -2,6 +2,7 @@ package com.soldesk.moa.admin.dashboard.repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,7 +13,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Query;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
@@ -21,15 +21,14 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.JPQLQuery;
-import com.soldesk.moa.board.entity.QReply;
-import com.soldesk.moa.admin.dashboard.dto.AdminUserResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
 import com.soldesk.moa.board.entity.QPost;
+import com.soldesk.moa.board.entity.QReply;
 import com.soldesk.moa.circle.entity.QCircleMember;
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.users.entity.QUsers;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserGender;
-import com.soldesk.moa.users.entity.constant.UserRole;
 import com.soldesk.moa.users.entity.constant.UserStatus;
 
 import lombok.extern.log4j.Log4j2;
@@ -90,6 +89,25 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
     }
 
     @Override
+    public List<Tuple> findAgeRangeParticipation() {
+        QUsers user = QUsers.users;
+        QCircleMember circleMember = QCircleMember.circleMember;
+
+        NumberExpression<Integer> ageGroup = Expressions.numberTemplate(Integer.class,
+                "floor({0}/10)*10", user.age);
+
+        JPQLQuery<Users> query = from(user).join(circleMember).on(circleMember.user.eq(user))
+                .where(circleMember.status.eq(CircleMemberStatus.ACTIVE));
+
+        JPQLQuery<Tuple> tuple = query.select(ageGroup, user.userGender, user.countDistinct());
+
+        tuple.groupBy(ageGroup, user.userGender);
+        tuple.orderBy(ageGroup.asc());
+
+        return tuple.fetch();
+    }
+
+    @Override
     public Long getSignUpCount(LocalDateTime start, LocalDateTime end) {
 
         QUsers user = QUsers.users;
@@ -123,34 +141,43 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
         }
 
         // where(특정 유저 검색)
-        // type => id == i , name = n, status = s, age = a, gender = g, role = r, birth
-        // = b, phone = p
+        // type => id , name , age , birth , phone
 
-        if (searchDTO.getType() != null) {
-            String[] typeArr = searchDTO.getType().split("");
-            for (String t : typeArr) {
-                switch (t) {
-                    case "i":
-                        long userId = Long.parseLong(searchDTO.getKeyword());
-                        builder.and(users.userId.eq(userId));
-                        break;
-                    case "n":
-                        builder.and(users.name.contains(searchDTO.getKeyword()));
-                        break;
-                    case "a":
-                        int age = Integer.parseInt(searchDTO.getKeyword());
-                        builder.and(users.age.eq(age));
-                        break;
-                    // 생년월일 8자리로 받겠음
-                    case "b":
-                        LocalDate birth = LocalDate.parse(searchDTO.getKeyword());
-                        builder.and(users.birthDate.eq(birth));
-                        break;
-                    // 핸드폰 번호 : - 기호 없이
-                    // case "p": // phone 필드 미사용
-                    // builder.and(users.phone.contains(searchDTO.getKeyword()));
-                    // break;
-                }
+        if (searchDTO.getType() != null && !searchDTO.getType().isEmpty()) {
+
+            switch (searchDTO.getType()) {
+                case "id":
+                    builder.and(users.userId.eq(Long.parseLong(searchDTO.getKeyword())));
+                    break;
+                case "name":
+                    builder.and(users.name.eq(searchDTO.getKeyword()));
+                    break;
+                case "age":
+                    builder.and(users.age.eq(Integer.parseInt(searchDTO.getKeyword())));
+                    break;
+                case "birth": // 생일은 숫자로만 입력받음(년, 년+월, 년원일의 경우만)
+                    String keyword = searchDTO.getKeyword();
+                    if (keyword != null && keyword.matches("\\d+")) {
+                        int len = keyword.length();
+                        switch (len) {
+                            case 4:
+                                builder.and(users.birthDate.year().eq(Integer.parseInt(keyword)));
+                                break;
+                            case 6:
+                                builder.and(users.birthDate.year().eq(Integer.parseInt(keyword.substring(0, 4)))
+                                        .and(users.birthDate.month().eq(Integer.parseInt(keyword.substring(4, 6)))));
+                                break;
+                            case 8:
+                                builder.and(users.birthDate
+                                        .eq(LocalDate.parse(keyword, DateTimeFormatter.ofPattern("yyyyMMdd"))));
+                                break;
+                        }
+                    }
+                    break;
+                // case "phone": // 컬럼 삭제로 인해 불필요
+                // builder.and(users.phone.contains(searchDTO.getKeyword()));
+                // break;
+
             }
         }
 
@@ -199,6 +226,28 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
         Tuple result = tuple.fetchFirst();
 
         return result.toArray();
+    }
+
+    @Override
+    public List<Object[]> findUserRegisterActivity(LocalDateTime since) {
+
+        QUsers user = QUsers.users;
+
+        NumberExpression<Integer> hour = Expressions.numberTemplate(Integer.class, "hour({0})",
+                user.createDate);
+
+        NumberExpression<Integer> day = Expressions.numberTemplate(Integer.class, "dayofweek({0})",
+                user.createDate);
+
+        JPQLQuery<Users> query = from(user).where(user.createDate.goe(since));
+
+        JPQLQuery<Tuple> tuple = query.select(day, hour, user.count());
+
+        tuple.groupBy(day, hour);
+        List<Tuple> list = tuple.fetch();
+
+        return list.stream().map(Tuple::toArray).collect(Collectors.toList());
+
     }
 
 }

@@ -16,6 +16,6 @@ public interface AdminActionLogRepository extends JpaRepository<AdminActionLog, 
     // 유저별 log 페이징 처리
     Page<AdminActionLog> findByActorId(Long actorId, Pageable pageable);
 
-    // log 1년 이상된 데이터 삭제 (AdminActionLog의 timestamp 필드명 불일치로 주석처리)
-    // void deleteByCreatedAtBefore(LocalDateTime dateTime);
+    // log 1년 이상된 데이터 삭제
+    void deleteByTimestampBefore(LocalDateTime dateTime);
 }

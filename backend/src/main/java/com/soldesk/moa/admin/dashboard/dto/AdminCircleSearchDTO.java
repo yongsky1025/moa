@@ -14,5 +14,5 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class AdminCircleSearchDTO extends PageRequestDTO {
     private CircleStatus status;
-    private String CategoryName;
+    private String categoryName;
 }

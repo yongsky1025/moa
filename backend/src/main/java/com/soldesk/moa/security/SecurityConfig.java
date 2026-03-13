@@ -97,6 +97,16 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/posts/*/view").permitAll()
                                                 // ----------- 보드 시큐리티 끝 ----------
 
+                                                // ---------- 관리자, 장소 ----------
+                                                .requestMatchers("/api/admin/**").permitAll() // 임시로 다 열어둠
+                                                .requestMatchers("/api/place/**").permitAll()
+                                                // ----------------------------------
+                                                // swagger 임시 허용(개발중)
+                                                .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
+                                                                "/v3/api-docs/**")
+                                                .permitAll()
+                                                // ----------------------------------
+
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth2 -> oauth2
                                                 .authorizationEndpoint(endpoint -> endpoint
