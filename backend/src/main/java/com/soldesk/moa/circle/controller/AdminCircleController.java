@@ -39,4 +39,12 @@ public class AdminCircleController {
         circleService.rejectCircle(circleId);
         return ResponseEntity.noContent().build();
     }
+
+    // 서클 강제 해산
+    @PatchMapping("/{circleId}/close")
+    public ResponseEntity<Void> deleteCircle(
+            @PathVariable Long circleId) {
+        circleService.adminDeleteCircle(circleId);
+        return ResponseEntity.noContent().build();
+    }
 }

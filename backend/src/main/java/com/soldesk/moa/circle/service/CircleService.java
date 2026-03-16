@@ -96,8 +96,38 @@ public class CircleService {
                                 .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
                                 .orElseThrow(() -> new AccessDeniedException("리더만 서클을 삭제할 수 있습니다."));
 
-                circleMemberRepository.deleteByCircle(circle);
-                circleRepository.delete(circle);
+                Circle closed = Circle.builder()
+                                .circleId(circle.getCircleId())
+                                .name(circle.getName())
+                                .description(circle.getDescription())
+                                .maxMember(circle.getMaxMember())
+                                .currentMember(circle.getCurrentMember())
+                                .status(CircleStatus.CLOSED)
+                                .category(circle.getCategory())
+                                .coverImage(circle.getCoverImage())
+                                .build();
+
+                circleRepository.save(closed);
+        }
+
+        // [Admin] 서클 강제 해산
+        @Transactional
+        public void adminDeleteCircle(Long circleId) {
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Circle closed = Circle.builder()
+                                .circleId(circle.getCircleId())
+                                .name(circle.getName())
+                                .description(circle.getDescription())
+                                .maxMember(circle.getMaxMember())
+                                .currentMember(circle.getCurrentMember())
+                                .status(CircleStatus.CLOSED)
+                                .category(circle.getCategory())
+                                .coverImage(circle.getCoverImage())
+                                .build();
+
+                circleRepository.save(closed);
         }
 
         // 서클 정보 수정 (리더만 가능, JSON)

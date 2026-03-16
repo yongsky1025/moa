@@ -80,7 +80,7 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
     private BooleanExpression statusFilter(String type) {
         if (type == null || type.isBlank()) {
             // 기본: PENDING, REJECTED 제외 (승인된 서클만 공개)
-            return QCircle.circle.status.notIn(CircleStatus.PENDING, CircleStatus.REJECTED);
+            return QCircle.circle.status.notIn(CircleStatus.PENDING, CircleStatus.REJECTED, CircleStatus.CLOSED);
         }
 
         // type=OPEN 일 때만 모집중 필터
