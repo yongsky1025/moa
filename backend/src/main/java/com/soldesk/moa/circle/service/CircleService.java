@@ -23,6 +23,7 @@ import com.soldesk.moa.circle.repository.CircleCategoryRepository;
 import com.soldesk.moa.circle.repository.CircleEnergyProfileRepository;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.chat.service.ChatRoomService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.common.entity.Image;
@@ -42,6 +43,7 @@ public class CircleService {
         private final CircleEnergyProfileRepository circleEnergyProfileRepository;
         private final UsersRepository usersRepository;
         private final CircleImageService circleImageService;
+        private final ChatRoomService chatRoomService;
 
         // 서클 생성 (POST multipart - Tomcat이 POST multipart 정상 처리)
         @Transactional
@@ -93,6 +95,9 @@ public class CircleService {
                                 .build();
 
                 circleMemberRepository.save(leader);
+
+                // 모임 생성 시 그룹 채팅방 자동 생성 + 모임장 입장
+                chatRoomService.getOrCreateGroupRoom(savedCircle.getCircleId(), userId);
 
                 return new CircleResponseDTO(savedCircle);
         }

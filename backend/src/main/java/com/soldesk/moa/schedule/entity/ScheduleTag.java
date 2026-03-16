@@ -19,7 +19,7 @@ import lombok.ToString;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@ToString(exclude = { "schedule", "tag" })
 @Builder
 public class ScheduleTag {
 
