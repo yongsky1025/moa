@@ -4,5 +4,6 @@ public enum ChatErrorCode {
     INVALID_REQUEST,
     ROOM_NOT_FOUND,
     NOT_A_MEMBER,
-    MESSAGE_EMPTY
+    MESSAGE_EMPTY,
+    FORBIDDEN
 }

@@ -9,6 +9,7 @@ import com.soldesk.moa.chat.repository.ChatMessageRepository;
 import com.soldesk.moa.chat.repository.ChatRoomMemberRepository;
 import com.soldesk.moa.notification.domain.NotificationType;
 import com.soldesk.moa.notification.service.NotificationService;
+import com.soldesk.moa.users.repository.UsersRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -21,13 +22,16 @@ public class ChatMessageService {
     private final ChatMessageRepository messageRepo;
     private final ChatRoomMemberRepository memberRepo;
     private final NotificationService notificationService;
+    private final UsersRepository usersRepository;
 
     public ChatMessageService(ChatRoomService roomService, ChatMessageRepository messageRepo,
-                              ChatRoomMemberRepository memberRepo, NotificationService notificationService) {
+                              ChatRoomMemberRepository memberRepo, NotificationService notificationService,
+                              UsersRepository usersRepository) {
         this.roomService = roomService;
         this.messageRepo = messageRepo;
         this.memberRepo = memberRepo;
         this.notificationService = notificationService;
+        this.usersRepository = usersRepository;
     }
 
     /** 메시지 저장 후 응답 반환 (WebSocket / REST 공통) */
@@ -75,9 +79,44 @@ public class ChatMessageService {
         return new UnreadCountResponse(roomId, userId, count);
     }
 
+    /** 메시지 수정 (본인만 가능) */
+    @Transactional
+    public ChatMessageResponse editMessage(Long messageId, Long userId, String newContent) {
+        ChatMessage message = messageRepo.findById(messageId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.INVALID_REQUEST, "메시지를 찾을 수 없습니다."));
+
+        if (!message.getSenderId().equals(userId)) {
+            throw new ChatException(ChatErrorCode.FORBIDDEN, "본인 메시지만 수정할 수 있습니다.");
+        }
+        if (message.isDeleted()) {
+            throw new ChatException(ChatErrorCode.INVALID_REQUEST, "삭제된 메시지는 수정할 수 없습니다.");
+        }
+
+        message.edit(newContent);
+        return toResponse(message);
+    }
+
+    /** 메시지 삭제 (본인만 가능, 소프트 삭제) */
+    @Transactional
+    public ChatMessageResponse deleteMessage(Long messageId, Long userId) {
+        ChatMessage message = messageRepo.findById(messageId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.INVALID_REQUEST, "메시지를 찾을 수 없습니다."));
+
+        if (!message.getSenderId().equals(userId)) {
+            throw new ChatException(ChatErrorCode.FORBIDDEN, "본인 메시지만 삭제할 수 있습니다.");
+        }
+
+        message.softDelete();
+        return toResponse(message);
+    }
+
     // ─── private ──────────────────────────────────────────────
 
     private ChatMessageResponse toResponse(ChatMessage m) {
-        return new ChatMessageResponse(m.getId(), m.getRoomId(), m.getSenderId(), m.getContent(), m.getCreatedAt());
+        String nickname = usersRepository.findById(m.getSenderId())
+                .map(u -> u.getNickname())
+                .orElse("알 수 없음");
+        return new ChatMessageResponse(m.getId(), m.getRoomId(), m.getSenderId(), nickname,
+                m.getContent(), m.getCreatedAt(), m.getUpdatedAt(), m.isDeleted());
     }
 }

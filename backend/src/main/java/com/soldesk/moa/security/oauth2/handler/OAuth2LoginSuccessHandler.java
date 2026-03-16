@@ -55,7 +55,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         log.info("OAuth2 로그인 성공 → JWT 발급: email={}", user.getEmail());
 
         // 1) JWT 토큰 발급
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole());
+        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole(), user.getUserId());
         String refreshToken = refreshTokenService.createAndStoreRefreshToken(user);
 
         // 2) Refresh token → HttpOnly 쿠키

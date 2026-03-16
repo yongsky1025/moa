@@ -6,6 +6,9 @@ public record ChatMessageResponse(
         Long messageId,
         Long roomId,
         Long senderId,
+        String senderNickname,
         String content,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt,
+        boolean isDeleted
 ) {}

@@ -101,6 +101,10 @@ public class Users extends BaseEntity {
     // 온보딩(에너지 프로필) 완료 시점 (null이면 미완료)
     private LocalDateTime onboardingCompletedAt;
 
+    // 상태 메시지
+    @Column(name = "status_message", length = 100)
+    private String statusMessage;
+
     // 에너지 프로필 (1:1)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UsersEnergyProfile energyProfile;
@@ -124,6 +128,10 @@ public class Users extends BaseEntity {
 
     public void changeNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public void changeStatusMessage(String statusMessage) {
+        this.statusMessage = statusMessage;
     }
 
     public void changePassword(String password) {

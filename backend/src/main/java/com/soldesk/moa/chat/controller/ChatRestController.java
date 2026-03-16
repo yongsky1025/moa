@@ -113,4 +113,23 @@ public class ChatRestController {
         roomService.markAsRead(roomId, auth.getUserId());
         return ResponseEntity.ok().build();
     }
+
+    /** 메시지 수정 (본인만) */
+    @PatchMapping("/messages/{messageId}")
+    public ResponseEntity<ChatMessageResponse> editMessage(
+            @PathVariable Long messageId,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        return ResponseEntity.ok(messageService.editMessage(messageId, auth.getUserId(), body.get("content")));
+    }
+
+    /** 메시지 삭제 (본인만, 소프트 삭제) */
+    @DeleteMapping("/messages/{messageId}")
+    public ResponseEntity<ChatMessageResponse> deleteMessage(
+            @PathVariable Long messageId,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        return ResponseEntity.ok(messageService.deleteMessage(messageId, auth.getUserId()));
+    }
 }

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.users.dto.profile.NicknameUpdateRequestDTO;
+import com.soldesk.moa.users.dto.profile.StatusMessageUpdateRequestDTO;
 import com.soldesk.moa.users.dto.profile.UserProfileResponseDTO;
 import com.soldesk.moa.users.repository.UsersRepository;
 import com.soldesk.moa.users.service.ProfileService;
@@ -55,6 +56,16 @@ public class ProfileRestController {
             @Valid @RequestBody NicknameUpdateRequestDTO dto) {
         log.info("닉네임 변경 요청 {}", authUser);
         profileService.changeNickname(authUser.getUserId(), dto.getNickname());
+        return ResponseEntity.ok().build();
+    }
+
+    // 상태 메시지 변경
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/profile/status-message")
+    public ResponseEntity<?> changeStatusMessage(@AuthenticationPrincipal AuthUserDTO authUser,
+            @Valid @RequestBody StatusMessageUpdateRequestDTO dto) {
+        log.info("상태 메시지 변경 요청 {}", authUser);
+        profileService.changeStatusMessage(authUser.getUserId(), dto.getStatusMessage());
         return ResponseEntity.ok().build();
     }
 
