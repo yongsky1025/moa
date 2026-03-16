@@ -14,11 +14,13 @@ import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleCategory;
+import com.soldesk.moa.circle.entity.CircleEnergyProfile;
 import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleCategoryRepository;
+import com.soldesk.moa.circle.repository.CircleEnergyProfileRepository;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageRequestDTO;
@@ -37,6 +39,7 @@ public class CircleService {
         private final CircleRepository circleRepository;
         private final CircleCategoryRepository categoryRepository;
         private final CircleMemberRepository circleMemberRepository;
+        private final CircleEnergyProfileRepository circleEnergyProfileRepository;
         private final UsersRepository usersRepository;
         private final CircleImageService circleImageService;
 
@@ -70,6 +73,17 @@ public class CircleService {
                                 .build();
 
                 Circle savedCircle = circleRepository.save(circle);
+
+                CircleEnergyProfile energyProfile = CircleEnergyProfile.builder()
+                                .circle(savedCircle)
+                                .socialLoad(request.getSocialLoad())
+                                .interactionMode(request.getInteractionMode())
+                                .structureLevel(request.getStructureLevel())
+                                .activityIntensity(request.getActivityIntensity())
+                                .commitmentLevel(request.getCommitmentLevel())
+                                .build();
+
+                circleEnergyProfileRepository.save(energyProfile);
 
                 CircleMember leader = CircleMember.builder()
                                 .circle(savedCircle)

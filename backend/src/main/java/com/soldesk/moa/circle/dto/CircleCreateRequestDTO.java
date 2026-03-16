@@ -25,4 +25,31 @@ public class CircleCreateRequestDTO {
     @Min(value = 10, message = "최대 인원은 최소 10명 이상이어야 합니다.")
     @Max(value = 250, message = "최대 인원은 250명을 초과할 수 없습니다.")
     private int maxMember;
+
+    // === 5축 에너지 프로필 (1~5) ===
+
+    @NotNull(message = "socialLoad는 필수입니다.")
+    @Min(value = 1, message = "최솟값은 1입니다.")
+    @Max(value = 5, message = "최댓값은 5입니다.")
+    private Integer socialLoad;
+
+    @NotNull(message = "interactionMode는 필수입니다.")
+    @Min(value = 1, message = "최솟값은 1입니다.")
+    @Max(value = 5, message = "최댓값은 5입니다.")
+    private Integer interactionMode;
+
+    @NotNull(message = "structureLevel은 필수입니다.")
+    @Min(value = 1, message = "최솟값은 1입니다.")
+    @Max(value = 5, message = "최댓값은 5입니다.")
+    private Integer structureLevel;
+
+    @NotNull(message = "activityIntensity는 필수입니다.")
+    @Min(value = 1, message = "최솟값은 1입니다.")
+    @Max(value = 5, message = "최댓값은 5입니다.")
+    private Integer activityIntensity;
+
+    @NotNull(message = "commitmentLevel은 필수입니다.")
+    @Min(value = 1, message = "최솟값은 1입니다.")
+    @Max(value = 5, message = "최댓값은 5입니다.")
+    private Integer commitmentLevel;
 }
