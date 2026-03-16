@@ -7,9 +7,9 @@ import lombok.Builder;
 
 @Builder
 public record ReportRequestDTO(
-                ReportTargetType targetType,
-                Long targetId,
-                ReportCategory category,
-                String description) {
+        ReportTargetType targetType,
+        Long targetId,
+        ReportCategory category,
+        String description) {
 
 }

@@ -5,5 +5,5 @@ public enum CircleStatus {
     OPEN, // 모집중
     FULL, // 정원 마감
     REJECTED, // 관리자 거절
-    SUSPENDED // 정지(신고관련)
+    CLOSED // 강제 해산 (3회 누적)
 }

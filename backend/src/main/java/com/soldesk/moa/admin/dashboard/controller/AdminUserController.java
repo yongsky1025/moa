@@ -3,12 +3,12 @@ package com.soldesk.moa.admin.dashboard.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.soldesk.moa.admin.dashboard.dto.AdminUserResponseDTO;
-import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoCircleDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoPostDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoReplyDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.AdminUserResponseDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.AdminUserSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoCircleDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoPostDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoReplyDTO;
 import com.soldesk.moa.admin.dashboard.service.AdminService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;

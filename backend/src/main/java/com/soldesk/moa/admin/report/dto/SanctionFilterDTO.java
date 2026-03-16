@@ -6,14 +6,12 @@ import com.soldesk.moa.admin.report.entity.constant.SanctionType;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
-@Getter
-@ToString
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class SanctionFilterDTO extends PageRequestDTO {

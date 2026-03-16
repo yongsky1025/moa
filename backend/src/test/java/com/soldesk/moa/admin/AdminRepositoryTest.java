@@ -18,7 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.AdminUserSearchDTO;
 import com.soldesk.moa.admin.dashboard.repository.AdminBoardRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleRepository;

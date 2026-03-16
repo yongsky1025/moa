@@ -21,7 +21,7 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.JPQLQuery;
-import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.AdminUserSearchDTO;
 import com.soldesk.moa.board.entity.QPost;
 import com.soldesk.moa.board.entity.QReply;
 import com.soldesk.moa.circle.entity.QCircleMember;

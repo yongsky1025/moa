@@ -1,4 +1,4 @@
-import AdminDashboardPage from '../admin/component/AdminDashboardPage.tsx';
+import AdminDashboardPage from '../admin/pages/AdminDashboardPage';
 
 export const adminRouter = () => {
   return [{ path: 'maindashboard', Component: AdminDashboardPage }];

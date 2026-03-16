@@ -19,24 +19,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.Tuple;
-import com.soldesk.moa.admin.dashboard.dto.AdminCircleResponseDTO;
-import com.soldesk.moa.admin.dashboard.dto.AdminCircleSearchDTO;
-import com.soldesk.moa.admin.dashboard.dto.AdminMainDTO;
-import com.soldesk.moa.admin.dashboard.dto.AdminUserResponseDTO;
-import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
-import com.soldesk.moa.admin.dashboard.dto.CircleDataDTO;
-import com.soldesk.moa.admin.dashboard.dto.CircleSummaryDTO;
-import com.soldesk.moa.admin.dashboard.dto.DailyCountDTO;
-import com.soldesk.moa.admin.dashboard.dto.DashboardChartDTO;
-import com.soldesk.moa.admin.dashboard.dto.MonthlyCountDTO;
-import com.soldesk.moa.admin.dashboard.dto.PopularCircleDTO;
-import com.soldesk.moa.admin.dashboard.dto.PostActivitySummaryDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserCountDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoCircleDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoPostDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoReplyDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserStatusDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleResponseDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.PopularCircleDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.AdminMainDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.CircleDataDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.CircleSummaryDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.DailyCountDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.DashboardChartDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.MonthlyCountDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.PostActivitySummaryDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.UserCountDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.UserStatusDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.AdminUserResponseDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.AdminUserSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoCircleDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoPostDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoReplyDTO;
 import com.soldesk.moa.admin.dashboard.repository.AdminBoardRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleRepository;
@@ -79,18 +79,25 @@ public class AdminService {
 
                 long countTotalUser = (long) row[0];
                 long maleUser = (long) row[1];
-                long femaleUser = countTotalUser - maleUser;
-                double maleRatio = Math.round(((double) maleUser / countTotalUser * 100) *
-                                10) / 10.0;
-                double femaleRatio = 100 - maleRatio;
+                long unspecifiedUser = (long) row[2];
+                long femaleUser = countTotalUser - maleUser - unspecifiedUser;
+
+                // 0명일 경우 오류방지
+                double maleRatio, femaleRatio, unspecifiedRatio;
+                if (countTotalUser == 0) {
+                        maleRatio = femaleRatio = unspecifiedRatio = 0.0;
+                } else {
+                        maleRatio = Math.round((double) maleUser / countTotalUser * 1000) / 10.0;
+                        unspecifiedRatio = Math.round((double) unspecifiedUser / countTotalUser * 1000) / 10.0;
+                        femaleRatio = 100.0 - maleRatio - unspecifiedRatio;
+                }
 
                 // 모임에 가입되어있는 유저 수 (모임 가입률)
                 long countJoinUser = adminCircleMemberRepository.getCountCircleMember();
 
-                UserCountDTO userCountDTO = entityToUserCountDTO(countTotalUser, maleUser,
-                                femaleUser, maleRatio,
-                                femaleRatio,
-                                countJoinUser);
+                UserCountDTO userCountDTO = entityToUserCountDTO(
+                                countTotalUser, maleUser, femaleUser, unspecifiedUser, maleRatio, femaleRatio,
+                                unspecifiedRatio, countJoinUser);
 
                 // 최근 한 달간 가입자 and 탈퇴자 수
                 LocalDateTime start = LocalDateTime.now().minusMonths(1L);
@@ -314,14 +321,14 @@ public class AdminService {
                 // 주간 통계
                 List<DailyCountDTO> weeklyPosts = postActivitytoDto(adminPostRepository.countPostsGroupedByDay(weekAgo),
                                 today);
-                List<DailyCountDTO> weeklyReplis = postActivitytoDto(
+                List<DailyCountDTO> weeklyReplies = postActivitytoDto(
                                 adminReplyRepository.countRepliesGroupedByDay(weekAgo), today);
 
                 return PostActivitySummaryDTO.builder()
                                 .todayPostCount(todayPostCount)
                                 .todayReplyCount(todayReplyCount)
                                 .weeklyPosts(weeklyPosts)
-                                .weeklyReplis(weeklyReplis)
+                                .weeklyReplies(weeklyReplies)
                                 .build();
         }
 
@@ -356,15 +363,18 @@ public class AdminService {
         private UserCountDTO entityToUserCountDTO(long countTotalUser,
                         long maleUser,
                         long femaleUser,
+                        long unspecifiedUser,
                         double maleRatio,
-                        double femaleRatio, long countJoinUser) {
+                        double femaleRatio, double unspecifiedRatio, long countJoinUser) {
 
                 UserCountDTO dto = UserCountDTO.builder()
                                 .countTotalUser(countTotalUser)
                                 .maleUser(maleUser)
                                 .femaleUser(femaleUser)
+                                .unspecifiedUser(unspecifiedUser)
                                 .maleRatio(maleRatio)
                                 .femaleRatio(femaleRatio)
+                                .unspecifiedRatio(unspecifiedRatio)
                                 .countJoinUser(countJoinUser)
                                 .build();
 

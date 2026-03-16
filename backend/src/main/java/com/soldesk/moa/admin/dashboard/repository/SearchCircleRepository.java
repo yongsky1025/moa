@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import com.soldesk.moa.admin.dashboard.dto.AdminCircleSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
 
 public interface SearchCircleRepository {
 

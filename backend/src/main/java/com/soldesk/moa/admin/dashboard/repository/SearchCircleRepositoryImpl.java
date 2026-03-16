@@ -16,7 +16,7 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.soldesk.moa.admin.dashboard.dto.AdminCircleSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.QCircle;
 import com.soldesk.moa.circle.entity.QCircleCategory;

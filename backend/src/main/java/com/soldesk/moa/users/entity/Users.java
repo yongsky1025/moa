@@ -122,7 +122,7 @@ public class Users extends BaseEntity {
     // --- 신고/제재용 컬럼 ---
     @Column(nullable = false)
     @Builder.Default
-    private int warningCount = 0;
+    private int sanctionCount = 0;
 
     // === 메서드 ===
 
@@ -184,12 +184,12 @@ public class Users extends BaseEntity {
     }
 
     // 신고/제재용 메소드
-    public void increaseWarningCount() {
-        this.warningCount++;
+    public void increaseSanctionCount() {
+        this.sanctionCount++;
     }
 
-    public void decreaseWarningCount() {
-        if (this.warningCount > 0)
-            this.warningCount--;
+    public void decreaseSanctionCount() {
+        if (this.sanctionCount > 0)
+            this.sanctionCount--;
     }
 }

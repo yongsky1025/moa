@@ -1,0 +1,62 @@
+/* dashboard.css
+   AdminDashboard 공통 스타일
+   Tailwind로 표현하기 어려운 것들만 여기에 정의
+*/
+
+/* shimmer 애니메이션 */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+
+/* 카드 공통 */
+.admin-card {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid #f3f4f6;
+  padding: 1.25rem;
+}
+.admin-card-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 1rem;
+  letter-spacing: -0.025em;
+}
+/* 사이드바 버튼 hover */
+.sb-btn:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: #111 !important;
+}
+
+/* 사이드바 서브메뉴 hover */
+.sb-sub:hover {
+  color: #555 !important;
+}
+
+/* 빠른작업 버튼 hover */
+.qa-btn:hover {
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+}
+
+/* 새로고침 버튼 hover */
+.refetch-btn:hover {
+  background-color: #f3f4f6 !important;
+}
+
+/* SVG 내부 text 기본 폰트 */
+.chart-svg text {
+  font-family: inherit;
+}

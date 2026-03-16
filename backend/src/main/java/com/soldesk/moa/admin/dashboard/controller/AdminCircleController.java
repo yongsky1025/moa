@@ -3,9 +3,9 @@ package com.soldesk.moa.admin.dashboard.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.soldesk.moa.admin.dashboard.dto.AdminCircleResponseDTO;
-import com.soldesk.moa.admin.dashboard.dto.AdminCircleSearchDTO;
-import com.soldesk.moa.admin.dashboard.dto.PopularCircleDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleResponseDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.PopularCircleDTO;
 import com.soldesk.moa.admin.dashboard.service.AdminService;
 import com.soldesk.moa.common.dto.PageResultDTO;
 

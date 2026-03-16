@@ -124,59 +124,74 @@ public class SanctionService {
                     .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."))
                     .markDeleted();
 
-            case CIRCLE -> adminCircleRepository.findById(dto.targetId())
-                    .orElseThrow(() -> new IllegalArgumentException("모임을 찾을 수 없습니다."))
-                    .setStatus(CircleStatus.SUSPENDED);
+            case CIRCLE -> executeCircleSanction(dto);
 
         }
     };
 
     // 타입 user용 제재 실행메소드
     private void executeUserSanction(SanctionRequestDTO dto, Users targetUser, Users admin) {
-        if (dto.sanctionType() == SanctionType.WARNING) {
+        // 재재 카운트 추가
+        targetUser.increaseSanctionCount();
+        int count = targetUser.getSanctionCount();
 
-            // 경고 횟수 1 증가
-            targetUser.increaseWarningCount();
-            int count = targetUser.getWarningCount();
+        log.info("제재 횟수 증가 userId={}, sancCount={}", targetUser.getUserId(), targetUser.getSanctionCount());
 
-            // 경고 누적 계산
-            SanctionType autoType = SanctionType.getAutoSanctionByWarningCount(count);
+        // 5회 도달 - 자동 영구 밴
+        if (count >= 5) {
+            // 5회가 되면 제재 타입에 상관없이 자동으로 영구 밴
+            sanctionRepository.save(Sanction.builder()
+                    .report(null) // 연관신고없이 제재횟수 누적으로 밴
+                    .targetUser(targetUser)
+                    .admin(admin)
+                    .targetType(ReportTargetType.USER)
+                    .targetId(targetUser.getUserId())
+                    .sanctionType(SanctionType.PERMANENT_BAN)
+                    .reason("제재 " + count + "회 누적으로 인한 자동 영구이용정지")
+                    .startAt(LocalDateTime.now())
+                    .endAt(null) // 영구
+                    .build());
 
-            // 2회이상이면 제재
-            if (autoType != SanctionType.WARNING) {
-                sanctionRepository.save(
-                        Sanction.builder()
-                                .report(null)
-                                .targetUser(targetUser)
-                                .admin(admin)
-                                .targetType(ReportTargetType.USER)
-                                .targetId(targetUser.getUserId())
-                                .sanctionType(autoType)
-                                .reason("경고 " + count + "회 누적으로 인한 자동 제재")
-                                .startAt(LocalDateTime.now())
-                                .endAt(calculateEndAt(autoType))
-                                .build());
+            targetUser.setUserStatus(UserStatus.BANNED);
 
-                // 유저 상태 변경
-                UserStatus newStatus = autoType == SanctionType.PERMANENT_BAN
-                        ? UserStatus.BANNED
-                        : UserStatus.SUSPENDED;
-                targetUser.setUserStatus(newStatus);
+            log.info("5회 누적 자동 영구밴 userId={}", targetUser.getUserId());
+            return;
+        }
 
-                log.info("경고 누적 자동 제재 userID={}, count={}, type={}",
-                        targetUser.getUserId(), count, autoType);
-            } else {
-                // 경고만
-                log.info("[경고] userId={}, warnigCount={}", targetUser.getUserId(), count);
-            }
+        // 제재 횟수 1~4회 : 관리자가 결정한 제재타입으로 처리
+
+        // 1회는 경고인데 다른 제재 넣을경우 막기
+        if (count == 1 && dto.sanctionType() != SanctionType.WARNING) {
+            throw new IllegalArgumentException("1회 제재는 경고만 가능합니다.");
+        }
+
+        // 1~4회 : 관리자가 선택한 제재 타입 그대로 처리
+        UserStatus newStatus = switch (dto.sanctionType()) {
+            case WARNING -> UserStatus.ACTIVE; // 경고는 상태 변경 없음
+            case PERMANENT_BAN -> UserStatus.BANNED;
+            case CONTENT_DELETE -> UserStatus.ACTIVE; // 콘텐츠 삭제만, 계정 유지
+            default -> UserStatus.SUSPENDED; // BAN_1D, BAN_3D, BAN_30D
+        };
+        targetUser.changeUserStatus(newStatus);
+    }
+
+    // circle 제재 집행 메소드
+    private void executeCircleSanction(SanctionRequestDTO dto) {
+        Circle circle = adminCircleRepository.findById(dto.targetId())
+                .orElseThrow(() -> new IllegalArgumentException("모임을 찾을 수 없습니다."));
+
+        // 제재 횟수 증가
+        circle.increaseSanctionCount();
+        int count = circle.getSanctionCount();
+        log.info("모임 제재 횟수 증가 circleId={}, sanctionCount={}", circle.getCircleId(), circle.getSanctionCount());
+
+        if (count >= 3) {
+            // 3회 -> 강제해산
+            circle.setStatus(CircleStatus.CLOSED);
+            log.info("제재 3회 누적 강제해산 circleId={}", circle.getCircleId());
         } else {
-            // 경고 외 제재(1일정지 이상의 것들)
-            UserStatus newStatus = switch (dto.sanctionType()) {
-                case PERMANENT_BAN -> UserStatus.BANNED;
-                case CONTENT_DELETE -> UserStatus.ACTIVE; // 컨텐츠(게시글/댓글) 삭제만
-                default -> UserStatus.SUSPENDED;
-            };
-            targetUser.setUserStatus(newStatus);
+            // 1~2회 경고만
+            log.info("모임 경고 {}회 circleId={}", count, circle.getCircleId());
         }
     }
 
@@ -189,10 +204,12 @@ public class SanctionService {
         sanction.lift(); // 제재 해제
 
         // 활성중인 다른 제재가 없으면 유저 상태 복구
-        boolean hasOther = sanctionRepository.existsOtherActiveSanction(sanction.getTargetUser().getUserId(),
-                sanctionId);
-        if (!hasOther) {
-            sanction.getTargetUser().setUserStatus(UserStatus.ACTIVE);
+        if (sanction.getTargetType() == ReportTargetType.USER) {
+            boolean hasOther = sanctionRepository.existsOtherActiveSanction(sanction.getTargetUser().getUserId(),
+                    sanctionId);
+            if (!hasOther) {
+                sanction.getTargetUser().setUserStatus(UserStatus.ACTIVE);
+            }
         }
     }
 
@@ -213,7 +230,8 @@ public class SanctionService {
 
         // 실제 복원
         rollbackSanction(sanction);
-
+        log.info("[제재 취소] sanctionId={}, 취소관리자={}, 사유={}",
+                sanctionId, admin.getNickname(), cancelReason);
     }
 
     // 제재 롤백하기
@@ -234,9 +252,7 @@ public class SanctionService {
                 reply.restore();
                 break;
             case CIRCLE:
-                Circle circle = adminCircleRepository.findById(sanction.getTargetId())
-                        .orElseThrow(() -> new IllegalArgumentException("모임을 찾을 수 없습니다."));
-                circle.setStatus(CircleStatus.OPEN);
+                rollbackCircleSanction(sanction);
                 break;
         }
     }
@@ -245,31 +261,44 @@ public class SanctionService {
     private void rollbackUserSanction(Sanction sanction) {
         Users targetUser = sanction.getTargetUser();
 
-        switch (sanction.getSanctionType()) {
-            case WARNING:
-                targetUser.decreaseWarningCount();
+        // 제재 횟수 감소
+        targetUser.decreaseSanctionCount();
+        log.info("[유저 제재 횟수 감소] userId={}, sanctionCount={}",
+                targetUser.getUserId(), targetUser.getSanctionCount());
 
-                // 해당 경고로 자동 생성된 제재 연쇄 취소
-                sanctionRepository
-                        .findAutoSanctionByWarning(targetUser.getUserId(), SanctionState.ACTIVE,
-                                sanction.getCreateDate())
-                        .ifPresent(autoSanction -> {
-                            autoSanction.cancel(sanction.getCancelledBy(), "경고 취소로 인한 자동 취소");
-                            targetUser.changeUserStatus(UserStatus.ACTIVE);
-                            log.info("자동 제재 연쇄 취소 sanctionId={}", autoSanction.getId());
-                        });
-                break;
-            case BAN_1D, BAN_3D, BAN_30D, PERMANENT_BAN:
-                // 다른 제재 없을 때만 복구
-                boolean hasOther = sanctionRepository.existsOtherActiveSanction(targetUser.getUserId(),
-                        sanction.getId());
+        switch (sanction.getSanctionType()) {
+
+            case WARNING -> {
+            }
+
+            case BAN_1D, BAN_3D, BAN_30D, PERMANENT_BAN -> {
+                boolean hasOther = sanctionRepository.existsOtherActiveSanction(
+                        targetUser.getUserId(), sanction.getId());
                 if (!hasOther) {
                     targetUser.changeUserStatus(UserStatus.ACTIVE);
-                    log.info("유저 상태 복구 userId={}", targetUser.getUserId());
+                    log.info("[유저 상태 ACTIVE 복구] userId={}", targetUser.getUserId());
                 }
-                break;
-            case CONTENT_DELETE:
-                break;
+            }
+
+            case CONTENT_DELETE -> {
+                // 집행 당시 유저 상태 변경 없었으므로 복구 없음
+            }
+        }
+    }
+
+    // 서클 경고 롤백 메소드
+    private void rollbackCircleSanction(Sanction sanction) {
+        Circle circle = adminCircleRepository.findById(sanction.getTargetId())
+                .orElseThrow(() -> new IllegalArgumentException("모임을 찾을 수 없습니다."));
+
+        // 제재 횟수 감소
+        circle.decreaseSanctionCount();
+        log.info("[모임 제재 횟수 감소] circleId={}, sanctionCount={}",
+                circle.getCircleId(), circle.getSanctionCount());
+
+        if (circle.getStatus() == CircleStatus.CLOSED) {
+            circle.setStatus(CircleStatus.OPEN);
+            log.info("[모임 강제해산 취소 → OPEN 복구] circleId={}", circle.getCircleId());
         }
     }
 

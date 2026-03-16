@@ -11,17 +11,10 @@ public enum SanctionType {
     /*
      * 경고 누적 시 자동 전환될 제재 타입
      * 1회 -> 경고
-     * 2회 -> 1일
-     * 3회 -> 3일
-     * 4회 -> 30일 정지
-     * 5회 -> 영구 정지
+     * 2~4회 -> 운영방침에 의거한 제재 타입 결정
+     * 5회 -> 제재 누적으로 인한 영구 정지
      */
-    public static SanctionType getAutoSanctionByWarningCount(int count) {
-        return switch (count) {
-            case 2 -> BAN_1D;
-            case 3 -> BAN_3D;
-            case 4 -> BAN_30D;
-            default -> count >= 5 ? PERMANENT_BAN : WARNING;
-        };
+    public static boolean isAutoPermabanCount(int count) {
+        return count >= 5;
     }
 }
