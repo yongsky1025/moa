@@ -37,17 +37,27 @@ public class JwtTokenProvider {
 
     // for legacy 'createToken'
     public String createToken(String email, UserRole role) {
-        return createAccessToken(email, role);
+        return createAccessToken(email, role, null);
     }
 
     public String createAccessToken(String email, UserRole role) {
+        return createAccessToken(email, role, null);
+    }
+
+    public String createAccessToken(String email, UserRole role, Long userId) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + jwtProperties.getAccessTokenTtlMs());
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(email)
                 .claim("role", role.name())
-                .claim("type", "access")
+                .claim("type", "access");
+
+        if (userId != null) {
+            builder.claim("userId", userId);
+        }
+
+        return builder
                 .issuedAt(now)
                 .expiration(validity)
                 .signWith(signingKey)

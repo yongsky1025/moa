@@ -24,6 +24,12 @@ public class ChatMessage {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
     protected ChatMessage() {}
 
     public static ChatMessage of(Long roomId, Long senderId, String content) {
@@ -35,7 +41,21 @@ public class ChatMessage {
         m.senderId = senderId;
         m.content = content.trim();
         m.createdAt = LocalDateTime.now();
+        m.isDeleted = false;
         return m;
+    }
+
+    public void edit(String newContent) {
+        if (newContent == null || newContent.isBlank()) {
+            throw new IllegalArgumentException("메시지는 비어있을 수 없습니다.");
+        }
+        this.content = newContent.trim();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void softDelete() {
+        this.isDeleted = true;
+        this.updatedAt = LocalDateTime.now();
     }
 
     public Long getId() { return id; }
@@ -43,4 +63,6 @@ public class ChatMessage {
     public Long getSenderId() { return senderId; }
     public String getContent() { return content; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public boolean isDeleted() { return isDeleted; }
 }

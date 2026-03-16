@@ -25,4 +25,6 @@ public class UserProfileResponseDTO {
     private UserGender userGender;
 
     private LocalDate birthDate;
+
+    private String statusMessage;
 }

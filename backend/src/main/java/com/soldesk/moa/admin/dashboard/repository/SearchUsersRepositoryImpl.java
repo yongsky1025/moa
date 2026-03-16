@@ -174,9 +174,6 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
                         }
                     }
                     break;
-                case "phone":
-                    builder.and(users.phone.contains(searchDTO.getKeyword()));
-                    break;
 
             }
         }
