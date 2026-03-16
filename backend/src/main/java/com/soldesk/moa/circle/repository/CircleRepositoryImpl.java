@@ -76,26 +76,33 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
         QCircle circle = QCircle.circle;
         QCircleEnergyProfile ep = QCircleEnergyProfile.circleEnergyProfile;
 
-        // sqrt 없이 거리의 제곱으로 정렬 (단조 증가라 결과 동일)
-        NumberExpression<Integer> distanceSq =
-                ep.socialLoad.subtract(socialLoad).multiply(ep.socialLoad.subtract(socialLoad))
-                .add(ep.interactionMode.subtract(interactionMode).multiply(ep.interactionMode.subtract(interactionMode)))
-                .add(ep.structureLevel.subtract(structureLevel).multiply(ep.structureLevel.subtract(structureLevel)))
-                .add(ep.activityIntensity.subtract(activityIntensity).multiply(ep.activityIntensity.subtract(activityIntensity)))
-                .add(ep.commitmentLevel.subtract(commitmentLevel).multiply(ep.commitmentLevel.subtract(commitmentLevel)));
+        /**
+        * 축별 가중치(에너지 소모 영향도 순, 0.04 등차, 합계
+        * 1) socialLoad(0.28) : 인원수 = 사회적 정보 처리량 - 에너지 소모에 가장 큰 영향
+        * 2) interactionMode(0.24) : 소통 깊이 - 인지적 에너지 소모에 직결
+        * 3) activityIntensity(0.20) : 신체적 에너지 - 활동 강도
+        * 4) commitmentLevel(0.16) : 심리적 부담 - 지속성/몰입 부담
+        * 5) structureLevel(0.12) : 선호도 성격 - 에너지 상관 상대적으로 낮음
+        **/
+        // 가중치 적용 유클리드 거리의 제곱으로 정렬 (socialLoad 0.28, interactionMode 0.24, structureLevel 0.20, activityIntensity 0.16, commitmentLevel 0.12)
+        NumberExpression<Double> weightedDistanceSq =
+                ep.socialLoad.subtract(socialLoad).multiply(ep.socialLoad.subtract(socialLoad)).doubleValue().multiply(0.28)
+                .add(ep.interactionMode.subtract(interactionMode).multiply(ep.interactionMode.subtract(interactionMode)).doubleValue().multiply(0.24))
+                .add(ep.structureLevel.subtract(structureLevel).multiply(ep.structureLevel.subtract(structureLevel)).doubleValue().multiply(0.20))
+                .add(ep.activityIntensity.subtract(activityIntensity).multiply(ep.activityIntensity.subtract(activityIntensity)).doubleValue().multiply(0.16))
+                .add(ep.commitmentLevel.subtract(commitmentLevel).multiply(ep.commitmentLevel.subtract(commitmentLevel)).doubleValue().multiply(0.12));
 
         return queryFactory
                 .selectFrom(circle)
                 .join(ep).on(ep.circle.eq(circle))
                 .where(circle.status.notIn(CircleStatus.PENDING, CircleStatus.REJECTED, CircleStatus.CLOSED))
-                .orderBy(distanceSq.asc())
+                .orderBy(weightedDistanceSq.asc())
                 .limit(10)
                 .fetch();
     }
 
     //
     // 조건 메서드들
-
     private BooleanExpression categoryEq(Long categoryId) {
         return categoryId == null ? null
                 : QCircle.circle.category.categoryId.eq(categoryId);
