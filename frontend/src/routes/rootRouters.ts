@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
-import MainIndex from '../common/MainIndex';
 import LandingPage from '../common/LandingPage';
+import MainIndexWrapper from './MainIndexWrapper';
 import { userRouter } from './userRouter';
 import { circleRouter } from './circleRouter';
 import { boardRouter } from './boardRouter';
@@ -15,9 +15,9 @@ const rootRouter = createBrowserRouter([
   },
   {
     path: '/main',
-    Component: MainIndex,
+    Component: MainIndexWrapper,
   },
-  { path: '/user', children: userRouter() },
+  { path: '/users', children: userRouter() },
   { path: '/circle', children: circleRouter() },
   { path: '/board', children: boardRouter() },
   { path: '/admin', children: adminRouter() },

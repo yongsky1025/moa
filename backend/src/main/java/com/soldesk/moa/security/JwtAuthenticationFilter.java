@@ -2,8 +2,6 @@ package com.soldesk.moa.security;
 
 import java.io.IOException;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,8 +16,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
-@Configuration
-@ConfigurationProperties(prefix = "jwt")
 @Log4j2
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
