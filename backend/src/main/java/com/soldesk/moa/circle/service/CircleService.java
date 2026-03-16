@@ -273,6 +273,29 @@ public class CircleService {
                 circleRepository.save(rejected);
         }
 
+        // 추천 서클 목록 조회 (유저 에너지 프로필 기반)
+        @Transactional(readOnly = true)
+        public List<CircleResponseDTO> getRecommendedCircles(Long userId) {
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                if (loginUser.getEnergyProfile() == null) {
+                        throw new IllegalStateException("에너지 프로필을 먼저 설정해주세요.");
+                }
+
+                var profile = loginUser.getEnergyProfile();
+
+                return circleRepository.findRecommended(
+                                profile.getSocialLoad(),
+                                profile.getInteractionMode(),
+                                profile.getStructureLevel(),
+                                profile.getActivityIntensity(),
+                                profile.getCommitmentLevel())
+                                .stream()
+                                .map(CircleResponseDTO::new)
+                                .toList();
+        }
+
         // 카테고리 전체 목록 조회
         @Transactional(readOnly = true)
         public List<CircleCategoryResponseDTO> getCategories() {

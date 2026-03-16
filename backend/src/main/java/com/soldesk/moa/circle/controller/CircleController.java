@@ -55,6 +55,13 @@ public class CircleController {
         return ResponseEntity.ok(circleService.createCircle(request, image, authUserDTO.getUserId()));
     }
 
+    // 추천 서클 목록 조회
+    @GetMapping("/recommended")
+    public ResponseEntity<List<CircleResponseDTO>> getRecommendedCircles(
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+        return ResponseEntity.ok(circleService.getRecommendedCircles(authUserDTO.getUserId()));
+    }
+
     // 서클 상세 조회
     @GetMapping("/{circleId}")
     public ResponseEntity<CircleResponseDTO> getCircle(
