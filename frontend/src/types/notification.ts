@@ -4,7 +4,9 @@ export type NotificationType =
   | 'CIRCLE_JOIN_APPROVED'
   | 'CIRCLE_JOIN_REJECTED'
   | 'CIRCLE_KICKED'
-  | 'CIRCLE_DISBANDED';
+  | 'CIRCLE_DISBANDED'
+  | 'COMMENT'
+  | 'REPLY_COMMENT';
 
 export interface Notification {
   id: number;

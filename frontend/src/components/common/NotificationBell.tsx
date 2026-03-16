@@ -9,6 +9,8 @@ const typeLabel: Record<string, string> = {
   CIRCLE_JOIN_REJECTED: '가입 거절',
   CIRCLE_KICKED: '강퇴',
   CIRCLE_DISBANDED: '모임 해산',
+  COMMENT: '댓글',
+  REPLY_COMMENT: '답글',
 };
 
 export default function NotificationBell() {
