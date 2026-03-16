@@ -34,23 +34,16 @@ spring:
 file:
   upload-dir: ${user.dir}/uploads
 
-# JWT
 jwt:
   secret: 238ef5a0a77a9d3335b778313550888ce82f391d84b5cc4f9de6d4bb74335f883515c43a547e306f608572196b0c04fff6be43336909bcc13bcd404cc7a2d2bf
   access-exp-ms: 1800000
   refresh-exp-ms: 1209600000
 
-# CORS (React dev 예시)
-cors:
-  allowed-origins: http://localhost:5173
-
-# Cookie env (선택: 로컬/운영 분기용)
 app:
   cookie:
     secure: false
     same-site: Lax
 
-# 로그출력(개발용)
 logging:
   level:
     org:

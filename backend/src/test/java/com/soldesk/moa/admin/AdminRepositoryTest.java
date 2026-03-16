@@ -18,15 +18,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.soldesk.moa.admin.dto.AdminUserSearchDTO;
-import com.soldesk.moa.admin.repository.AdminBoardRepository;
-import com.soldesk.moa.admin.repository.AdminCircleMemberRepository;
-import com.soldesk.moa.admin.repository.AdminCircleRepository;
-import com.soldesk.moa.admin.repository.AdminPostRepository;
-import com.soldesk.moa.admin.repository.AdminReplyRepository;
-import com.soldesk.moa.admin.repository.AdminScheduleMemberRepository;
-import com.soldesk.moa.admin.repository.AdminScheduleRepository;
-import com.soldesk.moa.admin.repository.AdminUsersRepository;
+import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
+import com.soldesk.moa.admin.dashboard.repository.AdminBoardRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminCircleMemberRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminCircleRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminPostRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminReplyRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminScheduleMemberRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.constant.BoardType;
@@ -45,7 +45,7 @@ import com.soldesk.moa.users.entity.constant.UserStatus;
 
 @SpringBootTest
 @Transactional
-@Disabled
+// @Disabled
 public class AdminRepositoryTest {
 
     @Autowired
@@ -66,6 +66,8 @@ public class AdminRepositoryTest {
     private AdminScheduleRepository adminScheduleRepository;
     @Autowired
     private AdminScheduleMemberRepository adminScheduleMemberRepository;
+    @Autowired
+    private AdminPostRepository adminPostRepository;
 
     // create - 관리자 생성
     @Disabled
@@ -219,7 +221,7 @@ public class AdminRepositoryTest {
         });
     }
 
-    // reply 생성
+    // // reply 생성
     // @Test
     // @Commit
     // public void createReply() {
@@ -232,8 +234,8 @@ public class AdminRepositoryTest {
 
     // Reply reply = Reply.builder()
     // .content("it was so good!")
-    // .user(user)
-    // .post(post)
+    // .userId(user)
+    // .postId(post)
     // .build();
 
     // adminReplyRepository.save(reply);
@@ -604,5 +606,18 @@ public class AdminRepositoryTest {
             System.out.println(result.getTotalElements());
             System.out.println(result.getTotalPages());
         });
+    }
+
+    // 시간대별 활동량
+    @Test
+    public void findActivity() {
+        LocalDateTime since = LocalDateTime.now().minusMonths(2);
+
+        List<Object[]> result = adminPostRepository.findPostActivity(since);
+
+        for (Object[] objects : result) {
+            System.out.printf("day: %s, hour: %s, activity_count: %s\n", objects[0].toString(), objects[1].toString(),
+                    objects[2].toString());
+        }
     }
 }
