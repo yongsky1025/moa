@@ -21,6 +21,10 @@ export const circleApi = {
   getMyCircles: () =>
     api.get<CircleResponse[]>('/circles/me'),
 
+  // 추천 서클 (에너지 프로필 기반)
+  getRecommendedCircles: () =>
+    api.get<CircleResponse[]>('/circles/recommended'),
+
   // 서클 상세
   getCircle: (circleId: number) =>
     api.get<CircleResponse>(`/circles/${circleId}`),

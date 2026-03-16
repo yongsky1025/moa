@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
@@ -10,6 +10,64 @@ interface Category {
   categoryName: string;
 }
 
+const energyQuestions = [
+  {
+    key: 'socialLoad' as const,
+    question: '이 모임에서 참여자 간 대화는 어느 정도로 이루어지나요?',
+    options: [
+      '거의 없음 (각자 활동 중심)',
+      '필요할 때만 간단히',
+      '자연스럽게 적당히',
+      '활발하게 자주',
+      '대화가 핵심 활동',
+    ],
+  },
+  {
+    key: 'interactionMode' as const,
+    question: '모임의 주요 활동 방식은 어떤가요?',
+    options: [
+      '완전히 개인 활동 (각자 따로)',
+      '개인 활동 위주, 가끔 공유',
+      '개인과 그룹 활동 반반',
+      '그룹 활동 위주, 가끔 개인',
+      '항상 함께 하는 그룹 활동',
+    ],
+  },
+  {
+    key: 'structureLevel' as const,
+    question: '모임의 진행 방식은 얼마나 정해져 있나요?',
+    options: [
+      '완전 자유 (규칙 없음)',
+      '대략적인 흐름만 있음',
+      '기본 틀은 있지만 유연함',
+      '꽤 체계적으로 진행',
+      '명확한 일정과 규칙이 있음',
+    ],
+  },
+  {
+    key: 'activityIntensity' as const,
+    question: '모임 활동의 신체적/정신적 에너지 소모는 어느 정도인가요?',
+    options: [
+      '매우 가벼움 (휴식에 가까움)',
+      '가볍게 참여',
+      '보통 수준의 집중/활동',
+      '꽤 활발하거나 집중 필요',
+      '매우 높은 에너지 필요',
+    ],
+  },
+  {
+    key: 'commitmentLevel' as const,
+    question: '참여자에게 기대하는 참여 빈도와 책임은 어느 정도인가요?',
+    options: [
+      '완전 자유 (오고 싶을 때만)',
+      '가끔 참여 권장',
+      '정기적 참여 권장하지만 유연',
+      '정기적 참여 기대',
+      '매 회 참석 필수',
+    ],
+  },
+];
+
 export default function CircleFormPage() {
   const { circleId } = useParams<{ circleId: string }>();
   const isEdit = !!circleId;
@@ -20,16 +78,20 @@ export default function CircleFormPage() {
     description: '',
     maxMember: 10,
     categoryId: 0,
+    socialLoad: 3,
+    interactionMode: 3,
+    structureLevel: 3,
+    activityIntensity: 3,
+    commitmentLevel: 3,
   });
   const [currentMember, setCurrentMember] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState('');       // 새로 선택한 파일 미리보기
-  const [existingImageUrl, setExistingImageUrl] = useState(''); // 수정 시 기존 이미지
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [existingImageUrl, setExistingImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // 카테고리 목록: GET /circles/categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -46,19 +108,19 @@ export default function CircleFormPage() {
     fetchCategories();
   }, [isEdit]);
 
-  // 수정 모드: 기존 서클 정보 로드
   useEffect(() => {
     if (!isEdit) return;
     const fetchCircle = async () => {
       try {
         const res = await circleApi.getCircle(Number(circleId));
         const c = res.data;
-        setForm({
+        setForm(prev => ({
+          ...prev,
           name: c.name,
           description: c.description ?? '',
           maxMember: c.maxMember,
           categoryId: c.categoryId,
-        });
+        }));
         setCurrentMember(c.currentMember);
         if (c.coverImageUrl) setExistingImageUrl(c.coverImageUrl);
       } catch {
@@ -76,7 +138,7 @@ export default function CircleFormPage() {
     }
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     setError('');
 
@@ -88,13 +150,11 @@ export default function CircleFormPage() {
     setLoading(true);
     try {
       if (isEdit) {
-        // 텍스트 수정 (JSON PUT)
         await circleApi.updateCircle(Number(circleId), {
           name: form.name,
           description: form.description,
           maxMember: form.maxMember,
         });
-        // 이미지가 새로 선택됐으면 별도 POST로 업로드
         if (imageFile) {
           await circleApi.uploadCoverImage(Number(circleId), imageFile);
         }
@@ -105,6 +165,11 @@ export default function CircleFormPage() {
           description: form.description,
           maxMember: form.maxMember,
           categoryId: form.categoryId,
+          socialLoad: form.socialLoad,
+          interactionMode: form.interactionMode,
+          structureLevel: form.structureLevel,
+          activityIntensity: form.activityIntensity,
+          commitmentLevel: form.commitmentLevel,
         }, imageFile ?? undefined);
         navigate(res.data?.circleId ? `/circle/${res.data.circleId}` : '/circle');
       }
@@ -179,7 +244,6 @@ export default function CircleFormPage() {
               <label style={labelStyle}>
                 대표 이미지 <span style={{ color: '#aaa', fontWeight: 400 }}>(선택, 최대 10MB)</span>
               </label>
-              {/* 미리보기: 새 파일 선택 > 기존 이미지 순으로 표시 */}
               {(previewUrl || existingImageUrl) && (
                 <img
                   src={previewUrl || existingImageUrl}
@@ -213,6 +277,53 @@ export default function CircleFormPage() {
                 required
               />
             </div>
+
+            {/* 에너지 프로필 (생성 시만) */}
+            {!isEdit && (
+              <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 4 }}>모임 성격 설정</p>
+                  <p style={{ fontSize: 12, color: '#888' }}>유사한 성향의 사람들에게 이 모임을 추천하는 데 활용됩니다.</p>
+                </div>
+                {energyQuestions.map((q, qi) => (
+                  <div key={q.key}>
+                    <label style={{ ...labelStyle, marginBottom: 10 }}>
+                      {qi + 1}. {q.question}
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {q.options.map((label, idx) => {
+                        const value = idx + 1;
+                        const selected = form[q.key] === value;
+                        return (
+                          <label
+                            key={value}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 10,
+                              padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                              border: `1px solid ${selected ? '#111' : '#e5e5e5'}`,
+                              backgroundColor: selected ? '#f5f5f5' : 'white',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name={q.key}
+                              value={value}
+                              checked={selected}
+                              onChange={() => setForm(prev => ({ ...prev, [q.key]: value }))}
+                              style={{ accentColor: '#111', width: 16, height: 16, flexShrink: 0 }}
+                            />
+                            <span style={{ fontSize: 13, color: selected ? '#111' : '#555' }}>
+                              <span style={{ fontWeight: 600, marginRight: 6 }}>{value}</span>{label}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {error && (
               <p style={{ fontSize: 13, color: '#dc2626', padding: '8px 12px', backgroundColor: '#fef2f2', borderRadius: 8 }}>

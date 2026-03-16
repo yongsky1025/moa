@@ -1,4 +1,4 @@
-export type CircleStatus = 'PENDING' | 'OPEN' | 'FULL' | 'REJECTED';
+export type CircleStatus = 'PENDING' | 'OPEN' | 'FULL' | 'REJECTED' | 'CLOSED';
 export type CircleMemberStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'WITHDRAWN';
 export type CircleRole = 'LEADER' | 'MEMBER';
 
@@ -19,6 +19,11 @@ export interface CircleCreateRequest {
   description: string;
   maxMember: number;
   categoryId: number;
+  socialLoad: number;
+  interactionMode: number;
+  structureLevel: number;
+  activityIntensity: number;
+  commitmentLevel: number;
 }
 
 export interface CircleUpdateRequest {
