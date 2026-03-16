@@ -130,7 +130,9 @@ export default function LoginPage() {
                 marginBottom: 10,
               }}
             >
-              <RiKakaoTalkFill style={{ width: 20, height: 20, color: '#191919' }} />
+              <RiKakaoTalkFill
+                style={{ width: 20, height: 20, color: '#191919' }}
+              />
               카카오로 로그인
             </button>
 
@@ -168,7 +170,9 @@ export default function LoginPage() {
             }}
           >
             <div style={{ flex: 1, height: 1, backgroundColor: '#ebebeb' }} />
-            <span style={{ fontSize: 12, color: '#bbb', fontWeight: 500 }}>또는</span>
+            <span style={{ fontSize: 12, color: '#bbb', fontWeight: 500 }}>
+              또는
+            </span>
             <div style={{ flex: 1, height: 1, backgroundColor: '#ebebeb' }} />
           </div>
 

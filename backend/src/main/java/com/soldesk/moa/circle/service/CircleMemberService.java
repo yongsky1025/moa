@@ -11,10 +11,15 @@ import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
+import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
+import java.time.LocalDateTime;
+
+import com.soldesk.moa.schedule.entity.ScheduleMember;
+import com.soldesk.moa.schedule.repository.ScheduleMemberRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
@@ -28,6 +33,7 @@ public class CircleMemberService {
         private final CircleMemberRepository circleMemberRepository;
         private final CircleRepository circleRepository;
         private final UsersRepository usersRepository;
+        private final ScheduleMemberRepository scheduleMemberRepository;
 
         // 서클 가입 신청
         @Transactional
@@ -38,6 +44,11 @@ public class CircleMemberService {
 
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                // 서클 상태 체크 (OPEN인 서클만 가입 신청 가능)
+                if (circle.getStatus() != CircleStatus.OPEN) {
+                        throw new IllegalStateException("가입 신청은 모집 중인 서클만 가능합니다.");
+                }
 
                 // 이미 가입 or 신청 여부 체크
                 boolean exists = circleMemberRepository
@@ -208,7 +219,60 @@ public class CircleMemberService {
                         throw new IllegalStateException("리더는 탈퇴할 수 없습니다. 리더를 위임하세요.");
                 }
 
+                // 아직 시작하지 않은 일정 참여 기록 정리
+                LocalDateTime now = LocalDateTime.now();
+                for (ScheduleMember sm : scheduleMemberRepository.findByCircleMember(member)) {
+                        if (sm.getSchedule().getStartAt().isAfter(now)) {
+                                sm.getSchedule().decreaseCurrentMember();
+                                scheduleMemberRepository.delete(sm);
+                        }
+                }
+
                 member.changeStatus(CircleMemberStatus.LEFT);
+                circle.decreaseMember();
+        }
+
+        // 멤버 강퇴 (리더만 가능)
+        @Transactional
+        public void kickMember(Long circleId, Long memberId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                // 리더 확인
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 멤버를 강퇴할 수 있습니다."));
+
+                // 강퇴 대상 조회
+                CircleMember target = circleMemberRepository.findById(memberId)
+                                .orElseThrow(() -> new IllegalArgumentException("멤버가 존재하지 않습니다."));
+
+                if (!target.getCircle().getCircleId().equals(circleId)) {
+                        throw new IllegalArgumentException("해당 서클의 멤버가 아닙니다.");
+                }
+
+                if (target.getStatus() != CircleMemberStatus.ACTIVE) {
+                        throw new IllegalStateException("활동 중인 멤버만 강퇴할 수 있습니다.");
+                }
+
+                if (target.getRole() == CircleRole.LEADER) {
+                        throw new IllegalStateException("리더는 강퇴할 수 없습니다.");
+                }
+
+                // 아직 시작하지 않은 일정 참여 기록 정리
+                LocalDateTime now = LocalDateTime.now();
+                for (ScheduleMember sm : scheduleMemberRepository.findByCircleMember(target)) {
+                        if (sm.getSchedule().getStartAt().isAfter(now)) {
+                                sm.getSchedule().decreaseCurrentMember();
+                                scheduleMemberRepository.delete(sm);
+                        }
+                }
+
+                target.changeStatus(CircleMemberStatus.KICKED);
                 circle.decreaseMember();
         }
 

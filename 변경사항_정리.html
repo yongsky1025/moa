@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>MOA 프로젝트 수정 사항 정리</title>
+<style>
+  body {
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 30px;
+    color: #222;
+    line-height: 1.7;
+    font-size: 14px;
+  }
+  h1 {
+    font-size: 22px;
+    border-bottom: 3px solid #333;
+    padding-bottom: 10px;
+    margin-bottom: 30px;
+  }
+  h2 {
+    font-size: 16px;
+    background: #f0f0f0;
+    padding: 8px 14px;
+    border-left: 4px solid #555;
+    margin-top: 36px;
+  }
+  h3 {
+    font-size: 14px;
+    margin-top: 20px;
+    margin-bottom: 6px;
+    color: #333;
+  }
+  .filepath {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    background: #e8e8e8;
+    padding: 3px 8px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+  .reason {
+    background: #fff8e1;
+    border-left: 3px solid #f9a825;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 13px;
+  }
+  .fix {
+    background: #e8f5e9;
+    border-left: 3px solid #388e3c;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 13px;
+  }
+  pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 14px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    overflow-x: auto;
+    font-family: 'Consolas', 'Courier New', monospace;
+    line-height: 1.5;
+  }
+  .comment { color: #6a9955; }
+  .keyword { color: #569cd6; }
+  .annotation { color: #dcdcaa; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 13px;
+  }
+  th {
+    background: #444;
+    color: #fff;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  td {
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  .tag-commented { color: #e65100; font-weight: bold; font-size: 12px; }
+  .tag-fixed { color: #2e7d32; font-weight: bold; font-size: 12px; }
+  .tag-added { color: #1565c0; font-weight: bold; font-size: 12px; }
+  .meta {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 30px;
+  }
+  @media print {
+    body { margin: 20px; }
+    pre { page-break-inside: avoid; }
+    h2 { page-break-before: auto; }
+  }
+</style>
+</head>
+<body>
+
+<h1>MOA 프로젝트 - 빌드 오류 수정 사항 정리</h1>
+<div class="meta">브랜치: circles &nbsp;|&nbsp; 작업 내용: 세션 인증 → JWT 전환 과정에서 발생한 컴파일/빌드 오류 수정</div>
+
+<!-- ===================== 요약 테이블 ===================== -->
+<h2>1. 수정 파일 전체 요약</h2>
+<table>
+  <tr>
+    <th>파일</th>
+    <th>구분</th>
+    <th>수정 내용 요약</th>
+  </tr>
+  <tr>
+    <td class="filepath">circle/controller/CircleController.java</td>
+    <td><span class="tag-fixed">수정</span></td>
+    <td>AuthUserDTO import 경로 수정, deleteCircle·updateCircle에 @AuthenticationPrincipal 추가</td>
+  </tr>
+  <tr>
+    <td class="filepath">circle/controller/CircleMemberContoller.java</td>
+    <td><span class="tag-fixed">수정</span></td>
+    <td>AuthUserDTO import 경로 수정</td>
+  </tr>
+  <tr>
+    <td class="filepath">schedule/controller/ScheduleController.java</td>
+    <td><span class="tag-fixed">수정</span></td>
+    <td>AuthUserDTO import 경로 수정, 미사용 Users import 제거</td>
+  </tr>
+  <tr>
+    <td class="filepath">circle/service/CircleService.java</td>
+    <td><span class="tag-fixed">수정</span></td>
+    <td>deleteCircle·updateCircle에 userId 파라미터 추가 및 리더 권한 검증 로직 추가</td>
+  </tr>
+  <tr>
+    <td class="filepath">users/entity/Users.java</td>
+    <td><span class="tag-fixed">수정</span></td>
+    <td>중복 @PrePersist 제거 (prePersist 메서드 삭제, publicId 초기화 로직을 addAge로 통합)</td>
+  </tr>
+  <tr>
+    <td class="filepath">admin/service/AdminService.java</td>
+    <td><span class="tag-commented">주석처리</span></td>
+    <td>Users에 없는 phone·address 필드 참조 제거, 미구현 통계 쿼리 호출부 주석처리</td>
+  </tr>
+  <tr>
+    <td class="filepath">admin/repository/AdminUsersRepository.java</td>
+    <td><span class="tag-commented">주석처리</span></td>
+    <td>Hibernate 6 enum 타입 불일치 JPQL 쿼리 4개 주석처리</td>
+  </tr>
+  <tr>
+    <td class="filepath">admin/repository/SearchUsersRepositoryImpl.java</td>
+    <td><span class="tag-commented">주석처리</span></td>
+    <td>Users에 없는 phone 필드 참조 (case "p") 주석처리</td>
+  </tr>
+  <tr>
+    <td class="filepath">admin/log/repository/AdminActionLogRepository.java</td>
+    <td><span class="tag-commented">주석처리</span></td>
+    <td>deleteByCreatedAtBefore → 필드명 불일치 (실제 필드는 timestamp)</td>
+  </tr>
+  <tr>
+    <td class="filepath">admin/log/schedule/LogCleanUpScheduler.java</td>
+    <td><span class="tag-commented">주석처리</span></td>
+    <td>deleteByCreatedAtBefore 호출부 주석처리</td>
+  </tr>
+  <tr>
+    <td class="filepath">admin/log/aop/CustomUserDetails.java</td>
+    <td><span class="tag-fixed">수정</span></td>
+    <td>@Component 제거 (Users @Entity는 Spring Bean 주입 불가)</td>
+  </tr>
+  <tr>
+    <td class="filepath">test/MoaApplicationTests.java</td>
+    <td><span class="tag-added">추가</span></td>
+    <td>@MockBean ClientRegistrationRepository 추가 (OAuth2 설정 파일 없는 테스트 환경 대응)</td>
+  </tr>
+</table>
+
+
+<!-- ===================== 1. import 경로 수정 ===================== -->
+<h2>2. AuthUserDTO import 경로 수정 (circle·schedule 컨트롤러)</h2>
+
+<h3>원인</h3>
+<div class="reason">
+  세션 인증 방식에서 JWT 방식으로 전환하면서 <code>AuthUserDTO</code>가 <code>users.dto</code> 패키지에서 <code>auth.dto</code> 패키지로 이동했으나 컨트롤러의 import가 갱신되지 않아 컴파일 오류 발생.
+</div>
+
+<h3>수정 대상 파일 (3개)</h3>
+<ul>
+  <li><span class="filepath">circle/controller/CircleController.java</span></li>
+  <li><span class="filepath">circle/controller/CircleMemberContoller.java</span></li>
+  <li><span class="filepath">schedule/controller/ScheduleController.java</span></li>
+</ul>
+
+<pre>
+<span class="comment">// 변경 전</span>
+<span class="keyword">import</span> com.soldesk.moa.users.dto.AuthUserDTO;
+
+<span class="comment">// 변경 후</span>
+<span class="keyword">import</span> com.soldesk.moa.auth.dto.AuthUserDTO;
+</pre>
+
+
+<!-- ===================== 2. CircleController 인증 추가 ===================== -->
+<h2>3. CircleController - 서클 삭제·수정에 인증 추가</h2>
+
+<h3>원인</h3>
+<div class="reason">
+  <code>deleteCircle</code>, <code>updateCircle</code>에 <code>@AuthenticationPrincipal</code>이 없어 로그인한 사용자 정보를 받지 못하고 있었음. 리더 권한 검증도 없었음.
+</div>
+
+<h3>수정 내용</h3>
+<div class="fix">
+  컨트롤러에 <code>@AuthenticationPrincipal AuthUserDTO authUserDTO</code> 파라미터 추가,
+  서비스 메서드에 <code>userId</code> 파라미터 추가 및 리더 여부 검증 로직 추가.
+</div>
+
+<pre>
+<span class="comment">// CircleController.java</span>
+<span class="annotation">@DeleteMapping</span>("/{circleId}")
+<span class="keyword">public</span> ResponseEntity&lt;Void&gt; deleteCircle(
+        <span class="annotation">@PathVariable</span> Long circleId,
+        <span class="annotation">@AuthenticationPrincipal</span> AuthUserDTO authUserDTO) {
+    circleService.deleteCircle(circleId, authUserDTO.getUserId());
+    <span class="keyword">return</span> ResponseEntity.noContent().build();
+}
+
+<span class="comment">// CircleService.java - 리더 권한 검증 추가</span>
+<span class="keyword">public void</span> deleteCircle(Long circleId, Long userId) {
+    Circle circle = circleRepository.findById(circleId)
+        .orElseThrow(() -> <span class="keyword">new</span> IllegalArgumentException("서클이 존재하지 않습니다."));
+    Users loginUser = usersRepository.findById(userId)
+        .orElseThrow(() -> <span class="keyword">new</span> IllegalArgumentException("사용자가 존재하지 않습니다."));
+    circleMemberRepository
+        .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+        .orElseThrow(() -> <span class="keyword">new</span> AccessDeniedException("리더만 서클을 삭제할 수 있습니다."));
+    circleMemberRepository.deleteByCircle(circle);
+    circleRepository.delete(circle);
+}
+</pre>
+
+
+<!-- ===================== 3. Users.java @PrePersist 중복 ===================== -->
+<h2>4. Users.java - 중복 @PrePersist 제거</h2>
+
+<h3>원인</h3>
+<div class="reason">
+  JPA는 한 클래스에서 같은 라이프사이클 콜백(<code>@PrePersist</code>)을 2개 이상 가질 수 없음.
+  <code>prePersist()</code>와 <code>addAge()</code>에 모두 <code>@PrePersist</code>가 붙어 있어 앱 시작 시 <code>PersistenceException</code> 발생.
+</div>
+
+<h3>수정 내용</h3>
+<div class="fix">
+  <code>prePersist()</code> 메서드 제거. publicId UUID 초기화 로직을 <code>addAge()</code>에 통합.
+  (<code>@PrePersist @PreUpdate</code> 둘 다 붙어 있어 최초 저장 시에도, 업데이트 시에도 동작)
+</div>
+
+<pre>
+<span class="annotation">@PrePersist</span>
+<span class="annotation">@PreUpdate</span>
+<span class="keyword">public void</span> addAge() {
+    <span class="comment">// publicId 초기화 (최초 저장 시에만 생성)</span>
+    <span class="keyword">if</span> (<span class="keyword">this</span>.publicId == <span class="keyword">null</span>) {
+        <span class="keyword">this</span>.publicId = UUID.randomUUID().toString();
+    }
+    <span class="keyword">if</span> (birthDate == <span class="keyword">null</span>) <span class="keyword">return</span>;
+    LocalDate now = LocalDate.now();
+    <span class="keyword">this</span>.age = now.getYear() - birthDate.getYear();
+    <span class="keyword">if</span> (birthDate.getDayOfYear() > now.getDayOfYear()) {
+        <span class="keyword">this</span>.age--;
+    }
+}
+</pre>
+
+
+<!-- ===================== 4. Hibernate 6 enum 타입 불일치 ===================== -->
+<h2>5. AdminUsersRepository - Hibernate 6 enum 타입 불일치 (주석처리)</h2>
+
+<h3>원인</h3>
+<div class="reason">
+  Hibernate 6는 JPQL에서 enum 비교 시 타입을 엄격하게 검사함.<br>
+  <code>u.userGender = 0</code> (정수와 enum 비교), <code>u.userStatus = 'active'</code> (소문자 문자열)는 모두 <code>SemanticException</code> 발생.<br>
+  올바른 비교는 <code>u.userStatus = com.soldesk.moa.users.entity.constant.UserStatus.ACTIVE</code> 형태.
+</div>
+
+<h3>수정 내용 (팀원 코드 - 주석처리)</h3>
+<div class="reason">
+  <code>getCountAllAndMale()</code>, <code>getWithdrawnUsersCount()</code>, <code>getWithdrawnUsersInfo()</code>, <code>countWithdrawnGroupByMonth()</code> 4개 쿼리 주석처리.<br>
+  <code>AdminService</code>의 해당 쿼리 호출부도 <code>0L</code> 기본값으로 대체.
+</div>
+
+<pre>
+<span class="comment">// AdminUsersRepository.java - 주석처리된 쿼리 예시</span>
+<span class="comment">// @Query("SELECT COUNT(u), SUM(CASE WHEN u.userGender = 0 THEN 1 ELSE 0 END) FROM Users u WHERE u.userStatus = 'active'")</span>
+<span class="comment">// List&lt;Object[]&gt; getCountAllAndMale();</span>
+<span class="comment">// → u.userGender = 0 (int vs enum 불일치), u.userStatus = 'active' (소문자 불일치)</span>
+</pre>
+
+
+<!-- ===================== 5. AdminActionLogRepository ===================== -->
+<h2>6. AdminActionLogRepository - deleteByCreatedAtBefore (주석처리)</h2>
+
+<h3>원인</h3>
+<div class="reason">
+  Spring Data JPA는 메서드 이름으로 쿼리를 자동 생성함.<br>
+  <code>deleteByCreatedAtBefore</code>는 <code>AdminActionLog</code> 엔티티에 <code>createdAt</code> 필드가 있어야 하지만,
+  실제 필드명은 <code>timestamp</code>라서 <code>PropertyReferenceException</code> 발생.
+</div>
+
+<h3>수정 내용 (팀원 코드 - 주석처리)</h3>
+<div class="fix">
+  Repository 메서드와 <code>LogCleanUpScheduler</code>의 호출부 모두 주석처리.<br>
+  나중에 수정 시: <code>deleteByCreatedAtBefore</code> → <code>deleteByTimestampBefore</code>로 변경하면 됨.
+</div>
+
+<pre>
+<span class="comment">// AdminActionLogRepository.java</span>
+<span class="comment">// void deleteByCreatedAtBefore(LocalDateTime dateTime);</span>
+<span class="comment">// → AdminActionLog에 createdAt 없음. 실제 필드명은 timestamp</span>
+<span class="comment">// 수정 시: void deleteByTimestampBefore(LocalDateTime dateTime); 로 변경</span>
+
+<span class="comment">// LogCleanUpScheduler.java</span>
+<span class="comment">// adminActionLogRepository.deleteByCreatedAtBefore(LocalDateTime.now().minusYears(1L));</span>
+</pre>
+
+
+<!-- ===================== 6. CustomUserDetails ===================== -->
+<h2>7. CustomUserDetails - @Component 제거</h2>
+
+<h3>원인</h3>
+<div class="reason">
+  <code>@Component + @RequiredArgsConstructor</code>가 함께 있어 Spring이 Bean으로 생성하려 했음.<br>
+  그런데 생성자 파라미터인 <code>Users</code>는 <code>@Entity</code> 클래스라 Spring Bean이 아님.<br>
+  → <code>NoSuchBeanDefinitionException: No qualifying bean of type 'Users'</code> 발생.
+</div>
+
+<h3>수정 내용</h3>
+<div class="fix">
+  <code>@Component</code> 주석처리. <code>@RequiredArgsConstructor</code>는 유지 (Lombok 생성자 필요).<br>
+  이 클래스는 Spring이 자동 생성하는 게 아니라 <code>new CustomUserDetails(user)</code>로 직접 생성해서 사용해야 하는 클래스.
+</div>
+
+<pre>
+<span class="comment">// @Component  // Users는 @Entity라 Bean으로 주입 불가 - new CustomUserDetails(user)로 직접 생성</span>
+<span class="annotation">@RequiredArgsConstructor</span>
+<span class="keyword">public class</span> CustomUserDetails <span class="keyword">implements</span> UserDetails {
+    <span class="keyword">private final</span> Users user;
+    ...
+}
+</pre>
+
+
+<!-- ===================== 7. MoaApplicationTests ===================== -->
+<h2>8. MoaApplicationTests - OAuth2 Mock Bean 추가</h2>
+
+<h3>원인</h3>
+<div class="reason">
+  <code>SecurityConfig</code>에서 <code>.oauth2Login()</code>을 사용하면 Spring이 <code>ClientRegistrationRepository</code> Bean을 요구함.<br>
+  이 Bean은 <code>application-oauth2.yml</code>의 소셜 로그인 클라이언트 설정(client-id, client-secret 등)이 있어야 자동 생성됨.<br>
+  테스트 환경에는 해당 파일이 없어 <code>NoSuchBeanDefinitionException</code> 발생.
+</div>
+
+<h3>수정 내용</h3>
+<div class="fix">
+  <code>@MockBean ClientRegistrationRepository</code> 추가 → 테스트 시 가짜 Bean으로 대체.<br>
+  <strong>실제 운영/개발 환경</strong>에서는 <code>application-oauth2.yml</code>에 아래 항목을 설정해야 함.
+</div>
+
+<pre>
+<span class="comment"># application-oauth2.yml (운영/개발 환경 필요 설정)</span>
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: YOUR_GOOGLE_CLIENT_ID
+            client-secret: YOUR_GOOGLE_CLIENT_SECRET
+            scope: email, profile
+          naver:
+            client-id: YOUR_NAVER_CLIENT_ID
+            client-secret: YOUR_NAVER_CLIENT_SECRET
+            ...
+          kakao:
+            client-id: YOUR_KAKAO_CLIENT_ID
+            ...
+</pre>
+
+<pre>
+<span class="comment">// MoaApplicationTests.java</span>
+<span class="annotation">@SpringBootTest</span>
+<span class="keyword">class</span> MoaApplicationTests {
+
+    <span class="comment">// 테스트 환경에서 OAuth2 설정 파일 없을 때 MockBean으로 대응</span>
+    <span class="annotation">@MockBean</span>
+    ClientRegistrationRepository clientRegistrationRepository;
+
+    <span class="annotation">@Test</span>
+    <span class="keyword">void</span> contextLoads() {}
+}
+</pre>
+
+
+<!-- ===================== 최종 결과 ===================== -->
+<h2>9. 최종 결과</h2>
+
+<table>
+  <tr>
+    <th>명령</th>
+    <th>결과</th>
+  </tr>
+  <tr>
+    <td><code>./gradlew build -x test</code></td>
+    <td>BUILD SUCCESSFUL (컴파일 오류 전부 해결)</td>
+  </tr>
+  <tr>
+    <td><code>./gradlew test</code></td>
+    <td>BUILD SUCCESSFUL (contextLoads 테스트 통과)</td>
+  </tr>
+</table>
+
+<div class="reason" style="margin-top:20px;">
+  <strong>주석처리된 기능 목록 (추후 팀원 협의 후 수정 필요)</strong><br>
+  - 관리자 대시보드 통계 (유저 수, 남성 수, 탈퇴자 수 등) → Hibernate 6 enum 쿼리 수정 필요<br>
+  - 전화번호 기반 유저 검색 → Users 엔티티에 phone 필드 추가 또는 검색 조건 제거<br>
+  - 1년 이상 된 로그 자동 삭제 → deleteByCreatedAtBefore → deleteByTimestampBefore 변경 필요<br>
+  - 관리자 AOP 로그의 userId 추출 → CustomUserDetails를 Security Context에 올바르게 등록하는 방식 구현 필요
+</div>
+
+</body>
+</html>

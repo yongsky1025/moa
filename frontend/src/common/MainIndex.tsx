@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Heart, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { MapPin, CalendarDays, Heart, Star, Users } from 'lucide-react';
 import Navbar from '../common/layout/Navbar';
 import Footer from '../common/layout/Footer';
 
@@ -28,7 +28,6 @@ const socialings = [
     reviews: 47,
     image:
       'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80',
-    liked: false,
   },
   {
     id: 2,
@@ -42,7 +41,6 @@ const socialings = [
     reviews: 82,
     image:
       'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80',
-    liked: false,
   },
   {
     id: 3,
@@ -56,7 +54,6 @@ const socialings = [
     reviews: 31,
     image:
       'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=800&q=80',
-    liked: false,
   },
   {
     id: 4,
@@ -70,7 +67,6 @@ const socialings = [
     reviews: 63,
     image:
       'https://images.unsplash.com/photo-1506784365847-bbad939e9335?auto=format&fit=crop&w=800&q=80',
-    liked: false,
   },
   {
     id: 5,
@@ -84,7 +80,6 @@ const socialings = [
     reviews: 29,
     image:
       'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
-    liked: false,
   },
   {
     id: 6,
@@ -98,7 +93,6 @@ const socialings = [
     reviews: 55,
     image:
       'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80',
-    liked: false,
   },
   {
     id: 7,
@@ -112,7 +106,6 @@ const socialings = [
     reviews: 41,
     image:
       'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80',
-    liked: false,
   },
   {
     id: 8,
@@ -126,659 +119,303 @@ const socialings = [
     reviews: 18,
     image:
       'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
-    liked: false,
   },
 ];
 
-interface MuntoMainPageProps {
-  isLoggedIn: boolean;
-  onToggleLogin: () => void;
-  isAdmin?: boolean;
-}
-
-export default function MuntoMainPage({
-  isLoggedIn,
-  onToggleLogin,
-  isAdmin,
-}: MuntoMainPageProps) {
+export default function MeetingFindPage() {
+  const [activeCategory, setActiveCategory] = useState('전체');
   const [likedItems, setLikedItems] = useState<Set<number>>(new Set());
-  const [bannerIndex, setBannerIndex] = useState(0);
-
-  const places = [
-    {
-      id: 1,
-      name: '성수 카페 골목',
-      location: '성수동',
-      tag: '카페',
-      image:
-        'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 2,
-      name: '한강 노을 공원',
-      location: '마포구',
-      tag: '야외',
-      image:
-        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 3,
-      name: '홍대 복합문화공간',
-      location: '홍대',
-      tag: '문화',
-      image:
-        'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 4,
-      name: '강남 루프탑 바',
-      location: '강남',
-      tag: '바',
-      image:
-        'https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 5,
-      name: '북촌 한옥 갤러리',
-      location: '종로',
-      tag: '갤러리',
-      image:
-        'https://images.unsplash.com/photo-1583422409516-2895a77efded?auto=format&fit=crop&w=800&q=80',
-    },
-  ];
-
-  const banners = [
-    {
-      bg: '#1a1a2e',
-      title: '지금 바로 모임에 참여해보세요',
-      sub: '취향 맞는 사람들과 특별한 경험을',
-    },
-    {
-      bg: '#0f3460',
-      title: '이번 주말, 어떤 모임 어때요?',
-      sub: '다양한 소셜링이 당신을 기다립니다',
-    },
-    {
-      bg: '#16213e',
-      title: '새로운 인연, 새로운 취미',
-      sub: 'moa에서 시작해보세요',
-    },
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setBannerIndex((prev) => (prev + 1) % banners.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [banners.length]);
 
   const toggleLike = (id: number) => {
     setLikedItems((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
+
+  const filtered =
+    activeCategory === '전체'
+      ? socialings
+      : socialings.filter((s) => s.tag === activeCategory);
 
   return (
     <div
       style={{ minHeight: '100vh', backgroundColor: '#f7f7f8', color: '#111' }}
     >
-      <Navbar
-        isLoggedIn={isLoggedIn}
-        onToggleLogin={onToggleLogin}
-        isAdmin={isAdmin}
-      />
+      <Navbar />
 
-      {/* Banner Slider */}
-      <div style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* 페이지 헤더 */}
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderBottom: '1px solid #f0f0f0',
+          padding: '32px 0 0',
+        }}
+      >
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
+          <h1
+            style={{
+              fontSize: 28,
+              fontWeight: 900,
+              color: '#111',
+              letterSpacing: -0.5,
+              marginBottom: 4,
+            }}
+          >
+            모임 찾기
+          </h1>
+          <p style={{ fontSize: 14, color: '#888', marginBottom: 20 }}>
+            취향 맞는 사람들과 특별한 경험을 함께하세요
+          </p>
+
+          {/* 카테고리 탭 */}
+          <div
+            className="hide-scrollbar"
+            style={{ display: 'flex', gap: 0, overflowX: 'auto' }}
+          >
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                style={{
+                  padding: '14px 16px',
+                  border: 'none',
+                  borderBottom:
+                    activeCategory === cat
+                      ? '2px solid #111'
+                      : '2px solid transparent',
+                  background: 'none',
+                  fontSize: 14,
+                  fontWeight: activeCategory === cat ? 700 : 400,
+                  color: activeCategory === cat ? '#111' : '#888',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 결과 */}
+      <main
+        style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 20px 60px' }}
+      >
+        <p style={{ fontSize: 14, color: '#888', marginBottom: 20 }}>
+          총 <strong style={{ color: '#111' }}>{filtered.length}</strong>개의
+          모임
+        </p>
         <div
           style={{
-            backgroundColor: banners[bannerIndex].bg,
-            height: 420,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'background-color 0.4s',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: 20,
           }}
         >
-          <div
-            style={{
-              fontSize: 22,
-              fontWeight: 800,
-              color: 'white',
-              marginBottom: 10,
-            }}
-          >
-            {banners[bannerIndex].title}
-          </div>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)' }}>
-            {banners[bannerIndex].sub}
-          </div>
-          <div style={{ display: 'flex', gap: 6, marginTop: 20 }}>
-            {banners.map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  width: i === bannerIndex ? 20 : 6,
-                  height: 6,
-                  borderRadius: 999,
-                  backgroundColor:
-                    i === bannerIndex ? 'white' : 'rgba(255,255,255,0.35)',
-                  transition: 'all 0.3s',
-                  cursor: 'pointer',
-                }}
-                onClick={() => setBannerIndex(i)}
-              />
-            ))}
-          </div>
-        </div>
-        <button
-          onClick={() =>
-            setBannerIndex((bannerIndex - 1 + banners.length) % banners.length)
-          }
-          style={{
-            position: 'absolute',
-            left: 20,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'none',
-            border: 'none',
-            borderRadius: '50%',
-            width: 48,
-            height: 48,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: 22,
-            cursor: 'pointer',
-          }}
-        >
-          &#60;
-        </button>
-        <button
-          onClick={() => setBannerIndex((bannerIndex + 1) % banners.length)}
-          style={{
-            position: 'absolute',
-            right: 20,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'none',
-            border: 'none',
-            borderRadius: '50%',
-            width: 48,
-            height: 48,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: 22,
-            cursor: 'pointer',
-          }}
-        >
-          &#62;
-        </button>
-      </div>
-
-      {/* 추천 소셜링 */}
-      <div style={{ backgroundColor: 'white', padding: '64px 0 32px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'space-between',
-              marginBottom: 18,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: '#111',
-                  letterSpacing: -0.4,
-                }}
-              >
-                ✨ 이런 모임 어떠세요?
-              </div>
-              <div style={{ fontSize: 14, color: '#888', marginTop: 2 }}>
-                {isLoggedIn
-                  ? '당신에게 맞는 모임을 추천해드려요!'
-                  : '이번주 인기 있는 모임을 추천해드려요!'}
-              </div>
-            </div>
-            <a
-              href="#"
+          {filtered.map((item) => (
+            <div
+              key={item.id}
               style={{
-                fontSize: 13,
-                color: '#888',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
+                backgroundColor: 'white',
+                borderRadius: 16,
+                overflow: 'hidden',
+                border: '1px solid #f0f0f0',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                cursor: 'pointer',
               }}
             >
-              더보기 <ChevronRight style={{ width: 14, height: 14 }} />
-            </a>
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              gap: 16,
-            }}
-          >
-            {socialings.slice(0, 5).map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  minWidth: 220,
-                  width: 220,
-                  border: '1px solid #ebebeb',
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
-                }}
-              >
-                <div style={{ position: 'relative' }}>
-                  <img
-                    src={item.image}
-                    alt={item.title}
+              <div style={{ position: 'relative', paddingTop: '66%' }}>
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 12,
+                    left: 12,
+                    padding: '4px 10px',
+                    borderRadius: 999,
+                    backgroundColor: 'white',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: '#111',
+                  }}
+                >
+                  {item.tag}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleLike(item.id);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    border: 'none',
+                    backgroundColor: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                  }}
+                >
+                  <Heart
                     style={{
-                      width: '100%',
-                      height: 160,
-                      objectFit: 'cover',
-                      display: 'block',
+                      width: 16,
+                      height: 16,
+                      fill: likedItems.has(item.id) ? '#ff4d4f' : 'none',
+                      color: likedItems.has(item.id) ? '#ff4d4f' : '#111',
                     }}
                   />
+                </button>
+              </div>
+              <div style={{ padding: '14px 16px 16px' }}>
+                <h3
+                  style={{
+                    margin: '0 0 10px',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    lineHeight: 1.4,
+                    color: '#111',
+                  }}
+                >
+                  {item.title}
+                </h3>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 5,
+                    marginBottom: 12,
+                  }}
+                >
                   <div
                     style={{
-                      position: 'absolute',
-                      top: 10,
-                      left: 10,
-                      padding: '3px 8px',
-                      borderRadius: 999,
-                      backgroundColor: '#ff4d4f',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: 'white',
-                    }}
-                  >
-                    추천
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleLike(item.id);
-                    }}
-                    style={{
-                      position: 'absolute',
-                      top: 10,
-                      right: 10,
-                      width: 30,
-                      height: 30,
-                      borderRadius: '50%',
-                      border: 'none',
-                      backgroundColor: 'white',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
+                      gap: 5,
+                      fontSize: 13,
+                      color: '#666',
                     }}
                   >
-                    <Heart
-                      style={{
-                        width: 14,
-                        height: 14,
-                        fill: likedItems.has(item.id) ? '#ff4d4f' : 'none',
-                        color: likedItems.has(item.id) ? '#ff4d4f' : '#111',
-                      }}
-                    />
-                  </button>
-                </div>
-                <div style={{ padding: '10px 12px 12px' }}>
+                    <MapPin style={{ width: 13, height: 13 }} />
+                    {item.location}
+                  </div>
                   <div
                     style={{
-                      fontSize: 11,
-                      color: '#555',
-                      marginBottom: 3,
-                      fontWeight: 500,
-                      letterSpacing: 0.1,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 6,
+                      gap: 5,
+                      fontSize: 13,
+                      color: '#666',
                     }}
                   >
-                    <span>{item.location}</span>
-                    <span
-                      style={{
-                        width: 1,
-                        height: 10,
-                        backgroundColor: '#ccc',
-                        flexShrink: 0,
-                        alignSelf: 'center',
-                      }}
-                    />
-                    <span>{item.tag}</span>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: '#111',
-                      lineHeight: 1.4,
-                      overflow: 'hidden',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      marginBottom: 3,
-                    }}
-                  >
-                    {item.title}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#333', fontWeight: 400 }}>
+                    <CalendarDays style={{ width: 13, height: 13 }} />
                     {item.date}
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 이런 모임이 뜨고 있어요! */}
-      <div style={{ backgroundColor: 'white', padding: '48px 0 32px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'space-between',
-              marginBottom: 18,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: '#111',
-                  letterSpacing: -0.4,
-                }}
-              >
-                🔥 이런 모임이 뜨고 있어요!
-              </div>
-              <div style={{ fontSize: 14, color: '#888', marginTop: 2 }}>
-                지금 가장 인기 있는 모임을 확인해보세요
-              </div>
-            </div>
-            <a
-              href="#"
-              style={{
-                fontSize: 13,
-                color: '#888',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-              }}
-            >
-              더보기 <ChevronRight style={{ width: 14, height: 14 }} />
-            </a>
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              gap: 16,
-            }}
-          >
-            {socialings.slice(3).map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  minWidth: 220,
-                  width: 220,
-                  border: '1px solid #ebebeb',
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
-                }}
-              >
-                <div style={{ position: 'relative' }}>
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    style={{
-                      width: '100%',
-                      height: 160,
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
-                  />
                   <div
                     style={{
-                      position: 'absolute',
-                      top: 10,
-                      left: 10,
-                      padding: '3px 8px',
-                      borderRadius: 999,
-                      backgroundColor: '#f59e0b',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      fontSize: 13,
+                      color: '#666',
                     }}
                   >
-                    인기
+                    <Users style={{ width: 13, height: 13 }} />
+                    {item.people}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    height: 1,
+                    backgroundColor: '#f0f0f0',
+                    margin: '12px 0',
+                  }}
+                />
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{ fontSize: 16, fontWeight: 800, color: '#111' }}
+                    >
+                      {item.price}
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        marginTop: 2,
+                      }}
+                    >
+                      <Star
+                        style={{
+                          width: 12,
+                          height: 12,
+                          fill: '#facc15',
+                          color: '#facc15',
+                        }}
+                      />
+                      <span
+                        style={{ fontSize: 12, fontWeight: 600, color: '#111' }}
+                      >
+                        {item.rating}
+                      </span>
+                      <span style={{ fontSize: 12, color: '#aaa' }}>
+                        ({item.reviews})
+                      </span>
+                    </div>
                   </div>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleLike(item.id);
-                    }}
                     style={{
-                      position: 'absolute',
-                      top: 10,
-                      right: 10,
-                      width: 30,
-                      height: 30,
-                      borderRadius: '50%',
-                      border: 'none',
-                      backgroundColor: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <Heart
-                      style={{
-                        width: 14,
-                        height: 14,
-                        fill: likedItems.has(item.id) ? '#ff4d4f' : 'none',
-                        color: likedItems.has(item.id) ? '#ff4d4f' : '#111',
-                      }}
-                    />
-                  </button>
-                </div>
-                <div style={{ padding: '10px 12px 12px' }}>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: '#555',
-                      marginBottom: 3,
-                      fontWeight: 500,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
-                  >
-                    <span>{item.location}</span>
-                    <span
-                      style={{
-                        width: 1,
-                        height: 10,
-                        backgroundColor: '#ccc',
-                        flexShrink: 0,
-                        alignSelf: 'center',
-                      }}
-                    />
-                    <span>{item.tag}</span>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: '#111',
-                      lineHeight: 1.4,
-                      overflow: 'hidden',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      marginBottom: 3,
-                    }}
-                  >
-                    {item.title}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#333', fontWeight: 400 }}>
-                    {item.date}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 이런 장소 어떠세요? */}
-      <div style={{ backgroundColor: 'white', padding: '48px 0 32px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'space-between',
-              marginBottom: 18,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: '#111',
-                  letterSpacing: -0.4,
-                }}
-              >
-                📍 이런 장소 어떠세요?
-              </div>
-              <div style={{ fontSize: 14, color: '#888', marginTop: 2 }}>
-                모임하기 좋은 공간을 소개해드려요!
-              </div>
-            </div>
-            <a
-              href="#"
-              style={{
-                fontSize: 13,
-                color: '#888',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-              }}
-            >
-              더보기 <ChevronRight style={{ width: 14, height: 14 }} />
-            </a>
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              gap: 16,
-            }}
-          >
-            {places.map((place) => (
-              <div
-                key={place.id}
-                style={{
-                  minWidth: 220,
-                  width: 220,
-                  border: '1px solid #ebebeb',
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
-                }}
-              >
-                <div style={{ position: 'relative' }}>
-                  <img
-                    src={place.image}
-                    alt={place.name}
-                    style={{
-                      width: '100%',
-                      height: 160,
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 10,
-                      left: 10,
-                      padding: '3px 8px',
+                      padding: '8px 16px',
                       borderRadius: 999,
+                      border: 'none',
                       backgroundColor: '#111',
-                      fontSize: 11,
-                      fontWeight: 700,
                       color: 'white',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
                     }}
                   >
-                    {place.tag}
-                  </div>
-                </div>
-                <div style={{ padding: '10px 12px 12px' }}>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: '#555',
-                      marginBottom: 3,
-                      fontWeight: 500,
-                      letterSpacing: 0.1,
-                    }}
-                  >
-                    {place.location}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: '#111',
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {place.name}
-                  </div>
+                    신청하기
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      </div>
+      </main>
 
       <Footer />
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/circles
