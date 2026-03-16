@@ -1,10 +1,11 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react()],
+  define: {
+    global: 'globalThis',
+  },
   server: {
     proxy: {
       "/api": {
@@ -21,6 +22,12 @@ export default defineConfig({
         target: "http://localhost:8080",
         changeOrigin: true,
         secure: false,
+      },
+      "/ws": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+        ws: true,
       },
     },
   },

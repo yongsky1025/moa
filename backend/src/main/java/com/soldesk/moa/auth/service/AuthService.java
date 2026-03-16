@@ -1,5 +1,7 @@
 package com.soldesk.moa.auth.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,7 +70,7 @@ public class AuthService {
             throw new UserNotActiveException("User is not active.");
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole());
+        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole(), user.getUserId());
         String refreshToken = refreshTokenService.createAndStoreRefreshToken(user);
 
         return new AuthTokenBundleDTO(accessToken, refreshToken, AuthUserResponseDTO.from(user));
@@ -82,7 +84,7 @@ public class AuthService {
             throw new UserNotActiveException("User is not active.");
         }
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole());
+        String newAccessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole(), user.getUserId());
         String newRefreshToken = refreshTokenService.createAndStoreRefreshToken(user);
 
         return new AuthTokenBundleDTO(newAccessToken, newRefreshToken, AuthUserResponseDTO.from(user));

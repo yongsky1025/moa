@@ -49,4 +49,7 @@ public interface CircleMemberRepository extends JpaRepository<CircleMember, Long
         List<CircleMember> findByUser_UserIdAndStatus(
                         Long userId,
                         CircleMemberStatus status);
+
+        // 서클의 특정 역할 멤버 조회 (리더 알림용)
+        Optional<CircleMember> findByCircleAndRole(Circle circle, CircleRole role);
 }

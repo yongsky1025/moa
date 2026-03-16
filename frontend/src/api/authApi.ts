@@ -1,20 +1,11 @@
-import api from "../users/utils/jwtUtil";
-import type {
-  AuthResponse,
-  LoginRequest,
-  SignUpRequest,
-} from "../users/types/auth";
+import api from './axiosInstance';
+import type { AuthResponse, LoginRequest } from '../types/auth';
 
 export const authApi = {
-  login: (req: LoginRequest) =>
-    api.post<AuthResponse>("/api/auth/login", req),
+  login: (data: LoginRequest) =>
+    api.post<AuthResponse>('/api/auth/login', data).then((r) => r.data),
 
-  signup: (req: SignUpRequest) =>
-    api.post("/api/auth/signup", req),
+  logout: () => api.post('/api/auth/logout'),
 
-  logout: () =>
-    api.post("/api/auth/logout"),
-
-  refresh: () =>
-    api.post<AuthResponse>("/api/auth/refresh"),
+  me: () => api.get<AuthResponse['user']>('/api/auth/me').then((r) => r.data),
 };

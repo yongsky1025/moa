@@ -1,9 +1,6 @@
 # File created using '.gitignore Generator' for Visual Studio Code: https://bit.ly/vscode-gig
 # Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,java,node,react
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,java,node,react
-# Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,java,gradle,react
-# Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,java,gradle,react
-
 
 **/bin/
 
@@ -175,8 +172,6 @@ dist
 
 ### react ###
 .DS_*
-### react ###
-.DS_*
 logs
 **/*.backup.*
 **/*.back.*
@@ -239,7 +234,7 @@ $RECYCLE.BIN/
 
 # Custom rules (everything added below won't be overriden by 'Generate .gitignore File' if you use 'Update' option)
 
-.env
+
 ### Gradle ###
 .gradle
 **/build/   
