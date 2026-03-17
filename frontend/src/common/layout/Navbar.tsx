@@ -191,7 +191,7 @@ export default function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 68 }}>
             <button
-              onClick={isLoggedIn ? handleLogout : () => navigate('/user/login')}
+              onClick={isLoggedIn ? handleLogout : () => navigate('/users/login')}
               style={{
                 padding: '5px 0',
                 width: '100%',
@@ -244,7 +244,7 @@ export default function Navbar() {
               </div>
             ) : (
               <button
-                onClick={() => navigate('/user/signup')}
+                onClick={() => navigate('/users/signup')}
                 style={{
                   padding: '5px 0',
                   width: '100%',
