@@ -2,16 +2,16 @@ package com.soldesk.moa.board.post.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.soldesk.moa.board.post.dto.PostCardResponseDTO;
-import com.soldesk.moa.board.board.entity.Board;
-import com.soldesk.moa.board.post.entity.Post;
 import com.soldesk.moa.board.board.entity.constant.BoardType;
+import com.soldesk.moa.board.post.dto.PostCardResponseDTO;
+import com.soldesk.moa.board.post.entity.Post;
 
 public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRepository {
 
@@ -23,6 +23,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
         join p.boardId b
         where b.boardType = :type
           and b.circleId is null
+          and b.deleted = false
+          and p.deleted = false
         order by p.postId desc
       """)
   List<Post> findGlobalPosts(@Param("type") BoardType type);
@@ -35,17 +37,31 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
         where p.postId = :postId
           and b.boardType = :type
           and b.circleId is null
+          and b.deleted = false
+          and p.deleted = false
       """)
   Optional<Post> findGlobalPost(@Param("type") BoardType type, @Param("postId") Long postId);
+
+  @Query("""
+        select p
+        from Post p
+        join p.boardId b
+        where p.postId = :postId
+          and b.boardType = :type
+          and b.circleId is null
+      """)
+  Optional<Post> findGlobalPostIncludingDeleted(@Param("type") BoardType type, @Param("postId") Long postId);
 
   // 댓글 갯수 포함 글로벌 게시글 조회
   // 공지/자유 (글로벌)
   @Query("""
           select p, count(r)
           from Post p
-          left join Reply r on r.postId = p
+          left join Reply r on r.postId = p and r.deleted = false
           where p.boardId.boardType = :type
             and p.boardId.circleId is null
+            and p.boardId.deleted = false
+            and p.deleted = false
           group by p
           order by p.postId desc
       """)
@@ -59,6 +75,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
         where b.boardType = 'CIRCLE'
           and b.boardId = :boardId
           and b.circleId.circleId = :circleId
+          and b.deleted = false
+          and p.deleted = false
         order by p.postId desc
       """)
   List<Post> findCirclePosts(@Param("circleId") Long circleId, @Param("boardId") Long boardId);
@@ -71,8 +89,23 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
           and b.boardType = 'CIRCLE'
           and b.boardId = :boardId
           and b.circleId.circleId = :circleId
+          and b.deleted = false
+          and p.deleted = false
       """)
   Optional<Post> findCirclePost(@Param("circleId") Long circleId,
+      @Param("boardId") Long boardId,
+      @Param("postId") Long postId);
+
+  @Query("""
+        select p
+        from Post p
+        join p.boardId b
+        where p.postId = :postId
+          and b.boardType = 'CIRCLE'
+          and b.boardId = :boardId
+          and b.circleId.circleId = :circleId
+      """)
+  Optional<Post> findCirclePostIncludingDeleted(@Param("circleId") Long circleId,
       @Param("boardId") Long boardId,
       @Param("postId") Long postId);
 
@@ -81,10 +114,12 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
   @Query("""
           select p, count(r)
           from Post p
-          left join Reply r on r.postId = p
+          left join Reply r on r.postId = p and r.deleted = false
           where p.boardId.boardType = 'CIRCLE'
             and p.boardId.circleId.circleId = :circleId
             and p.boardId.boardId = :boardId
+            and p.boardId.deleted = false
+            and p.deleted = false
           group by p
           order by p.postId desc
       """)
@@ -97,9 +132,11 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
   @Query("""
           select p, count(r)
           from Post p
-          left join Reply r on r.postId = p
+          left join Reply r on r.postId = p and r.deleted = false
           where p.boardId.boardType = 'CIRCLE'
             and p.boardId.circleId.circleId = :circleId
+            and p.boardId.deleted = false
+            and p.deleted = false
           group by p
           order by p.postId desc
       """)
@@ -122,9 +159,11 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
         join p.userId u
         left join p.postImages pi on pi.usageType = com.soldesk.moa.board.post.entity.constant.PostImageUsageType.THUMBNAIL
         left join pi.image ti
-        left join Reply r on r.postId = p
+        left join Reply r on r.postId = p and r.deleted = false
         where b.boardType = :type
           and b.circleId is null
+          and b.deleted = false
+          and p.deleted = false
         group by p.postId, b.boardId, b.name, p.title, u.name, ti.path, p.createDate, p.viewCount
         order by p.postId desc
       """)
@@ -147,10 +186,12 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
         join p.userId u
         left join p.postImages pi on pi.usageType = com.soldesk.moa.board.post.entity.constant.PostImageUsageType.THUMBNAIL
         left join pi.image ti
-        left join Reply r on r.postId = p
+        left join Reply r on r.postId = p and r.deleted = false
         where b.boardType = 'CIRCLE'
           and b.circleId.circleId = :circleId
           and (:boardId is null or b.boardId = :boardId)
+          and b.deleted = false
+          and p.deleted = false
         group by p.postId, b.boardId, b.name, p.title, u.name, ti.path, p.createDate, p.viewCount
         order by p.postId desc
       """)
@@ -173,8 +214,10 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
         join p.userId u
         left join p.postImages pi on pi.usageType = com.soldesk.moa.board.post.entity.constant.PostImageUsageType.THUMBNAIL
         left join pi.image ti
-        left join Reply r on r.postId = p
+        left join Reply r on r.postId = p and r.deleted = false
         where u.userId = :userId
+          and b.deleted = false
+          and p.deleted = false
         group by p.postId, b.boardId, b.name, p.title, u.name, ti.path, p.createDate, p.viewCount
         order by p.postId desc
       """)
@@ -183,5 +226,29 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
   @Modifying
   @Query("update Post p set p.viewCount = p.viewCount + 1 where p.postId = :postId")
   int incrementViewCount(@Param("postId") Long postId);
+
+  @Modifying
+  @Query("""
+      update Post p
+      set p.deleted = true,
+          p.deletedAt = :deletedAt
+      where p.postId = :postId
+        and p.deleted = false
+      """)
+  int softDeleteByPostId(@Param("postId") Long postId, @Param("deletedAt") LocalDateTime deletedAt);
+
+  @Modifying
+  @Query("""
+      update Post p
+      set p.deleted = true,
+          p.deletedAt = :deletedAt
+      where p.boardId.boardId = :boardId
+        and p.deleted = false
+      """)
+  int softDeleteByBoardId(@Param("boardId") Long boardId, @Param("deletedAt") LocalDateTime deletedAt);
+
+  List<Post> findByDeletedTrueAndDeletedAtBefore(LocalDateTime cutoff);
+
+  long countByBoardId_BoardId(Long boardId);
 
 }

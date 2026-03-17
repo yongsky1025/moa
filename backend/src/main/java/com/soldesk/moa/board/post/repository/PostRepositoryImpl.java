@@ -43,7 +43,7 @@ public class PostRepositoryImpl extends QuerydslRepositorySupport implements Pos
 
         JPQLQuery<Tuple> query = from(post)
                 .join(post.boardId, board)
-                .leftJoin(reply).on(reply.postId.eq(post))
+                .leftJoin(reply).on(reply.postId.eq(post).and(reply.deleted.isFalse()))
                 .where(builder)
                 .groupBy(post)
                 .orderBy(post.postId.desc())
@@ -132,6 +132,8 @@ public class PostRepositoryImpl extends QuerydslRepositorySupport implements Pos
             builder.and(board.boardType.eq(boardType));
             builder.and(board.circleId.isNull());
         }
+        builder.and(board.deleted.isFalse());
+        builder.and(post.deleted.isFalse());
 
         if (StringUtils.hasText(keyword)) {
             String normalizedKeyword = keyword.trim();

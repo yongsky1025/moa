@@ -3,6 +3,7 @@ package com.soldesk.moa.board.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -89,20 +90,23 @@ class PostServicePagingTest {
 
     @Test
     void listMethodsDelegateToUnifiedSearchRepository() {
+        Post post = Post.builder()
+                .postId(1L)
+                .title("title")
+                .content("body")
+                .boardId(Board.builder().boardId(2L).name("notice").build())
+                .userId(Users.builder().userId(3L).name("writer").build())
+                .build();
         when(postRepository.searchPostsWithReplyCount(eq(BoardType.NOTICE), isNull(), isNull(), isNull(),
                 eq(Pageable.unpaged())))
-                .thenReturn(new PageImpl<>(List.of()));
-        when(postRepository.searchPostCards(eq(BoardType.NOTICE), isNull(), isNull(), isNull(), eq(Pageable.unpaged())))
-                .thenReturn(new PageImpl<>(List.of(new PostCardResponseDTO(1L, 2L, "notice", "title", "writer", null,
-                        null, 0, 0L))));
+                .thenReturn(new PageImpl<>(Collections.singletonList(new Object[] { post, 0L })));
 
         List<PostResponseDTO> posts = postService.listGlobal(BoardType.NOTICE);
         List<PostCardResponseDTO> cards = postService.listGlobalCards(BoardType.NOTICE);
 
-        verify(postRepository).searchPostsWithReplyCount(eq(BoardType.NOTICE), isNull(), isNull(), isNull(),
+        verify(postRepository, times(2)).searchPostsWithReplyCount(eq(BoardType.NOTICE), isNull(), isNull(), isNull(),
                 eq(Pageable.unpaged()));
-        verify(postRepository).searchPostCards(eq(BoardType.NOTICE), isNull(), isNull(), isNull(), eq(Pageable.unpaged()));
-        assertEquals(0, posts.size());
+        assertEquals(1, posts.size());
         assertEquals(1, cards.size());
     }
 }

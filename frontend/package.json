@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-react": "^11.0.1",
     "@reduxjs/toolkit": "^2.11.2",
     "axios": "^1.13.6",
+    "ckeditor5": "^47.6.1",
+    "dompurify": "^3.3.3",
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-cookie": "^8.0.1",

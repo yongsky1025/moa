@@ -1,5 +1,6 @@
 package com.soldesk.moa.board.post.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +47,13 @@ public class Post extends BaseEntity {
     @Builder.Default
     private int viewCount = 0;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -67,6 +75,16 @@ public class Post extends BaseEntity {
 
     public void changeContent(String content) {
         this.content = content;
+    }
+
+    public void markDeleted(LocalDateTime deletedAt) {
+        this.deleted = true;
+        this.deletedAt = deletedAt;
+    }
+
+    public void restore() {
+        this.deleted = false;
+        this.deletedAt = null;
     }
 
 }

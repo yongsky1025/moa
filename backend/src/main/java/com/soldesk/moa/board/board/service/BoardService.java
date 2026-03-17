@@ -1,6 +1,7 @@
 package com.soldesk.moa.board.board.service;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,8 +10,11 @@ import com.soldesk.moa.board.board.dto.BoardRequestDTO;
 import com.soldesk.moa.board.board.dto.BoardResponseDTO;
 import com.soldesk.moa.board.board.entity.Board;
 import com.soldesk.moa.board.board.entity.constant.BoardType;
+import com.soldesk.moa.board.common.exception.BadRequestException;
 import com.soldesk.moa.board.common.exception.NotFoundException;
 import com.soldesk.moa.board.board.repository.BoardRepository;
+import com.soldesk.moa.board.post.repository.PostRepository;
+import com.soldesk.moa.board.reply.repository.ReplyRepository;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
 
@@ -25,6 +29,8 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
     private final CircleRepository circleRepository; // Circle board 생성 시 필요
+    private final PostRepository postRepository;
+    private final ReplyRepository replyRepository;
 
     // ===== Global boards =====
     public List<BoardResponseDTO> listGlobalBoards() {
@@ -43,6 +49,9 @@ public class BoardService {
     public Long updateBoardName(Long boardId, String newName) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new NotFoundException("board not found"));
+        if (board.isDeleted()) {
+            throw new BadRequestException("deleted board cannot be updated");
+        }
         board.changeName(newName);
         return board.getBoardId();
     }
@@ -51,7 +60,7 @@ public class BoardService {
         if (type == BoardType.CIRCLE) {
             throw new IllegalArgumentException("CIRCLE is not global");
         }
-        return boardRepository.findByBoardTypeAndCircleIdIsNull(type)
+        return boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(type)
                 .orElseThrow(() -> new NotFoundException("global board not found: " + type));
     }
 
@@ -59,7 +68,7 @@ public class BoardService {
 
     public List<BoardResponseDTO> listCircleBoards(Long circleId) {
         return boardRepository
-                .findByBoardTypeAndCircleId_CircleId(BoardType.CIRCLE, circleId)
+                .findByBoardTypeAndCircleId_CircleIdAndDeletedFalse(BoardType.CIRCLE, circleId)
                 .stream()
                 .map(this::toBoardResponse)
                 .toList();
@@ -67,7 +76,7 @@ public class BoardService {
 
     public BoardResponseDTO readCircleBoard(Long circleId, Long boardId) {
         Board board = boardRepository
-                .findByBoardIdAndBoardTypeAndCircleId_CircleId(boardId, BoardType.CIRCLE, circleId)
+                .findByBoardIdAndBoardTypeAndCircleId_CircleIdAndDeletedFalse(boardId, BoardType.CIRCLE, circleId)
                 .orElseThrow(() -> new NotFoundException("board not found"));
         return toBoardResponse(board);
     }
@@ -100,6 +109,9 @@ public class BoardService {
                 .findByBoardIdAndBoardTypeAndCircleId_CircleId(
                         boardId, BoardType.CIRCLE, circleId)
                 .orElseThrow(() -> new NotFoundException("board not found"));
+        if (board.isDeleted()) {
+            throw new BadRequestException("deleted board cannot be updated");
+        }
 
         board.changeName(newName);
         return board.getBoardId();
@@ -112,7 +124,14 @@ public class BoardService {
                         boardId, BoardType.CIRCLE, circleId)
                 .orElseThrow(() -> new NotFoundException("board not found"));
 
-        boardRepository.delete(board);
+        if (board.isDeleted()) {
+            return;
+        }
+
+        LocalDateTime deletedAt = LocalDateTime.now();
+        board.markDeleted(deletedAt);
+        postRepository.softDeleteByBoardId(board.getBoardId(), deletedAt);
+        replyRepository.softDeleteByBoardId(board.getBoardId(), deletedAt);
     }
 
     private BoardResponseDTO toBoardResponse(Board b) {

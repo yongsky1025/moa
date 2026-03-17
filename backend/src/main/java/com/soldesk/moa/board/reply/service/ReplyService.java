@@ -1,11 +1,13 @@
 package com.soldesk.moa.board.reply.service;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.board.common.exception.ForbiddenException;
+import com.soldesk.moa.board.common.exception.BadRequestException;
 import com.soldesk.moa.board.common.exception.NotFoundException;
 import com.soldesk.moa.board.reply.dto.ReplyRequestDTO;
 import com.soldesk.moa.board.reply.dto.ReplyResponseDTO;
@@ -31,7 +33,7 @@ public class ReplyService {
 
     // 댓글 리스트
     public List<ReplyResponseDTO> list(Long postId) {
-        return replyRepository.findByPostId_PostIdOrderByCreateDateAsc(postId).stream()
+        return replyRepository.findByPostId_PostIdAndDeletedFalseOrderByCreateDateAsc(postId).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -41,6 +43,9 @@ public class ReplyService {
     public Long createReply(Long postId, Long userId, ReplyRequestDTO req) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("post not found"));
+        if (post.isDeleted() || post.getBoardId().isDeleted()) {
+            throw new BadRequestException("deleted post cannot create reply");
+        }
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("user not found"));
 
@@ -63,6 +68,12 @@ public class ReplyService {
 
         if (!parent.getPostId().getPostId().equals(postId)) {
             throw new ForbiddenException("reply not in post");
+        }
+        if (parent.getPostId().isDeleted() || parent.getPostId().getBoardId().isDeleted()) {
+            throw new BadRequestException("deleted post cannot create reply");
+        }
+        if (parent.isDeleted()) {
+            throw new BadRequestException("deleted reply cannot create child");
         }
 
         int nextDepth = parent.getDepth() + 1;
@@ -89,6 +100,9 @@ public class ReplyService {
     public Long update(Long replyId, Long userId, ReplyRequestDTO req) {
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new NotFoundException("reply not found"));
+        if (reply.isDeleted()) {
+            throw new BadRequestException("deleted reply cannot be updated");
+        }
 
         if (!reply.getUserId().getUserId().equals(userId)) {
             throw new ForbiddenException("not owner");
@@ -103,24 +117,23 @@ public class ReplyService {
     public void delete(Long replyId, Long userId) {
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new NotFoundException("reply not found"));
+        if (reply.isDeleted()) {
+            return;
+        }
 
         if (!reply.getUserId().getUserId().equals(userId)) {
             throw new ForbiddenException("not owner");
         }
 
-        reply.changeContent("삭제된 댓글입니다.");
-        reply.markDeleted();
+        reply.markDeleted(LocalDateTime.now());
     }
 
     // dto
     private ReplyResponseDTO toResponse(Reply r) {
-        String content = r.isDeleted() ? "삭제된 댓글입니다." : r.getContent();
-        String author = r.isDeleted() ? "" : r.getUserId().getName();
-
         return ReplyResponseDTO.builder()
                 .replyId(r.getReplyId())
-                .content(content)
-                .authorName(author)
+                .content(r.getContent())
+                .authorName(r.getUserId().getName())
                 .createDate(r.getCreateDate())
                 .parentId(r.getParentId() != null ? r.getParentId().getReplyId() : null)
                 .depth(r.getDepth())

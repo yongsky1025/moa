@@ -1,5 +1,6 @@
 package com.soldesk.moa.board.board.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,6 +10,7 @@ import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.common.entity.BaseEntity;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -44,6 +46,13 @@ public class Board extends BaseEntity {
 
     private String name;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "circle_id", nullable = true)
     private Circle circleId;
@@ -52,6 +61,16 @@ public class Board extends BaseEntity {
     // 이름변경
     public void changeName(String name) {
         this.name = name;
+    }
+
+    public void markDeleted(LocalDateTime deletedAt) {
+        this.deleted = true;
+        this.deletedAt = deletedAt;
+    }
+
+    public void restore() {
+        this.deleted = false;
+        this.deletedAt = null;
     }
 
     // board -> post 삭제

@@ -16,7 +16,7 @@ interface PostFormPageProps {
   loading: boolean;
   error?: string | null;
   dangerAction?: ReactNode;
-  onSubmit: (payload: { title: string; content: string }) => Promise<void> | void;
+  onSubmit: (payload: { title: string; content: string; tempKey?: string }) => Promise<void> | void;
 }
 
 export default function PostFormPage({

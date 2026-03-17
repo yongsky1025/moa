@@ -36,9 +36,9 @@ class BoardServiceTest {
 
     @Test
     void listGlobalBoardsReturnsNoticeAndFreeOnly() {
-        when(boardRepository.findByBoardTypeAndCircleIdIsNull(BoardType.NOTICE))
+        when(boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(BoardType.NOTICE))
                 .thenReturn(Optional.of(Board.builder().boardId(1L).boardType(BoardType.NOTICE).name("공지사항").build()));
-        when(boardRepository.findByBoardTypeAndCircleIdIsNull(BoardType.FREE))
+        when(boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(BoardType.FREE))
                 .thenReturn(Optional.of(Board.builder().boardId(2L).boardType(BoardType.FREE).name("자유게시판").build()));
 
         var result = boardService.listGlobalBoards();
@@ -46,8 +46,8 @@ class BoardServiceTest {
         assertEquals(2, result.size());
         assertEquals(BoardType.NOTICE, result.get(0).getBoardType());
         assertEquals(BoardType.FREE, result.get(1).getBoardType());
-        verify(boardRepository).findByBoardTypeAndCircleIdIsNull(BoardType.NOTICE);
-        verify(boardRepository).findByBoardTypeAndCircleIdIsNull(BoardType.FREE);
+        verify(boardRepository).findByBoardTypeAndCircleIdIsNullAndDeletedFalse(BoardType.NOTICE);
+        verify(boardRepository).findByBoardTypeAndCircleIdIsNullAndDeletedFalse(BoardType.FREE);
     }
 
     @Test
@@ -63,7 +63,8 @@ class BoardServiceTest {
 
     @Test
     void readCircleBoardUsesCircleScope() {
-        when(boardRepository.findByBoardIdAndBoardTypeAndCircleId_CircleId(eq(10L), eq(BoardType.CIRCLE), eq(3L)))
+        when(boardRepository.findByBoardIdAndBoardTypeAndCircleId_CircleIdAndDeletedFalse(eq(10L), eq(BoardType.CIRCLE),
+                eq(3L)))
                 .thenReturn(Optional.of(Board.builder().boardId(10L).boardType(BoardType.CIRCLE).name("동아리").build()));
 
         BoardResponseDTO result = boardService.readCircleBoard(3L, 10L);

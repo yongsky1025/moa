@@ -147,7 +147,7 @@ public class LocalBoardDataInitializer implements CommandLineRunner {
     }
 
     private Board getOrCreateGlobalBoard(BoardType type, String name) {
-        return boardRepository.findByBoardTypeAndCircleIdIsNull(type)
+        return boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(type)
                 .orElseGet(() -> boardRepository.save(
                         Board.builder()
                                 .boardType(type)
@@ -157,7 +157,8 @@ public class LocalBoardDataInitializer implements CommandLineRunner {
     }
 
     private Board getOrCreateCircleBoard(Circle circle, String name) {
-        return boardRepository.findByBoardTypeAndCircleId_CircleId(BoardType.CIRCLE, circle.getCircleId()).stream()
+        return boardRepository.findByBoardTypeAndCircleId_CircleIdAndDeletedFalse(BoardType.CIRCLE, circle.getCircleId())
+                .stream()
                 .findFirst()
                 .orElseGet(() -> boardRepository.save(
                         Board.builder()
@@ -221,4 +222,3 @@ public class LocalBoardDataInitializer implements CommandLineRunner {
                         .build());
     }
 }
-

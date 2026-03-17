@@ -1,6 +1,7 @@
 package com.soldesk.moa.board.post.service;
 
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 import org.springframework.data.domain.Page;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.board.common.exception.ForbiddenException;
+import com.soldesk.moa.board.common.exception.BadRequestException;
 import com.soldesk.moa.board.common.exception.NotFoundException;
 import com.soldesk.moa.board.post.dto.PostCardResponseDTO;
 import com.soldesk.moa.board.post.dto.PostRequestDTO;
@@ -48,7 +50,9 @@ public class PostService {
         }
 
         public List<PostCardResponseDTO> listGlobalCards(BoardType type) {
-                return findPostCards(type, null, null, null, Pageable.unpaged()).getContent();
+                return findPostRows(type, null, null, null, Pageable.unpaged()).stream()
+                                .map(this::toPostCardResponseWithCount)
+                                .toList();
         }
 
         public Page<PostResponseDTO> listGlobalPaged(BoardType type, PostSearchPageRequestDTO pageRequest) {
@@ -60,7 +64,8 @@ public class PostService {
 
         public Page<PostCardResponseDTO> listGlobalCardsPaged(BoardType type, PostSearchPageRequestDTO pageRequest) {
                 PostSearchPageRequestDTO request = pageRequest != null ? pageRequest : new PostSearchPageRequestDTO();
-                return findPostCards(type, null, null, request.normalizedKeyword(), request.toPageable());
+                Page<Object[]> page = findPostRows(type, null, null, request.normalizedKeyword(), request.toPageable());
+                return page.map(this::toPostCardResponseWithCount);
         }
 
         public PostResponseDTO readGlobal(BoardType type, Long postId) {
@@ -71,7 +76,7 @@ public class PostService {
 
         @Transactional
         public Long createGlobal(BoardType type, AuthUserDTO auth, PostRequestDTO req) {
-                Board board = boardRepository.findByBoardTypeAndCircleIdIsNull(type)
+                Board board = boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(type)
                                 .orElseThrow(() -> new NotFoundException("global board not found"));
 
                 Users user = usersRepository.findById(auth.getUserId())
@@ -91,8 +96,9 @@ public class PostService {
 
         @Transactional
         public Long updateGlobal(BoardType type, Long postId, Long actorUserId, PostRequestDTO req) {
-                Post post = postRepository.findGlobalPost(type, postId)
+                Post post = postRepository.findGlobalPostIncludingDeleted(type, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
+                validatePostNotDeleted(post);
                 post.changeTitle(req.getTitle());
                 post.changeContent(req.getContent());
                 postImageService.attachTempImagesAndResolveThumbnail(actorUserId, post, req);
@@ -101,17 +107,18 @@ public class PostService {
 
         @Transactional
         public void deleteGlobal(BoardType type, Long postId) {
-                Post post = postRepository.findGlobalPost(type, postId)
+                Post post = postRepository.findGlobalPostIncludingDeleted(type, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
-                deletePostWithReplies(post);
+                softDeletePostWithReplies(post);
         }
 
         // ===== FREE (작성자 검증) =====
 
         @Transactional
         public Long updateFreeAsOwner(Long postId, AuthUserDTO auth, PostRequestDTO req) {
-                Post post = postRepository.findGlobalPost(BoardType.FREE, postId)
+                Post post = postRepository.findGlobalPostIncludingDeleted(BoardType.FREE, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
+                validatePostNotDeleted(post);
 
                 if (!isOwner(post, auth.getUserId()) && !isAdmin(auth)) {
                         throw new ForbiddenException("not owner");
@@ -125,14 +132,14 @@ public class PostService {
 
         @Transactional
         public void deleteFreeAsOwner(Long postId, AuthUserDTO auth) {
-                Post post = postRepository.findGlobalPost(BoardType.FREE, postId)
+                Post post = postRepository.findGlobalPostIncludingDeleted(BoardType.FREE, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
 
                 if (!isOwner(post, auth.getUserId()) && !isAdmin(auth)) {
                         throw new ForbiddenException("not owner");
                 }
 
-                deletePostWithReplies(post);
+                softDeletePostWithReplies(post);
         }
 
         // ===== Circle =====
@@ -144,7 +151,9 @@ public class PostService {
         }
 
         public List<PostCardResponseDTO> listCircleCards(Long circleId, Long boardId) {
-                return findPostCards(BoardType.CIRCLE, circleId, boardId, null, Pageable.unpaged()).getContent();
+                return findPostRows(BoardType.CIRCLE, circleId, boardId, null, Pageable.unpaged()).stream()
+                                .map(this::toPostCardResponseWithCount)
+                                .toList();
         }
 
         public List<PostResponseDTO> listCircleAllBoardsPosts(Long circleId) {
@@ -163,8 +172,9 @@ public class PostService {
         public Page<PostCardResponseDTO> listCircleCardsPaged(Long circleId, Long boardId,
                         PostSearchPageRequestDTO pageRequest) {
                 PostSearchPageRequestDTO request = pageRequest != null ? pageRequest : new PostSearchPageRequestDTO();
-                return findPostCards(BoardType.CIRCLE, circleId, boardId, request.normalizedKeyword(),
+                Page<Object[]> page = findPostRows(BoardType.CIRCLE, circleId, boardId, request.normalizedKeyword(),
                                 request.toPageable());
+                return page.map(this::toPostCardResponseWithCount);
         }
 
         public PostResponseDTO readCircle(Long circleId, Long boardId, Long postId) {
@@ -176,7 +186,8 @@ public class PostService {
         @Transactional
         public Long createCircle(Long circleId, Long boardId, Long userId, PostRequestDTO req) {
                 Board board = boardRepository
-                                .findByBoardIdAndBoardTypeAndCircleId_CircleId(boardId, BoardType.CIRCLE, circleId)
+                                .findByBoardIdAndBoardTypeAndCircleId_CircleIdAndDeletedFalse(boardId, BoardType.CIRCLE,
+                                                circleId)
                                 .orElseThrow(() -> new ForbiddenException("board not in circle"));
 
                 Users user = usersRepository.findById(userId)
@@ -197,8 +208,9 @@ public class PostService {
 
         @Transactional
         public Long updateCircleAsOwner(Long circleId, Long boardId, Long postId, Long userId, PostRequestDTO req) {
-                Post post = postRepository.findCirclePost(circleId, boardId, postId)
+                Post post = postRepository.findCirclePostIncludingDeleted(circleId, boardId, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
+                validatePostNotDeleted(post);
 
                 if (!isOwner(post, userId)) {
                         throw new ForbiddenException("not owner");
@@ -212,14 +224,14 @@ public class PostService {
 
         @Transactional
         public void deleteCircleAsOwner(Long circleId, Long boardId, Long postId, AuthUserDTO auth) {
-                Post post = postRepository.findCirclePost(circleId, boardId, postId)
+                Post post = postRepository.findCirclePostIncludingDeleted(circleId, boardId, postId)
                                 .orElseThrow(() -> new NotFoundException("post not found"));
 
                 if (!isOwner(post, auth.getUserId()) && !isAdmin(auth)) {
                         throw new ForbiddenException("not owner");
                 }
 
-                deletePostWithReplies(post);
+                softDeletePostWithReplies(post);
         }
 
         public List<PostCardResponseDTO> listMyPostCards(Long userId) {
@@ -247,19 +259,27 @@ public class PostService {
                                 .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
         }
 
-        private void deletePostWithReplies(Post post) {
-                replyRepository.deleteByPostId_PostId(post.getPostId());
-                postRepository.delete(post);
+        private void validatePostNotDeleted(Post post) {
+                if (post.isDeleted()) {
+                        throw new BadRequestException("deleted post cannot be modified");
+                }
+                if (post.getBoardId().isDeleted()) {
+                        throw new BadRequestException("post in deleted board cannot be modified");
+                }
+        }
+
+        private void softDeletePostWithReplies(Post post) {
+                if (post.isDeleted()) {
+                        return;
+                }
+                LocalDateTime deletedAt = LocalDateTime.now();
+                post.markDeleted(deletedAt);
+                replyRepository.softDeleteByPostId(post.getPostId(), deletedAt);
         }
 
         private Page<Object[]> findPostRows(BoardType boardType, Long circleId, Long boardId, String keyword,
                         Pageable pageable) {
                 return postRepository.searchPostsWithReplyCount(boardType, circleId, boardId, keyword, pageable);
-        }
-
-        private Page<PostCardResponseDTO> findPostCards(BoardType boardType, Long circleId, Long boardId, String keyword,
-                        Pageable pageable) {
-                return postRepository.searchPostCards(boardType, circleId, boardId, keyword, pageable);
         }
 
         private PostResponseDTO toPostResponse(Post p) {
@@ -292,5 +312,21 @@ public class PostService {
                                 .updateDate(p.getUpdateDate())
                                 .replyCount(replyCount)
                                 .build();
+        }
+
+        private PostCardResponseDTO toPostCardResponseWithCount(Object[] row) {
+                Post p = (Post) row[0];
+                long replyCount = ((Number) row[1]).longValue();
+
+                return new PostCardResponseDTO(
+                                p.getPostId(),
+                                p.getBoardId().getBoardId(),
+                                p.getBoardId().getName(),
+                                p.getTitle(),
+                                p.getUserId().getName(),
+                                postImageService.findThumbnailPath(p.getPostId()),
+                                p.getCreateDate(),
+                                p.getViewCount(),
+                                replyCount);
         }
 }

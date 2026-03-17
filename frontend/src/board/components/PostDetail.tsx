@@ -1,5 +1,7 @@
 import type { Post } from '../types';
+import DOMPurify from 'dompurify';
 import { pageUi } from '../pages/pageUi';
+import './postRichText.css';
 
 interface PostDetailProps {
   post: Post;
@@ -13,6 +15,10 @@ export default function PostDetail({ post }: PostDetailProps) {
     return value.slice(0, 16).replace('T', ' ');
   };
 
+  const sanitizedContent = DOMPurify.sanitize(post.content ?? '', {
+    USE_PROFILES: { html: true },
+  });
+
   return (
     <article style={pageUi.sectionCard}>
       <h2 style={{ margin: '0 0 10px', color: '#23201b' }}>{post.title}</h2>
@@ -22,7 +28,11 @@ export default function PostDetail({ post }: PostDetailProps) {
         <span style={pageUi.chip}>댓글 {post.replyCount}</span>
         <span style={pageUi.chip}>작성일 {formatDate(post.createDate)}</span>
       </div>
-      <p style={pageUi.contentBody}>{post.content}</p>
+      <div
+        style={pageUi.contentBody}
+        className="board-post-content"
+        dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+      />
     </article>
   );
 }

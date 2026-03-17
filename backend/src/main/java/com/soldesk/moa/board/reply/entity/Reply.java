@@ -1,5 +1,7 @@
 package com.soldesk.moa.board.reply.entity;
 
+import java.time.LocalDateTime;
+
 import com.soldesk.moa.board.post.entity.Post;
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.users.entity.Users;
@@ -53,12 +55,21 @@ public class Reply extends BaseEntity {
     @Column(nullable = false)
     private boolean deleted;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public void changeContent(String content) {
         this.content = content;
     }
 
-    public void markDeleted() {
+    public void markDeleted(LocalDateTime deletedAt) {
         this.deleted = true;
+        this.deletedAt = deletedAt;
+    }
+
+    public void restore() {
+        this.deleted = false;
+        this.deletedAt = null;
     }
 
 }

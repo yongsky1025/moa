@@ -1,0 +1,74 @@
+.board-editor-shell {
+  border: 1px solid #cfd5e2;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.board-editor-shell .ck.ck-editor__top .ck-sticky-panel .ck-toolbar {
+  border: 0;
+  border-bottom: 1px solid #e5e9f2;
+  background: #f8faff;
+}
+
+.board-editor-shell .ck.ck-content {
+  min-height: 220px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  color: #2f3441;
+  line-height: 1.72;
+  font-size: 15px;
+}
+
+.board-post-content {
+  color: #2f3441;
+  line-height: 1.72;
+  font-size: 15px;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.board-post-content > *:first-child {
+  margin-top: 0;
+}
+
+.board-post-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.board-post-content p,
+.board-post-content ul,
+.board-post-content ol,
+.board-post-content blockquote,
+.board-post-content pre {
+  margin: 0 0 0.9em;
+}
+
+.board-post-content ul,
+.board-post-content ol {
+  padding-left: 1.4em;
+}
+
+.board-post-content a {
+  color: #245ea8;
+  text-decoration: underline;
+}
+
+.board-post-content blockquote {
+  margin-left: 0;
+  padding: 0.1em 0 0.1em 0.8em;
+  border-left: 3px solid #cfd5e2;
+  color: #4b5262;
+}
+
+.board-post-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+.board-post-content figure.image {
+  margin: 1em 0;
+}
