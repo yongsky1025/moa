@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>채팅</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        #chat-box {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 16px;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .msg-mine { text-align: right; }
+        .msg-mine .bubble { background: #0d6efd; color: #fff; }
+        .msg-other .bubble { background: #fff; border: 1px solid #dee2e6; }
+        .bubble {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-break: break-word;
+        }
+        .meta { font-size: 0.75rem; color: #6c757d; margin-top: 2px; }
+    </style>
+</head>
+<body>
+<div class="container py-4" style="max-width: 700px;">
+
+    <div class="d-flex align-items-center mb-3 gap-2">
+        <h5 class="mb-0" id="room-title">채팅방</h5>
+        <span class="badge bg-secondary" id="conn-status">연결 중...</span>
+    </div>
+
+    <!-- 채팅 메시지 영역 -->
+    <div id="chat-box"></div>
+
+    <!-- 메시지 입력 -->
+    <div class="input-group mt-3">
+        <input id="msg-input" type="text" class="form-control" placeholder="메시지를 입력하세요..." maxlength="500">
+        <button id="send-btn" class="btn btn-primary" disabled>전송</button>
+    </div>
+</div>
+
+<!-- webjars -->
+<script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
+<script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    // 서버에서 Thymeleaf로 주입 (컨트롤러에서 model.addAttribute 필요)
+    const ROOM_ID  = /*[[${roomId}]]*/ 1;
+    const MY_ID    = /*[[${myId}]]*/ 1;
+    const MY_NAME  = /*[[${myName}]]*/ '나';
+    /*]]>*/
+
+    const chatBox  = document.getElementById('chat-box');
+    const msgInput = document.getElementById('msg-input');
+    const sendBtn  = document.getElementById('send-btn');
+    const statusBadge = document.getElementById('conn-status');
+
+    /* ── STOMP 연결 ── */
+    const socket = new SockJS('/ws/chat');
+    const stomp  = Stomp.over(socket);
+    stomp.debug  = null; // 콘솔 로그 비활성화
+
+    stomp.connect(
+        { 'X-User-Id': MY_ID },
+        function () {
+            statusBadge.textContent = '연결됨';
+            statusBadge.className   = 'badge bg-success';
+            sendBtn.disabled        = false;
+
+            // 이전 메시지 불러오기
+            loadHistory();
+
+            // 실시간 수신 구독
+            stomp.subscribe('/topic/room/' + ROOM_ID, function (frame) {
+                const msg = JSON.parse(frame.body);
+                appendMessage(msg, msg.senderId === MY_ID);
+            });
+        },
+        function () {
+            statusBadge.textContent = '연결 끊김';
+            statusBadge.className   = 'badge bg-danger';
+            sendBtn.disabled        = true;
+        }
+    );
+
+    /* ── 메시지 전송 ── */
+    sendBtn.addEventListener('click', sendMessage);
+    msgInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    function sendMessage() {
+        const content = msgInput.value.trim();
+        if (!content) return;
+        stomp.send('/app/chat/' + ROOM_ID, {}, JSON.stringify({ content: content }));
+        msgInput.value = '';
+    }
+
+    /* ── 이전 메시지 조회 ── */
+    function loadHistory() {
+        fetch('/api/chat/rooms/' + ROOM_ID + '/messages?userId=' + MY_ID + '&page=0&size=50')
+            .then(r => r.json())
+            .then(data => {
+                const messages = data.content.reverse(); // 오래된 것부터
+                messages.forEach(m => appendMessage(m, m.senderId === MY_ID));
+                scrollToBottom();
+
+                // 읽음 처리
+                fetch('/api/chat/rooms/' + ROOM_ID + '/read?userId=' + MY_ID, { method: 'POST' });
+            });
+    }
+
+    /* ── DOM 헬퍼 ── */
+    function appendMessage(msg, isMine) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'msg-wrapper ' + (isMine ? 'msg-mine' : 'msg-other');
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = msg.content;
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = formatTime(msg.createdAt);
+
+        wrapper.appendChild(bubble);
+        wrapper.appendChild(meta);
+        chatBox.appendChild(wrapper);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function formatTime(isoString) {
+        if (!isoString) return '';
+        const d = new Date(isoString);
+        return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    }
+</script>
+</body>
+</html>

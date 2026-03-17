@@ -1,18 +1,14 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-
-export interface NavbarProps {
-  isLoggedIn: boolean;
-  onToggleLogin: () => void;
-  isAdmin?: boolean;
-}
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../../users/reducers/authSlice';
+import type { AppDispatch, RootState } from '../../users/reducers/store';
+import { notificationApi } from '../../api/notificationApi';
 
 const dropdownItems: Record<string, { label: string; href: string }[]> = {
   '모임 찾기': [
-    { label: '전체 모임', href: '/circles' },
-    { label: '카테고리별', href: '/circles' },
-    { label: '지역별', href: '/circles' },
-    { label: '날짜별', href: '/circles' },
+    { label: '전체 모임', href: '/circle' },
+    { label: '내 모임', href: '/circle/my' },
   ],
   커뮤니티: [
     { label: '자유게시판', href: '#' },
@@ -32,12 +28,26 @@ const dropdownItems: Record<string, { label: string; href: string }[]> = {
   ],
 };
 
-export default function Navbar({
-  isLoggedIn,
-  onToggleLogin,
-  isAdmin,
-}: NavbarProps) {
+export default function Navbar() {
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const { isLoggedIn, user } = useSelector((s: RootState) => s.auth);
+  const isAdmin = user?.userRole === 'ADMIN';
+
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+
+  useEffect(() => {
+    if (!isLoggedIn) { setUnreadChatCount(0); return; }
+    const fetch = () => {
+      notificationApi.getAll().then((list) => {
+        setUnreadChatCount(list.filter((n) => n.type === 'CHAT_MESSAGE' && !n.isRead).length);
+      }).catch(() => {});
+    };
+    fetch();
+    const id = setInterval(fetch, 30000);
+    return () => clearInterval(id);
+  }, [isLoggedIn]);
 
   const navItems = [
     '관리자 페이지',
@@ -46,13 +56,19 @@ export default function Navbar({
     isLoggedIn ? '내 에너지' : '에너지 테스트',
     '장소 추천',
   ];
+
   const navLinks: Record<string, string> = {
-    '모임 찾기': '/circles',
+    '모임 찾기': '/circle',
     커뮤니티: '#',
     '에너지 테스트': '#',
     '내 에너지': '#',
     '장소 추천': '#',
     '관리자 페이지': '/admin',
+  };
+
+  const handleLogout = async () => {
+    await dispatch(logout());
+    navigate('/');
   };
 
   return (
@@ -119,9 +135,7 @@ export default function Navbar({
                     lineHeight: '60px',
                     transition: 'color 0.15s',
                     visibility:
-                      item === '관리자 페이지' && !isAdmin
-                        ? 'hidden'
-                        : 'visible',
+                      item === '관리자 페이지' && !isAdmin ? 'hidden' : 'visible',
                     pointerEvents:
                       item === '관리자 페이지' && !isAdmin ? 'none' : 'auto',
                   }}
@@ -162,8 +176,7 @@ export default function Navbar({
                           (e.currentTarget.style.backgroundColor = '#f7f7f8')
                         }
                         onMouseLeave={(e) =>
-                          (e.currentTarget.style.backgroundColor =
-                            'transparent')
+                          (e.currentTarget.style.backgroundColor = 'transparent')
                         }
                       >
                         {sub.label}
@@ -178,7 +191,7 @@ export default function Navbar({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 68 }}>
             <button
-              onClick={onToggleLogin}
+              onClick={isLoggedIn ? handleLogout : () => navigate('/user/login')}
               style={{
                 padding: '5px 0',
                 width: '100%',
@@ -231,6 +244,7 @@ export default function Navbar({
               </div>
             ) : (
               <button
+                onClick={() => navigate('/user/signup')}
                 style={{
                   padding: '5px 0',
                   width: '100%',
@@ -249,6 +263,43 @@ export default function Navbar({
           </div>
         </div>
       </div>
+      {isLoggedIn && (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 1000 }}>
+          <button
+            onClick={() => navigate('/chat')}
+            title="채팅"
+            style={{
+              width: 56, height: 56, borderRadius: '50%', border: 'none',
+              backgroundColor: '#111', color: '#fff', fontSize: 24,
+              cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background-color 0.2s, transform 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#333';
+              (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#111';
+              (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
+            }}
+          >
+            💬
+          </button>
+          {unreadChatCount > 0 && (
+            <span style={{
+              position: 'absolute', top: -4, right: -4,
+              backgroundColor: '#ef4444', color: '#fff',
+              borderRadius: '50%', width: 20, height: 20,
+              fontSize: 11, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              pointerEvents: 'none',
+            }}>
+              {unreadChatCount > 99 ? '99+' : unreadChatCount}
+            </span>
+          )}
+        </div>
+      )}
     </header>
   );
 }
