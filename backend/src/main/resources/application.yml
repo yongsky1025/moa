@@ -13,6 +13,9 @@ app:
   cookie:
     secure: false
     same-site: Lax
+  upload:
+    post-image-dir: uploads/post-images
+    post-image-url-prefix: /images/posts
 
 logging:
   level:

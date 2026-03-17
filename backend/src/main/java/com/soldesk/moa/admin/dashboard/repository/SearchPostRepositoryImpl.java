@@ -10,10 +10,10 @@ import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.JPQLQuery;
-import com.soldesk.moa.board.entity.QReply;
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.QBoard;
-import com.soldesk.moa.board.entity.QPost;
+import com.soldesk.moa.board.reply.entity.QReply;
+import com.soldesk.moa.board.post.entity.Post;
+import com.soldesk.moa.board.board.entity.QBoard;
+import com.soldesk.moa.board.post.entity.QPost;
 import com.soldesk.moa.users.entity.QUsers;
 
 import lombok.extern.log4j.Log4j2;

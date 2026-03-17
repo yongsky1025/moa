@@ -7,13 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-// import com.soldesk.moa.board.entity.Board;
+// import com.soldesk.moa.board.board.entity.Board;
 
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.Reply;
+import com.soldesk.moa.board.post.entity.Post;
+import com.soldesk.moa.board.reply.entity.Reply;
 import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.common.entity.BaseEntity;
-import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.image.entity.Image;
 import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
 import com.soldesk.moa.users.entity.constant.UserStatus;

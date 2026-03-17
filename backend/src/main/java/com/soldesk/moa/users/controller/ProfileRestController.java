@@ -1,5 +1,7 @@
 package com.soldesk.moa.users.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.auth.dto.AuthUserDTO;
+import com.soldesk.moa.board.post.dto.PostCardResponseDTO;
+import com.soldesk.moa.board.post.service.PostService;
 import com.soldesk.moa.users.dto.profile.NicknameUpdateRequestDTO;
 import com.soldesk.moa.users.dto.profile.UserProfileResponseDTO;
 import com.soldesk.moa.users.repository.UsersRepository;
@@ -29,8 +33,8 @@ public class ProfileRestController {
 
     private final UsersRepository usersRepository;
     private final ProfileService profileService;
+    private final PostService postService;
 
-    // 닉네임 중복 확인 (회원가입 이전에도 사용)
     @GetMapping("/profile/check-nickname")
     public ResponseEntity<?> checkNickname(@RequestParam String nickname) {
         if (usersRepository.existsByNickname(nickname)) {
@@ -39,7 +43,6 @@ public class ProfileRestController {
         return ResponseEntity.ok().build();
     }
 
-    // 프로필 조회
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponseDTO> getMyProfile(@AuthenticationPrincipal AuthUserDTO authUser) {
@@ -48,7 +51,12 @@ public class ProfileRestController {
         return ResponseEntity.ok(profile);
     }
 
-    // 닉네임 변경
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/me/posts/cards")
+    public ResponseEntity<List<PostCardResponseDTO>> getMyPostCards(@AuthenticationPrincipal AuthUserDTO authUser) {
+        return ResponseEntity.ok(postService.listMyPostCards(authUser.getUserId()));
+    }
+
     @PreAuthorize("isAuthenticated()")
     @PutMapping("/profile/nickname")
     public ResponseEntity<?> changeNickname(@AuthenticationPrincipal AuthUserDTO authUser,

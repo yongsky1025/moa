@@ -9,11 +9,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.soldesk.moa.board.entity.Board;
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.constant.BoardType;
-import com.soldesk.moa.board.repository.BoardRepository;
-import com.soldesk.moa.board.repository.PostRepository;
+import com.soldesk.moa.board.board.entity.Board;
+import com.soldesk.moa.board.post.entity.Post;
+import com.soldesk.moa.board.board.entity.constant.BoardType;
+import com.soldesk.moa.board.board.repository.BoardRepository;
+import com.soldesk.moa.board.post.repository.PostRepository;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.users.dto.UserDTO;
 import com.soldesk.moa.users.entity.Users;
