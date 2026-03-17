@@ -30,7 +30,7 @@ function SignUpPage() {
     setLoading(false);
     if (signup.fulfilled.match(result)) {
       alert('회원가입 성공! 로그인 해주세요.');
-      navigate('/user/login');
+      navigate('/users/login');
     } else {
       setError(result.payload as string || '회원가입 실패');
     }

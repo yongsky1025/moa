@@ -211,7 +211,7 @@ export default function CircleDetailPage() {
               </button>
             )}
             {!isLoggedIn && circle.status === 'OPEN' && (
-              <button onClick={() => navigate('/user/login')} style={{
+              <button onClick={() => navigate('/users/login')} style={{
                 padding: '9px 20px', borderRadius: 8, backgroundColor: '#111', color: 'white',
                 fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
               }}>
