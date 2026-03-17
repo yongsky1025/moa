@@ -1,9 +1,9 @@
-import ChatListPage from '../pages/ChatListPage';
-import ChatRoomPage from '../pages/ChatRoomPage';
-import ChatPopupPage from '../pages/ChatPopupPage';
-import ProfilePage from '../pages/ProfilePage';
-import Layout from '../components/common/Layout';
-import PrivateRoute from '../components/common/PrivateRoute';
+import ChatListPage from '../chat/pages/ChatListPage';
+import ChatRoomPage from '../chat/pages/ChatRoomPage';
+import ChatPopupPage from '../chat/pages/ChatPopupPage';
+import ProfilePage from '../chat/pages/ProfilePage';
+import Layout from '../chat/components/Layout';
+import PrivateRoute from '../chat/components/PrivateRoute';
 
 export const chatRouter = () => {
   return [

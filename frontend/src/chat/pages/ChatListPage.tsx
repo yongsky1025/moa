@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { chatApi } from '../api/chatApi';
+import { chatApi } from '../../api/chatApi';
 import type { ChatRoomSummary } from '../types/chat';
 
 export default function ChatListPage() {

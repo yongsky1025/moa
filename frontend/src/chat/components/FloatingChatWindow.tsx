@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { chatApi } from '../../api/chatApi';
-import { useWebSocket } from '../../hooks/useWebSocket';
+import { useWebSocket } from '../hooks/useWebSocket';
 import { useAuthStore } from '../../store/authStore';
 import { notificationApi } from '../../api/notificationApi';
 import EmojiPicker from './EmojiPicker';
-import type { ChatRoomSummary, ChatMessage } from '../../types/chat';
+import type { ChatRoomSummary, ChatMessage } from '../types/chat';
 import type { Notification } from '../../types/notification';
 
 const MIN_W = 520;
