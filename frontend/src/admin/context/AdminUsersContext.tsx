@@ -16,7 +16,8 @@ import { fetchAdminUserList } from '../api/adminUserApi';
 const initialParams: AdminUserSearchDTO = {
   page: 1,
   size: 20,
-  name: undefined,
+  keyword:undefined,
+  type:undefined,
   gender: undefined,
   status: undefined,
   role: undefined,
@@ -25,7 +26,7 @@ const initialParams: AdminUserSearchDTO = {
 interface UserListContextType {
   users: AdminUserResponseDTO[];
   totalCount: number;
-  totalPage: number;
+  actualTotalPage:number;
   current: number;
   loading: boolean;
   error: string | null;
@@ -79,12 +80,16 @@ export function AdminUsersProvider({ children }: { children: ReactNode }) {
     load(params);
   }, [load, params]);
 
+  const actualTotalPage = data
+    ? Math.ceil(data.totalCount / params.size)
+    : 0;
+
   return (
     <AdminUsersContext.Provider
       value={{
         users: data?.dtoList ?? [],
         totalCount: data?.totalCount ?? 0,
-        totalPage: data?.totalPage ?? 0,
+        actualTotalPage,
         current: data?.current ?? 1,
         loading,
         error,
