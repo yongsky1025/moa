@@ -174,6 +174,9 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
                         }
                     }
                     break;
+                // case "phone": // 컬럼 삭제로 인해 불필요
+                // builder.and(users.phone.contains(searchDTO.getKeyword()));
+                // break;
 
             }
         }

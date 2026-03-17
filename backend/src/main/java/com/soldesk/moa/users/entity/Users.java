@@ -42,8 +42,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = { "images", "posts", "replies", "circleMembers",
-        "energyProfile" })
+@ToString(exclude = { "images", "posts", "replies", "energyProfile" })
 @Table(name = "users")
 @Entity
 public class Users extends BaseEntity {

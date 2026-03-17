@@ -25,7 +25,7 @@ public class AdminUserResponseDTO {
 
     private LocalDate birth;
 
-    private String phone;
+    // private String phone; // 컬럼 삭제로 인해 불필요
 
     private UserGender gender;
 

@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 import com.soldesk.moa.admin.log.entity.AdminActionLog;
 import com.soldesk.moa.admin.log.entity.constant.ActionType;
 import com.soldesk.moa.admin.log.service.AdminLogService;
-import com.soldesk.moa.users.service.CustomUserDetailsService;
-
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
@@ -60,15 +58,15 @@ public class AdminLogAspect {
 
     // http 메소드와 uri패턴으로 액션 타입 결정
     private ActionType resolActionType(String httpMethod, String uri) {
-        if (uri.contains("/login"))
+        if (uri.contains("/auth/login"))
             return ActionType.LOGIN;
-        if (uri.contains("/logout"))
+        if (uri.contains("/auth/logout"))
             return ActionType.LOGOUT;
-        if (uri.contains("/withdraw"))
+        if (uri.contains("/users/account/withdraw"))
             return ActionType.WITHDRAW;
-        if (uri.contains("/circles/join"))
+        if (uri.contains("/circles") && uri.contains("/members"))
             return ActionType.JOIN_CIRCLE;
-        if (uri.contains("/circles/leave"))
+        if (uri.contains("/circles") && uri.contains("/members") && httpMethod.matches("DELETE"))
             return ActionType.LEAVE_CIRCLE;
 
         return switch (httpMethod) {

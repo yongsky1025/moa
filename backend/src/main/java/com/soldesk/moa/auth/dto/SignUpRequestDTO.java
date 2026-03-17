@@ -45,6 +45,7 @@ public class SignUpRequestDTO {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthDate;
 
+    @NotNull
     private UserGender userGender;
 
     private int age;

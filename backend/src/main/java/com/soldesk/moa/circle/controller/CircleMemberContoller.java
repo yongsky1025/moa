@@ -78,6 +78,17 @@ public class CircleMemberContoller {
                 return ResponseEntity.ok().build();
         }
 
+        // 멤버 강퇴 (리더만)
+        @DeleteMapping("/{memberId}")
+        public ResponseEntity<Void> kickMember(
+                        @PathVariable Long circleId,
+                        @PathVariable Long memberId,
+                        @AuthenticationPrincipal AuthUserDTO authUser) {
+
+                circleMemberService.kickMember(circleId, memberId, authUser.getUserId());
+                return ResponseEntity.noContent().build();
+        }
+
         // 서클 탈퇴
         @DeleteMapping
         public ResponseEntity<Void> leaveCircle(
@@ -85,17 +96,6 @@ public class CircleMemberContoller {
                         @AuthenticationPrincipal AuthUserDTO authUser) {
 
                 circleMemberService.leaveCircle(circleId, authUser.getUserId());
-                return ResponseEntity.noContent().build();
-        }
-
-        // 강퇴 (리더만 가능)
-        @DeleteMapping("/{memberId}/kick")
-        public ResponseEntity<Void> kickMember(
-                        @PathVariable Long circleId,
-                        @PathVariable Long memberId,
-                        @AuthenticationPrincipal AuthUserDTO authUser) {
-
-                circleMemberService.kickMember(circleId, memberId, authUser.getUserId());
                 return ResponseEntity.noContent().build();
         }
 

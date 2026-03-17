@@ -74,6 +74,9 @@ public class SecurityConfig {
                                                                 "/vendor/**",
                                                                 "/fonts/**",
                                                                 "/favicon.ico",
+                                                                "/swagger-ui.html",
+                                                                "/swagger-ui/**",
+                                                                "/v3/api-docs/**",
                                                                 "/webjars/**")
                                                 .permitAll()
 
@@ -102,6 +105,16 @@ public class SecurityConfig {
                                                 // 채팅: 로그인한 유저만 접근 허용
                                                 .requestMatchers("/chat/**").authenticated()
                                                 .requestMatchers("/api/chat/**").authenticated()
+
+                                                // ---------- 관리자, 장소 ----------
+                                                .requestMatchers("/api/admin/**").permitAll() // 임시로 다 열어둠
+                                                .requestMatchers("/api/place/**").permitAll()
+                                                // ----------------------------------
+                                                // swagger 임시 허용(개발중)
+                                                .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
+                                                                "/v3/api-docs/**")
+                                                .permitAll()
+                                                // ----------------------------------
 
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth2 -> oauth2
@@ -134,7 +147,7 @@ public class SecurityConfig {
         CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
                 configuration.addAllowedOriginPattern("http://localhost:5173");
-                configuration.setAllowedMethods(Arrays.asList("HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"));
+                configuration.setAllowedMethods(Arrays.asList("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH"));
                 configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
                 configuration.setAllowCredentials(true);
 

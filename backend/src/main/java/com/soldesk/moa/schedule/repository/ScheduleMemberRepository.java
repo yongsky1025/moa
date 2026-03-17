@@ -1,5 +1,6 @@
 package com.soldesk.moa.schedule.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +26,7 @@ public interface ScheduleMemberRepository extends JpaRepository<ScheduleMember, 
     void deleteByScheduleAndCircleMember(
             Schedule schedule,
             CircleMember circleMember);
+
+    // 특정 CircleMember의 모든 ScheduleMember 조회 (탈퇴/강퇴 시 정리용)
+    List<ScheduleMember> findByCircleMember(CircleMember circleMember);
 }
