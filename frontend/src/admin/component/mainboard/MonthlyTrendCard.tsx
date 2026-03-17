@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import type { DashboardChartDTO } from '../types/adminTypes';
+import type { DashboardChartDTO } from '../../types/adminTypes';
 
 interface Props {
   data: DashboardChartDTO | null;
   loading: boolean;
 }
 
-const C_SIGNUP = '#5b8dee';
-const C_WITHDRAWN = '#ff7b72';
+const C_SIGNUP = '#D07856';
+const C_WITHDRAWN = '#F2BB9B';
 
 const W = 580,
   H = 180;
@@ -50,19 +50,16 @@ export default function MonthlyTrendCard({ data, loading }: Props) {
         <h3 className="admin-card-title mb-0!">사용자 증감 추이</h3>
         <div className="flex items-center gap-4">
           {[
-            { color: C_SIGNUP, label: '신규 가입' },
-            { color: C_WITHDRAWN, label: '탈퇴' },
+            { color: C_SIGNUP, label: '신규 가입', dotClass: 'bg-[#D07856]' },
+            { color: C_WITHDRAWN, label: '탈퇴', dotClass: 'bg-[#F2BB9B]' },
           ].map((l) => (
             <div key={l.label} className="flex items-center gap-1.5">
-              <div
-                className="h-2.5 w-2.5 rounded-sm"
-                style={{ background: l.color }}
-              />
+              <div className={`h-2.5 w-2.5 rounded-sm ${l.dotClass}`} />
               <span className="text-xs text-gray-400">{l.label}</span>
             </div>
           ))}
           <span
-            className={`text-xs font-bold ${netGrowth >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}
+            className={`text-xs font-bold ${netGrowth >= 0 ? 'text-[#D07856]' : 'text-[#F24405]'}`}
           >
             이번 달 순증 {netGrowth >= 0 ? '+' : ''}
             {netGrowth.toLocaleString('ko-KR')}
@@ -88,7 +85,7 @@ export default function MonthlyTrendCard({ data, loading }: Props) {
                     y1={y}
                     x2={PAD.left + CW}
                     y2={y}
-                    stroke={v === 0 ? '#e5e7eb' : '#f3f4f6'}
+                    stroke={v === 0 ? '#F2E8E0' : '#FDF0E8'}
                     strokeWidth="1"
                   />
                   <text
@@ -97,7 +94,7 @@ export default function MonthlyTrendCard({ data, loading }: Props) {
                     textAnchor="end"
                     dominantBaseline="central"
                     fontSize="10"
-                    fill="#d1d5db"
+                    fill="#9B7B6A"
                   >
                     {v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}
                   </text>
@@ -155,7 +152,7 @@ export default function MonthlyTrendCard({ data, loading }: Props) {
                     y={PAD.top + CH + 16}
                     textAnchor="middle"
                     fontSize="10"
-                    fill="#d1d5db"
+                    fill="#9B7B6A"
                   >
                     {s.month}월
                   </text>

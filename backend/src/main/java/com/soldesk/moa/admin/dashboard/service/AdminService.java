@@ -342,10 +342,19 @@ public class AdminService {
                                 .map(date -> {
                                         long count = tuples.stream()
                                                         .filter(t -> {
-                                                                String dateStr = t.get(0, String.class);
-                                                                if (dateStr == null)
+                                                                // object로 꺼낸 뒤 타입에 따라 나누기
+                                                                Object raw = t.get(0, Object.class);
+                                                                if (raw == null)
                                                                         return false;
-                                                                return date.equals(LocalDate.parse(dateStr));
+
+                                                                LocalDate tupleDate;
+                                                                if (raw instanceof java.sql.Date) {
+                                                                        tupleDate = ((java.sql.Date) raw).toLocalDate();
+                                                                } else {
+                                                                        // DATE_FORMAT 썼을 때는 String으로 옴
+                                                                        tupleDate = LocalDate.parse(raw.toString());
+                                                                }
+                                                                return date.equals(tupleDate);
                                                         })
                                                         .map(t -> t.get(1, Long.class))
                                                         .findFirst()

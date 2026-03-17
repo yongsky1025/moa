@@ -6,12 +6,12 @@ import Footer from '../../common/layout/Footer';
 import '../styles/dashboard.css';
 import { useAdminMain } from '../hooks/UseAdminMain';
 import { usePostActivity } from '../hooks/UsePostActivity';
-import KpiCards from '../component/KpiCards';
-import GenderDonutCard from '../component/GenderDonutCard';
-import MonthlyTrendCard from '../component/MonthlyTrendCard';
-import CircleStatusCard from '../component/CircleStatusCard';
-import PostActivityCard from '../component/PostActivityCard';
-import QuickActionsCard from '../component/QuickActionsCard';
+import KpiCards from '../component/mainboard/KpiCards';
+import GenderDonutCard from '../component/mainboard/GenderDonutCard';
+import MonthlyTrendCard from '../component/mainboard/MonthlyTrendCard';
+import CircleStatusCard from '../component/mainboard/CircleStatusCard';
+import PostActivityCard from '../component/mainboard/PostActivityCard';
+import QuickActionsCard from '../component/mainboard/QuickActionsCard';
 
 // ─── 사이드바 메뉴 ────────────────────────────────────────────
 interface MenuItem {
@@ -23,7 +23,12 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { key: 'dashboard', label: '대시보드', icon: '⊞', path: '/admin' },
+  {
+    key: 'dashboard',
+    label: '대시보드',
+    icon: '⊞',
+    path: '/admin/maindashboard',
+  },
   { key: 'users', label: '유저 관리', icon: '👥', path: '/admin/users' },
   {
     key: 'circles',
@@ -39,6 +44,12 @@ const MENU_ITEMS: MenuItem[] = [
     ],
   },
   { key: 'posts', label: '게시글 관리', icon: '📋', path: '/admin/posts' },
+  {
+    key: 'places',
+    label: '장소 관리',
+    icon: '📍',
+    path: '/admin/places',
+  },
   {
     key: 'reports',
     label: '신고 / 제재 관리',
@@ -60,7 +71,7 @@ const MENU_ITEMS: MenuItem[] = [
   },
 ];
 
-const DIVIDER_BEFORE = new Set([2, 4, 6]);
+const DIVIDER_BEFORE = new Set([2, 5, 6]);
 
 interface AdminDashboardPageProps {
   isLoggedIn?: boolean;
@@ -103,14 +114,17 @@ export default function AdminDashboardPage({
   const loading = mainLoading || postLoading;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div
+      className="flex min-h-screen flex-col"
+      style={{ background: '#FDFAF8' }}
+    >
       <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} userName={userName} />
 
       <div className="flex flex-1">
         {/* ── 사이드바 ──────────────────────────────── */}
-        <aside className="sticky top-16 flex h-[calc(100vh-64px)] w-[220px] shrink-0 flex-col overflow-y-auto border-r border-gray-100 bg-white pt-4">
+        <aside className="sticky top-16 flex h-[calc(100vh-64px)] w-55 shrink-0 flex-col overflow-y-auto border-r border-gray-100 bg-white pt-4">
           {/* 로고 */}
-          <div className="mb-2 border-b border-gray-100 px-[18px] pb-4">
+          <div className="mb-2 border-b border-gray-100 px-4.5 pb-4">
             <p className="text-[15px] font-extrabold tracking-tight text-gray-900">
               MOA Admin
             </p>
@@ -129,11 +143,22 @@ export default function AdminDashboardPage({
                 )}
 
                 <button
-                  className={`sb-btn flex w-full cursor-pointer items-center justify-between border-l-[3px] px-[18px] py-[9px] text-left text-[13px] transition-all duration-150 ${
+                  className={`sb-btn flex w-full cursor-pointer items-center justify-between border-l-[3px] px-4.5 py-2.25 text-left text-[13px] transition-all duration-150 ${
                     active || pActive
-                      ? 'border-l-blue-400 bg-blue-50 font-bold text-blue-700'
-                      : 'border-l-transparent bg-transparent font-normal text-gray-500'
+                      ? 'font-bold'
+                      : 'border-l-transparent bg-transparent font-normal'
                   }`}
+                  style={
+                    active || pActive
+                      ? {
+                          background: '#FDF0E8',
+                          borderLeftColor: '#D07856',
+                          color: '#B8643D',
+                        }
+                      : {
+                          color: '#6B4F3A',
+                        }
+                  }
                   onClick={() =>
                     item.children
                       ? toggleMenu(item.key)
@@ -158,11 +183,16 @@ export default function AdminDashboardPage({
                     {item.children.map((child) => (
                       <button
                         key={child.key}
-                        className={`sb-sub block w-full cursor-pointer border-none py-[7px] pr-[18px] pl-[42px] text-left text-xs transition-colors duration-150 ${
+                        className={`sb-sub block w-full cursor-pointer border-none py-1.75 pr-4.5 pl-10.5 text-left text-xs transition-colors duration-150 ${
                           isActive(child.path)
-                            ? 'bg-blue-50 font-semibold text-blue-600'
-                            : 'bg-transparent font-normal text-gray-400'
+                            ? 'font-semibold'
+                            : 'bg-transparent font-normal'
                         }`}
+                        style={
+                          isActive(child.path)
+                            ? { background: '#FDF0E8', color: '#D07856' }
+                            : { color: '#9B7B6A' }
+                        }
                         onClick={() => navigate(child.path)}
                       >
                         └ {child.label}
@@ -180,14 +210,19 @@ export default function AdminDashboardPage({
           {/* 헤더 */}
           <div className="mb-7 flex items-end justify-between">
             <div>
-              <h1 className="mb-1 text-2xl font-black tracking-tight text-gray-900">
+              <h1
+                className="mb-1 text-2xl font-black tracking-tight"
+                style={{ color: '#262626' }}
+              >
                 관리자 대시보드
               </h1>
-              <p className="text-sm text-gray-400">moa 서비스 관리 현황</p>
+              <p className="text-sm" style={{ color: '#9B7B6A' }}>
+                moa 서비스 관리 현황
+              </p>
             </div>
             <button
               onClick={refetchMain}
-              className="refetch-btn flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-[7px] text-xs text-gray-500 transition-colors duration-150 hover:bg-gray-100"
+              className="refetch-btn flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#F2E8E0] bg-white px-3.5 py-1.75 text-xs text-[#9B7B6A] transition-colors duration-150 hover:bg-[#FDF0E8]"
             >
               ↻ 새로고침
             </button>

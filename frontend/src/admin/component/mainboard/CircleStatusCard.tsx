@@ -1,4 +1,4 @@
-import type { CircleSummaryDTO, UserCountDTO } from '../types/adminTypes';
+import type { CircleSummaryDTO, UserCountDTO } from '../../types/adminTypes';
 
 interface Props {
   circleData: CircleSummaryDTO | null;
@@ -6,19 +6,19 @@ interface Props {
   loading: boolean;
 }
 
-const BAR_COLORS = [
-  '#5b8dee',
-  '#34c77b',
-  '#f5a623',
-  '#e88a9a',
-  '#a47ef5',
-  '#38bdf8',
-  '#fb923c',
-];
 const ACCENT_TOP = [
-  'border-t-blue-400',
-  'border-t-emerald-400',
-  'border-t-amber-400',
+  'border-t-[#D07856]',
+  'border-t-[#F2935C]',
+  'border-t-[#F2BB9B]',
+];
+const BAR_COLORS = [
+  '#D07856',
+  '#F2935C',
+  '#F2BB9B',
+  '#B8643D',
+  '#F24405',
+  '#E8A87C',
+  '#C4693F',
 ];
 
 export default function CircleStatusCard({
@@ -31,7 +31,20 @@ export default function CircleStatusCard({
       ? Math.round((userData.countJoinUser / userData.countTotalUser) * 100)
       : 0;
 
-  const list = circleData?.circleDataDTOs ?? [];
+  const rawList = circleData?.circleDataDTOs ?? [];
+
+  const sorted = [...rawList].sort(
+    (a, b) => b.countPerCategory - a.countPerCategory,
+  );
+  const top5 = sorted.slice(0, 5);
+  const others = sorted.slice(5);
+  const otherCount = others.reduce((sum, d) => sum + d.countPerCategory, 0);
+
+  const list =
+    otherCount > 0
+      ? [...top5, { categoryName: '기타', countPerCategory: otherCount }]
+      : top5;
+
   const maxCount = Math.max(...list.map((d) => d.countPerCategory), 1);
 
   const summaries = [
@@ -71,12 +84,12 @@ export default function CircleStatusCard({
             ) : (
               <>
                 <div className="flex items-baseline gap-0.5">
-                  <span className="text-xl font-black tracking-tight text-gray-900">
+                  <span className="text-xl font-black tracking-tight text-[#262626]">
                     {s.value}
                   </span>
                   <span className="text-xs text-gray-400">{s.unit}</span>
                 </div>
-                <p className="mt-1 text-[11px] text-gray-400">{s.label}</p>
+                <p className="mt-1 text-[11px] text-[#9B7B6A]">{s.label}</p>
               </>
             )}
           </div>
@@ -87,11 +100,11 @@ export default function CircleStatusCard({
 
       {/* 카테고리 분포 헤더 */}
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-500">
+        <span className="text-xs font-semibold text-[#6B4F3A]">
           카테고리별 분포
         </span>
         {circleData && (
-          <span className="text-[11px] text-gray-300">
+          <span className="text-[11px] text-[#9B7B6A]">
             {circleData.circleDataDTOs.length}개 카테고리
           </span>
         )}
@@ -114,31 +127,32 @@ export default function CircleStatusCard({
             );
             const color = BAR_COLORS[i % BAR_COLORS.length];
             return (
-              <div key={d.categoryName}>
-                <div className="mb-1 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <div
-                      className="h-2 w-2 rounded-full"
-                      style={{ background: color }}
-                    />
-                    <span className="text-xs text-gray-600">
-                      {d.categoryName}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-800">
-                      {d.countPerCategory}개
-                    </span>
-                    <span className="w-7 text-right text-[10px] text-gray-300">
-                      {barPct}%
-                    </span>
-                  </div>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+              <div key={d.categoryName} className="flex items-center gap-3">
+                {/* 왼쪽: 카테고리명 */}
+                <div className="flex min-w-0 flex-1 items-center gap-1.5">
                   <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${pct}%`, background: color }}
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ background: color }}
                   />
+                  <span className="truncate text-xs text-[#6B4F3A]">
+                    {d.categoryName}
+                  </span>
+                </div>
+
+                {/* 오른쪽: 바 + 숫자 */}
+                <div className="flex shrink items-center gap-2">
+                  <div className="h-1.5 w-xl overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%`, background: color }}
+                    />
+                  </div>
+                  <span className="w-8 shrink-0 text-right text-xs font-bold text-[#262626]">
+                    {d.countPerCategory}
+                  </span>
+                  <span className="w-7 shrink-0 text-right text-[10px] text-[#9B7B6A]">
+                    {barPct}%
+                  </span>
                 </div>
               </div>
             );

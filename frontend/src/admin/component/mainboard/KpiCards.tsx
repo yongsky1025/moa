@@ -1,4 +1,7 @@
-import type { AdminMainDTO, PostActivitySummaryDTO } from '../../../types/admin.types';
+import type {
+  AdminMainDTO,
+  PostActivitySummaryDTO,
+} from '../../types/adminTypes';
 
 interface Props {
   mainData: AdminMainDTO | null;
@@ -11,19 +14,19 @@ function fmtNum(n: number) {
 }
 
 const ACCENT_COLORS = [
-  'border-t-blue-400',
-  'border-t-emerald-400',
-  'border-t-amber-400',
-  'border-t-emerald-400',
-  'border-t-rose-400',
-  'border-t-violet-400',
+  'border-t-[#D07856]',
+  'border-t-[#F2935C]',
+  'border-t-[#F2BB9B]',
+  'border-t-[#B8643D]',
+  'border-t-[#D07856]',
+  'border-t-[#F24405]',
 ];
 
 function SkeletonCard({ accent }: { accent: string }) {
   return (
     <div className={`admin-card border-t-2 ${accent}`}>
-      <div className="skeleton h-3.5 w-1/2 mb-3" />
-      <div className="skeleton h-8 w-2/3 mb-2" />
+      <div className="skeleton mb-3 h-3.5 w-1/2" />
+      <div className="skeleton mb-2 h-8 w-2/3" />
       <div className="skeleton h-3 w-2/5" />
     </div>
   );
@@ -34,8 +37,11 @@ export default function KpiCards({ mainData, postData, loading }: Props) {
   const us = mainData?.userStatusDTO;
   const cs = mainData?.circleSummaryDTO;
 
-  const joinRate = uc ? Math.round((uc.countJoinUser / uc.countTotalUser) * 100) : 0;
-  const todayActivity = (postData?.todayPostCount ?? 0) + (postData?.todayReplyCount ?? 0);
+  const joinRate = uc
+    ? Math.round((uc.countJoinUser / uc.countTotalUser) * 100)
+    : 0;
+  const todayActivity =
+    (postData?.todayPostCount ?? 0) + (postData?.todayReplyCount ?? 0);
 
   const cards = [
     {
@@ -74,19 +80,26 @@ export default function KpiCards({ mainData, postData, loading }: Props) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-6 gap-3.5 mb-4">
-        {ACCENT_COLORS.map((accent, i) => <SkeletonCard key={i} accent={accent} />)}
+      <div className="mb-4 grid grid-cols-6 gap-3.5">
+        {ACCENT_COLORS.map((accent, i) => (
+          <SkeletonCard key={i} accent={accent} />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-6 gap-3.5 mb-4">
+    <div className="mb-4 grid grid-cols-6 gap-3.5">
       {cards.map((card, i) => (
-        <div key={card.label} className={`admin-card border-t-2 ${ACCENT_COLORS[i]}`}>
-          <p className="text-xs text-gray-400 mb-2">{card.label}</p>
-          <p className="text-2xl font-black text-gray-900 tracking-tight leading-tight">{card.value}</p>
-          <p className="text-xs text-gray-400 mt-1.5">{card.sub}</p>
+        <div
+          key={card.label}
+          className={`admin-card border-t-2 ${ACCENT_COLORS[i]}`}
+        >
+          <p className="mb-2 text-xs text-[#9B7B6A]">{card.label}</p>
+          <p className="text-2xl leading-tight font-black tracking-tight text-[#262626]">
+            {card.value}
+          </p>
+          <p className="mt-1.5 text-xs text-[#9B7B6A]">{card.sub}</p>
         </div>
       ))}
     </div>

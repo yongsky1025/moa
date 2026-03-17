@@ -1,4 +1,4 @@
-import type { UserCountDTO } from '../types/adminTypes';
+import type { UserCountDTO } from '../../types/adminTypes';
 
 interface Props {
   data: UserCountDTO | null;
@@ -6,9 +6,9 @@ interface Props {
 }
 
 const COLORS = {
-  male: { stroke: '#5b8dee', bg: 'bg-blue-400', dot: 'bg-blue-400' },
-  female: { stroke: '#e88a9a', bg: 'bg-pink-400', dot: 'bg-pink-400' },
-  unspecified: { stroke: '#d1d5db', bg: 'bg-gray-300', dot: 'bg-gray-300' },
+  male: { stroke: '#D07856', dot: 'bg-[#D07856]' },
+  female: { stroke: '#F2935C', dot: 'bg-[#F2935C]' },
+  unspecified: { stroke: '#F2BB9B', dot: 'bg-[#F2BB9B]' },
 };
 
 interface Seg {
@@ -81,7 +81,7 @@ function DonutSVG({ segs, total }: { segs: Seg[]; total: number }) {
           transform={`rotate(-90 ${cx} ${cy})`}
         />
       ))}
-      <text x={cx} y={cy - 7} textAnchor="middle" fontSize="11" fill="#9ca3af">
+      <text x={cx} y={cy - 7} textAnchor="middle" fontSize="11" fill="#9B7B6A">
         전체
       </text>
       <text
@@ -90,7 +90,7 @@ function DonutSVG({ segs, total }: { segs: Seg[]; total: number }) {
         textAnchor="middle"
         fontSize="15"
         fontWeight="700"
-        fill="#111827"
+        fill="#262626"
       >
         {total.toLocaleString('ko-KR')}
       </text>
@@ -125,12 +125,12 @@ export default function GenderDonutCard({ data, loading }: Props) {
                   <div
                     className={`h-2 w-2 rounded-full ${COLORS[s.key].dot}`}
                   />
-                  <span className="text-xs text-gray-500">{s.label}</span>
+                  <span className="text-xs text-[#9B7B6A]">{s.label}</span>
                 </div>
-                <p className="text-sm font-bold text-gray-800">
+                <p className="text-sm font-bold text-[#262626]">
                   {s.count.toLocaleString('ko-KR')}명
                 </p>
-                <p className="mt-0.5 text-[10px] text-gray-400">{s.ratio}%</p>
+                <p className="mt-0.5 text-[10px] text-[#9B7B6A]">{s.ratio}%</p>
               </div>
             ))}
           </div>

@@ -1,5 +1,6 @@
 export type UserRole = 'USER' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'WITHDRAWN' | 'SUSPENDED' | 'BANNED';
+export type UserGender = 'MALE' | 'FEMALE' | 'UNSPECIFIED'; // 미설정
 
 export type CircleStatus = 'OPEN' | 'FULL' | 'CLOSED' | 'PENDING' | 'REJECTED';
 export type CircleMemberRole = 'LEADER' | 'MEMBER';
@@ -33,14 +34,14 @@ export interface PageRequestDTO {
 /** PageResultDTO<T> */
 export interface PageResultDTO<T> {
   dtoList: T[];
-  totalCount: number;
-  page: number;
-  size: number;
-  start: number;
-  end: number;
+  pageNumList: number[];
   prev: boolean;
   next: boolean;
-  pageList: number[];
+  prevPage: number;
+  nextPage: number;
+  totalPage: number;
+  current: number; // (1-based)
+  totalCount: number;
 }
 
 // 유저 수, 성비, 모임가입현황
@@ -108,7 +109,7 @@ export interface PostActivitySummaryDTO {
 // ================= 유저관리 ==============
 export interface AdminUserSearchDTO extends PageRequestDTO {
   name?: string;
-  gender?: 'MALE' | 'FEMALE' | 'UNSPECIFIED'; // 미설정
+  gender?: UserGender;
   status?: UserStatus;
   role?: UserRole;
 }
@@ -118,7 +119,7 @@ export interface AdminUserResponseDTO {
   name: string;
   age: number;
   birth: string; // LocalDate → "yyyy-MM-dd"
-  gender?: 'MALE' | 'FEMALE' | 'UNSPECIFIED';
+  gender?: UserGender;
   role: UserRole;
   status: UserStatus;
   createDate: string; // LocalDateTime → ISO 8601
@@ -133,6 +134,14 @@ export interface UserInfoDTO {
   countCreateBoard: number;
   countCreateReply: number;
   countJoinCircle: number;
+}
+
+export interface UserInfoPostDTO {
+  boardName: number;
+  title: string;
+  content: string;
+  createDate: string;
+  countReply: number;
 }
 
 export interface UserInfoReplyDTO {
