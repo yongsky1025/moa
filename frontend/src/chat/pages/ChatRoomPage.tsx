@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { chatApi } from '../api/chatApi';
+import { chatApi } from '../../api/chatApi';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { useAuthStore } from '../store/authStore';
-import EmojiPicker from '../components/chat/EmojiPicker';
+import { useAuthStore } from '../../store/authStore';
+import EmojiPicker from '../components/EmojiPicker';
 import type { ChatMessage } from '../types/chat';
 
 export default function ChatRoomPage() {

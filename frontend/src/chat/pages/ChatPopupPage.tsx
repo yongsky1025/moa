@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { chatApi } from '../api/chatApi';
+import { chatApi } from '../../api/chatApi';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { useAuthStore } from '../store/authStore';
-import { notificationApi } from '../api/notificationApi';
+import { useAuthStore } from '../../store/authStore';
+import { notificationApi } from '../../api/notificationApi';
 import type { ChatRoomSummary, ChatMessage } from '../types/chat';
-import type { Notification } from '../types/notification';
+import type { Notification } from '../../types/notification';
 
 export default function ChatPopupPage() {
   const { userId } = useAuthStore();
