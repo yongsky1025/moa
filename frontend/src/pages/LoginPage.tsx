@@ -16,8 +16,8 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const data = await authApi.login({ email, password });
-      setAuth(data.accessToken, data.user);
+      const res = await authApi.login({ email, password });
+      setAuth(res.data.accessToken, res.data.user);
       navigate('/chat');
     } catch {
       setError('이메일 또는 비밀번호가 올바르지 않습니다.');
