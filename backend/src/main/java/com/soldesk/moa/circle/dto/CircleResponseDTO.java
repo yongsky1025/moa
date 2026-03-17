@@ -13,7 +13,9 @@ public class CircleResponseDTO {
     private CircleStatus status;
     private int maxMember;
     private int currentMember;
+    private Long categoryId;
     private String categoryName;
+    private String coverImageUrl;
 
     public static CircleResponseDTO from(Circle circle) {
         return new CircleResponseDTO(circle);
@@ -26,6 +28,8 @@ public class CircleResponseDTO {
         this.status = circle.getStatus();
         this.maxMember = circle.getMaxMember();
         this.currentMember = circle.getCurrentMember();
+        this.categoryId = circle.getCategory().getCategoryId();
         this.categoryName = circle.getCategory().getCategoryName();
+        this.coverImageUrl = circle.getCoverImage() != null ? circle.getCoverImage().getPath() : null;
     }
 }

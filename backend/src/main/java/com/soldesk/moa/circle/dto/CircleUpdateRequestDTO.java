@@ -1,5 +1,7 @@
 package com.soldesk.moa.circle.dto;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -15,4 +17,8 @@ public class CircleUpdateRequestDTO {
 
     @Size(max = 255, message = "설명은 255자 이내여야 합니다.")
     private String description;
+
+    @Min(value = 10, message = "최대 인원은 최소 10명 이상이어야 합니다.")
+    @Max(value = 250, message = "최대 인원은 250명을 초과할 수 없습니다.")
+    private Integer maxMember;
 }

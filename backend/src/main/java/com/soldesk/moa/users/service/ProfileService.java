@@ -32,7 +32,16 @@ public class ProfileService {
                 .userGender(user.getUserGender())
                 .birthDate(user.getBirthDate())
                 .age(user.getAge())
+                .statusMessage(user.getStatusMessage())
                 .build();
+    }
+
+    // 상태 메시지 변경
+    @Transactional
+    public void changeStatusMessage(Long userId, String statusMessage) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+        user.changeStatusMessage(statusMessage);
     }
 
     // 닉네임 변경
