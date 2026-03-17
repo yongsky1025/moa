@@ -5,14 +5,12 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.soldesk.moa.board.common.exception.NotFoundException;
 import com.soldesk.moa.board.board.dto.BoardRequestDTO;
 import com.soldesk.moa.board.board.dto.BoardResponseDTO;
 import com.soldesk.moa.board.board.entity.Board;
-import com.soldesk.moa.board.post.entity.Post;
 import com.soldesk.moa.board.board.entity.constant.BoardType;
+import com.soldesk.moa.board.common.exception.NotFoundException;
 import com.soldesk.moa.board.board.repository.BoardRepository;
-import com.soldesk.moa.board.post.repository.PostRepository;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
 
@@ -30,7 +28,7 @@ public class BoardService {
 
     // ===== Global boards =====
     public List<BoardResponseDTO> listGlobalBoards() {
-        return List.of(BoardType.NOTICE, BoardType.FREE, BoardType.SUPPORT).stream()
+        return List.of(BoardType.NOTICE, BoardType.FREE).stream()
                 .map(this::getGlobalBoardOrThrow)
                 .map(this::toBoardResponse)
                 .toList();
@@ -65,6 +63,13 @@ public class BoardService {
                 .stream()
                 .map(this::toBoardResponse)
                 .toList();
+    }
+
+    public BoardResponseDTO readCircleBoard(Long circleId, Long boardId) {
+        Board board = boardRepository
+                .findByBoardIdAndBoardTypeAndCircleId_CircleId(boardId, BoardType.CIRCLE, circleId)
+                .orElseThrow(() -> new NotFoundException("board not found"));
+        return toBoardResponse(board);
     }
 
     @Transactional

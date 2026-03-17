@@ -1,40 +1,28 @@
 package com.soldesk.moa.board.board.controller;
 
-import java.net.URI;
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.board.board.dto.BoardRequestDTO;
 import com.soldesk.moa.board.board.dto.BoardResponseDTO;
-import com.soldesk.moa.board.post.dto.PostRequestDTO;
-import com.soldesk.moa.board.post.dto.PostResponseDTO;
-import com.soldesk.moa.board.post.entity.Post;
 import com.soldesk.moa.board.board.entity.constant.BoardType;
-import com.soldesk.moa.board.post.repository.PostRepository;
 import com.soldesk.moa.board.board.service.BoardService;
-import com.soldesk.moa.board.post.service.PostService;
-import com.soldesk.moa.auth.dto.AuthUserDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "Response Circle Board", description = "써클 보드 API")
 @Log4j2
@@ -50,6 +38,13 @@ public class CircleBoardRestController {
     @GetMapping
     public List<BoardResponseDTO> list(@PathVariable("circleId") Long circleId) {
         return boardService.listCircleBoards(circleId);
+    }
+
+    @Operation(summary = "Circle/Board 상세 조회", description = "해당 써클의 게시판 단건 조회 API")
+    @GetMapping("/{boardId}")
+    public BoardResponseDTO read(@PathVariable("circleId") Long circleId,
+            @PathVariable("boardId") Long boardId) {
+        return boardService.readCircleBoard(circleId, boardId);
     }
 
     // 게시판 생성 (일단 로그인만 컷, 방장/관리자 확장은 나중에)

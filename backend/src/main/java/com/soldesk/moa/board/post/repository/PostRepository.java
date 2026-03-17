@@ -39,7 +39,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostSearchRep
   Optional<Post> findGlobalPost(@Param("type") BoardType type, @Param("postId") Long postId);
 
   // 댓글 갯수 포함 글로벌 게시글 조회
-  // 공지/자유/지원 (글로벌)
+  // 공지/자유 (글로벌)
   @Query("""
           select p, count(r)
           from Post p

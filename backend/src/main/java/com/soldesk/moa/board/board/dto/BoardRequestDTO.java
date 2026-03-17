@@ -1,12 +1,9 @@
 package com.soldesk.moa.board.board.dto;
 
-import java.time.LocalDateTime;
-
 import com.soldesk.moa.board.board.entity.constant.BoardType;
-import com.soldesk.moa.circle.entity.Circle;
 
-import groovyjarjarantlr4.v4.runtime.misc.NotNull;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,7 +19,7 @@ import lombok.ToString;
 @ToString
 public class BoardRequestDTO {
 
-    // 만들 때는 boardType이 필요 (NOTICE/FREE/SUPPORT/CIRCLE)
+    // 만들 때는 boardType이 필요 (NOTICE/FREE/CIRCLE)
     @NotNull
     private BoardType boardType;
 

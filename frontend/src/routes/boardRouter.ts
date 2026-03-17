@@ -1,3 +1,5 @@
+import { boardRoutes } from '../board/pages/routes';
+
 export const boardRouter = () => {
-  return [{}];
+  return boardRoutes;
 };

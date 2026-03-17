@@ -84,8 +84,8 @@ public class SecurityConfig {
                                                 // 보드 css, js
                                                 .requestMatchers("/board/**").permitAll()
                                                 // board 열람 비회원도 허용(컨트롤러에서 crud 권한 설정예정)
-                                                .requestMatchers("/notice/**", "/free/**", "/support/**").permitAll()
-                                                .requestMatchers("/api/notice/**", "/api/free/**", "/api/support/**")
+                                                .requestMatchers("/notice/**", "/free/**").permitAll()
+                                                .requestMatchers("/api/notice/**", "/api/free/**")
                                                 .permitAll()
                                                 .requestMatchers("/api/circle/*/posts/**",
                                                                 "/api/circle/*/boards/*/posts/**")

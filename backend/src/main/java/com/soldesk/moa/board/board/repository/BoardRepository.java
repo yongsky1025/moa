@@ -14,7 +14,7 @@ import com.soldesk.moa.board.board.entity.constant.BoardType;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
 
-    // Global 고정 보드 찾기 (NOTICE/FREE/SUPPORT)
+    // Global 고정 보드 찾기 (NOTICE/FREE)
     Optional<Board> findByBoardTypeAndCircleIdIsNull(BoardType type);
 
     // Circle 보드 검증: boardId + circleId가 맞는지

@@ -32,11 +32,10 @@ public class BoardRepositoryTest {
 
     @Test
     public void testInserBoard() {
-        IntStream.rangeClosed(1, 3).forEach(i -> {
+        IntStream.rangeClosed(1, 2).forEach(i -> {
             BoardType type = switch (i) {
                 case 1 -> BoardType.NOTICE;
                 case 2 -> BoardType.FREE;
-                case 3 -> BoardType.SUPPORT;
                 default -> BoardType.CIRCLE;
             };
 
@@ -48,7 +47,7 @@ public class BoardRepositoryTest {
             boardRepository.save(board);
         });
         IntStream.rangeClosed(1, 17).forEach(i -> {
-            long boardNo = i + 3;
+            long boardNo = i + 2;
             Board board = Board.builder()
                     .boardType(BoardType.CIRCLE)
                     .name("게시판" + boardNo)
