@@ -47,6 +47,7 @@ export default function ScheduleFormPage() {
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const infowindowsRef = useRef<any[]>([]);
+  const initialMarkerSetRef = useRef(false);
 
   // Kakao Maps SDK 초기화
   useEffect(() => {
@@ -81,9 +82,28 @@ export default function ScheduleFormPage() {
           endAt: toInputDatetime(s.endAt),
           maxMember: s.maxMember,
         });
+        if (s.location && s.latitude && s.longitude) {
+          setSelectedPlace({
+            name: s.location,
+            address: s.location,
+            latitude: s.latitude,
+            longitude: s.longitude,
+          });
+        }
       })
       .catch(() => setError('일정 정보를 불러올 수 없습니다.'));
   }, [isEdit, sid]);
+
+  // 수정 모드: 기존 위치 마커 표시
+  useEffect(() => {
+    if (!kakaoReady || !mapRef.current || !selectedPlace || initialMarkerSetRef.current) return;
+    initialMarkerSetRef.current = true;
+    const position = new kakao.maps.LatLng(selectedPlace.latitude, selectedPlace.longitude);
+    const marker = new kakao.maps.Marker({ map: mapRef.current, position });
+    markersRef.current.push(marker);
+    mapRef.current.setCenter(position);
+    mapRef.current.setLevel(3);
+  }, [kakaoReady, selectedPlace]);
 
   const clearMarkers = () => {
     infowindowsRef.current.forEach(iw => iw.close());
