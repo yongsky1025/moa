@@ -6,7 +6,5 @@ public enum NotificationType {
     JOIN_REJECTED,  // 신청자에게: 거절
     KICKED,         // 강퇴된 멤버에게
     CHAT_MESSAGE,     // 채팅 메시지 수신
-    CIRCLE_DISBANDED, // 모임 해산
-    COMMENT,          // 내 게시글에 댓글
-    REPLY_COMMENT     // 내 댓글에 답글
+    CIRCLE_DISBANDED  // 모임 해산
 }

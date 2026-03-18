@@ -5,6 +5,7 @@ import { Users } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { circleApi } from '../../api/circleApi';
+import { chatApi } from '../../api/chatApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
 import type { CircleResponse, CircleMember } from '../types/circle';
 import type { RootState } from '../../users/reducers/store';
@@ -35,6 +36,7 @@ export default function CircleDetailPage() {
   const [myMember, setMyMember] = useState<CircleMember | null>(null);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
+  const [selectedMember, setSelectedMember] = useState<CircleMember | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -69,6 +71,13 @@ export default function CircleDetailPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // 바깥 클릭 시 팝오버 닫기
+  useEffect(() => {
+    const close = () => setSelectedMember(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, []);
+
   const action = async (fn: () => Promise<unknown>, successMsg: string) => {
     try {
       await fn();
@@ -99,6 +108,16 @@ export default function CircleDetailPage() {
   const handleDelegate = (memberId: number, nickname: string) => {
     if (!confirm(`${nickname}님에게 리더를 위임하시겠습니까?`)) return;
     action(() => circleApi.delegateLeader(cid, memberId), '리더를 위임했습니다.');
+  };
+
+  const handleDirectChat = async (targetUserId: number) => {
+    try {
+      const roomId = await chatApi.getOrCreateDirectRoom(targetUserId);
+      window.open(`/chat/popup#room-${roomId}`, 'moa-chat', 'width=760,height=600,resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no');
+    } catch {
+      setMsg('오류: 채팅방을 열 수 없습니다.');
+    }
+    setSelectedMember(null);
   };
 
   if (loading) return (
@@ -256,14 +275,19 @@ export default function CircleDetailPage() {
               {activeMembers.map(m => (
                 <div key={m.circleMemberId} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '12px 0', borderBottom: '1px solid #f5f5f5',
+                  padding: '12px 0', borderBottom: '1px solid #f5f5f5', position: 'relative',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: '50%',
-                      backgroundColor: m.role === 'LEADER' ? '#111' : '#e5e7eb',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
+                    {/* 아바타 - 클릭하면 팝오버 (내 계정 제외) */}
+                    <div
+                      onClick={(e) => { e.stopPropagation(); m.nickname !== user?.nickname && setSelectedMember(selectedMember?.circleMemberId === m.circleMemberId ? null : m); }}
+                      style={{
+                        width: 36, height: 36, borderRadius: '50%',
+                        backgroundColor: m.role === 'LEADER' ? '#111' : '#e5e7eb',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: m.nickname !== user?.nickname ? 'pointer' : 'default',
+                      }}
+                    >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke={m.role === 'LEADER' ? 'white' : '#6b7280'}
                         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -278,6 +302,22 @@ export default function CircleDetailPage() {
                         </span>
                       )}
                     </div>
+
+                    {/* 1:1 채팅 팝오버 */}
+                    {selectedMember?.circleMemberId === m.circleMemberId && isLoggedIn && (
+                      <div onClick={(e) => e.stopPropagation()} style={{
+                        position: 'absolute', left: 50, top: 4,
+                        background: 'white', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                        padding: '6px 4px', zIndex: 200, display: 'flex', flexDirection: 'column', minWidth: 110,
+                      }}>
+                        <button
+                          onClick={() => handleDirectChat(m.userId)}
+                          style={{ ...smallBtnStyle, background: '#111', color: 'white', border: 'none', textAlign: 'center' }}
+                        >
+                          💬 1:1 채팅
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* 리더 전용 멤버 관리 버튼 */}

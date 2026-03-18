@@ -24,7 +24,7 @@ export default function Layout() {
         </span>
         <div style={styles.right}>
           <NotificationBell />
-          <span style={styles.nick} onClick={() => navigate('/profile')}>{user?.nickname ?? ''}</span>
+<span style={styles.nick} onClick={() => navigate('/profile')}>{user?.nickname ?? ''}</span>
           <button onClick={handleLogout} style={styles.logoutBtn}>
             로그아웃
           </button>
@@ -52,6 +52,7 @@ const styles: Record<string, React.CSSProperties> = {
   logo: { fontWeight: 'bold', fontSize: 20, cursor: 'pointer' },
   right: { display: 'flex', alignItems: 'center', gap: 16 },
   nick: { fontSize: 14, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.5)' },
+  chatBtn: { background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', padding: '0 4px' },
   logoutBtn: {
     background: 'rgba(255,255,255,0.2)',
     border: 'none',

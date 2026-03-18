@@ -2,7 +2,7 @@ spring:
   application:
     name: moa
   profiles:
-    include: oauth2
+    include: local, oauth2
   # Redis (채팅 메시지 브로커)
   data:
     redis:

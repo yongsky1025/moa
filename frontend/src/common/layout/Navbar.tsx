@@ -207,6 +207,36 @@ export default function Navbar() {
               {isLoggedIn ? '로그아웃' : '로그인'}
             </button>
           </div>
+
+          {/* 채팅 아이콘 - 프로필 옆 */}
+          {isLoggedIn && (
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => window.open('/chat/popup', 'moa-chat', 'width=760,height=600,resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no')}
+                title="채팅"
+                style={{
+                  width: 34, height: 34, borderRadius: '50%', border: 'none',
+                  backgroundColor: '#f0f0f0', color: '#111', fontSize: 18,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                💬
+              </button>
+              {unreadChatCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: -3, right: -3,
+                  backgroundColor: '#ef4444', color: '#fff',
+                  borderRadius: '50%', width: 16, height: 16,
+                  fontSize: 10, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  pointerEvents: 'none',
+                }}>
+                  {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                </span>
+              )}
+            </div>
+          )}
+
           <div
             style={{
               width: 72,
@@ -218,26 +248,12 @@ export default function Navbar() {
             {isLoggedIn ? (
               <div
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: '50%',
-                  backgroundColor: '#111',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
+                  width: 34, height: 34, borderRadius: '50%',
+                  backgroundColor: '#111', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                 }}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="8" r="4" />
                   <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
                 </svg>
@@ -246,15 +262,9 @@ export default function Navbar() {
               <button
                 onClick={() => navigate('/users/signup')}
                 style={{
-                  padding: '5px 0',
-                  width: '100%',
-                  borderRadius: 6,
-                  border: 'none',
-                  background: '#111',
-                  color: 'white',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
+                  padding: '5px 0', width: '100%', borderRadius: 6,
+                  border: 'none', background: '#111', color: 'white',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}
               >
                 회원가입
@@ -263,43 +273,6 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-      {isLoggedIn && (
-        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 1000 }}>
-          <button
-            onClick={() => navigate('/chat')}
-            title="채팅"
-            style={{
-              width: 56, height: 56, borderRadius: '50%', border: 'none',
-              backgroundColor: '#111', color: '#fff', fontSize: 24,
-              cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'background-color 0.2s, transform 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#333';
-              (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#111';
-              (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-            }}
-          >
-            💬
-          </button>
-          {unreadChatCount > 0 && (
-            <span style={{
-              position: 'absolute', top: -4, right: -4,
-              backgroundColor: '#ef4444', color: '#fff',
-              borderRadius: '50%', width: 20, height: 20,
-              fontSize: 11, fontWeight: 700,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              pointerEvents: 'none',
-            }}>
-              {unreadChatCount > 99 ? '99+' : unreadChatCount}
-            </span>
-          )}
-        </div>
-      )}
     </header>
   );
 }

@@ -7,6 +7,8 @@ export interface ChatRoomSummary {
   lastMessage: string | null;
   lastMessageAt: string | null;
   unreadCount: number;
+  otherUserNickname: string | null;
+  name: string | null;
 }
 
 export interface ChatMessage {

@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import LandingPage from '../common/LandingPage';
 import MainIndexWrapper from './MainIndexWrapper';
 import { userRouter } from './userRouter';
@@ -12,6 +12,10 @@ const rootRouter = createBrowserRouter([
   {
     path: '/',
     Component: LandingPage,
+  },
+  {
+    path: '/login',
+    loader: () => { window.location.replace('/users/login'); return null; },
   },
   {
     path: '/main',

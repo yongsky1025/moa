@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { chatApi } from '../../api/chatApi';
+import { circleApi } from '../../api/circleApi';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useAuthStore } from '../../store/authStore';
 import EmojiPicker from '../components/EmojiPicker';
-import type { ChatMessage } from '../types/chat';
+import type { ChatMessage, ChatRoomSummary } from '../types/chat';
+import type { CircleMember } from '../../circle/types/circle';
 
 export default function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -19,6 +21,9 @@ export default function ChatRoomPage() {
   const [editContent, setEditContent] = useState('');
   const [menuId, setMenuId] = useState<number | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  const [roomInfo, setRoomInfo] = useState<ChatRoomSummary | null>(null);
+  const [members, setMembers] = useState<CircleMember[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
@@ -34,6 +39,20 @@ export default function ChatRoomPage() {
   }, [rid]);
 
   useEffect(() => { loadMessages(); }, [loadMessages]);
+
+  // 방 정보 및 멤버 로드
+  useEffect(() => {
+    chatApi.getMyRooms().then((rooms) => {
+      const room = rooms.find((r) => r.roomId === rid);
+      if (!room) return;
+      setRoomInfo(room);
+      if (room.roomType === 'GROUP' && room.circleId) {
+        circleApi.getActiveMembers(room.circleId, { size: 100 })
+          .then((res) => setMembers(res.data.dtoList ?? []))
+          .catch(() => {});
+      }
+    }).catch(() => {});
+  }, [rid]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -120,8 +139,29 @@ export default function ChatRoomPage() {
     <div style={styles.container}>
       <div style={styles.header}>
         <button onClick={() => navigate('/chat')} style={styles.backBtn}>←</button>
-        <span style={styles.headerTitle}>채팅방 #{rid}</span>
+        <span style={styles.headerTitle}>
+          {roomInfo?.roomType === 'DIRECT' ? (roomInfo.otherUserNickname ?? '1:1 채팅') : `채팅방 #${rid}`}
+        </span>
+        {roomInfo?.roomType === 'GROUP' && (
+          <button onClick={() => setShowMembers((v) => !v)} style={styles.memberBtn}>
+            👥 {members.length}명
+          </button>
+        )}
       </div>
+
+      {/* 멤버 패널 */}
+      {showMembers && roomInfo?.roomType === 'GROUP' && (
+        <div style={styles.memberPanel}>
+          <div style={styles.memberPanelTitle}>멤버 ({members.length}명)</div>
+          {members.map((m) => (
+            <div key={m.circleMemberId} style={styles.memberItem}>
+              <span style={styles.memberAvatar}>{m.nickname.charAt(0)}</span>
+              <span style={styles.memberNick}>{m.nickname}</span>
+              {m.role === 'LEADER' && <span style={styles.leaderBadge}>방장</span>}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={styles.msgArea}>
         {messages.length === 0 && <div style={styles.empty}>첫 메시지를 보내보세요!</div>}
@@ -242,7 +282,14 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   backBtn: { background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '0 4px' },
-  headerTitle: { fontWeight: 'bold', fontSize: 16 },
+  headerTitle: { fontWeight: 'bold', fontSize: 16, flex: 1 },
+  memberBtn: { background: '#e3f2fd', border: 'none', borderRadius: 16, padding: '5px 12px', cursor: 'pointer', fontSize: 13, color: '#1976d2', fontWeight: 'bold' },
+  memberPanel: { background: '#fff', borderBottom: '1px solid #eee', padding: '10px 16px', display: 'flex', flexDirection: 'column' as const, gap: 6, maxHeight: 200, overflowY: 'auto' as const, flexShrink: 0 },
+  memberPanelTitle: { fontWeight: 'bold', fontSize: 13, color: '#555', marginBottom: 4 },
+  memberItem: { display: 'flex', alignItems: 'center', gap: 8 },
+  memberAvatar: { width: 28, height: 28, borderRadius: '50%', background: '#1976d2', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 'bold', flexShrink: 0 } as React.CSSProperties,
+  memberNick: { fontSize: 13, color: '#333' },
+  leaderBadge: { fontSize: 10, background: '#fff3e0', color: '#e65100', borderRadius: 8, padding: '2px 6px', fontWeight: 'bold' },
   msgArea: {
     flex: 1,
     overflowY: 'auto',
