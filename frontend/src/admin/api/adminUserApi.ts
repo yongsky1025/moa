@@ -1,8 +1,5 @@
 import axios from 'axios';
-import type {
-  AdminUserSearchDTO,
-  PageRequestDTO,
-} from '../types/adminTypes';
+import type { AdminUserSearchDTO, PageRequestDTO } from '../types/adminTypes';
 import { API_SERVER_HOST_ADMIN } from './adminDashboardApi';
 
 export const fetchAdminUserList = async (dto: AdminUserSearchDTO) => {
@@ -31,9 +28,12 @@ export const fetchAdminUserProfile = async (id: number) => {
 
 export const fetchAdminUserPosts = async (id: number, dto: PageRequestDTO) => {
   const { page, size = 10 } = dto;
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/users/profile/${id}/post`, {
-    params: { page: page, size: size },
-  });
+  const res = await axios.get(
+    `${API_SERVER_HOST_ADMIN}/users/profile/${id}/post`,
+    {
+      params: { page: page, size: size },
+    },
+  );
 
   console.log('users posts', res);
 
@@ -45,9 +45,12 @@ export const fetchAdminUserReplies = async (
   dto: PageRequestDTO,
 ) => {
   const { page, size = 10 } = dto;
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/users/profile/${id}/reply`, {
-    params: { page: page, size: size },
-  });
+  const res = await axios.get(
+    `${API_SERVER_HOST_ADMIN}/users/profile/${id}/reply`,
+    {
+      params: { page: page, size: size },
+    },
+  );
 
   console.log('users replies', res);
 
@@ -59,9 +62,12 @@ export const fetchAdminUserCircles = async (
   dto: PageRequestDTO,
 ) => {
   const { page, size = 10 } = dto;
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/users/profile/${id}/circle`, {
-    params: { page: page, size: size },
-  });
+  const res = await axios.get(
+    `${API_SERVER_HOST_ADMIN}/users/profile/${id}/circle`,
+    {
+      params: { page: page, size: size },
+    },
+  );
 
   console.log('users replies', res);
 

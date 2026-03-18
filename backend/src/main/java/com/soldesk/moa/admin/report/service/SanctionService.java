@@ -66,6 +66,13 @@ public class SanctionService {
                 .build();
     }
 
+    // 특정 제재 조회
+    public SanctionResponseDTO getOneSanction(Long sanctionId) {
+        Sanction sanction = sanctionRepository.findById(sanctionId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 제재입니다."));
+        return entityToDto(sanction);
+    }
+
     // 제재 처리
     @Transactional
     public void applySanction(Long adminId, SanctionRequestDTO dto) {
@@ -195,7 +202,7 @@ public class SanctionService {
         }
     }
 
-    // 제재 정상 해제
+    // 제재 수동 해제 메소드
     @Transactional
     public void liftSanction(Long sanctionId) {
         Sanction sanction = sanctionRepository.findById(sanctionId)

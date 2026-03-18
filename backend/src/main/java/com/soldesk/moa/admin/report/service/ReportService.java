@@ -72,16 +72,20 @@ public class ReportService {
     }
 
     // 신고 상세 조회
-    @Transactional(readOnly = true)
     public ReportResponseDTO getOneReport(Long reportId) {
         Report report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 신고입니다."));
+
+        // 신고 조회 순간 status 검토중으로 변경
+        if (report.getStatus() == ReportStatus.PENDING) {
+            report.setStatus(ReportStatus.REVIEWING);
+        }
 
         return entityToDto(report);
     }
 
     // 신고 상태 변경(status 변경, adminNote추가)
-    public void updateReport(Long reportId, ReportStatus status, String adminNote) {
+    public void updateReportStatus(Long reportId, ReportStatus status, String adminNote) {
         Report report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 신고입니다."));
         report.setStatus(status);

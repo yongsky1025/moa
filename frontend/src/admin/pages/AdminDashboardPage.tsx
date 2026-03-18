@@ -3,27 +3,38 @@
 // 대시보드 콘텐츠만 남김
 
 import '../styles/dashboard.css';
-import { useAdminMain }    from '../hooks/UseAdminMain';
-import { usePostActivity } from '../hooks/UsePostActivity';
-import KpiCards            from '../component/mainboard/KpiCards';
-import GenderDonutCard     from '../component/mainboard/GenderDonutCard';
-import MonthlyTrendCard    from '../component/mainboard/MonthlyTrendCard';
-import CircleStatusCard    from '../component/mainboard/CircleStatusCard';
-import PostActivityCard    from '../component/mainboard/PostActivityCard';
-import QuickActionsCard    from '../component/mainboard/QuickActionsCard';
+import KpiCards from '../component/mainboard/KpiCards';
+import GenderDonutCard from '../component/mainboard/GenderDonutCard';
+import MonthlyTrendCard from '../component/mainboard/MonthlyTrendCard';
+import CircleStatusCard from '../component/mainboard/CircleStatusCard';
+import PostActivityCard from '../component/mainboard/PostActivityCard';
+import QuickActionsCard from '../component/mainboard/QuickActionsCard';
+import { useAdminPostActivity } from '../hooks/useAdminPostActivity';
+import { useAdminMain } from '../hooks/useAdminMain';
 
 export default function AdminDashboardPage() {
-  const { data: mainData, loading: mainLoading, error: mainError, refetch: refetchMain } = useAdminMain();
-  const { data: postData, loading: postLoading } = usePostActivity();
+  const {
+    data: mainData,
+    loading: mainLoading,
+    error: mainError,
+    refetch: refetchMain,
+  } = useAdminMain();
+  const {
+    data: postData,
+    loading: postLoading,
+    refetch: refetchPost,
+  } = useAdminPostActivity();
   const loading = mainLoading || postLoading;
 
   return (
-    <div className="px-7 pb-16 pt-8">
-
+    <div className="px-7 pt-8 pb-16">
       {/* 헤더 */}
       <div className="mb-7 flex items-end justify-between">
         <div>
-          <h1 className="mb-1 text-2xl font-black tracking-tight" style={{ color: '#262626' }}>
+          <h1
+            className="mb-1 text-2xl font-black tracking-tight"
+            style={{ color: '#262626' }}
+          >
             관리자 대시보드
           </h1>
           <p className="text-sm" style={{ color: '#9B7B6A' }}>
@@ -31,8 +42,11 @@ export default function AdminDashboardPage() {
           </p>
         </div>
         <button
-          onClick={refetchMain}
-          className="refetch-btn flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#F2E8E0] bg-white px-3.5 py-1.75 text-xs text-[#9B7B6A] transition-colors duration-150 hover:bg-[#FDF0E8]"
+          onClick={() => {
+            refetchMain();
+            refetchPost();
+          }}
+          className="refetch-btn border-moa-border flex cursor-pointer items-center gap-1.5 rounded-lg border bg-white px-3.5 py-1.75 text-xs text-[#9B7B6A] transition-colors duration-150 hover:bg-[#FDF0E8]"
         >
           ↻ 새로고침
         </button>
@@ -50,8 +64,14 @@ export default function AdminDashboardPage() {
 
       {/* Row 2: 성비 + 사용자 증감 추이 */}
       <div className="mb-4 grid grid-cols-[1fr_2.4fr] gap-3.5">
-        <GenderDonutCard data={mainData?.userCountDTO ?? null} loading={mainLoading} />
-        <MonthlyTrendCard data={mainData?.dashboardChartDTO ?? null} loading={mainLoading} />
+        <GenderDonutCard
+          data={mainData?.userCountDTO ?? null}
+          loading={mainLoading}
+        />
+        <MonthlyTrendCard
+          data={mainData?.dashboardChartDTO ?? null}
+          loading={mainLoading}
+        />
       </div>
 
       {/* Row 3: 모임 현황 + 게시글 활동 */}

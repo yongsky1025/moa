@@ -43,8 +43,8 @@ public class SearchSanctionRepositoryImpl implements SearchSanctionRepository {
         }
 
         // 검색(이름으로만)
-        if (filterDTO.getType() == "name" && filterDTO.getKeyword() != null && !filterDTO.getKeyword().isBlank()) {
-            builder.and(sanction.targetUser.name.eq(filterDTO.getKeyword()));
+        if ("name".equals(filterDTO.getType()) && filterDTO.getKeyword() != null && !filterDTO.getKeyword().isBlank()) {
+            builder.and(sanction.targetUser.name.contains(filterDTO.getKeyword()));
         }
 
         List<Sanction> content = queryFactory

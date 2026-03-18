@@ -26,4 +26,6 @@ public interface SearchCircleRepository {
 
     // 시간대별 활동량 - 모임(생성)
     List<Object[]> findCircleCreateActivity(LocalDateTime since);
+
+    // 모임 상세 조회
 }

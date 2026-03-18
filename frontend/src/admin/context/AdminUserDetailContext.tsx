@@ -1,6 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { PageRequestDTO, PageResultDTO, UserInfoCircleDTO, UserInfoDTO, UserInfoPostDTO, UserInfoReplyDTO } from '../types/adminTypes';
+import type {
+  PageRequestDTO,
+  PageResultDTO,
+  SanctionResponseDTO,
+  UserInfoCircleDTO,
+  UserInfoDTO,
+  UserInfoPostDTO,
+  UserInfoReplyDTO,
+} from '../types/adminTypes';
 import { fetchAdminUserCircles, fetchAdminUserPosts, fetchAdminUserProfile, fetchAdminUserReplies } from '../api/adminUserApi';
+import { fetchUserSanctionHistory } from '../api/adminReportAndSanctionApi';
 
 export type UserHistoryKind = 'post' | 'reply' | 'circle';
 
@@ -17,6 +26,13 @@ interface AdminUserDetailContextValue {
   loadingProfile: boolean;
   profileError: string | null;
   refreshProfile: () => void;
+
+  sanctionHistory: SanctionResponseDTO[];
+  loadingSanctionHistory: boolean;
+  sanctionHistoryError: string | null;
+  sanctionHistoryPage: number; // 1-based (client-side)
+  sanctionHistorySize: number;
+  setSanctionHistoryPage: (selected: number) => void; // 0-based selected
 
   history: HistoryState;
   openHistory: (kind: UserHistoryKind) => void;
@@ -37,6 +53,12 @@ export function AdminUserDetailProvider({ userId, children }: { userId: number; 
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileReloadToken, setProfileReloadToken] = useState(0);
+
+  const [sanctionHistory, setSanctionHistory] = useState<SanctionResponseDTO[]>([]);
+  const [loadingSanctionHistory, setLoadingSanctionHistory] = useState(false);
+  const [sanctionHistoryError, setSanctionHistoryError] = useState<string | null>(null);
+  const [sanctionHistoryPage, setSanctionHistoryPageState] = useState(1);
+  const [sanctionHistorySize] = useState(8);
 
   const [history, setHistory] = useState<HistoryState>({
     open: false,
@@ -72,6 +94,29 @@ export function AdminUserDetailProvider({ userId, children }: { userId: number; 
   }, [userId, profileReloadToken]);
 
   const refreshProfile = useCallback(() => setProfileReloadToken((x) => x + 1), []);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoadingSanctionHistory(true);
+      setSanctionHistoryError(null);
+      try {
+        const data = (await fetchUserSanctionHistory(userId)) as SanctionResponseDTO[];
+        if (!alive) return;
+        setSanctionHistory(Array.isArray(data) ? data : []);
+        setSanctionHistoryPageState(1);
+      } catch (e: any) {
+        if (!alive) return;
+        setSanctionHistoryError(e?.response?.data?.message ?? '제재 이력을 불러오지 못했습니다.');
+        setSanctionHistory([]);
+      } finally {
+        if (alive) setLoadingSanctionHistory(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (!history.open) return;
@@ -120,6 +165,10 @@ export function AdminUserDetailProvider({ userId, children }: { userId: number; 
     setHistory((prev) => ({ ...prev, page: selected + 1 }));
   }, []);
 
+  const setSanctionHistoryPage = useCallback((selected: number) => {
+    setSanctionHistoryPageState(selected + 1);
+  }, []);
+
   const value = useMemo<AdminUserDetailContextValue>(
     () => ({
       userId,
@@ -127,6 +176,13 @@ export function AdminUserDetailProvider({ userId, children }: { userId: number; 
       loadingProfile,
       profileError,
       refreshProfile,
+
+      sanctionHistory,
+      loadingSanctionHistory,
+      sanctionHistoryError,
+      sanctionHistoryPage,
+      sanctionHistorySize,
+      setSanctionHistoryPage,
 
       history,
       openHistory,
@@ -145,6 +201,12 @@ export function AdminUserDetailProvider({ userId, children }: { userId: number; 
       loadingProfile,
       profileError,
       refreshProfile,
+      sanctionHistory,
+      loadingSanctionHistory,
+      sanctionHistoryError,
+      sanctionHistoryPage,
+      sanctionHistorySize,
+      setSanctionHistoryPage,
       history,
       openHistory,
       closeHistory,

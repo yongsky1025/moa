@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/admin/report")
+@RequestMapping("/api/admin/stats")
 @Tag(name = "Admin stats section", description = "Response MOA API")
 @Log4j2
 public class AdminStatsController {

@@ -40,8 +40,8 @@ public class SearchReportRepositoryImpl implements SearchReportRepository {
         }
 
         // 검색 (신고자 이름으로만)
-        if (filterDTO.getType().equals("name") && filterDTO.getKeyword() != null && !filterDTO.getKeyword().isBlank()) {
-            builder.and(report.reporter.name.eq(filterDTO.getKeyword()));
+        if ("name".equals(filterDTO.getType()) && filterDTO.getKeyword() != null && !filterDTO.getKeyword().isBlank()) {
+            builder.and(report.reporter.name.contains(filterDTO.getKeyword()));
         }
 
         List<Report> content = queryFactory

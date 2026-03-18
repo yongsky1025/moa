@@ -10,20 +10,21 @@ import lombok.Builder;
 
 @Builder
 public record SanctionResponseDTO(
-        Long sanctionId,
-        String targetUserName,
-        String adminName,
-        ReportTargetType targetType,
-        Long targetId,
-        SanctionType sanctionType,
-        SanctionState sanctionState,
-        String reason,
-        LocalDateTime startAt,
-        LocalDateTime endAt, // null = 영구정지
+                Long reportId,
+                Long sanctionId,
+                String targetUserName,
+                String adminName,
+                ReportTargetType targetType,
+                Long targetId,
+                SanctionType sanctionType,
+                SanctionState sanctionState,
+                String reason,
+                LocalDateTime startAt,
+                LocalDateTime endAt, // null = 영구정지
 
-        // 취소 관련...(cancelled일때만 값존재)
-        String cancelledByName,
-        String cancelReason,
-        LocalDateTime cancelledAt) {
+                // 취소 관련...(cancelled일때만 값존재)
+                String cancelledByName,
+                String cancelReason,
+                LocalDateTime cancelledAt) {
 
 }

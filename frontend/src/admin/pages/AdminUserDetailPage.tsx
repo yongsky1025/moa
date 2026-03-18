@@ -4,6 +4,7 @@ import { AdminUserDetailProvider, useAdminUserDetail } from '../context/AdminUse
 import AdminUserProfileCard from '../component/userDetail/AdminUserProfileCard';
 import AdminUserActivityStatsCard from '../component/userDetail/AdminUserActivityStatsCard';
 import AdminUserHistoryModal from '../component/userDetail/AdminUserHistoryModal';
+import AdminUserSanctionHistorySection from '../component/userDetail/AdminUserSanctionHistorySection';
 
 function DetailInner() {
   const navigate = useNavigate();
@@ -74,19 +75,22 @@ function DetailInner() {
           </div>
         </div>
       ) : profile ? (
-        <div className="grid gap-6 lg:grid-cols-[1.15fr_2fr]">
-          <AdminUserProfileCard
-            name={profile.name}
-            userId={profile.userId}
-            age={profile.age}
-            birthDate={profile.birthDate}
-            gender={profile.gender}
-            role={profile.role}
-            status={profile.userStatus}
-            createDate={profile.createDate}
-          />
-          <AdminUserActivityStatsCard counts={counts} />
-        </div>
+        <>
+          <div className="grid gap-6 lg:grid-cols-[1.15fr_2fr]">
+            <AdminUserProfileCard
+              name={profile.name}
+              userId={profile.userId}
+              age={profile.age}
+              birthDate={profile.birthDate}
+              gender={profile.gender}
+              role={profile.role}
+              status={profile.userStatus}
+              createDate={profile.createDate}
+            />
+            <AdminUserActivityStatsCard counts={counts} />
+          </div>
+          <AdminUserSanctionHistorySection />
+        </>
       ) : (
         <div className="border-moa-border rounded-2xl border bg-white px-6 py-10 text-center shadow-sm">
           <p className="text-moa-subtle text-sm">유저 정보를 표시할 수 없습니다.</p>

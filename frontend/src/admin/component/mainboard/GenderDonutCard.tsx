@@ -20,7 +20,7 @@ interface Seg {
 
 function buildSegments(d: UserCountDTO): Seg[] {
   const total = d.countTotalUser;
-  const unspec = Math.max(total - d.maleUser - d.femaleUser, 0);
+  const unspec = d.unspecifiedUser ?? Math.max(total - d.maleUser - d.femaleUser, 0);
   return [
     {
       key: 'male' as const,
@@ -38,7 +38,7 @@ function buildSegments(d: UserCountDTO): Seg[] {
       key: 'unspecified' as const,
       label: '미지정',
       count: unspec,
-      ratio: total > 0 ? Math.round((unspec / total) * 1000) / 10 : 0,
+      ratio: d.unspecifiedRatio,
     },
   ].filter((s) => s.count > 0);
 }
@@ -50,8 +50,14 @@ function DonutSVG({ segs, total }: { segs: Seg[]; total: number }) {
     sw = 14;
   const circ = 2 * Math.PI * r;
   let off = 0;
+  const totalRatio = segs.reduce((sum, s) => sum + (Number.isFinite(s.ratio) ? s.ratio : 0), 0);
+  const denom = totalRatio > 0 ? totalRatio : 100;
+
   const arcs = segs.map((s) => {
-    const d = (s.count / total) * circ;
+    // 도넛 파이는 "퍼센트(ratio)" 기반으로 그림.
+    // ratio 합이 100에서 약간 어긋날 수 있으니 합 기준으로 정규화.
+    const safeRatio = Number.isFinite(s.ratio) ? s.ratio : 0;
+    const d = (safeRatio / denom) * circ;
     const a = { ...s, d, off };
     off += d;
     return a;
@@ -125,12 +131,12 @@ export default function GenderDonutCard({ data, loading }: Props) {
                   <div
                     className={`h-2 w-2 rounded-full ${COLORS[s.key].dot}`}
                   />
-                  <span className="text-xs text-[#9B7B6A]">{s.label}</span>
+                  <span className="text-moa-subtle text-xs">{s.label}</span>
                 </div>
-                <p className="text-sm font-bold text-[#262626]">
+                <p className="text-moa-text text-sm font-bold">
                   {s.count.toLocaleString('ko-KR')}명
                 </p>
-                <p className="mt-0.5 text-[10px] text-[#9B7B6A]">{s.ratio}%</p>
+                <p className="text-moa-subtle mt-0.5 text-[10px]">{s.ratio}%</p>
               </div>
             ))}
           </div>

@@ -6,5 +6,10 @@ import lombok.Builder;
 public record ActivityHeatmapDTO(
                 int dayOfweek,
                 int hour,
-                long activityCount) {
+                long activityCount,
+                long userRegisterCount,
+                long circleCreateCount,
+                long postCount,
+                long replyCount,
+                long scheduleCount) {
 }

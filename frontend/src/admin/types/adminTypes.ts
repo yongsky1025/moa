@@ -198,22 +198,61 @@ export interface ReportFilterDTO extends PageRequestDTO {
   status?: ReportStatus;
 }
 
+export interface ReportRequestDTO {
+  targetType: ReportTargetType;
+  targetId: number;
+  category: ReportCategory;
+  description: string;
+}
+
 export interface ReportResponseDTO {
   reportId: number;
   reporterName: string;
   targetType: ReportTargetType;
   targetId: number;
   category: ReportCategory;
-  description: string;
   status: ReportStatus;
-  adminNote?: string;
-  createDate: string;
-  modifiedDate: string;
+  adminNote?: string | null;
+  createdAt: string;
 }
 
 export interface ReportStatusUpdateRequest {
   status: ReportStatus;
   adminNote?: string;
+}
+
+// ===== 통계 리포트 =====
+export interface AgeGroupStatsDTO {
+  ageGroup: string;
+  userCount: number;
+  countMale: number;
+  countFemale: number;
+  countOther: number;
+}
+
+export interface CircleSurvivalStatsDTO {
+  totalCircle: number;
+  activeCircle: number;
+  survivalRate: number;
+}
+
+export interface ActivityHeatmapStatsDTO {
+  dayOfweek: number;        // 1=Mon ... 7=Sun (Java DayOfWeek)
+  hour: number;             // 0-23
+  activityCount: number;    // 합산
+  userRegisterCount: number;
+  circleCreateCount: number;
+  postCount: number;
+  replyCount: number;
+  scheduleCount: number;
+}
+
+export interface AgeCategoryRetentionStatsDTO {
+  ageGroup: string;
+  categoryName: string;
+  totalMembers: number;
+  retainedMembers: number;
+  rate: number; // 0.0 ~ 100.0
 }
 
 // ===== 제재 관리 =====
@@ -224,23 +263,20 @@ export interface SanctionFilterDTO extends PageRequestDTO {
 }
 
 export interface SanctionResponseDTO {
+  reportId?: number | null;
   sanctionId: number;
-  targetUserId: number;
   targetUserName: string;
-  adminId: number;
   adminName: string;
   targetType: ReportTargetType;
   targetId: number;
   sanctionType: SanctionType;
+  sanctionState: SanctionState;
   reason: string;
   startAt: string;
   endAt: string | null; // null = 영구 정지
-  sanctionState: SanctionState;
-  cancelledById?: number;
-  cancelReason?: string;
-  cancelledAt?: string;
-  createDate: string;
-  reportId?: number; // 직권 제재면 없을수도
+  cancelledByName?: string | null;
+  cancelReason?: string | null;
+  cancelledAt?: string | null;
 }
 
 export interface SanctionApplyRequest {
@@ -253,5 +289,6 @@ export interface SanctionApplyRequest {
 }
 
 export interface SanctionCancelRequest {
+  adminId: number;
   cancelReason: string;
 }

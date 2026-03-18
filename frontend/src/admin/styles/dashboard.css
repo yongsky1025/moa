@@ -60,3 +60,16 @@
 .chart-svg text {
   font-family: inherit;
 }
+
+/* Recharts 클릭 포커스 아웃라인 전체 제거 */
+.recharts-wrapper,
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-wrapper *:focus,
+.recharts-wrapper *:focus-visible,
+.recharts-surface,
+.recharts-surface:focus,
+.recharts-surface:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}

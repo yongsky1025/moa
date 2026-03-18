@@ -41,6 +41,13 @@ public class SanctionController {
         return ResponseEntity.ok(sanctionService.getSanctions(filter));
     }
 
+    @GetMapping("/{sanctionId}")
+    @Operation(summary = "제재 상세 조회")
+    public ResponseEntity<SanctionResponseDTO> getOneSanction(@PathVariable Long sanctionId) {
+        log.info("제재 상세 조회 sanctionId={}", sanctionId);
+        return ResponseEntity.ok(sanctionService.getOneSanction(sanctionId));
+    }
+
     @GetMapping("/users/{userId}")
     @Operation(summary = "특정 유저 제재 목록")
     public ResponseEntity<List<SanctionResponseDTO>> getUserSanctionHistory(@PathVariable Long userId) {
