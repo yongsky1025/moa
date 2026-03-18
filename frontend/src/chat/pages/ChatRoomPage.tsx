@@ -17,6 +17,7 @@ export default function ChatRoomPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
   const [menuId, setMenuId] = useState<number | null>(null);
@@ -24,6 +25,10 @@ export default function ChatRoomPage() {
   const [showMembers, setShowMembers] = useState(false);
   const [roomInfo, setRoomInfo] = useState<ChatRoomSummary | null>(null);
   const [members, setMembers] = useState<CircleMember[]>([]);
+  const [headerCtx, setHeaderCtx] = useState<{ x: number; y: number } | null>(null);
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [profileModal, setProfileModal] = useState<{ nickname: string; senderId: number } | null>(null);
+  const headerCtxRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
@@ -33,10 +38,12 @@ export default function ChatRoomPage() {
       const data = await chatApi.getMessages(rid);
       setMessages([...data].reverse());
       await chatApi.markAsRead(rid);
+    } catch {
+      setError('메시지를 불러오는 데 실패했습니다.');
     } finally {
       setLoading(false);
     }
-  }, [rid]);
+  }, [rid, navigate]);
 
   useEffect(() => { loadMessages(); }, [loadMessages]);
 
@@ -58,12 +65,51 @@ export default function ChatRoomPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 바깥 클릭 시 메뉴 닫기
+  // 바깥 클릭 / ESC 시 메뉴 닫기
   useEffect(() => {
-    const close = () => setMenuId(null);
+    const close = () => { setMenuId(null); setHeaderCtx(null); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setMenuId(null); setHeaderCtx(null); setProfileModal(null); } };
     document.addEventListener('click', close);
-    return () => document.removeEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('click', close);
+      document.removeEventListener('keydown', onKey);
+    };
   }, []);
+
+  const startDirectChat = (targetUserId: number) => {
+    if (targetUserId === userId) return;
+    const popup = window.open(`/chat/popup#direct-${targetUserId}`, 'moa-chat', 'width=760,height=600,resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no');
+    if (popup && !popup.closed) {
+      setTimeout(() => {
+        popup.location.hash = `direct-${targetUserId}`;
+      }, 300);
+    }
+    setProfileModal(null);
+  };
+
+  const handleHeaderContextMenu = (e: React.MouseEvent) => {
+    if (roomInfo?.roomType !== 'GROUP') return;
+    e.preventDefault();
+    setHeaderCtx({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleRenameConfirm = async () => {
+    if (renaming === null || !renaming.trim()) return;
+    try {
+      await chatApi.updateRoomName(rid, renaming.trim());
+      setRoomInfo((prev) => prev ? { ...prev, name: renaming.trim() } : prev);
+    } catch { alert('이름 변경 실패'); }
+    setRenaming(null);
+  };
+
+  const handleLeave = async () => {
+    if (!confirm('채팅방을 나가시겠습니까?')) return;
+    try {
+      await chatApi.leaveRoom(rid);
+      navigate('/chat');
+    } catch { alert('나가기 실패'); }
+  };
 
   const handleNewMessage = useCallback((msg: ChatMessage) => {
     setMessages((prev) => [...prev, msg]);
@@ -134,13 +180,20 @@ export default function ChatRoomPage() {
   };
 
   if (loading) return <div style={styles.center}>불러오는 중...</div>;
+  if (error) return <div style={styles.center}>{error}</div>;
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
         <button onClick={() => navigate('/chat')} style={styles.backBtn}>←</button>
-        <span style={styles.headerTitle}>
-          {roomInfo?.roomType === 'DIRECT' ? (roomInfo.otherUserNickname ?? '1:1 채팅') : `채팅방 #${rid}`}
+        <span
+          style={styles.headerTitle}
+          onContextMenu={handleHeaderContextMenu}
+          title={roomInfo?.roomType === 'GROUP' ? '우클릭으로 설정' : undefined}
+        >
+          {roomInfo?.roomType === 'DIRECT'
+            ? (roomInfo.otherUserNickname ?? '1:1 채팅')
+            : (roomInfo?.name ?? `채팅방 #${rid}`)}
         </span>
         {roomInfo?.roomType === 'GROUP' && (
           <button onClick={() => setShowMembers((v) => !v)} style={styles.memberBtn}>
@@ -149,12 +202,56 @@ export default function ChatRoomPage() {
         )}
       </div>
 
+      {/* 헤더 우클릭 컨텍스트 메뉴 */}
+      {headerCtx && (
+        <div
+          ref={headerCtxRef}
+          style={{ ...styles.ctxMenu, top: headerCtx.y, left: headerCtx.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            style={styles.ctxItem}
+            onClick={() => { setRenaming(roomInfo?.name ?? `채팅방 #${rid}`); setHeaderCtx(null); }}
+          >✏️ 방 이름 변경</button>
+          <button
+            style={{ ...styles.ctxItem, color: '#c62828' }}
+            onClick={handleLeave}
+          >🚪 채팅방 나가기</button>
+        </div>
+      )}
+
+      {/* 이름 변경 모달 */}
+      {renaming !== null && (
+        <div style={styles.modalOverlay} onClick={() => setRenaming(null)}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalTitle}>방 이름 변경</div>
+            <input
+              style={styles.modalInput}
+              value={renaming}
+              onChange={(e) => setRenaming(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleRenameConfirm(); if (e.key === 'Escape') setRenaming(null); }}
+              autoFocus
+              maxLength={50}
+            />
+            <div style={styles.modalBtns}>
+              <button style={styles.modalCancel} onClick={() => setRenaming(null)}>취소</button>
+              <button style={styles.modalConfirm} onClick={handleRenameConfirm}>변경</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 멤버 패널 */}
       {showMembers && roomInfo?.roomType === 'GROUP' && (
         <div style={styles.memberPanel}>
           <div style={styles.memberPanelTitle}>멤버 ({members.length}명)</div>
           {members.map((m) => (
-            <div key={m.circleMemberId} style={styles.memberItem}>
+            <div
+              key={m.circleMemberId}
+              style={{ ...styles.memberItem, cursor: m.userId !== userId ? 'pointer' : 'default' }}
+              onClick={() => m.userId !== userId && setProfileModal({ nickname: m.nickname, senderId: m.userId })}
+              title={m.userId !== userId ? '1:1 채팅' : undefined}
+            >
               <span style={styles.memberAvatar}>{m.nickname.charAt(0)}</span>
               <span style={styles.memberNick}>{m.nickname}</span>
               {m.role === 'LEADER' && <span style={styles.leaderBadge}>방장</span>}
@@ -171,7 +268,10 @@ export default function ChatRoomPage() {
           return (
             <div key={msg.messageId} style={{ ...styles.msgRow, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
               {!mine && (
-                <div style={{ ...styles.avatar, background: avatarColor }}>
+                <div
+                  style={{ ...styles.avatar, background: avatarColor, cursor: 'pointer' }}
+                  onClick={() => setProfileModal({ nickname: msg.senderNickname ?? '?', senderId: msg.senderId })}
+                >
                   {msg.senderNickname?.charAt(0) ?? '?'}
                 </div>
               )}
@@ -201,8 +301,8 @@ export default function ChatRoomPage() {
                     <div
                       style={{
                         ...styles.bubble,
-                        background: msg.isDeleted ? '#e0e0e0' : mine ? '#1976d2' : '#f0f0f0',
-                        color: msg.isDeleted ? '#999' : mine ? '#fff' : '#333',
+                        background: msg.isDeleted ? '#e0e0e0' : mine ? '#d07856' : '#f2e8e0',
+                        color: msg.isDeleted ? '#999' : mine ? '#fff' : '#262626',
                         fontStyle: msg.isDeleted ? 'italic' : 'normal',
                       }}
                     >
@@ -240,6 +340,39 @@ export default function ChatRoomPage() {
         <div ref={bottomRef} />
       </div>
 
+      {/* 카카오 스타일 프로필 모달 */}
+      {profileModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+          onClick={() => setProfileModal(null)}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 20, width: 300, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 상단 배경 */}
+            <div style={{ background: nickColor(profileModal.nickname), height: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 0 }}>
+              <div style={{ width: 72, height: 72, borderRadius: '50%', background: nickColor(profileModal.nickname), border: '4px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: '#fff', marginBottom: -36 }}>
+                {profileModal.nickname.charAt(0)}
+              </div>
+            </div>
+            {/* 닉네임 */}
+            <div style={{ paddingTop: 44, paddingBottom: 24, textAlign: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: 18, color: '#262626' }}>{profileModal.nickname}</div>
+            </div>
+            {/* 버튼 */}
+            <div style={{ borderTop: '1px solid #f2e8e0', padding: '14px 24px' }}>
+              <button
+                style={{ width: '100%', padding: '12px 0', background: '#d07856', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+                onClick={() => startDirectChat(profileModal.senderId)}
+              >
+                💬 1:1 채팅하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={styles.inputArea}>
         <button onClick={() => fileInputRef.current?.click()} style={styles.fileBtn}>📎</button>
         <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={handleFileUpload} />
@@ -269,7 +402,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    background: '#f0f2f5',
+    background: '#fdf0e8',
   },
   center: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#888' },
   header: {
@@ -278,18 +411,18 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 12,
     padding: '12px 16px',
     background: '#fff',
-    borderBottom: '1px solid #eee',
+    borderBottom: '1px solid #f2e8e0',
     flexShrink: 0,
   },
-  backBtn: { background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '0 4px' },
-  headerTitle: { fontWeight: 'bold', fontSize: 16, flex: 1 },
-  memberBtn: { background: '#e3f2fd', border: 'none', borderRadius: 16, padding: '5px 12px', cursor: 'pointer', fontSize: 13, color: '#1976d2', fontWeight: 'bold' },
-  memberPanel: { background: '#fff', borderBottom: '1px solid #eee', padding: '10px 16px', display: 'flex', flexDirection: 'column' as const, gap: 6, maxHeight: 200, overflowY: 'auto' as const, flexShrink: 0 },
+  backBtn: { background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '0 4px', color: '#d07856' },
+  headerTitle: { fontWeight: 'bold', fontSize: 16, flex: 1, color: '#262626' },
+  memberBtn: { background: '#fdf0e8', border: 'none', borderRadius: 16, padding: '5px 12px', cursor: 'pointer', fontSize: 13, color: '#d07856', fontWeight: 'bold' },
+  memberPanel: { background: '#fff', borderBottom: '1px solid #f2e8e0', padding: '10px 16px', display: 'flex', flexDirection: 'column' as const, gap: 6, maxHeight: 200, overflowY: 'auto' as const, flexShrink: 0 },
   memberPanelTitle: { fontWeight: 'bold', fontSize: 13, color: '#555', marginBottom: 4 },
   memberItem: { display: 'flex', alignItems: 'center', gap: 8 },
-  memberAvatar: { width: 28, height: 28, borderRadius: '50%', background: '#1976d2', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 'bold', flexShrink: 0 } as React.CSSProperties,
-  memberNick: { fontSize: 13, color: '#333' },
-  leaderBadge: { fontSize: 10, background: '#fff3e0', color: '#e65100', borderRadius: 8, padding: '2px 6px', fontWeight: 'bold' },
+  memberAvatar: { width: 28, height: 28, borderRadius: '50%', background: '#d07856', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 'bold', flexShrink: 0 } as React.CSSProperties,
+  memberNick: { fontSize: 13, color: '#262626' },
+  leaderBadge: { fontSize: 10, background: '#fdf0e8', color: '#b8643d', borderRadius: 8, padding: '2px 6px', fontWeight: 'bold' },
   msgArea: {
     flex: 1,
     overflowY: 'auto',
@@ -311,21 +444,30 @@ const styles: Record<string, React.CSSProperties> = {
   time: { fontSize: 11, color: '#aaa', flexShrink: 0 },
   menuBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#aaa', padding: '0 2px', lineHeight: 1 },
   menuBox: { position: 'absolute', right: 0, bottom: 24, background: '#fff', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 80 },
-  menuItem: { display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13 },
+  menuItem: { display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' },
   editBox: { display: 'flex', flexDirection: 'column', maxWidth: 260 },
-  editInput: { padding: '8px 12px', border: '1px solid #1976d2', borderRadius: 8, fontSize: 14, outline: 'none' },
-  editConfirmBtn: { flex: 1, padding: '5px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
-  editCancelBtn: { flex: 1, padding: '5px', background: '#eee', color: '#333', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
+  editInput: { padding: '8px 12px', border: '1px solid #d07856', borderRadius: 8, fontSize: 14, outline: 'none' },
+  editConfirmBtn: { flex: 1, padding: '5px', background: '#d07856', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
+  editCancelBtn: { flex: 1, padding: '5px', background: '#f2e8e0', color: '#262626', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
   inputArea: {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
     padding: '12px 16px',
     background: '#fff',
-    borderTop: '1px solid #eee',
+    borderTop: '1px solid #f2e8e0',
     flexShrink: 0,
   },
   fileBtn: { background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '0 4px' },
-  textInput: { flex: 1, padding: '10px 14px', border: '1px solid #ddd', borderRadius: 24, fontSize: 14, outline: 'none' },
-  sendBtn: { background: '#1976d2', color: '#fff', border: 'none', borderRadius: 20, padding: '10px 18px', fontWeight: 'bold', cursor: 'pointer', fontSize: 14 },
+  textInput: { flex: 1, padding: '10px 14px', border: '1px solid #f2e8e0', borderRadius: 24, fontSize: 14, outline: 'none' },
+  sendBtn: { background: '#d07856', color: '#fff', border: 'none', borderRadius: 20, padding: '10px 18px', fontWeight: 'bold', cursor: 'pointer', fontSize: 14 },
+  ctxMenu: { position: 'fixed' as const, background: '#fff', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 9999, minWidth: 160, border: '1px solid #f2e8e0', overflow: 'hidden' },
+  ctxItem: { display: 'block', width: '100%', padding: '11px 16px', background: 'none', border: 'none', textAlign: 'left' as const, cursor: 'pointer', fontSize: 13, color: '#262626' },
+  modalOverlay: { position: 'fixed' as const, inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 },
+  modal: { background: '#fff', borderRadius: 14, padding: '24px 24px 20px', width: 300, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' },
+  modalTitle: { fontWeight: 'bold', fontSize: 15, color: '#262626', marginBottom: 14 },
+  modalInput: { width: '100%', padding: '10px 14px', border: '1px solid #d07856', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' as const },
+  modalBtns: { display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' },
+  modalCancel: { padding: '8px 16px', background: '#f2e8e0', color: '#262626', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
+  modalConfirm: { padding: '8px 16px', background: '#d07856', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 'bold' },
 };

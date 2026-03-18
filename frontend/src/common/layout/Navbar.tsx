@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../users/reducers/authSlice';
 import type { AppDispatch, RootState } from '../../users/reducers/store';
 import { notificationApi } from '../../api/notificationApi';
+import FloatingChatWindow from '../../chat/components/FloatingChatWindow';
 
 const dropdownItems: Record<string, { label: string; href: string }[]> = {
   '모임 찾기': [
@@ -35,6 +36,7 @@ export default function Navbar() {
   const isAdmin = user?.userRole === 'ADMIN';
 
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   useEffect(() => {
@@ -72,207 +74,210 @@ export default function Navbar() {
   };
 
   return (
-    <header
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        backgroundColor: 'white',
-        borderBottom: '1px solid #f0f0f0',
-      }}
-    >
-      <div
+    <>
+      <header
         style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          padding: '0 20px',
-          height: 60,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          backgroundColor: 'white',
+          borderBottom: '1px solid #f0f0f0',
         }}
       >
-        <Link
-          to="/"
-          style={{
-            fontSize: 22,
-            fontWeight: 900,
-            letterSpacing: -0.5,
-            color: '#111',
-            textDecoration: 'none',
-          }}
-        >
-          moa
-        </Link>
         <div
           style={{
+            maxWidth: 1200,
+            margin: '0 auto',
+            padding: '0 20px',
+            height: 60,
             display: 'flex',
             alignItems: 'center',
-            gap: 24,
-            marginLeft: 'auto',
-            marginRight: 24,
+            justifyContent: 'space-between',
           }}
         >
-          <nav style={{ display: 'flex', gap: 24 }}>
-            {navItems.map((item) => (
-              <div
-                key={item}
-                style={{ position: 'relative' }}
-                onMouseEnter={() => setHoveredItem(item)}
-                onMouseLeave={() => setHoveredItem(null)}
-              >
-                <Link
-                  to={navLinks[item] ?? '#'}
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 400,
-                    color: hoveredItem === item ? '#111' : '#888',
-                    textDecoration: 'none',
-                    display: 'inline-block',
-                    textAlign: 'center',
-                    width: 76,
-                    whiteSpace: 'nowrap',
-                    lineHeight: '60px',
-                    transition: 'color 0.15s',
-                    visibility:
-                      item === '관리자 페이지' && !isAdmin ? 'hidden' : 'visible',
-                    pointerEvents:
-                      item === '관리자 페이지' && !isAdmin ? 'none' : 'auto',
-                  }}
-                >
-                  {item}
-                </Link>
-                {hoveredItem === item && dropdownItems[item]?.length && (
-                  <div
-                    className="dropdown-menu"
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 1px)',
-                      left: 0,
-                      backgroundColor: 'white',
-                      border: '1px solid #f0f0f0',
-                      borderRadius: 0,
-                      boxShadow: '0 6px 16px rgba(0,0,0,0.08)',
-                      padding: '4px 0',
-                      minWidth: 96,
-                      zIndex: 100,
-                    }}
-                  >
-                    {dropdownItems[item]?.map((sub) => (
-                      <Link
-                        key={sub.label}
-                        to={sub.href}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          height: 36,
-                          padding: '0 14px',
-                          fontSize: 13,
-                          color: '#444',
-                          textDecoration: 'none',
-                          whiteSpace: 'nowrap',
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.backgroundColor = '#f7f7f8')
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.backgroundColor = 'transparent')
-                        }
-                      >
-                        {sub.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </nav>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 68 }}>
-            <button
-              onClick={isLoggedIn ? handleLogout : () => navigate('/users/login')}
-              style={{
-                padding: '5px 0',
-                width: '100%',
-                borderRadius: 6,
-                border: '1px solid #e5e5e5',
-                background: 'white',
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: 'pointer',
-                color: '#111',
-              }}
-            >
-              {isLoggedIn ? '로그아웃' : '로그인'}
-            </button>
-          </div>
-
-          {/* 채팅 아이콘 - 프로필 옆 */}
-          {isLoggedIn && (
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => window.open('/chat/popup', 'moa-chat', 'width=760,height=600,resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no')}
-                title="채팅"
-                style={{
-                  width: 34, height: 34, borderRadius: '50%', border: 'none',
-                  backgroundColor: '#f0f0f0', color: '#111', fontSize: 18,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                💬
-              </button>
-              {unreadChatCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: -3, right: -3,
-                  backgroundColor: '#ef4444', color: '#fff',
-                  borderRadius: '50%', width: 16, height: 16,
-                  fontSize: 10, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  pointerEvents: 'none',
-                }}>
-                  {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                </span>
-              )}
-            </div>
-          )}
-
-          <div
+          <Link
+            to="/"
             style={{
-              width: 72,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              fontSize: 22,
+              fontWeight: 900,
+              letterSpacing: -0.5,
+              color: '#111',
+              textDecoration: 'none',
             }}
           >
-            {isLoggedIn ? (
-              <div
-                style={{
-                  width: 34, height: 34, borderRadius: '50%',
-                  backgroundColor: '#111', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                </svg>
-              </div>
-            ) : (
+            moa
+          </Link>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 24,
+              marginLeft: 'auto',
+              marginRight: 24,
+            }}
+          >
+            <nav style={{ display: 'flex', gap: 24 }}>
+              {navItems.map((item) => (
+                <div
+                  key={item}
+                  style={{ position: 'relative' }}
+                  onMouseEnter={() => setHoveredItem(item)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  <Link
+                    to={navLinks[item] ?? '#'}
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 400,
+                      color: hoveredItem === item ? '#111' : '#888',
+                      textDecoration: 'none',
+                      display: 'inline-block',
+                      textAlign: 'center',
+                      width: 76,
+                      whiteSpace: 'nowrap',
+                      lineHeight: '60px',
+                      transition: 'color 0.15s',
+                      visibility:
+                        item === '관리자 페이지' && !isAdmin ? 'hidden' : 'visible',
+                      pointerEvents:
+                        item === '관리자 페이지' && !isAdmin ? 'none' : 'auto',
+                    }}
+                  >
+                    {item}
+                  </Link>
+                  {hoveredItem === item && dropdownItems[item]?.length && (
+                    <div
+                      className="dropdown-menu"
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 1px)',
+                        left: 0,
+                        backgroundColor: 'white',
+                        border: '1px solid #f0f0f0',
+                        borderRadius: 0,
+                        boxShadow: '0 6px 16px rgba(0,0,0,0.08)',
+                        padding: '4px 0',
+                        minWidth: 96,
+                        zIndex: 100,
+                      }}
+                    >
+                      {dropdownItems[item]?.map((sub) => (
+                        <Link
+                          key={sub.label}
+                          to={sub.href}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            height: 36,
+                            padding: '0 14px',
+                            fontSize: 13,
+                            color: '#444',
+                            textDecoration: 'none',
+                            whiteSpace: 'nowrap',
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = '#f7f7f8')
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor = 'transparent')
+                          }
+                        >
+                          {sub.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </nav>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 68 }}>
               <button
-                onClick={() => navigate('/users/signup')}
+                onClick={isLoggedIn ? handleLogout : () => navigate('/users/login')}
                 style={{
-                  padding: '5px 0', width: '100%', borderRadius: 6,
-                  border: 'none', background: '#111', color: 'white',
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  padding: '5px 0',
+                  width: '100%',
+                  borderRadius: 6,
+                  border: '1px solid #e5e5e5',
+                  background: 'white',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  color: '#111',
                 }}
               >
-                회원가입
+                {isLoggedIn ? '로그아웃' : '로그인'}
               </button>
+            </div>
+
+            {/* 채팅 아이콘 - 프로필 옆 */}
+            {isLoggedIn && (
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setChatOpen((v) => !v)}
+                  title="채팅"
+                  style={{
+                    width: 34, height: 34, borderRadius: '50%', border: 'none',
+                    backgroundColor: '#f0f0f0', color: '#111', fontSize: 18,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  💬
+                </button>
+                {unreadChatCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: -3, right: -3,
+                    backgroundColor: '#ef4444', color: '#fff',
+                    borderRadius: '50%', width: 16, height: 16,
+                    fontSize: 10, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    pointerEvents: 'none',
+                  }}>
+                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                  </span>
+                )}
+              </div>
             )}
+
+            <div
+              style={{
+                width: 72,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {isLoggedIn ? (
+                <div
+                  style={{
+                    width: 34, height: 34, borderRadius: '50%',
+                    backgroundColor: '#111', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                  </svg>
+                </div>
+              ) : (
+                <button
+                  onClick={() => navigate('/users/signup')}
+                  style={{
+                    padding: '5px 0', width: '100%', borderRadius: 6,
+                    border: 'none', background: '#111', color: 'white',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  회원가입
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+      {isLoggedIn && <FloatingChatWindow open={chatOpen} onClose={() => setChatOpen(false)} />}
+    </>
   );
 }

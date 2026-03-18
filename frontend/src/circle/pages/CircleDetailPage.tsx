@@ -37,6 +37,7 @@ export default function CircleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
   const [selectedMember, setSelectedMember] = useState<CircleMember | null>(null);
+  const [profileModal, setProfileModal] = useState<CircleMember | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -110,12 +111,12 @@ export default function CircleDetailPage() {
     action(() => circleApi.delegateLeader(cid, memberId), '리더를 위임했습니다.');
   };
 
-  const handleDirectChat = async (targetUserId: number) => {
-    try {
-      const roomId = await chatApi.getOrCreateDirectRoom(targetUserId);
-      window.open(`/chat/popup#room-${roomId}`, 'moa-chat', 'width=760,height=600,resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no');
-    } catch {
-      setMsg('오류: 채팅방을 열 수 없습니다.');
+  const handleDirectChat = (targetUserId: number) => {
+    const popup = window.open(`/chat/popup#direct-${targetUserId}`, 'moa-chat', 'width=760,height=600,resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no');
+    if (popup && !popup.closed) {
+      setTimeout(() => {
+        popup.location.hash = `direct-${targetUserId}`;
+      }, 300);
     }
     setSelectedMember(null);
   };
@@ -140,8 +141,45 @@ export default function CircleDetailPage() {
   const isLeader = myMember?.role === 'LEADER';
   const isMember = !!myMember;
 
+  const AVATAR_COLORS = ['#F4A261', '#E76F51', '#2A9D8F', '#457B9D', '#6D6875', '#E9C46A', '#264653'];
+  const nickColor = (nick: string) => AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
+
+      {/* 카카오 스타일 프로필 모달 */}
+      {profileModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+          onClick={() => setProfileModal(null)}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 20, width: 300, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ background: nickColor(profileModal.nickname), height: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              <div style={{ width: 72, height: 72, borderRadius: '50%', background: nickColor(profileModal.nickname), border: '4px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: '#fff', marginBottom: -36 }}>
+                {profileModal.nickname.charAt(0)}
+              </div>
+            </div>
+            <div style={{ paddingTop: 44, paddingBottom: 24, textAlign: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: 18, color: '#111' }}>{profileModal.nickname}</div>
+              {profileModal.role === 'LEADER' && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#d97706', backgroundColor: '#fef3c7', padding: '2px 8px', borderRadius: 4, marginTop: 6, display: 'inline-block' }}>리더</span>
+              )}
+            </div>
+            <div style={{ borderTop: '1px solid #f0f0f0', padding: '14px 24px' }}>
+              <button
+                style={{ width: '100%', padding: '12px 0', background: '#111', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+                onClick={() => { setProfileModal(null); handleDirectChat(profileModal.userId); }}
+              >
+                💬 1:1 채팅하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Navbar />
       <main style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px 60px' }}>
 
@@ -280,7 +318,7 @@ export default function CircleDetailPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {/* 아바타 - 클릭하면 팝오버 (내 계정 제외) */}
                     <div
-                      onClick={(e) => { e.stopPropagation(); m.nickname !== user?.nickname && setSelectedMember(selectedMember?.circleMemberId === m.circleMemberId ? null : m); }}
+                      onClick={() => { if (m.nickname === user?.nickname) return; setProfileModal(m); }}
                       style={{
                         width: 36, height: 36, borderRadius: '50%',
                         backgroundColor: m.role === 'LEADER' ? '#111' : '#e5e7eb',
@@ -305,7 +343,7 @@ export default function CircleDetailPage() {
 
                     {/* 1:1 채팅 팝오버 */}
                     {selectedMember?.circleMemberId === m.circleMemberId && isLoggedIn && (
-                      <div onClick={(e) => e.stopPropagation()} style={{
+                      <div onClick={(e) => { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); }} style={{
                         position: 'absolute', left: 50, top: 4,
                         background: 'white', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
                         padding: '6px 4px', zIndex: 200, display: 'flex', flexDirection: 'column', minWidth: 110,

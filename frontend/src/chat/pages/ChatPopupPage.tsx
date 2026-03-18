@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { chatApi } from '../../api/chatApi';
 import { circleApi } from '../../api/circleApi';
 import { notificationApi } from '../../api/notificationApi';
@@ -32,9 +33,13 @@ export default function ChatPopupPage() {
   const [menuId, setMenuId] = useState<number | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
   const [editMsgContent, setEditMsgContent] = useState('');
+  const [roomCtxMenu, setRoomCtxMenu] = useState<{ x: number; y: number; room: ChatRoomSummary } | null>(null);
+  const [renaming, setRenaming] = useState<{ roomId: number; value: string } | null>(null);
+  const [profileModal, setProfileModal] = useState<{ nickname: string; senderId: number } | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const ctxMenuRef = useRef<HTMLDivElement>(null);
 
   const unreadNoti = notifications.filter((n) => !n.isRead).length;
 
@@ -52,6 +57,39 @@ export default function ChatPopupPage() {
     const t = setInterval(() => { loadRooms(); loadNotifications(); }, 30000);
     return () => clearInterval(t);
   }, [loadRooms, loadNotifications]);
+
+  // #room-{roomId} 또는 #direct-{userId} 처리 함수 (마운트 + hashchange 공통)
+  const handleRoomHash = useCallback(async () => {
+    const hash = window.location.hash;
+    const roomMatch = hash.match(/^#room-(\d+)$/);
+    const directMatch = hash.match(/^#direct-(\d+)$/);
+    if (!roomMatch && !directMatch) return;
+    window.location.hash = '';
+    try {
+      let roomId: number;
+      if (directMatch) {
+        roomId = await chatApi.getOrCreateDirectRoom(Number(directMatch[1]));
+      } else {
+        roomId = Number(roomMatch![1]);
+      }
+      let updated = await chatApi.getMyRooms();
+      let found = updated.find((r) => r.roomId === roomId);
+      if (!found) {
+        await new Promise((res) => setTimeout(res, 500));
+        updated = await chatApi.getMyRooms();
+        found = updated.find((r) => r.roomId === roomId);
+      }
+      setRooms(updated);
+      if (found) setActiveRoom(found);
+    } catch (e) { console.error('[handleRoomHash] 에러:', e); }
+  }, []);
+
+  // 마운트 시 + 팝업 재사용 시(hashchange) 모두 처리
+  useEffect(() => {
+    handleRoomHash();
+    window.addEventListener('hashchange', handleRoomHash);
+    return () => window.removeEventListener('hashchange', handleRoomHash);
+  }, [handleRoomHash]);
 
   useEffect(() => {
     if (!activeRoom) return;
@@ -79,10 +117,42 @@ export default function ChatPopupPage() {
   }, [messages]);
 
   useEffect(() => {
-    const close = () => setMenuId(null);
+    const close = () => { setMenuId(null); setRoomCtxMenu(null); setShowNoti(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setMenuId(null); setRoomCtxMenu(null); setShowNoti(false); setProfileModal(null); } };
     document.addEventListener('click', close);
-    return () => document.removeEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('click', close);
+      document.removeEventListener('keydown', onKey);
+    };
   }, []);
+
+  const handleRoomContextMenu = (e: React.MouseEvent, room: ChatRoomSummary) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setRoomCtxMenu({ x: e.clientX, y: e.clientY, room });
+  };
+
+  const handleRoomLeave = async (roomId: number) => {
+    if (!confirm('채팅방을 나가시겠습니까?')) return;
+    try {
+      await chatApi.leaveRoom(roomId);
+      if (activeRoom?.roomId === roomId) setActiveRoom(null);
+      await loadRooms();
+    } catch { alert('나가기 실패'); }
+    setRoomCtxMenu(null);
+  };
+
+  const handleRenameConfirm = async () => {
+    if (!renaming || !renaming.value.trim()) return;
+    try {
+      await chatApi.updateRoomName(renaming.roomId, renaming.value.trim());
+      const newName = renaming.value.trim();
+      setRooms((prev) => prev.map((r) => r.roomId === renaming.roomId ? { ...r, name: newName } : r));
+      if (activeRoom?.roomId === renaming.roomId) setActiveRoom((prev) => prev ? { ...prev, name: newName } : prev);
+    } catch { alert('이름 변경 실패'); }
+    setRenaming(null);
+  };
 
   const handleNewMessage = useCallback((msg: ChatMessage) => {
     if (msg.roomId === activeRoom?.roomId) {
@@ -160,6 +230,36 @@ export default function ChatPopupPage() {
     setEditingRoomName(false);
   };
 
+  const AVATAR_COLORS2 = ['#F4A261', '#E76F51', '#2A9D8F', '#457B9D', '#6D6875', '#E9C46A', '#264653'];
+  const nickColor = (nick: string) => AVATAR_COLORS2[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS2.length];
+
+  const startDirectChat = async (targetUserId: number) => {
+    console.log('[startDirectChat] targetUserId:', targetUserId, 'userId:', userId);
+    if (targetUserId === userId) {
+      console.warn('[startDirectChat] 자기 자신 - 조기 탈출');
+      return;
+    }
+    try {
+      const roomId = await chatApi.getOrCreateDirectRoom(targetUserId);
+      console.log('[startDirectChat] roomId:', roomId);
+      let updatedRooms = await chatApi.getMyRooms();
+      console.log('[startDirectChat] rooms:', updatedRooms);
+      let found = updatedRooms.find((r) => r.roomId === roomId);
+      if (!found) {
+        await new Promise((res) => setTimeout(res, 500));
+        updatedRooms = await chatApi.getMyRooms();
+        found = updatedRooms.find((r) => r.roomId === roomId);
+      }
+      setRooms(updatedRooms);
+      console.log('[startDirectChat] found:', found);
+      if (found) setActiveRoom(found);
+    } catch (e) {
+      console.error('[startDirectChat] 에러:', e);
+      alert('채팅방 생성 실패');
+    }
+    setProfileModal(null);
+  };
+
   const filteredRooms = rooms.filter((r) =>
     roomLabel(r).includes(search) || (r.lastMessage ?? '').includes(search)
   );
@@ -175,7 +275,7 @@ export default function ChatPopupPage() {
           <span style={s.sideTitle}>채팅</span>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {/* 알림 */}
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
               <button style={s.iconBtn} onClick={() => setShowNoti((v) => !v)}>
                 🔔
                 {unreadNoti > 0 && <span style={s.dot}>{unreadNoti}</span>}
@@ -192,7 +292,7 @@ export default function ChatPopupPage() {
                   {notifications.length === 0
                     ? <p style={s.notiEmpty}>알림 없음</p>
                     : notifications.map((n) => (
-                      <div key={n.id} style={{ ...s.notiItem, background: n.isRead ? '#fafafa' : '#eaf4ff' }}
+                      <div key={n.id} style={{ ...s.notiItem, background: n.isRead ? '#fafafa' : '#fdf0e8' }}
                         onClick={async () => {
                           if (!n.isRead) {
                             await notificationApi.readOne(n.id);
@@ -226,10 +326,11 @@ export default function ChatPopupPage() {
             : filteredRooms.map((r) => (
               <div
                 key={r.roomId}
-                style={{ ...s.roomItem, background: r.roomId === activeRoom?.roomId ? '#e8f4fd' : 'transparent' }}
+                style={{ ...s.roomItem, background: r.roomId === activeRoom?.roomId ? '#fdf0e8' : 'transparent' }}
                 onClick={() => setActiveRoom(r)}
+                onContextMenu={(e) => handleRoomContextMenu(e, r)}
               >
-                <div style={{ ...s.roomAvatar, background: r.roomType === 'GROUP' ? '#1976d2' : '#43a047' }}>
+                <div style={{ ...s.roomAvatar, background: r.roomType === 'GROUP' ? '#d07856' : '#b8643d' }}>
                   {r.roomType === 'GROUP' ? '👥' : '👤'}
                 </div>
                 <div style={s.roomMeta}>
@@ -251,6 +352,81 @@ export default function ChatPopupPage() {
           <div style={s.totalUnread}>읽지 않은 메시지 {totalUnread}개</div>
         )}
       </div>
+
+      {/* 우클릭 컨텍스트 메뉴 */}
+      {roomCtxMenu && (
+        <div
+          ref={ctxMenuRef}
+          style={{ ...s.ctxMenu, top: roomCtxMenu.y, left: roomCtxMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {roomCtxMenu.room.roomType === 'GROUP' && (
+            <button
+              style={s.ctxItem}
+              onClick={() => {
+                setRenaming({ roomId: roomCtxMenu.room.roomId, value: roomCtxMenu.room.name ?? roomLabel(roomCtxMenu.room) });
+                setRoomCtxMenu(null);
+              }}
+            >✏️ 방 이름 변경</button>
+          )}
+          <button
+            style={{ ...s.ctxItem, color: '#c62828' }}
+            onClick={() => handleRoomLeave(roomCtxMenu.room.roomId)}
+          >🚪 채팅방 나가기</button>
+        </div>
+      )}
+
+      {/* 이름 변경 모달 */}
+      {renaming && (
+        <div style={s.modalOverlay} onClick={() => setRenaming(null)}>
+          <div style={s.modal} onClick={(e) => e.stopPropagation()}>
+            <div style={s.modalTitle}>방 이름 변경</div>
+            <input
+              style={s.modalInput}
+              value={renaming.value}
+              onChange={(e) => setRenaming({ ...renaming, value: e.target.value })}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleRenameConfirm(); if (e.key === 'Escape') setRenaming(null); }}
+              autoFocus
+              maxLength={50}
+            />
+            <div style={s.modalBtns}>
+              <button style={s.modalCancel} onClick={() => setRenaming(null)}>취소</button>
+              <button style={s.modalConfirm} onClick={handleRenameConfirm}>변경</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 프로필 모달 */}
+      {profileModal && createPortal(
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}
+          onClick={() => setProfileModal(null)}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 20, width: 280, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ background: nickColor(profileModal.nickname), height: 90, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              <div style={{ width: 68, height: 68, borderRadius: '50%', background: nickColor(profileModal.nickname), border: '4px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 700, color: '#fff', marginBottom: -34 }}>
+                {profileModal.nickname.charAt(0)}
+              </div>
+            </div>
+            <div style={{ paddingTop: 42, paddingBottom: 20, textAlign: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: 17, color: '#262626' }}>{profileModal.nickname}</div>
+            </div>
+            <div style={{ borderTop: '1px solid #f2e8e0', padding: '12px 20px' }}>
+              <button
+                style={{ width: '100%', padding: '11px 0', background: '#d07856', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+                onClick={(e) => { e.stopPropagation(); startDirectChat(profileModal.senderId); }}
+              >
+                💬 1:1 채팅하기
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* ── 채팅 영역 ── */}
       <div style={s.chat}>
@@ -283,13 +459,6 @@ export default function ChatPopupPage() {
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div style={s.chatTitle}>{roomLabel(activeRoom)}</div>
-                    {activeRoom.roomType === 'GROUP' && (
-                      <button
-                        style={s.editNameBtn}
-                        title="채팅방 이름 변경"
-                        onClick={() => { setRoomNameInput(activeRoom.name ?? ''); setEditingRoomName(true); }}
-                      >✏️</button>
-                    )}
                   </div>
                 )}
                 {activeRoom.roomType === 'GROUP' && (
@@ -309,7 +478,11 @@ export default function ChatPopupPage() {
             {showMembers && (
               <div style={s.memberPanel}>
                 {members.map((m) => (
-                  <div key={m.circleMemberId} style={s.memberItem}>
+                  <div
+                    key={m.circleMemberId}
+                    style={{ ...s.memberItem, cursor: m.userId !== userId ? 'pointer' : 'default' }}
+                    onClick={(e) => { if (m.userId === userId) return; e.stopPropagation(); setProfileModal({ nickname: m.nickname, senderId: m.userId }); }}
+                  >
                     <div style={{ ...s.memberAvatar, background: avatarColor(m.userId) }}>
                       {m.nickname.charAt(0)}
                     </div>
@@ -331,7 +504,10 @@ export default function ChatPopupPage() {
                     return (
                       <div key={msg.messageId} style={{ ...s.msgRow, flexDirection: mine ? 'row-reverse' : 'row' }}>
                         {!mine && (
-                          <div style={{ ...s.avatar, background: avatarColor(msg.senderId) }}>
+                          <div
+                            style={{ ...s.avatar, background: avatarColor(msg.senderId), cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); setProfileModal({ nickname: msg.senderNickname ?? '?', senderId: msg.senderId }); }}
+                          >
                             {(msg.senderNickname ?? String(msg.senderId)).charAt(0)}
                           </div>
                         )}
@@ -359,8 +535,9 @@ export default function ChatPopupPage() {
                               <div
                                 style={{
                                   ...s.bubble,
-                                  background: msg.isDeleted ? '#e0e0e0' : mine ? '#fee500' : '#fff',
-                                  color: msg.isDeleted ? '#999' : '#333',
+                                  position: 'relative',
+                                  background: msg.isDeleted ? '#e0e0e0' : mine ? '#d07856' : '#fff',
+                                  color: msg.isDeleted ? '#999' : mine ? '#fff' : '#262626',
                                   fontStyle: msg.isDeleted ? 'italic' : 'normal',
                                 }}
                                 onContextMenu={mine && !msg.isDeleted ? (e) => {
@@ -431,55 +608,55 @@ export default function ChatPopupPage() {
 }
 
 const s: Record<string, React.CSSProperties> = {
-  root: { display: 'flex', height: '100vh', fontFamily: '"Apple SD Gothic Neo", "Malgun Gothic", sans-serif', overflow: 'hidden', background: '#f9f9f9' },
+  root: { display: 'flex', height: '100vh', fontFamily: '"Apple SD Gothic Neo", "Malgun Gothic", sans-serif', overflow: 'hidden', background: '#fdf0e8' },
 
   // 사이드바
-  sidebar: { width: 280, display: 'flex', flexDirection: 'column', background: '#fff', borderRight: '1px solid #e5e5e5', flexShrink: 0 },
+  sidebar: { width: 280, display: 'flex', flexDirection: 'column', background: '#fff', borderRight: '1px solid #f2e8e0', flexShrink: 0 },
   sideHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 8px', flexShrink: 0 },
-  sideTitle: { fontSize: 18, fontWeight: 'bold', color: '#111' },
+  sideTitle: { fontSize: 18, fontWeight: 'bold', color: '#262626' },
   iconBtn: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', position: 'relative', padding: 4 },
-  dot: { position: 'absolute', top: 0, right: 0, background: '#ff4444', color: '#fff', borderRadius: '50%', fontSize: 9, padding: '1px 4px', fontWeight: 'bold' },
+  dot: { position: 'absolute', top: 0, right: 0, background: '#b8643d', color: '#fff', borderRadius: '50%', fontSize: 9, padding: '1px 4px', fontWeight: 'bold' },
   searchWrap: { padding: '6px 12px 10px', flexShrink: 0 },
-  searchInput: { width: '100%', padding: '8px 12px', border: 'none', borderRadius: 20, background: '#f0f0f0', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const },
+  searchInput: { width: '100%', padding: '8px 12px', border: '1px solid #f2e8e0', borderRadius: 20, background: '#fdf0e8', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const },
   roomList: { flex: 1, overflowY: 'auto' as const },
   noRoom: { textAlign: 'center' as const, padding: 24, color: '#aaa', fontSize: 13 },
-  roomItem: { display: 'flex', alignItems: 'center', padding: '10px 14px', cursor: 'pointer', gap: 12, borderBottom: '1px solid #f5f5f5' },
+  roomItem: { display: 'flex', alignItems: 'center', padding: '10px 14px', cursor: 'pointer', gap: 12, borderBottom: '1px solid #f2e8e0' },
   roomAvatar: { width: 44, height: 44, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 },
   roomMeta: { flex: 1, minWidth: 0 },
   roomTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  roomName: { fontSize: 14, fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, color: '#111' },
+  roomName: { fontSize: 14, fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, color: '#262626' },
   roomTime: { fontSize: 11, color: '#aaa', flexShrink: 0, marginLeft: 4 },
   roomLast: { fontSize: 12, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const },
-  unreadBadge: { background: '#ff4444', color: '#fff', borderRadius: 10, fontSize: 10, padding: '2px 6px', fontWeight: 'bold', flexShrink: 0 },
-  totalUnread: { padding: '10px 16px', background: '#fff3e0', fontSize: 12, color: '#e65100', textAlign: 'center' as const, borderTop: '1px solid #ffe0b2' },
+  unreadBadge: { background: '#d07856', color: '#fff', borderRadius: 10, fontSize: 10, padding: '2px 6px', fontWeight: 'bold', flexShrink: 0 },
+  totalUnread: { padding: '10px 16px', background: '#fdf0e8', fontSize: 12, color: '#b8643d', textAlign: 'center' as const, borderTop: '1px solid #f2e8e0' },
 
   // 알림
   notiDropdown: { position: 'absolute' as const, left: 0, top: 36, width: 280, maxHeight: 320, overflowY: 'auto' as const, background: '#fff', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 1000 },
-  notiHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #eee' },
-  notiAll: { background: 'none', border: 'none', color: '#1976d2', cursor: 'pointer', fontSize: 12 },
+  notiHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #f2e8e0' },
+  notiAll: { background: 'none', border: 'none', color: '#d07856', cursor: 'pointer', fontSize: 12 },
   notiEmpty: { padding: 16, textAlign: 'center' as const, color: '#aaa', fontSize: 13 },
-  notiItem: { padding: '10px 14px', borderBottom: '1px solid #f0f0f0', cursor: 'pointer', display: 'flex', flexDirection: 'column' as const, gap: 2 },
+  notiItem: { padding: '10px 14px', borderBottom: '1px solid #f2e8e0', cursor: 'pointer', display: 'flex', flexDirection: 'column' as const, gap: 2 },
   notiMsg: { fontSize: 13, color: '#333' },
   notiTime: { fontSize: 11, color: '#aaa' },
 
   // 채팅 영역
-  chat: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#b2c7d9' },
-  placeholder: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#aaa', background: '#b2c7d9' },
-  chatHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: '#fff', borderBottom: '1px solid #e5e5e5', flexShrink: 0 },
-  chatTitle: { fontWeight: 'bold', fontSize: 15, color: '#111' },
+  chat: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fdf0e8' },
+  placeholder: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#aaa', background: '#fdf0e8' },
+  chatHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: '#fff', borderBottom: '1px solid #f2e8e0', flexShrink: 0 },
+  chatTitle: { fontWeight: 'bold', fontSize: 15, color: '#262626' },
   chatSub: { fontSize: 12, color: '#888', marginTop: 2 },
-  headerBtn: { background: '#f0f0f0', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, color: '#333' },
+  headerBtn: { background: '#fdf0e8', border: '1px solid #f2bb9b', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, color: '#b8643d' },
   editNameBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, padding: '0 2px', opacity: 0.5 },
-  roomNameInput: { flex: 1, padding: '5px 10px', border: '1px solid #1976d2', borderRadius: 8, fontSize: 14, outline: 'none', minWidth: 0 },
-  nameConfirmBtn: { background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 12, flexShrink: 0 },
-  nameCancelBtn: { background: '#eee', color: '#333', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 12, flexShrink: 0 },
+  roomNameInput: { flex: 1, padding: '5px 10px', border: '1px solid #d07856', borderRadius: 8, fontSize: 14, outline: 'none', minWidth: 0 },
+  nameConfirmBtn: { background: '#d07856', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 12, flexShrink: 0 },
+  nameCancelBtn: { background: '#f2e8e0', color: '#262626', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 12, flexShrink: 0 },
 
   // 멤버 패널
-  memberPanel: { display: 'flex', flexWrap: 'wrap' as const, gap: 10, padding: '10px 16px', background: '#fff', borderBottom: '1px solid #eee', maxHeight: 120, overflowY: 'auto' as const, flexShrink: 0 },
+  memberPanel: { display: 'flex', flexWrap: 'wrap' as const, gap: 10, padding: '10px 16px', background: '#fff', borderBottom: '1px solid #f2e8e0', maxHeight: 120, overflowY: 'auto' as const, flexShrink: 0 },
   memberItem: { display: 'flex', alignItems: 'center', gap: 6 },
   memberAvatar: { width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: 12 },
-  memberNick: { fontSize: 12, color: '#333' },
-  leaderTag: { fontSize: 10, background: '#fff3e0', color: '#e65100', borderRadius: 6, padding: '1px 5px' },
+  memberNick: { fontSize: 12, color: '#262626' },
+  leaderTag: { fontSize: 10, background: '#fdf0e8', color: '#b8643d', borderRadius: 6, padding: '1px 5px' },
 
   // 메시지
   msgArea: { flex: 1, overflowY: 'auto' as const, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 },
@@ -492,20 +669,31 @@ const s: Record<string, React.CSSProperties> = {
 
   // 메시지 수정/삭제 메뉴
   menuBox: { position: 'absolute' as const, right: 0, bottom: 24, background: '#fff', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 80 },
-  menuItem: { display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left' as const, cursor: 'pointer', fontSize: 13 },
-  editInput: { padding: '7px 10px', border: '1px solid #1976d2', borderRadius: 8, fontSize: 13, outline: 'none' },
-  editConfirmBtn: { flex: 1, padding: '4px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
-  editCancelBtn: { flex: 1, padding: '4px', background: '#eee', color: '#333', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
+  menuItem: { display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left' as const, cursor: 'pointer', fontSize: 13, color: '#262626' },
+  editInput: { padding: '7px 10px', border: '1px solid #d07856', borderRadius: 8, fontSize: 13, outline: 'none' },
+  editConfirmBtn: { flex: 1, padding: '4px', background: '#d07856', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
+  editCancelBtn: { flex: 1, padding: '4px', background: '#f2e8e0', color: '#262626', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
 
   // 이모지 피커
-  emojiPicker: { display: 'flex', flexWrap: 'wrap' as const, gap: 4, padding: '8px 14px', background: '#fff', borderTop: '1px solid #eee', flexShrink: 0 },
+  emojiPicker: { display: 'flex', flexWrap: 'wrap' as const, gap: 4, padding: '8px 14px', background: '#fff', borderTop: '1px solid #f2e8e0', flexShrink: 0 },
   emojiBtn: { background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', padding: 2 },
 
   // 입력창
-  inputWrap: { background: '#fff', borderTop: '1px solid #e5e5e5', flexShrink: 0 },
+  inputWrap: { background: '#fff', borderTop: '1px solid #f2e8e0', flexShrink: 0 },
   inputToolbar: { display: 'flex', gap: 4, padding: '8px 12px 0' },
   toolBtn: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '4px 6px', borderRadius: 6 },
   inputRow: { display: 'flex', alignItems: 'flex-end', gap: 8, padding: '6px 12px 10px' },
-  textarea: { flex: 1, padding: '10px 14px', border: '1px solid #e0e0e0', borderRadius: 22, fontSize: 14, outline: 'none', resize: 'none' as const, lineHeight: 1.5, maxHeight: 100, overflowY: 'auto' as const, fontFamily: 'inherit' },
-  sendBtn: { background: '#fee500', color: '#111', border: 'none', borderRadius: 20, padding: '10px 18px', fontWeight: 'bold', cursor: 'pointer', fontSize: 14, flexShrink: 0 },
+  textarea: { flex: 1, padding: '10px 14px', border: '1px solid #f2e8e0', borderRadius: 22, fontSize: 14, outline: 'none', resize: 'none' as const, lineHeight: 1.5, maxHeight: 100, overflowY: 'auto' as const, fontFamily: 'inherit' },
+  sendBtn: { background: '#d07856', color: '#fff', border: 'none', borderRadius: 20, padding: '10px 18px', fontWeight: 'bold', cursor: 'pointer', fontSize: 14, flexShrink: 0 },
+  // 컨텍스트 메뉴
+  ctxMenu: { position: 'fixed' as const, background: '#fff', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 10001, minWidth: 160, border: '1px solid #f2e8e0', overflow: 'hidden' },
+  ctxItem: { display: 'block', width: '100%', padding: '11px 16px', background: 'none', border: 'none', textAlign: 'left' as const, cursor: 'pointer', fontSize: 13, color: '#262626' },
+  // 모달
+  modalOverlay: { position: 'fixed' as const, inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10002 },
+  modal: { background: '#fff', borderRadius: 14, padding: '24px 24px 20px', width: 300, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' },
+  modalTitle: { fontWeight: 'bold', fontSize: 15, color: '#262626', marginBottom: 14 },
+  modalInput: { width: '100%', padding: '10px 14px', border: '1px solid #d07856', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' as const },
+  modalBtns: { display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' },
+  modalCancel: { padding: '8px 16px', background: '#f2e8e0', color: '#262626', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
+  modalConfirm: { padding: '8px 16px', background: '#d07856', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 'bold' },
 };

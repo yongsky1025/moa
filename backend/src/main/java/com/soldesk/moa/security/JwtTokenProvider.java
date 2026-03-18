@@ -8,6 +8,8 @@ import javax.crypto.SecretKey;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import com.soldesk.moa.users.entity.constant.UserRole;
 
 import io.jsonwebtoken.Claims;
@@ -17,6 +19,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 
+@Slf4j
 @Component
 // JWT 생성/검증 담당 Provider(access/refresh)
 public class JwtTokenProvider {
@@ -94,6 +97,7 @@ public class JwtTokenProvider {
             parseClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
+            log.warn("JWT validation failed: {}", e.getMessage());
             return false;
         }
     }

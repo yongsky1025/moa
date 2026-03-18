@@ -42,17 +42,25 @@ public class ChatRoomService {
             throw new ChatException(ChatErrorCode.INVALID_REQUEST, "자기 자신과 1:1 채팅을 할 수 없습니다.");
         }
         String key = directKey(myId, otherId);
-        return roomRepo.findByDirectKey(key).orElseGet(() -> {
+        ChatRoom room = roomRepo.findByDirectKey(key).orElseGet(() -> {
             try {
-                ChatRoom room = roomRepo.save(ChatRoom.direct(key));
-                memberRepo.save(ChatRoomMember.join(room.getId(), myId));
-                memberRepo.save(ChatRoomMember.join(room.getId(), otherId));
-                return room;
+                ChatRoom r = roomRepo.save(ChatRoom.direct(key));
+                memberRepo.save(ChatRoomMember.join(r.getId(), myId));
+                memberRepo.save(ChatRoomMember.join(r.getId(), otherId));
+                return r;
             } catch (DataIntegrityViolationException e) {
                 // 동시 요청으로 UNIQUE 충돌 → 재조회
                 return roomRepo.findByDirectKey(key).orElseThrow(() -> e);
             }
         });
+        // 기존 방이 있어도 두 유저가 멤버인지 확인 (탈퇴 후 재진입 등 대비)
+        if (!memberRepo.existsByRoomIdAndUserId(room.getId(), myId)) {
+            memberRepo.save(ChatRoomMember.join(room.getId(), myId));
+        }
+        if (!memberRepo.existsByRoomIdAndUserId(room.getId(), otherId)) {
+            memberRepo.save(ChatRoomMember.join(room.getId(), otherId));
+        }
+        return room;
     }
 
     /**

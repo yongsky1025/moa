@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authApi } from '../../api/authApi';
 import type { AuthUser, LoginRequest, SignUpRequest } from '../types/auth';
+import { useAuthStore } from '../../store/authStore';
 
 interface AuthState {
   user: AuthUser | null;
@@ -21,8 +22,11 @@ export const login = createAsyncThunk(
   async (req: LoginRequest, { rejectWithValue }) => {
     try {
       const res = await authApi.login(req);
-      localStorage.setItem('accessToken', res.data.accessToken);
-      return res.data.user as AuthUser;
+      const token: string = res.data.accessToken;
+      const user = res.data.user as AuthUser;
+      localStorage.setItem('accessToken', token);
+      useAuthStore.getState().setAuth(token, user);
+      return user;
     } catch (err: unknown) {
       if (err instanceof Error) return rejectWithValue(err.message);
       return rejectWithValue('로그인 실패');
