@@ -3,6 +3,7 @@ package com.soldesk.moa.place.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.soldesk.moa.place.dto.NearbyPlaceResponseDTO;
 import com.soldesk.moa.place.dto.PlaceCreateDTO;
 import com.soldesk.moa.place.dto.PlaceResponseDTO;
 import com.soldesk.moa.place.service.PlaceService;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequiredArgsConstructor
@@ -55,6 +57,14 @@ public class PlaceController {
     @DeleteMapping("/{id}")
     public void deletePlace(@PathVariable Long id) {
         placeService.deletePlace(id);
+    }
+
+    @GetMapping("/nearby")
+    public List<NearbyPlaceResponseDTO> getNearbyPlaces(
+            @RequestParam double lat,
+            @RequestParam double lng,
+            @RequestParam(defaultValue = "3.0") double radius) {
+        return placeService.getNearbyPlaces(lat, lng, radius);
     }
 
 }
