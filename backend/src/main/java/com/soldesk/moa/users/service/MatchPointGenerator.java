@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.soldesk.moa.circle.entity.Circle;
+import com.soldesk.moa.circle.entity.CircleEnergyProfile;
 import com.soldesk.moa.users.entity.UsersEnergyProfile;
 
 @Component
@@ -80,24 +80,24 @@ public class MatchPointGenerator {
      * 둘 다 없음 → fallback 문장
      * 4. 선택된 축의 평균값으로 구간별 표현 반환
      */
-    public List<String> generate(UsersEnergyProfile userProfile, Circle circle) {
+    public List<String> generate(UsersEnergyProfile userProfile, CircleEnergyProfile circleProfile) {
 
         // 5축 비교 정보 생성 (가중치 순서 동일)
         List<AxisMatch> axes = List.of(
                 new AxisMatch("socialLoad", 0.28,
-                        userProfile.getSocialLoad(), circle.getSocialLoad(),
+                        userProfile.getSocialLoad(), circleProfile.getSocialLoad(),
                         SOCIAL_LOAD_LABELS),
                 new AxisMatch("interactionMode", 0.24,
-                        userProfile.getInteractionMode(), circle.getInteractionMode(),
+                        userProfile.getInteractionMode(), circleProfile.getInteractionMode(),
                         INTERACTION_MODE_LABELS),
                 new AxisMatch("activityIntensity", 0.20,
-                        userProfile.getActivityIntensity(), circle.getActivityIntensity(),
+                        userProfile.getActivityIntensity(), circleProfile.getActivityIntensity(),
                         ACTIVITY_INTENSITY_LABELS),
                 new AxisMatch("commitmentLevel", 0.16,
-                        userProfile.getCommitmentLevel(), circle.getCommitmentLevel(),
+                        userProfile.getCommitmentLevel(), circleProfile.getCommitmentLevel(),
                         COMMITMENT_LEVEL_LABELS),
                 new AxisMatch("structureLevel", 0.12,
-                        userProfile.getStructureLevel(), circle.getStructureLevel(),
+                        userProfile.getStructureLevel(), circleProfile.getStructureLevel(),
                         STRUCTURE_LEVEL_LABELS));
 
         // strong (차이 0~1) / soft (차이 2) 분류, 가중치 내림차순 정렬
