@@ -2,7 +2,6 @@ import axios from 'axios';
 import type {
   AdminUserSearchDTO,
   PageRequestDTO,
-  UserInfoDTO,
 } from '../types/adminTypes';
 import { API_SERVER_HOST_ADMIN } from './adminDashboardApi';
 
@@ -11,7 +10,8 @@ export const fetchAdminUserList = async (dto: AdminUserSearchDTO) => {
     params: {
       page: dto.page,
       size: dto.size,
-      name: dto.name,
+      type: dto.type,
+      keyword: dto.keyword,
       gender: dto.gender,
       status: dto.status,
       role: dto.role,

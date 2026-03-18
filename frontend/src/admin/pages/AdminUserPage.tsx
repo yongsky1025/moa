@@ -1,5 +1,4 @@
 import AdminUserFilterBar from '../component/adminUsers/AdminUserFilterbar';
-import AdminUserSummaryCards from '../component/adminUsers/AdminUserSummaryCards';
 import AdminUserTable from '../component/adminUsers/AdminUserTable';
 import {
   AdminUsersProvider,
@@ -71,7 +70,7 @@ export default function AdminUsersPage() {
     <AdminUsersProvider>
       <div className="flex min-h-full flex-col gap-6 bg-[#FDFAF8] px-6 py-6">
         <AdminUserPageHeader />
-        <AdminUserSummaryCards />
+        {/* <AdminUserSummaryCards /> */}
         <AdminUserFilterBar />
         <AdminUserTable />
       </div>

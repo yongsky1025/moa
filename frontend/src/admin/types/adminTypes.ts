@@ -27,6 +27,8 @@ export type SanctionType =
   | 'CONTENT_DELETE';
 
 export interface PageRequestDTO {
+  type?: string;
+  keyword?: string;
   page: number; // 1-based
   size: number;
 }
@@ -108,7 +110,6 @@ export interface PostActivitySummaryDTO {
 
 // ================= 유저관리 ==============
 export interface AdminUserSearchDTO extends PageRequestDTO {
-  name?: string;
   gender?: UserGender;
   status?: UserStatus;
   role?: UserRole;

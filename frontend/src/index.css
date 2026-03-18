@@ -10,3 +10,14 @@ body {
 button {
   cursor: pointer;
 }
+
+@theme {
+  --color-moa-primary:   #D07856;
+  --color-moa-hover:     #B8643D;
+  --color-moa-light:     #FDF0E8;
+  --color-moa-border:    #F2E8E0;
+  --color-moa-muted:     #F2935C;
+  --color-moa-text:      #262626;
+  --color-moa-secondary: #6B4F3A;
+  --color-moa-subtle:    #9B7B6A;
+}
