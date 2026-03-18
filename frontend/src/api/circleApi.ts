@@ -14,7 +14,7 @@ export const circleApi = {
     api.get<{ categoryId: number; categoryName: string }[]>('/circles/categories'),
 
   // 서클 목록 (categoryId 없으면 전체)
-  getCircles: (params?: { categoryId?: number; page?: number; size?: number }) =>
+  getCircles: (params?: { categoryId?: number; page?: number; size?: number; keyword?: string; type?: string }) =>
     api.get<PageResult<CircleResponse>>('/circles', { params }),
 
   // 내가 가입한 서클
