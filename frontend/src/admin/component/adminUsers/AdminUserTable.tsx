@@ -86,7 +86,7 @@ export default function AdminUserTable() {
               return (
                 <tr
                   key={user.userId}
-                  onClick={() => navigate(`/admin/users/${user.userId}`)}
+                  onClick={() => navigate(`/admin/users/profile/${user.userId}`)}
                   className={`group cursor-pointer transition-colors
                     ${isAdmin ? 'bg-moa-light/40 hover:bg-moa-light' : 'hover:bg-moa-light/30'}`}
                 >
@@ -135,7 +135,7 @@ export default function AdminUserTable() {
 
                   <td className="px-5 py-3.5 text-right" onClick={e => e.stopPropagation()}>
                     <button
-                      onClick={() => navigate(`/admin/users/${user.userId}`)}
+                      onClick={() => navigate(`/admin/users/profile/${user.userId}`)}
                       className="bg-moa-primary hover:bg-moa-hover inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white opacity-0 transition-all group-hover:opacity-100 whitespace-nowrap"
                     >
                       상세보기

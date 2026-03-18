@@ -130,6 +130,7 @@ export interface UserInfoDTO {
   userId: number;
   name: string;
   age: number;
+  address?: string;
   birthDate: string;
   gender: UserGender;
   role: UserRole;
@@ -141,9 +142,10 @@ export interface UserInfoDTO {
 }
 
 export interface UserInfoPostDTO {
-  boardName: number;
+  boardName: string;
   title: string;
   content: string;
+  viewCount: number;
   createDate: string;
   countReply: number;
 }

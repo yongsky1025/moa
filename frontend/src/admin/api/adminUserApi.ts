@@ -23,7 +23,7 @@ export const fetchAdminUserList = async (dto: AdminUserSearchDTO) => {
 };
 
 export const fetchAdminUserProfile = async (id: number) => {
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/profile/${id}`);
+  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/users/profile/${id}`);
   console.log('user profile data', res);
 
   return res.data;
@@ -31,7 +31,7 @@ export const fetchAdminUserProfile = async (id: number) => {
 
 export const fetchAdminUserPosts = async (id: number, dto: PageRequestDTO) => {
   const { page, size = 10 } = dto;
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/profile/${id}/post`, {
+  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/users/profile/${id}/post`, {
     params: { page: page, size: size },
   });
 
@@ -45,7 +45,7 @@ export const fetchAdminUserReplies = async (
   dto: PageRequestDTO,
 ) => {
   const { page, size = 10 } = dto;
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/profile/${id}/reply`, {
+  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/users/profile/${id}/reply`, {
     params: { page: page, size: size },
   });
 
@@ -59,7 +59,7 @@ export const fetchAdminUserCircles = async (
   dto: PageRequestDTO,
 ) => {
   const { page, size = 10 } = dto;
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/profile/${id}/circle`, {
+  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/users/profile/${id}/circle`, {
     params: { page: page, size: size },
   });
 

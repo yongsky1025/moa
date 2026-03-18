@@ -1,6 +1,7 @@
 import AdminLayout from '../admin/component/AdminLayout';
 import AdminDashboardPage from '../admin/pages/AdminDashboardPage';
 import AdminUsersPage from '../admin/pages/AdminUserPage';
+import AdminUserDetailPage from '../admin/pages/AdminUserDetailPage.tsx';
 
 export const adminRouter = () => {
   return [
@@ -10,7 +11,8 @@ export const adminRouter = () => {
       Component: AdminLayout,
       children: [
         { path: 'maindashboard', Component: AdminDashboardPage },
-        { path: 'users',         Component: AdminUsersPage      },
+        { path: 'users',              Component: AdminUsersPage },
+        { path: 'users/profile/:id',  Component: AdminUserDetailPage },
         // 추후 추가
         // { path: 'circles',        Component: AdminCirclesPage   },
         // { path: 'circles/pending', Component: AdminCirclesPendingPage },
