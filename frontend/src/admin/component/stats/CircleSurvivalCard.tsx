@@ -84,7 +84,7 @@ export default function CircleSurvivalCard({ data, loading }: Props) {
       </div>
 
       <p className="mt-2.5 text-center text-[11px]" style={{ color: '#9B7B6A' }}>
-        최근 30일 기준
+        신생모임 포함 · 30일+ 무일정 = 비활성
       </p>
     </div>
   );

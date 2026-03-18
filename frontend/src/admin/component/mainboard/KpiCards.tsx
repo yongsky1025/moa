@@ -47,7 +47,7 @@ export default function KpiCards({ mainData, postData, loading }: Props) {
     {
       label: '전체 유저',
       value: uc ? fmtNum(uc.countTotalUser) : '-',
-      sub: uc ? `남 ${uc.maleRatio}% · 여 ${uc.femaleRatio}%` : '',
+      sub: uc ? `남 ${(+uc.maleRatio).toFixed(1)}% · 여 ${(+uc.femaleRatio).toFixed(1)}%` : '',
     },
     {
       label: '모임 참여율',

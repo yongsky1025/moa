@@ -7,6 +7,8 @@ import AdminReportDetailPage from '../admin/pages/AdminReportDetailPage';
 import AdminSanctionsPage from '../admin/pages/AdminSanctionsPage';
 import AdminSanctionDetailPage from '../admin/pages/AdminSanctionDetailPage';
 import AdminStatsPage from '../admin/pages/AdminStatsPage';
+import AdminLogsPage from '../admin/pages/AdminLogsPage';
+import AdminUserLogsPage from '../admin/pages/AdminUserLogsPage';
 
 export const adminRouter = () => {
   return [
@@ -22,14 +24,14 @@ export const adminRouter = () => {
         { path: 'reports/:id', Component: AdminReportDetailPage },
         { path: 'sanctions', Component: AdminSanctionsPage },
         { path: 'sanctions/:id', Component: AdminSanctionDetailPage },
-        { path: 'stats',          Component: AdminStatsPage },
+        { path: 'stats', Component: AdminStatsPage },
+        { path: 'logs', Component: AdminLogsPage },
+        { path: 'logs/user', Component: AdminUserLogsPage },
         // 추후 추가
         // { path: 'circles',        Component: AdminCirclesPage   },
         // { path: 'circles/pending', Component: AdminCirclesPendingPage },
         // { path: 'posts',          Component: AdminPostsPage     },
         // { path: 'places',         Component: AdminPlacesPage    },
-        // { path: 'logs',           Component: AdminLogsPage      },
-        // { path: 'logs/user',      Component: AdminLogsUserPage  },
       ],
     },
   ];

@@ -292,3 +292,30 @@ export interface SanctionCancelRequest {
   adminId: number;
   cancelReason: string;
 }
+
+// ===== 유저 활동 로그 =====
+export type ActionType =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'LOGIN'
+  | 'LOGOUT'
+  | 'WITHDRAW'
+  | 'JOIN_CIRCLE'
+  | 'LEAVE_CIRCLE'
+  | 'UNKNOWN';
+
+export interface AdminActionLog {
+  id: number;
+  actorId: number | null;
+  targetType: string | null;
+  targetId: number | null;
+  actionType: ActionType;
+  methodName: string | null;
+  requestUrl: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  timestamp: string; // ISO datetime
+}
+
+export interface LogSearchDTO extends PageRequestDTO {}

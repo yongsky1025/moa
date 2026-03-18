@@ -34,7 +34,7 @@ public class SearchReplyRepositoryImpl extends QuerydslRepositorySupport impleme
 
         JPQLQuery<Reply> query = from(reply);
         JPQLQuery<Tuple> tuple = query.select(dateExpr, reply.replyId.count());
-        tuple.where(reply.createDate.goe(fromDt));
+        tuple.where(reply.createDate.goe(fromDt).and(reply.deleted.eq(false)));
         tuple.groupBy(dateExpr);
         tuple.orderBy(dateExpr.asc());
 

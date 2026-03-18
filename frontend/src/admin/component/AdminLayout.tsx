@@ -3,10 +3,16 @@
 // Navbar, AdminSidebar, Footer는 이미 컴포넌트화 되어있음
 // <Outlet /> 자리에 각 어드민 페이지가 렌더링됨
 
-import { Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import Navbar      from '../../common/layout/Navbar';
 import Footer      from '../../common/layout/Footer';
 import AdminSidebar from './AdminSidebar';
+
+// F5 새로고침 시 브라우저의 스크롤 위치 자동 복원 비활성화
+if (typeof window !== 'undefined') {
+  window.history.scrollRestoration = 'manual';
+}
 
 interface AdminLayoutProps {
   isLoggedIn?: boolean;
@@ -19,6 +25,13 @@ export default function AdminLayout({
   isAdmin    = true,
   userName   = '',
 }: AdminLayoutProps) {
+  const { pathname } = useLocation();
+
+  // 라우트 변경 및 새로고침 시 window 스크롤을 최상단으로
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   return (
     <div className="flex min-h-screen flex-col" style={{ background: '#FDFAF8' }}>
 

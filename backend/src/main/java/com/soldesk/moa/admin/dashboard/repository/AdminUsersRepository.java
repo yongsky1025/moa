@@ -15,7 +15,7 @@ public interface AdminUsersRepository extends JpaRepository<Users, Long>, Search
     @Query("""
             select count(u.userId), count(case when u.userGender = 'MALE' then 1 end), count(case when u.userGender = 'UNSPECIFIED' then 1 end)
             from Users u
-            where u.userStatus = 'ACTIVE'
+            where u.userStatus <> 'WITHDRAWN'
             """)
     Object[] getCountAllAndMale();
 

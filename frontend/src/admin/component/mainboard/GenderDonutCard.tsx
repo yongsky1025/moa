@@ -6,9 +6,9 @@ interface Props {
 }
 
 const COLORS = {
-  male: { stroke: '#D07856', dot: 'bg-[#D07856]' },
-  female: { stroke: '#F2935C', dot: 'bg-[#F2935C]' },
-  unspecified: { stroke: '#F2BB9B', dot: 'bg-[#F2BB9B]' },
+  male: { stroke: '#4A90D9', dot: 'bg-[#4A90D9]' },
+  female: { stroke: '#E05C8A', dot: 'bg-[#E05C8A]' },
+  unspecified: { stroke: '#9E9E9E', dot: 'bg-[#9E9E9E]' },
 };
 
 interface Seg {
@@ -136,7 +136,7 @@ export default function GenderDonutCard({ data, loading }: Props) {
                 <p className="text-moa-text text-sm font-bold">
                   {s.count.toLocaleString('ko-KR')}명
                 </p>
-                <p className="text-moa-subtle mt-0.5 text-[10px]">{s.ratio}%</p>
+                <p className="text-moa-subtle mt-0.5 text-[10px]">{(+s.ratio).toFixed(1)}%</p>
               </div>
             ))}
           </div>

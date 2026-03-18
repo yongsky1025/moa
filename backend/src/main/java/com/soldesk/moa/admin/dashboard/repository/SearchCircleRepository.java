@@ -22,7 +22,8 @@ public interface SearchCircleRepository {
     // 모임 생존률
     Long countTotalCircle();
 
-    Long countActiveCircle(LocalDateTime since);
+    // 성숙(30일+) 모임 중 최근 30일 내 일정이 없는 비활성 모임 수
+    Long countInactiveMatureCircle(LocalDateTime maturityThreshold, LocalDateTime activityThreshold);
 
     // 시간대별 활동량 - 모임(생성)
     List<Object[]> findCircleCreateActivity(LocalDateTime since);

@@ -149,10 +149,10 @@ public class AdminService {
 
                         long countYear = ym.getYear();
                         long countMonth = ym.getMonthValue();
-                        signUpCount = adminUsersRepository.getSignUpCount(targetStart, targetEnd);
+                        long withdrawnCount2 = adminUsersRepository.getWithdrawnUsersCount(targetStart, targetEnd);
 
                         MonthlyCountDTO monthlyCountDTO = entityToMonthlyCountDTO(countYear,
-                                        countMonth, signUpCount);
+                                        countMonth, withdrawnCount2);
 
                         withdrawnChart.add(monthlyCountDTO);
                 }

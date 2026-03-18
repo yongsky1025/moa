@@ -97,14 +97,19 @@ public class AdminStatisticsService {
                 }).toList();
     }
 
-    // 모임 생존률(현재를 기점으로 한달 내 일정이 있는 활동하는 모임)
+    // 모임 생존률
+    // 활성 = 신생모임(30일 미만) + 성숙모임(30일 이상) 중 최근 30일 내 일정 있음
+    // 비활성 = 성숙모임 중 최근 30일 내 일정 없음
+    // 생존률 = (전체 - 비활성) / 전체
     @Transactional(readOnly = true)
     public CircleSurvivalDTO getCircleSurvival() {
 
-        LocalDateTime since = LocalDateTime.now().minusDays(30);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime monthAgo = now.minusDays(30);
 
         long total = adminCircleRepository.countTotalCircle();
-        long active = adminCircleRepository.countActiveCircle(since);
+        long inactiveMature = adminCircleRepository.countInactiveMatureCircle(monthAgo, monthAgo);
+        long active = total - inactiveMature;
 
         double rate = total == 0 ? 0.0 : Math.round((double) active / total * 10000.0) / 100.0;
 
