@@ -63,6 +63,7 @@ public class TestDataSetupTest {
             .structureLevel(2)
             .activityIntensity(4)
             .commitmentLevel(3)
+            .energyType(EnergyType.classify(3, 4, 4))
             .build());
 
         System.out.println("✅ userId=1 에너지 프로필 생성 완료");
@@ -146,13 +147,15 @@ public class TestDataSetupTest {
             Users saved = usersRepository.save(user);
             userList.add(saved);
 
+            int sl = rand(1, 5), im = rand(1, 5), ai = rand(1, 5);
             usersEnergyProfileRepository.save(UsersEnergyProfile.builder()
                 .user(saved)
-                .socialLoad(rand(1, 5))
-                .interactionMode(rand(1, 5))
+                .socialLoad(sl)
+                .interactionMode(im)
                 .structureLevel(rand(1, 5))
-                .activityIntensity(rand(1, 5))
+                .activityIntensity(ai)
                 .commitmentLevel(rand(1, 5))
+                .energyType(EnergyType.classify(sl, im, ai))
                 .build());
         }
 
