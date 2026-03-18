@@ -49,7 +49,6 @@ export default function CircleDetailPage() {
 
   const [circle, setCircle] = useState<CircleResponse | null>(null);
   const [activeMembers, setActiveMembers] = useState<CircleMember[]>([]);
-  const [pendingMembers, setPendingMembers] = useState<CircleMember[]>([]);
   const [myMember, setMyMember] = useState<CircleMember | null>(null);
   const [upcomingSchedules, setUpcomingSchedules] = useState<ScheduleResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,12 +85,6 @@ export default function CircleDetailPage() {
           }
         }
 
-        if (me?.role === 'LEADER') {
-          try {
-            const pendingRes = await circleApi.getMembers(cid, { status: 'PENDING', size: 100 });
-            setPendingMembers(pendingRes.data.dtoList);
-          } catch {}
-        }
       }
     } finally {
       setLoading(false);
@@ -169,10 +162,6 @@ export default function CircleDetailPage() {
     if (!confirm('서클에서 탈퇴하시겠습니까?')) return;
     action(() => circleApi.leaveCircle(cid), '탈퇴했습니다.');
   };
-  const handleApprove = (memberId: number) =>
-    action(() => circleApi.updateMemberStatus(cid, memberId, 'ACTIVE'), '승인했습니다.');
-  const handleReject = (memberId: number) =>
-    action(() => circleApi.updateMemberStatus(cid, memberId, 'REJECTED'), '거절했습니다.');
 
   if (loading) return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
@@ -278,30 +267,6 @@ export default function CircleDetailPage() {
 
           {/* 왼쪽: 다가오는 일정 */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-            {/* 리더 전용: 가입 대기 */}
-            {isLeader && pendingMembers.length > 0 && (
-              <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-                <h2 style={sectionTitleStyle}>가입 대기 ({pendingMembers.length}명)</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {pendingMembers.map(m => (
-                    <div key={m.circleMemberId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
-                      <span style={{ fontSize: 14, fontWeight: 500 }}>{m.nickname}</span>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => handleApprove(m.circleMemberId)}
-                          style={{ ...smallBtnStyle, background: '#16a34a', color: 'white', border: 'none' }}>
-                          승인
-                        </button>
-                        <button onClick={() => handleReject(m.circleMemberId)}
-                          style={{ ...smallBtnStyle, background: 'white', color: '#dc2626', border: '1px solid #fca5a5' }}>
-                          거절
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* 다가오는 일정 */}
             <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
@@ -425,7 +390,7 @@ export default function CircleDetailPage() {
                 <p style={{ fontSize: 13, color: '#aaa', textAlign: 'center', padding: '16px 0' }}>멤버가 없습니다.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                  {activeMembers.map(m => (
+                  {activeMembers.slice(0, 5).map(m => (
                     <div key={m.circleMemberId} style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       padding: '10px 0', borderBottom: '1px solid #f5f5f5',

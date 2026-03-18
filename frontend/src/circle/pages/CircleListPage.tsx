@@ -49,6 +49,7 @@ export default function CircleListPage() {
   const [prevPage, setPrevPage] = useState(0);
   const [nextPage, setNextPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [onlyOpen, setOnlyOpen] = useState(false);
 
   useEffect(() => {
     circleApi.getCategories().then((res) => setCategories(res.data));
@@ -68,6 +69,7 @@ export default function CircleListPage() {
         const res = await circleApi.getCircles({
           ...(selectedCategoryId ? { categoryId: selectedCategoryId } : {}),
           ...(keyword ? { keyword } : {}),
+          ...(onlyOpen ? { type: 'OPEN' } : {}),
           page,
           size: PAGE_SIZE,
         });
@@ -84,7 +86,7 @@ export default function CircleListPage() {
       }
     };
     fetchCircles();
-  }, [selectedCategoryId, keyword, page]);
+  }, [selectedCategoryId, keyword, page, onlyOpen]);
 
   const handleCategoryClick = (categoryId: number | null) => {
     setSelectedCategoryId(categoryId);
@@ -96,6 +98,7 @@ export default function CircleListPage() {
     setKeyword(inputValue);
     setPage(1);
   };
+
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8', color: '#111' }}>
@@ -219,7 +222,8 @@ export default function CircleListPage() {
 
         {/* 메인 */}
         <main style={{ flex: 1, minWidth: 0 }}>
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 0, marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20, alignItems: 'center' }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 0, flex: 1 }}>
             <input
               type="text"
               value={inputValue}
@@ -238,6 +242,20 @@ export default function CircleListPage() {
               검색
             </button>
           </form>
+          <button
+            type="button"
+            onClick={() => { setOnlyOpen(v => !v); setPage(1); }}
+            style={{
+              padding: '11px 18px', borderRadius: 10, border: `1px solid ${onlyOpen ? '#16a34a' : '#e5e5e5'}`,
+              backgroundColor: onlyOpen ? '#f0fdf4' : 'white',
+              color: onlyOpen ? '#16a34a' : '#888',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+              transition: 'all 0.15s',
+            }}
+          >
+            모집중만 보기
+          </button>
+          </div>
 
           {loading ? (
             <p style={{ textAlign: 'center', color: '#888', padding: '60px 0' }}>로딩 중...</p>
