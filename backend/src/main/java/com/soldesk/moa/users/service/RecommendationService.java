@@ -6,8 +6,9 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.soldesk.moa.circle.entity.Circle;
-import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.circle.entity.CircleEnergyProfile;
+import com.soldesk.moa.circle.entity.constant.CircleStatus;
+import com.soldesk.moa.circle.repository.CircleEnergyProfileRepository;
 import com.soldesk.moa.users.dto.energyprofile.RecommendationResponseDTO;
 import com.soldesk.moa.users.entity.UsersEnergyProfile;
 import com.soldesk.moa.users.repository.UserEnergyProfileRepository;
@@ -20,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class RecommendationService {
 
     private final UserEnergyProfileRepository userEnergyProfileRepository;
-    private final CircleRepository circleRepository;
+    private final CircleEnergyProfileRepository circleEnergyProfileRepository;
 
     /**
      * 축별 가중치(에너지 소모 영향도 순, 0.04 등차, 합계
@@ -47,15 +48,15 @@ public class RecommendationService {
 
         double[] userVector = toVector(userProfile);
 
-        // 2. 모집중인 서클만 조회
-        List<Circle> circles = circleRepository.findAllOpen();
+        // 2. 모집중인 서클의 에너지 프로필 조회
+        List<CircleEnergyProfile> profiles = circleEnergyProfileRepository.findByCircle_Status(CircleStatus.OPEN);
 
-        // 3. 유클리드 유사도 계산 + 점수순 정렬
-        return circles.stream()
-                .map(circle -> {
-                    double[] circleVector = toVector(circle);
+        // 3. 가중 유클리드 유사도 계산 + 점수순 정렬
+        return profiles.stream()
+                .map(ep -> {
+                    double[] circleVector = toVector(ep);
                     double similarity = weightedEuclideanSimilarity(userVector, circleVector);
-                    return new RecommendationResponseDTO(circle, similarity);
+                    return new RecommendationResponseDTO(ep.getCircle(), similarity);
                 })
                 .sorted((a, b) -> Double.compare(b.getSimilarity(), a.getSimilarity()))
                 .limit(limit)
@@ -80,7 +81,7 @@ public class RecommendationService {
     }
 
     // 서클 → 벡터
-    private double[] toVector(Circle circle) {
+    private double[] toVector(CircleEnergyProfile circle) {
         return new double[] {
                 circle.getSocialLoad(),
                 circle.getInteractionMode(),
@@ -90,13 +91,12 @@ public class RecommendationService {
         };
     }
 
-    // 코사인 유사도 계산
-    // === 가중 코사인 유사도(Weighted Cosine Similarity) ===
+    // === 가중 유클리드 유사도(Weighted Euclidean Similarity) ===
 
     /**
-     * 가중 코사인 유사도: cos_w(A, B) = Σ(w_i × a_i × b_i) / (√Σ(w_i × a_i²) × √Σ(w_i ×
-     * b_i²))
+     * 가중 유클리드 유사도: 1 / (1 + √Σ(w_i × (a_i - b_i)²))
      * 각 축에 가중치를 곱해서, 중요한 축의 차이가 유사도에 더 크게 반영됨
+     * 결과: 0~1 범위 (1에 가까울수록 유사)
      */
     private double weightedEuclideanSimilarity(double[] a, double[] b) {
         double sum = 0.0;

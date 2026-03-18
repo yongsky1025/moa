@@ -1,20 +1,4 @@
 import { useState } from 'react';
-<<<<<<< HEAD
-import { Link } from 'react-router-dom';
-
-export interface NavbarProps {
-  isLoggedIn: boolean;
-  onToggleLogin: () => void;
-  isAdmin?: boolean;
-}
-
-const dropdownItems: Record<string, { label: string; href: string }[]> = {
-  '모임 찾기': [
-    { label: '전체 모임', href: '/circles' },
-    { label: '카테고리별', href: '/circles' },
-    { label: '지역별', href: '/circles' },
-    { label: '날짜별', href: '/circles' },
-=======
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../users/reducers/authSlice';
@@ -24,7 +8,6 @@ const dropdownItems: Record<string, { label: string; href: string }[]> = {
   '모임 찾기': [
     { label: '전체 모임', href: '/circle' },
     { label: '내 모임', href: '/circle/my' },
->>>>>>> origin/circles
   ],
   커뮤니티: [
     { label: '자유게시판', href: '#' },
@@ -59,28 +42,20 @@ export default function Navbar() {
     isLoggedIn ? '내 에너지' : '에너지 테스트',
     '장소 추천',
   ];
-<<<<<<< HEAD
-  const navLinks: Record<string, string> = {
-    '모임 찾기': '/circles',
-=======
 
   const navLinks: Record<string, string> = {
     '모임 찾기': '/circle',
->>>>>>> origin/circles
     커뮤니티: '#',
     '에너지 테스트': '#',
     '내 에너지': '#',
     '장소 추천': '#',
     '관리자 페이지': '/admin',
   };
-<<<<<<< HEAD
-=======
 
   const handleLogout = async () => {
     await dispatch(logout());
     navigate('/');
   };
->>>>>>> origin/circles
 
   return (
     <header
@@ -146,13 +121,9 @@ export default function Navbar() {
                     lineHeight: '60px',
                     transition: 'color 0.15s',
                     visibility:
-<<<<<<< HEAD
                       item === '관리자 페이지' && !isAdmin
                         ? 'hidden'
                         : 'visible',
-=======
-                      item === '관리자 페이지' && !isAdmin ? 'hidden' : 'visible',
->>>>>>> origin/circles
                     pointerEvents:
                       item === '관리자 페이지' && !isAdmin ? 'none' : 'auto',
                   }}
@@ -193,12 +164,8 @@ export default function Navbar() {
                           (e.currentTarget.style.backgroundColor = '#f7f7f8')
                         }
                         onMouseLeave={(e) =>
-<<<<<<< HEAD
                           (e.currentTarget.style.backgroundColor =
                             'transparent')
-=======
-                          (e.currentTarget.style.backgroundColor = 'transparent')
->>>>>>> origin/circles
                         }
                       >
                         {sub.label}
@@ -213,11 +180,9 @@ export default function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 68 }}>
             <button
-<<<<<<< HEAD
-              onClick={onToggleLogin}
-=======
-              onClick={isLoggedIn ? handleLogout : () => navigate('/user/login')}
->>>>>>> origin/circles
+              onClick={
+                isLoggedIn ? handleLogout : () => navigate('/user/login')
+              }
               style={{
                 padding: '5px 0',
                 width: '100%',
@@ -270,10 +235,7 @@ export default function Navbar() {
               </div>
             ) : (
               <button
-<<<<<<< HEAD
-=======
                 onClick={() => navigate('/user/signup')}
->>>>>>> origin/circles
                 style={{
                   padding: '5px 0',
                   width: '100%',

@@ -414,8 +414,4 @@ export default function MeetingFindPage() {
       <Footer />
     </div>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/circles
