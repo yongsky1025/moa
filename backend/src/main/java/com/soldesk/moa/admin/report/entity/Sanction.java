@@ -51,7 +51,7 @@ public class Sanction extends BaseEntity {
     @JoinColumn(name = "admin_id", nullable = false)
     private Users admin;
 
-    // 제재 대상 타입 (어떤 대상에 제재를 내렸는지)
+    // 제재 대상 타입
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReportTargetType targetType;

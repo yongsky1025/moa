@@ -1,7 +1,10 @@
 package com.soldesk.moa.admin.dashboard.dto.userInfo;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.soldesk.moa.users.entity.constant.UserGender;
+import com.soldesk.moa.users.entity.constant.UserRole;
 import com.soldesk.moa.users.entity.constant.UserStatus;
 
 import lombok.AllArgsConstructor;
@@ -22,6 +25,12 @@ public class UserInfoDTO {
     private int age;
 
     private String address;
+
+    private LocalDate birthDate;
+
+    private UserGender gender;
+
+    private UserRole role;
 
     private UserStatus userStatus;
 

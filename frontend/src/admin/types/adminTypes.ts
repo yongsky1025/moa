@@ -129,6 +129,9 @@ export interface UserInfoDTO {
   userId: number;
   name: string;
   age: number;
+  birthDate: string;
+  gender: UserGender;
+  role: UserRole;
   userStatus: UserStatus;
   createDate: string;
   countCreateBoard: number;
