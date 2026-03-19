@@ -80,8 +80,8 @@ export default function Navbar() {
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          backgroundColor: '#EAF4F0',
-          borderBottom: '1px solid #A9C8BB',
+          backgroundColor: '#fff',
+          borderBottom: '1px solid #e5e5e5',
         }}
       >
         <div
@@ -129,7 +129,7 @@ export default function Navbar() {
                     style={{
                       fontSize: 14,
                       fontWeight: 400,
-                      color: hoveredItem === item ? '#3D5F52' : '#5F8F7B',
+                      color: hoveredItem === item ? '#5F8F7B' : '#555',
                       textDecoration: 'none',
                       display: 'inline-block',
                       textAlign: 'center',
@@ -199,12 +199,12 @@ export default function Navbar() {
                   padding: '5px 0',
                   width: '100%',
                   borderRadius: 6,
-                  border: '1px solid #A9C8BB',
+                  border: '1px solid #5F8F7B',
                   background: 'transparent',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
-                  color: '#3D5F52',
+                  color: '#5F8F7B',
                 }}
               >
                 {isLoggedIn ? '로그아웃' : '로그인'}
@@ -219,7 +219,7 @@ export default function Navbar() {
                   title="채팅"
                   style={{
                     width: 34, height: 34, borderRadius: '50%', border: 'none',
-                    backgroundColor: '#A9C8BB', color: '#3D5F52', fontSize: 18,
+                    backgroundColor: '#5F8F7B', color: '#fff', fontSize: 18,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >
