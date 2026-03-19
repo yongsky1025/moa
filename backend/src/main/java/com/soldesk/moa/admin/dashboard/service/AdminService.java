@@ -19,6 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.Tuple;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleDetailDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleMemberDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCirclePostDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.PopularCircleDTO;
@@ -49,8 +52,10 @@ import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.common.entity.Image;
 import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;
@@ -267,7 +272,7 @@ public class AdminService {
         // 모임 리스트 일람
         @Transactional(readOnly = true)
         public PageResultDTO<AdminCircleResponseDTO> getAllCircleInfo(AdminCircleSearchDTO adminCircleSearchDTO) {
-                Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, 10);
+                Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, adminCircleSearchDTO.getSize());
                 Page<Object[]> result = adminCircleRepository.getCircleInfo(pageable, adminCircleSearchDTO);
 
                 long totalCount = result.getTotalElements();
@@ -290,6 +295,91 @@ public class AdminService {
                                 .build();
 
                 return pageResultDTO;
+        }
+
+        // 모임 상세 조회
+        @Transactional(readOnly = true)
+        public AdminCircleDetailDTO getCircleDetail(Long circleId) {
+                Object[] result = adminCircleRepository.getCircleDetail(circleId);
+                if (result == null) {
+                        throw new IllegalArgumentException("존재하지 않는 모임입니다. id=" + circleId);
+                }
+
+                Circle circle = (Circle) result[0];
+                String categoryName = (String) result[1];
+                String leaderName = (String) result[2];
+                Long leaderId = (Long) result[3];
+                Long postCount = (Long) result[4];
+
+                Image coverImage = circle.getCoverImage();
+                String coverImageUrl = coverImage != null
+                                ? coverImage.getPath() + "/" + coverImage.getUuid() + "_" + coverImage.getName()
+                                : null;
+
+                return AdminCircleDetailDTO.builder()
+                                .circleId(circle.getCircleId())
+                                .circleName(circle.getName())
+                                .description(circle.getDescription())
+                                .categoryName(categoryName)
+                                .leaderName(leaderName)
+                                .leaderId(leaderId)
+                                .currentMember(circle.getCurrentMember())
+                                .maxMember(circle.getMaxMember())
+                                .status(circle.getStatus().toString())
+                                .coverImageUrl(coverImageUrl)
+                                .createDate(circle.getCreateDate())
+                                .totalPosts(postCount != null ? postCount.intValue() : 0)
+                                .build();
+        }
+
+        // 모임 가입 회원 목록
+        @Transactional(readOnly = true)
+        public PageResultDTO<AdminCircleMemberDTO> getCircleMembers(Long circleId, PageRequestDTO pageRequestDTO) {
+                Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, pageRequestDTO.getSize());
+                Page<Object[]> result = adminCircleRepository.getCircleMembers(circleId, pageable);
+
+                long totalCount = result.getTotalElements();
+                List<AdminCircleMemberDTO> dtoList = result.stream().map(obj ->
+                        AdminCircleMemberDTO.builder()
+                                .userId((Long) obj[0])
+                                .userName((String) obj[1])
+                                .gender(obj[2] != null ? obj[2].toString() : "UNSPECIFIED")
+                                .role(obj[3].toString())
+                                .status(obj[4].toString())
+                                .joinDate((LocalDateTime) obj[5])
+                                .build()
+                ).collect(Collectors.toList());
+
+                return PageResultDTO.<AdminCircleMemberDTO>withAll()
+                                .dtoList(dtoList)
+                                .totalCount(totalCount)
+                                .pageRequestDTO(pageRequestDTO)
+                                .build();
+        }
+
+        // 모임 최근 게시물
+        @Transactional(readOnly = true)
+        public PageResultDTO<AdminCirclePostDTO> getCirclePosts(Long circleId, PageRequestDTO pageRequestDTO) {
+                Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, pageRequestDTO.getSize());
+                Page<Object[]> result = adminCircleRepository.getCirclePosts(circleId, pageable);
+
+                long totalCount = result.getTotalElements();
+                List<AdminCirclePostDTO> dtoList = result.stream().map(obj ->
+                        AdminCirclePostDTO.builder()
+                                .postId((Long) obj[0])
+                                .title((String) obj[1])
+                                .authorName((String) obj[2])
+                                .viewCount((Integer) obj[3])
+                                .replyCount(((Long) obj[4]).intValue())
+                                .createDate((LocalDateTime) obj[5])
+                                .build()
+                ).collect(Collectors.toList());
+
+                return PageResultDTO.<AdminCirclePostDTO>withAll()
+                                .dtoList(dtoList)
+                                .totalCount(totalCount)
+                                .pageRequestDTO(pageRequestDTO)
+                                .build();
         }
 
         // 인기모임 top5
@@ -511,6 +601,7 @@ public class AdminService {
         private UserInfoCircleDTO entityToUserInfoCircleDTO(Circle circle, String userName,
                         String categoryName, CircleMember circleMember) {
                 UserInfoCircleDTO dto = UserInfoCircleDTO.builder()
+                                .circleId(circle.getCircleId())
                                 .userName(userName)
                                 .circleName(circle.getName())
                                 .currentMember(circle.getCurrentMember())

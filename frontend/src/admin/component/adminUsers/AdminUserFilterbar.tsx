@@ -15,7 +15,7 @@ const SEARCH_TYPE_OPTIONS: {
 }[] = [
   {
     value:       '',
-    label:       '조건선택',   // ★ default — 4글자
+    label:       '검색 조건',   // ★ default — 모임관리와 동일
     placeholder: '검색 조건을 먼저 선택하세요(미선택 시 조건 없이 검색)',
   },
   { value: 'name',  label: '이름',    placeholder: '이름을 입력하세요' },
@@ -152,10 +152,10 @@ export default function AdminUserFilterBar() {
             <select
               value={searchType}
               onChange={e => handleTypeChange(e.target.value as SearchType)}
-              className={`h-10 cursor-pointer rounded-lg border px-3 text-sm font-semibold outline-none transition-colors
+              className={`h-10 cursor-pointer rounded-lg border px-3 text-sm outline-none transition-colors
                 ${searchType
-                  ? 'border-moa-primary bg-moa-primary text-white hover:bg-moa-hover hover:border-moa-hover'
-                  : 'border-moa-border bg-moa-light text-moa-subtle hover:border-moa-primary'
+                  ? 'border-moa-primary bg-moa-light font-semibold text-moa-primary'
+                  : 'border-moa-border bg-white text-moa-text hover:border-moa-primary'
                 }`}
             >
               {SEARCH_TYPE_OPTIONS.map(o => (

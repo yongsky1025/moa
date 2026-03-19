@@ -157,6 +157,7 @@ export interface UserInfoReplyDTO {
 }
 
 export interface UserInfoCircleDTO {
+  circleId: number;
   userName: string;
   circleName: string;
   currentMember: number;
@@ -189,6 +190,53 @@ export interface PopularCircleDTO {
   categoryName: string;
   currentMember: number;
   score: number;
+}
+
+// ======= 모임 상세 =======
+export interface AdminCircleDetailDTO {
+  circleId: number;
+  circleName: string;
+  description: string;
+  categoryName: string;
+  leaderName: string;
+  leaderId: number;
+  currentMember: number;
+  maxMember: number;
+  status: string;
+  coverImageUrl: string | null;
+  createDate: string;
+  totalPosts: number;
+}
+
+export interface AdminCircleMemberDTO {
+  userId: number;
+  userName: string;
+  gender: string;
+  role: string;
+  status: string;
+  joinDate: string;
+}
+
+export interface AdminCirclePostDTO {
+  postId: number;
+  title: string;
+  authorName: string;
+  viewCount: number;
+  replyCount: number;
+  createDate: string;
+}
+
+// pending 목록용 (CircleResponseDTO 매핑)
+export interface PendingCircleDTO {
+  circleId: number;
+  name: string;
+  description: string;
+  status: string;
+  maxMember: number;
+  currentMember: number;
+  categoryId: number;
+  categoryName: string;
+  coverImageUrl: string | null;
 }
 
 // ==========신고관리===============

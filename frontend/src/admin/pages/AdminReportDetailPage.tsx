@@ -1,26 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import type {
   ReportResponseDTO,
   ReportStatus,
   ReportStatusUpdateRequest,
-} from '../types/adminTypes';
+} from "../types/adminTypes";
 import {
   fetchReportDetail,
   patchReportStatus,
-} from '../api/adminReportAndSanctionApi';
-import AdminReportStatusBadge from '../component/report/AdminReportStatusBadge';
-import { useAdminToast } from '../hooks/useAdminToast';
-import AdminToast from '../component/AdminToast';
+} from "../api/adminReportAndSanctionApi";
+import AdminReportStatusBadge from "../component/report/AdminReportStatusBadge";
+import AdminConfirmModal from "../component/AdminConfirmModal";
+import { useAdminToast } from "../hooks/useAdminToast";
+import AdminToast from "../component/AdminToast";
 
 const formatDateTime = (date: string | null | undefined) => {
-  if (!date) return '-';
+  if (!date) return "-";
   const d = new Date(date);
   const yy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
   return `${yy}.${mm}.${dd} ${hh}:${mi}`;
 };
 
@@ -31,14 +32,14 @@ function ActionButton({
   disabled,
 }: {
   label: string;
-  tone: 'approve' | 'reject';
+  tone: "approve" | "reject";
   onClick: () => void;
   disabled?: boolean;
 }) {
   const cls =
-    tone === 'approve'
-      ? 'bg-emerald-600 hover:bg-emerald-700'
-      : 'bg-rose-600 hover:bg-rose-700';
+    tone === "approve"
+      ? "bg-emerald-600 hover:bg-emerald-700"
+      : "bg-rose-600 hover:bg-rose-700";
   return (
     <button
       disabled={!!disabled}
@@ -59,8 +60,9 @@ export default function AdminReportDetailPage() {
   const [data, setData] = useState<ReportResponseDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [adminNote, setAdminNote] = useState('');
+  const [adminNote, setAdminNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ReportStatus | null>(null);
 
   useEffect(() => {
     if (!Number.isFinite(reportId)) return;
@@ -72,11 +74,11 @@ export default function AdminReportDetailPage() {
         const r = (await fetchReportDetail(reportId)) as ReportResponseDTO;
         if (!alive) return;
         setData(r);
-        setAdminNote(r.adminNote ?? '');
+        setAdminNote(r.adminNote ?? "");
       } catch (e: any) {
         if (!alive) return;
         setError(
-          e?.response?.data?.message ?? '신고 상세를 불러오지 못했습니다.',
+          e?.response?.data?.message ?? "신고 상세를 불러오지 못했습니다.",
         );
       } finally {
         if (alive) setLoading(false);
@@ -89,7 +91,7 @@ export default function AdminReportDetailPage() {
 
   const canDecide = useMemo(() => {
     const s = data?.status;
-    return s === 'PENDING' || s === 'REVIEWING';
+    return s === "PENDING" || s === "REVIEWING";
   }, [data?.status]);
 
   const decide = async (status: ReportStatus) => {
@@ -98,17 +100,17 @@ export default function AdminReportDetailPage() {
     try {
       const req: ReportStatusUpdateRequest = {
         status,
-        adminNote: adminNote.trim() || undefined,
+        adminNote: adminNote.trim(),
       };
       await patchReportStatus(data.reportId, req);
       const next = { ...data, status, adminNote: req.adminNote ?? null };
       setData(next);
 
       // 토스트 띄우고 가자.
-      const label = status === 'RESOLVED' ? '승인' : '반려';
-      showToast(`신고가 ${label}되었습니다.`, { navigateTo: '/admin/reports' });
+      const label = status === "RESOLVED" ? "승인" : "반려";
+      showToast(`신고가 ${label}되었습니다.`, { navigateTo: "/admin/reports" });
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? '상태 변경에 실패했습니다.');
+      setError(e?.response?.data?.message ?? "상태 변경에 실패했습니다.");
     } finally {
       setSaving(false);
     }
@@ -143,7 +145,7 @@ export default function AdminReportDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => navigate('/admin/reports')}
+            onClick={() => navigate("/admin/reports")}
             className="border-moa-border text-moa-secondary hover:bg-moa-light flex cursor-pointer items-center gap-2 rounded-xl border bg-white px-4 py-2 text-sm font-bold shadow-sm transition-colors"
           >
             ‹ 목록
@@ -236,13 +238,13 @@ export default function AdminReportDetailPage() {
               </h2>
             </div>
             <p className="text-moa-subtle mt-1 text-xs">
-              상세를 조회한 순간 PENDING이면 REVIEWING으로 변경됩니다.
+              상세를 조회한 순간 '대기'에서 '검토중'으로 변경됩니다.
             </p>
           </div>
           <div className="space-y-4 px-6 py-5">
             <div>
               <label className="text-moa-subtle text-xs font-semibold">
-                관리자 메모(선택)
+                관리자 메모 <span className="text-rose-500">*</span>
               </label>
               <textarea
                 value={adminNote}
@@ -257,13 +259,21 @@ export default function AdminReportDetailPage() {
                 label="승인"
                 tone="approve"
                 disabled={!canDecide || saving}
-                onClick={() => decide('RESOLVED')}
+                onClick={() => {
+                  if (!adminNote.trim()) { setError('관리자 메모를 입력해주세요.'); return; }
+                  setError(null);
+                  setConfirmAction("RESOLVED");
+                }}
               />
               <ActionButton
                 label="반려"
                 tone="reject"
                 disabled={!canDecide || saving}
-                onClick={() => decide('REJECTED')}
+                onClick={() => {
+                  if (!adminNote.trim()) { setError('관리자 메모를 입력해주세요.'); return; }
+                  setError(null);
+                  setConfirmAction("REJECTED");
+                }}
               />
             </div>
             {!canDecide && data?.status && (
@@ -275,6 +285,23 @@ export default function AdminReportDetailPage() {
           </div>
         </section>
       </div>
+
+      <AdminConfirmModal
+        open={!!confirmAction}
+        title={confirmAction === "RESOLVED" ? "신고 승인" : "신고 반려"}
+        message={
+          confirmAction === "RESOLVED"
+            ? "이 신고를 승인하시겠습니까? 승인 후 제재가 진행될 수 있습니다."
+            : "이 신고를 반려하시겠습니까?"
+        }
+        confirmLabel={confirmAction === "RESOLVED" ? "승인" : "반려"}
+        confirmColor={confirmAction === "RESOLVED" ? "green" : "red"}
+        onConfirm={() => {
+          if (confirmAction) decide(confirmAction);
+          setConfirmAction(null);
+        }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

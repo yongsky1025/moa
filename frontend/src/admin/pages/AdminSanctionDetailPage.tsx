@@ -10,6 +10,7 @@ import {
   liftSanction,
 } from '../api/adminReportAndSanctionApi';
 import AdminSanctionStateBadge from '../component/sanction/AdminSanctionStateBadge';
+import AdminConfirmModal from '../component/AdminConfirmModal';
 import { useAdminToast } from '../hooks/useAdminToast';
 import AdminToast from '../component/AdminToast';
 
@@ -36,6 +37,7 @@ export default function AdminSanctionDetailPage() {
   const [adminId, setAdminId] = useState(''); // security 붙으면 제거(토큰)
   const [cancelReason, setCancelReason] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'lift' | 'cancel' | null>(null);
 
   useEffect(() => {
     if (!Number.isFinite(sanctionId)) return;
@@ -317,9 +319,9 @@ export default function AdminSanctionDetailPage() {
             <div className="px-6 py-5">
               {canLift ? (
                 <button
-                  onClick={handleLift}
+                  onClick={() => setConfirmAction('lift')}
                   disabled={saving}
-                  className="w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-emerald-700 disabled:opacity-40"
+                  className="w-full cursor-pointer rounded-xl bg-emerald-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-emerald-700 disabled:opacity-40"
                 >
                   해제
                 </button>
@@ -375,9 +377,9 @@ export default function AdminSanctionDetailPage() {
               </div>
               {canCancel ? (
                 <button
-                  onClick={handleCancel}
+                  onClick={() => setConfirmAction('cancel')}
                   disabled={saving}
-                  className="w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-rose-700 disabled:opacity-40"
+                  className="w-full cursor-pointer rounded-xl bg-rose-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-rose-700 disabled:opacity-40"
                 >
                   취소
                 </button>
@@ -390,6 +392,26 @@ export default function AdminSanctionDetailPage() {
           </section>
         </div>
       </div>
+
+      <AdminConfirmModal
+        open={confirmAction === 'lift'}
+        title="제재 해제"
+        message="이 제재를 해제하시겠습니까? 해제 후 대상 유저의 제한이 즉시 풀립니다."
+        confirmLabel="해제"
+        confirmColor="green"
+        onConfirm={() => { setConfirmAction(null); handleLift(); }}
+        onCancel={() => setConfirmAction(null)}
+      />
+
+      <AdminConfirmModal
+        open={confirmAction === 'cancel'}
+        title="제재 취소"
+        message="이 제재를 취소하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+        confirmLabel="확인"
+        confirmColor="red"
+        onConfirm={() => { setConfirmAction(null); handleCancel(); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

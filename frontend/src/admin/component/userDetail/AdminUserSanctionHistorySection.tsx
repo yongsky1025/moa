@@ -1,4 +1,3 @@
-import MoaPaginate from '../Moapaginate';
 import { useAdminUserDetail } from '../../context/AdminUserDetailContext';
 import type { SanctionResponseDTO } from '../../types/adminTypes';
 
@@ -20,15 +19,9 @@ export default function AdminUserSanctionHistorySection() {
     sanctionHistory,
     loadingSanctionHistory,
     sanctionHistoryError,
-    sanctionHistoryPage,
-    sanctionHistorySize,
-    setSanctionHistoryPage,
   } = useAdminUserDetail();
 
   const totalCount = sanctionHistory.length;
-  const pageCount = Math.ceil(totalCount / Math.max(1, sanctionHistorySize));
-  const start = (sanctionHistoryPage - 1) * sanctionHistorySize;
-  const pageList = sanctionHistory.slice(start, start + sanctionHistorySize);
 
   return (
     <section className="border-moa-border overflow-hidden rounded-2xl border bg-white shadow-sm">
@@ -53,9 +46,9 @@ export default function AdminUserSanctionHistorySection() {
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="max-h-125 overflow-auto">
         <table className="w-full text-sm">
-          <thead>
+          <thead className="sticky top-0 z-10">
             <tr className="bg-moa-primary">
               {['No.', '제재유형', '상태', '대상', '기간', '사유', '취소'].map((h) => (
                 <th
@@ -79,7 +72,7 @@ export default function AdminUserSanctionHistorySection() {
                 </tr>
               ))}
 
-            {!loadingSanctionHistory && pageList.length === 0 && (
+            {!loadingSanctionHistory && sanctionHistory.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-5 py-14 text-center">
                   <div className="flex flex-col items-center gap-3">
@@ -93,8 +86,8 @@ export default function AdminUserSanctionHistorySection() {
             )}
 
             {!loadingSanctionHistory &&
-              pageList.map((s: SanctionResponseDTO, idx: number) => {
-                const no = totalCount - start - idx;
+              sanctionHistory.map((s: SanctionResponseDTO, idx: number) => {
+                const no = totalCount - idx;
                 const state = String(s?.sanctionState ?? '');
                 const statePill =
                   state === 'CANCELLED'
@@ -139,16 +132,6 @@ export default function AdminUserSanctionHistorySection() {
           </tbody>
         </table>
       </div>
-
-      {!loadingSanctionHistory && pageCount > 1 && (
-        <div className="border-t border-moa-border flex flex-col items-center gap-3 px-6 py-5">
-          <MoaPaginate pageCount={pageCount} currentPage={sanctionHistoryPage} onPageChange={({ selected }) => setSanctionHistoryPage(selected)} />
-          <p className="text-moa-subtle text-xs">
-            <span className="text-moa-secondary font-semibold">{sanctionHistoryPage}</span> / {pageCount} 페이지
-          </p>
-        </div>
-      )}
     </section>
   );
 }
-

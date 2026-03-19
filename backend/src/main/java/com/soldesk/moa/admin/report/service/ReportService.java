@@ -86,12 +86,13 @@ public class ReportService {
 
     // 신고 상태 변경(status 변경, adminNote추가)
     public void updateReportStatus(Long reportId, ReportStatus status, String adminNote) {
+        if (adminNote == null || adminNote.isBlank()) {
+            throw new IllegalArgumentException("관리자 메모는 필수 입력 항목입니다.");
+        }
         Report report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 신고입니다."));
         report.setStatus(status);
-        if (adminNote != null && !adminNote.isBlank()) {
-            report.setAdminNote(adminNote);
-        }
+        report.setAdminNote(adminNote.trim());
     }
 
     // entity -> dto 변환 전용메소드
