@@ -1,9 +1,12 @@
 package com.soldesk.moa.users.entity;
 
 import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.users.entity.constant.EnergyType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -54,6 +57,11 @@ public class UsersEnergyProfile extends BaseEntity {
     @Column(nullable = false)
     private Integer commitmentLevel;
 
+    // === 에너지 타입 (3축 기반 분류 결과) ===
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EnergyType energyType;
+
     // === 스코어 업데이트 ===
 
     public void updateScores(Integer socialLoad, Integer interactionMode,
@@ -64,5 +72,7 @@ public class UsersEnergyProfile extends BaseEntity {
         this.structureLevel = structureLevel;
         this.activityIntensity = activityIntensity;
         this.commitmentLevel = commitmentLevel;
+        // 스코어 변경 시 타입도 재분류
+        this.energyType = EnergyType.classify(socialLoad, interactionMode, activityIntensity);
     }
 }

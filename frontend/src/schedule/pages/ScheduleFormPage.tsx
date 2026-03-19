@@ -4,6 +4,7 @@ import { Search, MapPin, X } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { scheduleApi } from '../../api/scheduleApi';
+import { placeApi, type NearbyPlace } from '../../api/placeApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
 
 function toInputDatetime(dt: string) {
@@ -42,11 +43,14 @@ export default function ScheduleFormPage() {
   const [placeResults, setPlaceResults] = useState<kakao.maps.services.PlaceItem[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null);
   const [kakaoReady, setKakaoReady] = useState(false);
+  const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const infowindowsRef = useRef<any[]>([]);
+  const initialMarkerSetRef = useRef(false);
 
   // Kakao Maps SDK 초기화
   useEffect(() => {
@@ -81,9 +85,28 @@ export default function ScheduleFormPage() {
           endAt: toInputDatetime(s.endAt),
           maxMember: s.maxMember,
         });
+        if (s.location && s.latitude && s.longitude) {
+          setSelectedPlace({
+            name: s.location,
+            address: s.location,
+            latitude: s.latitude,
+            longitude: s.longitude,
+          });
+        }
       })
       .catch(() => setError('일정 정보를 불러올 수 없습니다.'));
   }, [isEdit, sid]);
+
+  // 수정 모드: 기존 위치 마커 표시
+  useEffect(() => {
+    if (!kakaoReady || !mapRef.current || !selectedPlace || initialMarkerSetRef.current) return;
+    initialMarkerSetRef.current = true;
+    const position = new kakao.maps.LatLng(selectedPlace.latitude, selectedPlace.longitude);
+    const marker = new kakao.maps.Marker({ map: mapRef.current, position });
+    markersRef.current.push(marker);
+    mapRef.current.setCenter(position);
+    mapRef.current.setLevel(3);
+  }, [kakaoReady, selectedPlace]);
 
   const clearMarkers = () => {
     infowindowsRef.current.forEach(iw => iw.close());
@@ -112,7 +135,7 @@ export default function ScheduleFormPage() {
 
           kakao.maps.event.addListener(marker, 'mouseover', () => infowindow.open(mapRef.current, marker));
           kakao.maps.event.addListener(marker, 'mouseout', () => infowindow.close());
-          kakao.maps.event.addListener(marker, 'click', () => handlePlaceSelect(place));
+          kakao.maps.event.addListener(marker, 'click', () => handlePlaceSelectFromKakao(place));
 
           markersRef.current.push(marker);
           infowindowsRef.current.push(infowindow);
@@ -151,7 +174,32 @@ export default function ScheduleFormPage() {
     setSelectedPlace(null);
     setPlaceQuery('');
     setPlaceResults([]);
+    setNearbyPlaces([]);
     clearMarkers();
+  };
+
+  const handlePlaceSelectFromKakao = (place: kakao.maps.services.PlaceItem) => {
+    handlePlaceSelect(place);
+    // 카카오 장소 선택 후 MOA 근처 장소 조회
+    const lat = Number(place.y);
+    const lng = Number(place.x);
+    setNearbyLoading(true);
+    placeApi.getNearbyPlaces(lat, lng, 3.0)
+      .then(res => setNearbyPlaces(res.data))
+      .catch(() => setNearbyPlaces([]))
+      .finally(() => setNearbyLoading(false));
+  };
+
+  const handleSelectMoaPlace = (p: NearbyPlace) => {
+    setSelectedPlace({ name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude });
+    setNearbyPlaces([]);
+    clearMarkers();
+    if (mapRef.current) {
+      const position = new kakao.maps.LatLng(p.latitude, p.longitude);
+      new kakao.maps.Marker({ map: mapRef.current, position });
+      mapRef.current.setCenter(position);
+      mapRef.current.setLevel(3);
+    }
   };
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
@@ -317,7 +365,7 @@ export default function ScheduleFormPage() {
                   {placeResults.map((p, i) => (
                     <div
                       key={p.id}
-                      onClick={() => handlePlaceSelect(p)}
+                      onClick={() => handlePlaceSelectFromKakao(p)}
                       style={{
                         padding: '10px 14px', cursor: 'pointer',
                         borderBottom: i < placeResults.length - 1 ? '1px solid #f0f0f0' : 'none',
@@ -387,6 +435,51 @@ export default function ScheduleFormPage() {
                   >
                     <X size={16} />
                   </button>
+                </div>
+              )}
+
+              {/* 근처 MOA 등록 장소 */}
+              {nearbyLoading && (
+                <div style={{ fontSize: 12, color: '#888', marginTop: 10, textAlign: 'center' }}>
+                  근처 MOA 장소 검색 중...
+                </div>
+              )}
+              {!nearbyLoading && nearbyPlaces.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#555', marginBottom: 6 }}>
+                    📍 근처 MOA 등록 장소
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {nearbyPlaces.map(p => (
+                      <div
+                        key={p.id}
+                        onClick={() => handleSelectMoaPlace(p)}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '10px 14px', border: '1px solid #e5e5e5', borderRadius: 8,
+                          backgroundColor: 'white', cursor: 'pointer', transition: 'background 0.1s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f7f7f8')}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'white')}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <MapPin size={14} style={{ color: '#6366f1', flexShrink: 0 }} />
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{p.name}</div>
+                            <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{p.address}</div>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
+                          <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>
+                            {p.distanceKm < 1 ? `${Math.round(p.distanceKm * 1000)}m` : `${p.distanceKm.toFixed(1)}km`}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>
+                            최대 {p.capacity}명 · {p.pricePerHour.toLocaleString()}원/h
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

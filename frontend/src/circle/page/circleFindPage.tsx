@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MapPin, CalendarDays, Heart, Star, Users } from 'lucide-react';
-import Navbar from './layout/Navbar';
-import Footer from './layout/Footer';
+import Navbar from '../../common/layout/Navbar';
+import Footer from '../../common/layout/Footer';
 
 const categories = [
   '전체',
@@ -122,7 +122,17 @@ const socialings = [
   },
 ];
 
-export default function MeetingFindPage() {
+interface CircleFindPageProps {
+  isLoggedIn: boolean;
+  onToggleLogin: () => void;
+  isAdmin?: boolean;
+}
+
+export default function CircleFindPage({
+  isLoggedIn,
+  onToggleLogin,
+  isAdmin,
+}: CircleFindPageProps) {
   const [activeCategory, setActiveCategory] = useState('전체');
   const [likedItems, setLikedItems] = useState<Set<number>>(new Set());
 
@@ -144,7 +154,11 @@ export default function MeetingFindPage() {
     <div
       style={{ minHeight: '100vh', backgroundColor: '#f7f7f8', color: '#111' }}
     >
-      <Navbar />
+      <Navbar
+        isLoggedIn={isLoggedIn}
+        onToggleLogin={onToggleLogin}
+        isAdmin={isAdmin}
+      />
 
       {/* 페이지 헤더 */}
       <div

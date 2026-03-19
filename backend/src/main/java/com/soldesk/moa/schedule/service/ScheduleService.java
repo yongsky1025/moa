@@ -203,7 +203,7 @@ public class ScheduleService {
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
 
-                circleMemberRepository
+                CircleMember circleMember = circleMemberRepository
                                 .findByCircleAndUser_UserIdAndStatus(circle, userId, CircleMemberStatus.ACTIVE)
                                 .orElseThrow(() -> new AccessDeniedException("서클 멤버만 일정을 조회할 수 있습니다."));
 
@@ -214,7 +214,8 @@ public class ScheduleService {
                         throw new IllegalArgumentException("해당 서클의 일정이 아닙니다.");
                 }
 
-                return new ScheduleResponseDTO(schedule);
+                boolean joined = scheduleMemberRepository.existsByScheduleAndCircleMember(schedule, circleMember);
+                return new ScheduleResponseDTO(schedule, joined);
         }
 
         // 일정 수정 (생성자 또는 서클 리더)
