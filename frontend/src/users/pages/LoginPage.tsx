@@ -17,8 +17,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const oauthErrorMessages: Record<string, string> = {
+    authorization_request_not_found: "소셜 로그인 세션이 만료됐습니다. 다시 시도해주세요.",
+    auth_failed: "소셜 로그인에 실패했습니다. 다시 시도해주세요.",
+  };
+
   useEffect(() => {
-    setOauthError(searchParams.get("error") ?? "");
+    const raw = searchParams.get("error") ?? "";
+    setOauthError(oauthErrorMessages[raw] ?? raw);
   }, [searchParams]);
 
   const handleLogin = async (e: React.SubmitEvent) => {
@@ -27,7 +33,7 @@ export default function LoginPage() {
     if (login.fulfilled.match(result)) {
       const user = result.payload;
       if (user.onboardingCompleted) {
-        navigate("/");
+        navigate("/main");
       } else {
         navigate("/users/onboarding");
       }

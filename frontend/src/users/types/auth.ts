@@ -11,7 +11,7 @@ export interface SignUpRequest {
   nickname: string;
   password: string;
   birthDate: string; // "yyyy-MM-dd"
-  userGender: 'MALE' | 'FEMALE';
+  userGender: "MALE" | "FEMALE" | "UNSPECIFIED";
   age: number;
   privacyAgreed: boolean;
 }
@@ -20,8 +20,8 @@ export interface SignUpRequest {
 export interface AuthUser {
   publicId: string;
   nickname: string;
-  userRole: 'USER' | 'ADMIN';
-  userStatus: 'ACTIVE' | 'WITHDRAWN' | 'SUSPENDED' | 'BANNED';
+  userRole: "USER" | "ADMIN";
+  userStatus: "ACTIVE" | "WITHDRAWN" | "SUSPENDED" | "BANNED";
   onboardingCompleted: boolean;
 }
 
@@ -33,6 +33,6 @@ export interface AuthResponse {
 
 export interface SocialSignUpCompleteRequest {
   birthDate: string; // "yyyy-MM-dd"
-  userGender: 'MALE' | 'FEMALE';
+  userGender: "MALE" | "FEMALE" | "UNSPECIFIED";
   privacyAgreed: boolean;
 }

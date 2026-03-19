@@ -2,8 +2,8 @@ export default function Footer() {
   return (
     <footer
       style={{
-        backgroundColor: '#111',
-        color: '#aaa',
+        backgroundColor: '#1E3D35',
+        color: '#A9CBBB',
         padding: '48px 0 32px',
         marginTop: 64,
       }}
@@ -34,7 +34,7 @@ export default function Footer() {
                 fontSize: 13,
                 lineHeight: 1.8,
                 margin: 0,
-                color: '#888',
+                color: '#A9CBBB',
               }}
             >
               취향이 맞는 사람들과
@@ -61,7 +61,7 @@ export default function Footer() {
                   style={{
                     display: 'block',
                     fontSize: 13,
-                    color: '#888',
+                    color: '#A9CBBB',
                     textDecoration: 'none',
                     marginBottom: 8,
                   }}
@@ -90,7 +90,7 @@ export default function Footer() {
                   style={{
                     display: 'block',
                     fontSize: 13,
-                    color: '#888',
+                    color: '#A9CBBB',
                     textDecoration: 'none',
                     marginBottom: 8,
                   }}
@@ -103,7 +103,7 @@ export default function Footer() {
         </div>
         <div
           style={{
-            borderTop: '1px solid #222',
+            borderTop: '1px solid #2A5044',
             paddingTop: 24,
             display: 'flex',
             justifyContent: 'space-between',
@@ -112,10 +112,10 @@ export default function Footer() {
             gap: 8,
           }}
         >
-          <p style={{ margin: 0, fontSize: 12, color: '#555' }}>
+          <p style={{ margin: 0, fontSize: 12, color: '#A9CBBB' }}>
             © 2026 moa. All rights reserved.
           </p>
-          <p style={{ margin: 0, fontSize: 12, color: '#555' }}>
+          <p style={{ margin: 0, fontSize: 12, color: '#A9CBBB' }}>
             사업자등록번호 123-45-67890 | 대표 홍길동
           </p>
         </div>

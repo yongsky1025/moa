@@ -16,15 +16,10 @@ const dropdownItems: Record<string, { label: string; href: string }[]> = {
     { label: "Q&A", href: "#" },
     { label: "공지사항", href: "#" },
   ],
-  "에너지 테스트": [
-    { label: "테스트 시작", href: "#" },
-    { label: "에너지 유형 소개", href: "#" },
-    { label: "결과 공유", href: "#" },
-  ],
+  "에너지 테스트": [{ label: "테스트 시작", href: "/users/energy-test" }],
   "내 에너지": [
-    { label: "내 결과 보기", href: "/users/energy-result" },
-    { label: "에너지 유형 소개", href: "#" },
-    { label: "결과 공유", href: "#" },
+    { label: "내 결과 보기", href: "/users/energy-test/result" },
+    { label: "테스트 다시 하기", href: "/users/energy-test?mode=retest" },
   ],
 };
 
@@ -60,15 +55,15 @@ export default function Navbar() {
   const navLinks: Record<string, string> = {
     "모임 찾기": "/circle",
     커뮤니티: "#",
-    "에너지 테스트": "#",
-    "내 에너지": "#",
+    "에너지 테스트": "/users/energy-test",
+    "내 에너지": "/users/energy-test/result",
     "장소 추천": "#",
     "관리자 페이지": "/admin",
   };
 
   const handleLogout = async () => {
     await dispatch(logout());
-    navigate("/");
+    navigate("/main");
   };
 
   return (
@@ -77,8 +72,8 @@ export default function Navbar() {
         position: "sticky",
         top: 0,
         zIndex: 50,
-        backgroundColor: "white",
-        borderBottom: "1px solid #f0f0f0",
+        backgroundColor: "#FFFFFF",
+        borderBottom: "1px solid #E5E7EB",
       }}
     >
       <div
@@ -93,12 +88,12 @@ export default function Navbar() {
         }}
       >
         <Link
-          to="/"
+          to="/main"
           style={{
             fontSize: 22,
             fontWeight: 900,
             letterSpacing: -0.5,
-            color: "#111",
+            color: "#1F2937",
             textDecoration: "none",
           }}
         >
@@ -121,7 +116,7 @@ export default function Navbar() {
                   style={{
                     fontSize: 14,
                     fontWeight: 400,
-                    color: hoveredItem === item ? "#111" : "#888",
+                    color: hoveredItem === item ? "#1F2937" : "#6B7280",
                     textDecoration: "none",
                     display: "inline-block",
                     textAlign: "center",
@@ -142,8 +137,8 @@ export default function Navbar() {
                       position: "absolute",
                       top: "calc(100% + 1px)",
                       left: 0,
-                      backgroundColor: "white",
-                      border: "1px solid #f0f0f0",
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #E5E7EB",
                       borderRadius: 0,
                       boxShadow: "0 6px 16px rgba(0,0,0,0.08)",
                       padding: "4px 0",
@@ -161,11 +156,11 @@ export default function Navbar() {
                           height: 36,
                           padding: "0 14px",
                           fontSize: 13,
-                          color: "#444",
+                          color: "#1F2937",
                           textDecoration: "none",
                           whiteSpace: "nowrap",
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f7f7f8")}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EAF4F0")}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                       >
                         {sub.label}
@@ -185,12 +180,12 @@ export default function Navbar() {
                 padding: "5px 0",
                 width: "100%",
                 borderRadius: 6,
-                border: "1px solid #e5e5e5",
-                background: "white",
+                border: "1px solid #E5E7EB",
+                background: "#FFFFFF",
                 fontSize: 13,
                 fontWeight: 500,
                 cursor: "pointer",
-                color: "#111",
+                color: "#1F2937",
               }}
             >
               {isLoggedIn ? "로그아웃" : "로그인"}
@@ -210,7 +205,7 @@ export default function Navbar() {
                   width: 34,
                   height: 34,
                   borderRadius: "50%",
-                  backgroundColor: "#111",
+                  backgroundColor: "#5F8F7B",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -239,7 +234,7 @@ export default function Navbar() {
                   width: "100%",
                   borderRadius: 6,
                   border: "none",
-                  background: "#111",
+                  background: "#5F8F7B",
                   color: "white",
                   fontSize: 13,
                   fontWeight: 600,
@@ -262,7 +257,7 @@ export default function Navbar() {
               height: 56,
               borderRadius: "50%",
               border: "none",
-              backgroundColor: "#111",
+              backgroundColor: "#5F8F7B",
               color: "#fff",
               fontSize: 24,
               cursor: "pointer",
@@ -273,11 +268,11 @@ export default function Navbar() {
               transition: "background-color 0.2s, transform 0.15s",
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#333";
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#4E7C69";
               (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.08)";
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#111";
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#5F8F7B";
               (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
             }}
           >
@@ -289,7 +284,7 @@ export default function Navbar() {
                 position: "absolute",
                 top: -4,
                 right: -4,
-                backgroundColor: "#ef4444",
+                backgroundColor: "#E38B6D",
                 color: "#fff",
                 borderRadius: "50%",
                 width: 20,
