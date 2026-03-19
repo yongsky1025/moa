@@ -107,8 +107,8 @@ export default function AdminSidebar() {
               }`}
               style={
                 active || pActive
-                  ? { background: '#FDF0E8', borderLeftColor: '#D07856', color: '#B8643D' }
-                  : { color: '#6B4F3A' }
+                  ? { background: '#EAF4F0', borderLeftColor: '#5F8F7B', color: '#4E7C69' }
+                  : { color: '#3D5F52' }
               }
               onClick={() =>
                 item.children
@@ -137,8 +137,8 @@ export default function AdminSidebar() {
                     }`}
                     style={
                       isActive(child.path)
-                        ? { background: '#FDF0E8', color: '#D07856' }
-                        : { color: '#9B7B6A' }
+                        ? { background: '#EAF4F0', color: '#5F8F7B' }
+                        : { color: '#6B7280' }
                     }
                     onClick={() => navigate(child.path)}
                   >

@@ -10,8 +10,8 @@ interface Props {
 }
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
-const C_POST = '#D07856';
-const C_REPLY = '#F2935C';
+const C_POST = '#5F8F7B';
+const C_REPLY = '#14B8A6';
 
 function WeeklyChart({
   posts,
@@ -60,7 +60,7 @@ function WeeklyChart({
                 y1={y}
                 x2={PAD.left + CW}
                 y2={y}
-                stroke={v === 0 ? '#F2E8E0' : '#FDF0E8'}
+                stroke={v === 0 ? '#E5E7EB' : '#EAF4F0'}
                 strokeWidth="1"
               />
               <text
@@ -223,17 +223,17 @@ export default function PostActivityCard({ data, loading }: Props) {
                 className={`flex-1 ${i === 0 ? 'border-r border-gray-100 pr-4' : 'pl-4'}`}
               >
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl leading-none font-black tracking-tight text-[#262626]">
+                  <span className="text-3xl leading-none font-black tracking-tight text-moa-text">
                     {s.value.toLocaleString('ko-KR')}
                   </span>
-                  <span className="text-xs text-[#9B7B6A]">건</span>
+                  <span className="text-xs text-moa-subtle">건</span>
                 </div>
                 <div className="mt-1.5 flex items-center gap-1.5">
                   <div
                     className="h-2 w-2 rounded-full"
                     style={{ background: s.color }}
                   />
-                  <span className="text-[11px] text-[#9B7B6A]">{s.label}</span>
+                  <span className="text-[11px] text-moa-subtle">{s.label}</span>
                 </div>
               </div>
             ))}
@@ -241,7 +241,7 @@ export default function PostActivityCard({ data, loading }: Props) {
 
           {/* 주간 차트 헤더 */}
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#6B4F3A]">
+            <span className="text-xs font-semibold text-moa-secondary">
               주간 활동
             </span>
             <div className="flex gap-3">
@@ -254,7 +254,7 @@ export default function PostActivityCard({ data, loading }: Props) {
                     className="h-2 w-2 rounded-sm"
                     style={{ background: l.color }}
                   />
-                  <span className="text-[10px] text-[#9B7B6A]">{l.label}</span>
+                  <span className="text-[10px] text-moa-subtle">{l.label}</span>
                 </div>
               ))}
             </div>

@@ -7,18 +7,18 @@ interface Props {
 }
 
 const ACCENT_TOP = [
-  'border-t-[#D07856]',
-  'border-t-[#F2935C]',
-  'border-t-[#F2BB9B]',
+  'border-t-moa-primary',
+  'border-t-moa-muted',
+  'border-t-[#C8DDD6]',
 ];
 const BAR_COLORS = [
-  '#D07856',
-  '#F2935C',
-  '#F2BB9B',
-  '#B8643D',
-  '#F24405',
-  '#E8A87C',
-  '#C4693F',
+  '#5F8F7B',
+  '#14B8A6',
+  '#F59E0B',
+  '#8B5CF6',
+  '#6366F1',
+  '#F43F5E',
+  '#22C55E',
 ];
 
 export default function CircleStatusCard({
@@ -84,12 +84,12 @@ export default function CircleStatusCard({
             ) : (
               <>
                 <div className="flex items-baseline gap-0.5">
-                  <span className="text-xl font-black tracking-tight text-[#262626]">
+                  <span className="text-xl font-black tracking-tight text-moa-text">
                     {s.value}
                   </span>
                   <span className="text-xs text-gray-400">{s.unit}</span>
                 </div>
-                <p className="mt-1 text-[11px] text-[#9B7B6A]">{s.label}</p>
+                <p className="mt-1 text-[11px] text-moa-subtle">{s.label}</p>
               </>
             )}
           </div>
@@ -100,11 +100,11 @@ export default function CircleStatusCard({
 
       {/* 카테고리 분포 헤더 */}
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs font-semibold text-[#6B4F3A]">
+        <span className="text-xs font-semibold text-moa-secondary">
           카테고리별 분포
         </span>
         {circleData && (
-          <span className="text-[11px] text-[#9B7B6A]">
+          <span className="text-[11px] text-moa-subtle">
             {circleData.circleDataDTOs.length}개 카테고리
           </span>
         )}
@@ -134,7 +134,7 @@ export default function CircleStatusCard({
                     className="h-2 w-2 shrink-0 rounded-full"
                     style={{ background: color }}
                   />
-                  <span className="truncate text-xs text-[#6B4F3A]">
+                  <span className="truncate text-xs text-moa-secondary">
                     {d.categoryName}
                   </span>
                 </div>
@@ -147,10 +147,10 @@ export default function CircleStatusCard({
                       style={{ width: `${pct}%`, background: color }}
                     />
                   </div>
-                  <span className="w-8 shrink-0 text-right text-xs font-bold text-[#262626]">
+                  <span className="w-8 shrink-0 text-right text-xs font-bold text-moa-text">
                     {d.countPerCategory}
                   </span>
-                  <span className="w-7 shrink-0 text-right text-[10px] text-[#9B7B6A]">
+                  <span className="w-7 shrink-0 text-right text-[10px] text-moa-subtle">
                     {barPct}%
                   </span>
                 </div>

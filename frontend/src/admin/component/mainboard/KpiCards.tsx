@@ -14,12 +14,12 @@ function fmtNum(n: number) {
 }
 
 const ACCENT_COLORS = [
-  'border-t-[#D07856]',
-  'border-t-[#F2935C]',
-  'border-t-[#F2BB9B]',
-  'border-t-[#B8643D]',
-  'border-t-[#D07856]',
-  'border-t-[#F24405]',
+  'border-t-moa-primary',
+  'border-t-moa-muted',
+  'border-t-[#C8DDD6]',
+  'border-t-moa-hover',
+  'border-t-moa-primary',
+  'border-t-moa-accent',
 ];
 
 function SkeletonCard({ accent }: { accent: string }) {
@@ -95,11 +95,11 @@ export default function KpiCards({ mainData, postData, loading }: Props) {
           key={card.label}
           className={`admin-card border-t-2 ${ACCENT_COLORS[i]}`}
         >
-          <p className="mb-2 text-xs text-[#9B7B6A]">{card.label}</p>
-          <p className="text-2xl leading-tight font-black tracking-tight text-[#262626]">
+          <p className="mb-2 text-xs text-moa-subtle">{card.label}</p>
+          <p className="text-2xl leading-tight font-black tracking-tight text-moa-text">
             {card.value}
           </p>
-          <p className="mt-1.5 text-xs text-[#9B7B6A]">{card.sub}</p>
+          <p className="mt-1.5 text-xs text-moa-subtle">{card.sub}</p>
         </div>
       ))}
     </div>

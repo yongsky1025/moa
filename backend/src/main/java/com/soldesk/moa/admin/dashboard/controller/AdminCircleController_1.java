@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RequestMapping("/api/admin/circles")
 @Tag(name = "Admin circle section", description = "Response MOA API")
 @Log4j2
-public class AdminCircleController {
+public class AdminCircleController_1 {
 
     private final AdminService adminService;
 

@@ -15,7 +15,7 @@ const BREAKDOWN_ITEMS: {
   color: string;
 }[] = [
   { key: 'userRegisterCount', label: '신규 가입', color: '#5B8CCC' },
-  { key: 'circleCreateCount', label: '모임 생성', color: '#D07856' },
+  { key: 'circleCreateCount', label: '모임 생성', color: '#5F8F7B' },
   { key: 'postCount', label: '게시글', color: '#10B981' },
   { key: 'replyCount', label: '댓글', color: '#F59E0B' },
   { key: 'scheduleCount', label: '일정', color: '#8B5CF6' },
@@ -26,12 +26,12 @@ function normalize(value: number, max: number): number {
 }
 
 function heatColor(ratio: number): string {
-  if (ratio === 0) return '#F5F0EC';
-  if (ratio < 0.2) return '#FDE8D8';
-  if (ratio < 0.4) return '#F2BB9B';
-  if (ratio < 0.6) return '#F2935C';
-  if (ratio < 0.8) return '#D07856';
-  return '#B8643D';
+  if (ratio === 0) return '#F0F5F3';
+  if (ratio < 0.2) return '#E5E7EB';
+  if (ratio < 0.4) return '#A9C8BB';
+  if (ratio < 0.6) return '#7BA99D';
+  if (ratio < 0.8) return '#5F8F7B';
+  return '#4E7C69';
 }
 
 const EMPTY: ActivityHeatmapStatsDTO = {
@@ -72,7 +72,7 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
         <p className="admin-card-title mb-0">시간대별 활동량</p>
         <span
           className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-          style={{ background: '#FDF0E8', color: '#D07856' }}
+          style={{ background: '#EAF4F0', color: '#5F8F7B' }}
         >
           최근 일주일 기준
         </span>
@@ -86,7 +86,7 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
               <div
                 key={h}
                 className="flex-1 text-center text-[10px]"
-                style={{ color: '#9B7B6A' }}
+                style={{ color: '#6B7280' }}
               >
                 {h % 3 === 0 ? `${h}` : ''}
               </div>
@@ -100,7 +100,7 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
               <div key={dow} className="mb-0.5 flex items-center gap-1">
                 <span
                   className="w-6 shrink-0 text-right text-[11px]"
-                  style={{ color: '#9B7B6A' }}
+                  style={{ color: '#6B7280' }}
                 >
                   {label}
                 </span>
@@ -118,7 +118,7 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
                         background: heatColor(ratio),
                         cursor: 'pointer',
                         opacity: isSelected ? 1 : undefined,
-                        outline: isSelected ? '2px solid #D07856' : undefined,
+                        outline: isSelected ? '2px solid #5F8F7B' : undefined,
                         outlineOffset: isSelected ? '1px' : undefined,
                       }}
                       onMouseEnter={() =>
@@ -134,16 +134,16 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
 
           {/* 범례 */}
           <div className="mt-3 flex items-center gap-1.5">
-            <span className="text-[11px]" style={{ color: '#9B7B6A' }}>
+            <span className="text-[11px]" style={{ color: '#6B7280' }}>
               적음
             </span>
             {[
-              '#F5F0EC',
-              '#FDE8D8',
-              '#F2BB9B',
-              '#F2935C',
-              '#D07856',
-              '#B8643D',
+              '#F0F5F3',
+              '#E5E7EB',
+              '#A9C8BB',
+              '#7BA99D',
+              '#5F8F7B',
+              '#4E7C69',
             ].map((c) => (
               <div
                 key={c}
@@ -151,7 +151,7 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
                 style={{ background: c }}
               />
             ))}
-            <span className="text-[11px]" style={{ color: '#9B7B6A' }}>
+            <span className="text-[11px]" style={{ color: '#6B7280' }}>
               많음
             </span>
           </div>
@@ -162,7 +162,7 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
       <div
         className="mt-4 overflow-hidden rounded-xl transition-all duration-200"
         style={{
-          border: '1px solid #F2E8E0',
+          border: '1px solid #E5E7EB',
           background: selected ? '#fff' : '#FDFAF8',
           maxHeight: selected ? 160 : 40,
         }}
@@ -176,7 +176,7 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
               </p>
               <span
                 className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-                style={{ background: '#FDF0E8', color: '#D07856' }}
+                style={{ background: '#EAF4F0', color: '#5F8F7B' }}
               >
                 총 {selected.activityCount.toLocaleString('ko-KR')}건
               </span>
@@ -200,7 +200,7 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
                         />
                         <span
                           className="text-[11px]"
-                          style={{ color: '#9B7B6A' }}
+                          style={{ color: '#6B7280' }}
                         >
                           {label}
                         </span>
@@ -215,14 +215,14 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
                     {/* 비율 바 */}
                     <div
                       className="h-1.5 w-full overflow-hidden rounded-full"
-                      style={{ background: '#F2E8E0' }}
+                      style={{ background: '#E5E7EB' }}
                     >
                       <div
                         className="h-full rounded-full transition-all duration-300"
                         style={{ width: `${pct}%`, background: color }}
                       />
                     </div>
-                    <span className="text-[10px]" style={{ color: '#9B7B6A' }}>
+                    <span className="text-[10px]" style={{ color: '#6B7280' }}>
                       {pct.toFixed(0)}%
                     </span>
                   </div>
@@ -233,7 +233,7 @@ export default function ActivityHeatmapCard({ data, loading }: Props) {
         ) : (
           <div
             className="flex h-10 items-center justify-center text-[12px]"
-            style={{ color: '#9B7B6A' }}
+            style={{ color: '#6B7280' }}
           >
             셀에 마우스를 올리면 활동 유형별 상세 내역이 표시됩니다
           </div>

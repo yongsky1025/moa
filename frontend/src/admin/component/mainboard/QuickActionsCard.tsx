@@ -26,7 +26,7 @@ export default function QuickActionsCard() {
             className="qa-btn cursor-pointer rounded-xl border border-gray-100 bg-gray-50 px-2 py-3.5 text-center transition-all duration-150 hover:border-blue-200 hover:bg-blue-50"
           >
             <div className="mb-1.5 text-xl">{action.icon}</div>
-            <div className="text-[11px] leading-tight text-[#6B4F3A]">
+            <div className="text-[11px] leading-tight text-moa-secondary">
               {action.label}
             </div>
           </button>

@@ -29,13 +29,13 @@ export default function AdminStatsPage() {
           >
             통계 리포트
           </h1>
-          <p className="text-sm" style={{ color: '#9B7B6A' }}>
+          <p className="text-sm text-moa-subtle">
             moa 서비스 상세 통계 분석
           </p>
         </div>
         <button
           onClick={refetch}
-          className="refetch-btn border-moa-border flex cursor-pointer items-center gap-1.5 rounded-lg border bg-white px-3.5 py-1.75 text-xs text-[#9B7B6A] transition-colors duration-150 hover:bg-[#FDF0E8]"
+          className="refetch-btn border-moa-border flex cursor-pointer items-center gap-1.5 rounded-lg border bg-white px-3.5 py-1.75 text-xs text-moa-subtle transition-colors duration-150 hover:bg-moa-light"
         >
           ↻ 새로고침
         </button>

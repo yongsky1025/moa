@@ -48,26 +48,26 @@ export default function CircleSurvivalCard({ data, loading }: Props) {
             dataKey="value"
             strokeWidth={0}
           >
-            <Cell fill="#D07856" />
-            <Cell fill="#F2E8E0" />
+            <Cell fill="#5F8F7B" />
+            <Cell fill="#E5E7EB" />
           </Pie>
         </PieChart>
         {/* 중앙 텍스트 */}
         <div className="pointer-events-none absolute flex flex-col items-center">
-          <span className="text-3xl font-black leading-tight" style={{ color: '#D07856' }}>
+          <span className="text-3xl font-black leading-tight" style={{ color: '#5F8F7B' }}>
             {rate.toFixed(1)}%
           </span>
-          <span className="text-[11px]" style={{ color: '#9B7B6A' }}>생존률</span>
+          <span className="text-[11px]" style={{ color: '#6B7280' }}>생존률</span>
         </div>
       </div>
 
       {/* 수치 요약 */}
       <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-lg py-2" style={{ background: '#FDF0E8' }}>
-          <p className="text-lg font-black" style={{ color: '#D07856' }}>
+        <div className="rounded-lg py-2" style={{ background: '#EAF4F0' }}>
+          <p className="text-lg font-black" style={{ color: '#5F8F7B' }}>
             {(data?.totalCircle ?? 0).toLocaleString('ko-KR')}
           </p>
-          <p className="text-[11px]" style={{ color: '#9B7B6A' }}>전체 모임</p>
+          <p className="text-[11px]" style={{ color: '#6B7280' }}>전체 모임</p>
         </div>
         <div className="rounded-lg py-2" style={{ background: '#ECFDF5' }}>
           <p className="text-lg font-black" style={{ color: '#10B981' }}>
@@ -79,11 +79,11 @@ export default function CircleSurvivalCard({ data, loading }: Props) {
           <p className="text-lg font-black" style={{ color: '#9CA3AF' }}>
             {inactive < 0 ? 0 : inactive}
           </p>
-          <p className="text-[11px]" style={{ color: '#9B7B6A' }}>비활성</p>
+          <p className="text-[11px]" style={{ color: '#6B7280' }}>비활성</p>
         </div>
       </div>
 
-      <p className="mt-2.5 text-center text-[11px]" style={{ color: '#9B7B6A' }}>
+      <p className="mt-2.5 text-center text-[11px]" style={{ color: '#6B7280' }}>
         신생모임 포함 · 30일+ 무일정 = 비활성
       </p>
     </div>

@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
-import Navbar from './Navbar';
 import Footer from './Footer';
+import Navbar from './Navbar';
 
 interface PageLayoutProps {
   children: ReactNode;
 }
 
 export default function PageLayout({ children }: PageLayoutProps) {
+
   return (
     <div
       style={{
@@ -29,6 +30,7 @@ export default function PageLayout({ children }: PageLayoutProps) {
         {children}
       </main>
       <Footer />
+
     </div>
   );
 }

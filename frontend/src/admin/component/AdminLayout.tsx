@@ -33,7 +33,7 @@ export default function AdminLayout({
   }, [pathname]);
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ background: '#FDFAF8' }}>
+    <div className="flex min-h-screen flex-col" style={{ background: '#F5FAF8' }}>
 
       {/* 상단 Navbar — 기존 컴포넌트 그대로 */}
       <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} userName={userName} />

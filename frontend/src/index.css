@@ -12,12 +12,14 @@ button {
 }
 
 @theme {
-  --color-moa-primary:   #D07856;
-  --color-moa-hover:     #B8643D;
-  --color-moa-light:     #FDF0E8;
-  --color-moa-border:    #F2E8E0;
-  --color-moa-muted:     #F2935C;
-  --color-moa-text:      #262626;
-  --color-moa-secondary: #6B4F3A;
-  --color-moa-subtle:    #9B7B6A;
+  --color-moa-primary:      #5F8F7B;
+  --color-moa-hover:        #4E7C69;
+  --color-moa-light:        #EAF4F0;
+  --color-moa-border:       #E5E7EB;
+  --color-moa-muted:        #A9C8BB;
+  --color-moa-text:         #1F2937;
+  --color-moa-secondary:    #3D5F52;
+  --color-moa-subtle:       #6B7280;
+  --color-moa-accent:       #E3886D;
+  --color-moa-accent-light: #FDF1EC;
 }

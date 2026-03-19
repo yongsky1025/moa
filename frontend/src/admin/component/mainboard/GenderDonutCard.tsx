@@ -87,7 +87,7 @@ function DonutSVG({ segs, total }: { segs: Seg[]; total: number }) {
           transform={`rotate(-90 ${cx} ${cy})`}
         />
       ))}
-      <text x={cx} y={cy - 7} textAnchor="middle" fontSize="11" fill="#9B7B6A">
+      <text x={cx} y={cy - 7} textAnchor="middle" fontSize="11" fill="#6B7280">
         전체
       </text>
       <text

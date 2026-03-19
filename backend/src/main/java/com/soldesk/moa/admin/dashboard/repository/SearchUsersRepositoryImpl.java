@@ -20,6 +20,7 @@ import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.soldesk.moa.admin.dashboard.dto.userInfo.AdminUserSearchDTO;
 import com.soldesk.moa.board.entity.QPost;
@@ -212,18 +213,17 @@ public class SearchUsersRepositoryImpl extends QuerydslRepositorySupport
         QReply reply = QReply.reply;
         QCircleMember circleMember = QCircleMember.circleMember;
 
-        JPQLQuery<Users> query = from(user)
-                .leftJoin(post).on(post.userId.eq(user))
-                .leftJoin(reply).on(reply.userId.eq(user))
-                .leftJoin(circleMember).on(circleMember.user.eq(user))
-                .where(user.userId.eq(userId));
-
-        JPQLQuery<Tuple> tuple = query.select(user, post.userId.count(), reply.userId.count(),
-                circleMember.user.count());
-
-        tuple.groupBy(user);
-
-        Tuple result = tuple.fetchFirst();
+        // 다중 LEFT JOIN 시 카르테시안 곱으로 COUNT가 동일하게 나오는 문제 방지
+        // 각 집계를 서브쿼리로 분리
+        Tuple result = from(user)
+                .where(user.userId.eq(userId))
+                .select(
+                        user,
+                        JPAExpressions.select(post.count()).from(post).where(post.userId.eq(user)),
+                        JPAExpressions.select(reply.count()).from(reply).where(reply.userId.eq(user)),
+                        JPAExpressions.select(circleMember.count()).from(circleMember).where(circleMember.user.eq(user))
+                )
+                .fetchFirst();
 
         return result.toArray();
     }
