@@ -6,6 +6,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,8 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.auth.dto.AuthResponseDTO;
 import com.soldesk.moa.auth.dto.AuthTokenBundleDTO;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.auth.dto.LoginRequestDTO;
 import com.soldesk.moa.auth.dto.SignUpRequestDTO;
+import com.soldesk.moa.auth.dto.SocialSignUpCompleteRequestDTO;
 import com.soldesk.moa.auth.service.AuthService;
 import com.soldesk.moa.security.JwtProperties;
 
@@ -73,6 +76,14 @@ public class AuthController {
             HttpServletResponse response) {
         authService.logout(refreshToken);
         response.addHeader(HttpHeaders.SET_COOKIE, clearRefreshCookie().toString());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/social-complete")
+    public ResponseEntity<Void> socialSignUpComplete(
+            @Valid @RequestBody SocialSignUpCompleteRequestDTO dto,
+            @AuthenticationPrincipal AuthUserDTO authUser) {
+        authService.completeSocialSignUp(authUser.getUsername(), dto);
         return ResponseEntity.ok().build();
     }
 

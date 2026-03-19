@@ -122,17 +122,7 @@ const socialings = [
   },
 ];
 
-interface CircleFindPageProps {
-  isLoggedIn: boolean;
-  onToggleLogin: () => void;
-  isAdmin?: boolean;
-}
-
-export default function CircleFindPage({
-  isLoggedIn,
-  onToggleLogin,
-  isAdmin,
-}: CircleFindPageProps) {
+export default function CircleFindPage() {
   const [activeCategory, setActiveCategory] = useState('전체');
   const [likedItems, setLikedItems] = useState<Set<number>>(new Set());
 
@@ -154,11 +144,7 @@ export default function CircleFindPage({
     <div
       style={{ minHeight: '100vh', backgroundColor: '#f7f7f8', color: '#111' }}
     >
-      <Navbar
-        isLoggedIn={isLoggedIn}
-        onToggleLogin={onToggleLogin}
-        isAdmin={isAdmin}
-      />
+      <Navbar />
 
       {/* 페이지 헤더 */}
       <div

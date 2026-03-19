@@ -1,4 +1,5 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { isAxiosError } from 'axios';
 import { authApi } from '../../api/authApi';
 import type { AuthUser, LoginRequest, SignUpRequest } from '../types/auth';
 
@@ -24,6 +25,12 @@ export const login = createAsyncThunk(
       localStorage.setItem('accessToken', res.data.accessToken);
       return res.data.user as AuthUser;
     } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        const message = err.response?.data?.message;
+        if (typeof message === 'string' && message.trim()) {
+          return rejectWithValue(message);
+        }
+      }
       if (err instanceof Error) return rejectWithValue(err.message);
       return rejectWithValue('로그인 실패');
     }
@@ -36,6 +43,12 @@ export const signup = createAsyncThunk(
     try {
       await authApi.signup(req);
     } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        const message = err.response?.data?.message;
+        if (typeof message === 'string' && message.trim()) {
+          return rejectWithValue(message);
+        }
+      }
       if (err instanceof Error) return rejectWithValue(err.message);
       return rejectWithValue('회원가입 실패');
     }
@@ -54,10 +67,15 @@ const authSlice = createSlice({
     clearError(state) {
       state.error = null;
     },
+    setAuthFromOAuth(state, action) {
+      state.user = action.payload;
+      state.isLoggedIn = true;
+      state.loading = false;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
-      // login
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -71,7 +89,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      // logout
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
         state.isLoggedIn = false;
@@ -79,5 +96,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, setAuthFromOAuth } = authSlice.actions;
 export default authSlice.reducer;

@@ -19,6 +19,7 @@ public class AuthUserResponseDTO {
     private String nickname;
     private UserRole userRole;
     private UserStatus userStatus;
+    private boolean onboardingCompleted;
 
     // User entity -> AuthUserResponseDTO
     public static AuthUserResponseDTO from(Users users) {
@@ -26,6 +27,7 @@ public class AuthUserResponseDTO {
                 users.getPublicId(),
                 users.getNickname(),
                 users.getUserRole(),
-                users.getUserStatus());
+                users.getUserStatus(),
+                users.getOnboardingCompletedAt() != null);
     }
 }

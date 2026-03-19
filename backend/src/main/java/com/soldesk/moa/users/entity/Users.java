@@ -63,7 +63,7 @@ public class Users extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String nickname;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDate birthDate;
 
     @Column(nullable = true)
@@ -93,8 +93,8 @@ public class Users extends BaseEntity {
 
     // === 추가된 필드 ===
 
-    // 개인정보 동의 시점 (가입 시 필수)
-    @Column(nullable = false)
+    // 개인정보 동의 시점 (가입 시 필수, 소셜은 추가정보 입력 시 설정)
+    @Column(nullable = true)
     private LocalDateTime privacyAgreedAt;
 
     // 온보딩(에너지 프로필) 완료 시점 (null이면 미완료)
@@ -138,6 +138,7 @@ public class Users extends BaseEntity {
     }
 
     public void changeProviderId(String providerId) {
+        this.providerId = providerId;
     }
 
     // 탈퇴/복구
@@ -158,6 +159,13 @@ public class Users extends BaseEntity {
 
     public void completeOnboarding() {
         this.onboardingCompletedAt = LocalDateTime.now();
+    }
+
+    // 소셜 회원가입 추가정보 완료
+    public void completeSocialSignUp(LocalDate birthDate, UserGender userGender) {
+        this.birthDate = birthDate;
+        this.userGender = userGender;
+        this.privacyAgreedAt = LocalDateTime.now();
     }
 
     @PrePersist

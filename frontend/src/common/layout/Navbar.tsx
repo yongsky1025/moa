@@ -21,7 +21,7 @@ const dropdownItems: Record<string, { label: string; href: string }[]> = {
     { label: '결과 공유', href: '#' },
   ],
   '내 에너지': [
-    { label: '내 결과 보기', href: '#' },
+    { label: '내 결과 보기', href: '/users/energy-result' },
     { label: '에너지 유형 소개', href: '#' },
     { label: '결과 공유', href: '#' },
   ],
@@ -181,7 +181,7 @@ export default function Navbar() {
           <div style={{ width: 68 }}>
             <button
               onClick={
-                isLoggedIn ? handleLogout : () => navigate('/user/login')
+                isLoggedIn ? handleLogout : () => navigate('/users/login')
               }
               style={{
                 padding: '5px 0',
@@ -235,7 +235,7 @@ export default function Navbar() {
               </div>
             ) : (
               <button
-                onClick={() => navigate('/user/signup')}
+                onClick={() => navigate('/users/signup')}
                 style={{
                   padding: '5px 0',
                   width: '100%',

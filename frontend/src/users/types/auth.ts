@@ -11,20 +11,28 @@ export interface SignUpRequest {
   nickname: string;
   password: string;
   birthDate: string; // "yyyy-MM-dd"
-  userGender: "MALE" | "FEMALE";
+  userGender: 'MALE' | 'FEMALE';
   age: number;
+  privacyAgreed: boolean;
 }
 
 // AuthUserResponseDTO
 export interface AuthUser {
   publicId: string;
   nickname: string;
-  userRole: "USER" | "ADMIN";
-  userStatus: "ACTIVE" | "WITHDRAWN" | "SUSPENDED";
+  userRole: 'USER' | 'ADMIN';
+  userStatus: 'ACTIVE' | 'WITHDRAWN' | 'SUSPENDED' | 'BANNED';
+  onboardingCompleted: boolean;
 }
 
 // AuthResponseDTO
 export interface AuthResponse {
   accessToken: string;
   user: AuthUser;
+}
+
+export interface SocialSignUpCompleteRequest {
+  birthDate: string; // "yyyy-MM-dd"
+  userGender: 'MALE' | 'FEMALE';
+  privacyAgreed: boolean;
 }

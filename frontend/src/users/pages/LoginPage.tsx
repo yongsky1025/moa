@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FcGoogle } from 'react-icons/fc';
 import { RiKakaoTalkFill } from 'react-icons/ri';
@@ -9,17 +9,28 @@ import type { AppDispatch, RootState } from '../reducers/store';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((state: RootState) => state.auth);
+  const [oauthError, setOauthError] = useState('');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    setOauthError(searchParams.get('error') ?? '');
+  }, [searchParams]);
+
+  const handleLogin = async (e: React.SubmitEvent) => {
     e.preventDefault();
     const result = await dispatch(login({ email, password }));
     if (login.fulfilled.match(result)) {
-      navigate('/main');
+      const user = result.payload;
+      if (user.onboardingCompleted) {
+        navigate('/');
+      } else {
+        navigate('/users/onboarding');
+      }
     }
   };
 
@@ -185,6 +196,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
+                  if (oauthError) setOauthError('');
                   if (error) dispatch(clearError());
                 }}
                 required
@@ -209,6 +221,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
+                  if (oauthError) setOauthError('');
                   if (error) dispatch(clearError());
                 }}
                 required
@@ -228,7 +241,7 @@ export default function LoginPage() {
             </div>
 
             {/* 에러 메시지 */}
-            {error && (
+            {(oauthError || error) && (
               <p
                 style={{
                   fontSize: 13,
@@ -237,7 +250,7 @@ export default function LoginPage() {
                   textAlign: 'center',
                 }}
               >
-                {error}
+                {oauthError || error}
               </p>
             )}
 
