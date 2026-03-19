@@ -5,7 +5,7 @@ import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { scheduleApi } from '../../api/scheduleApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
-import type { ScheduleResponse } from '../types/schedule';
+import type { ScheduleResponse, ScheduleMember } from '../types/schedule';
 
 const STATUS_LABEL = {
   UPCOMING:    { text: '예정',   color: '#2563eb', bg: '#dbeafe' },
@@ -31,8 +31,19 @@ export default function ScheduleDetailPage() {
   const [msg, setMsg] = useState('');
   const [kakaoReady, setKakaoReady] = useState(false);
 
+  const [members, setMembers] = useState<ScheduleMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
+
+  const fetchMembers = () => {
+    setMembersLoading(true);
+    scheduleApi.getScheduleMembers(cid, sid)
+      .then(res => setMembers(res.data))
+      .catch(() => {})
+      .finally(() => setMembersLoading(false));
+  };
 
   // Kakao Maps SDK 대기
   useEffect(() => {
@@ -54,6 +65,8 @@ export default function ScheduleDetailPage() {
       .then(res => setSchedule(res.data))
       .catch(e => setMsg(`오류: ${getErrorMessage(e)}`))
       .finally(() => setLoading(false));
+
+    fetchMembers();
   }, [cid, sid]);
 
   // 카카오맵 초기화
@@ -78,6 +91,8 @@ export default function ScheduleDetailPage() {
     try {
       await fn();
       setMsg(successMsg);
+      scheduleApi.getSchedule(cid, sid).then(res => setSchedule(res.data));
+      fetchMembers();
     } catch (e) {
       setMsg(`오류: ${getErrorMessage(e)}`);
     }
@@ -238,6 +253,55 @@ export default function ScheduleDetailPage() {
           )}
 
         </div>
+
+        {/* 참여자 목록 */}
+        <div style={{ marginTop: 20, backgroundColor: 'white', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <Users size={16} style={{ color: '#888' }} />
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>참여자</span>
+            <span style={{ fontSize: 13, color: '#888' }}>
+              {schedule.currentMember ?? members.length}/{schedule.maxMember}명
+            </span>
+          </div>
+          {membersLoading ? (
+            <p style={{ color: '#888', fontSize: 13 }}>로딩 중...</p>
+          ) : members.length === 0 ? (
+            <p style={{ color: '#aaa', fontSize: 13 }}>참여자가 없습니다.</p>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {members.map(m => (
+                <div key={m.userId} style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 12px', borderRadius: 10,
+                  backgroundColor: '#f9fafb', border: '1px solid #f0f0f0',
+                }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    backgroundColor: m.role === 'LEADER' ? '#fef9c3' : '#f3f4f6',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 700,
+                    color: m.role === 'LEADER' ? '#854d0e' : '#555',
+                    flexShrink: 0,
+                  }}>
+                    {m.nickname.charAt(0)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{m.nickname}</span>
+                    {m.role === 'LEADER' && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, color: '#854d0e',
+                        backgroundColor: '#fef9c3', borderRadius: 4, padding: '1px 5px',
+                      }}>
+                        모임장
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </main>
       <Footer />
     </div>

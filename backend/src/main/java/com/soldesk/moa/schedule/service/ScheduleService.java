@@ -2,6 +2,7 @@ package com.soldesk.moa.schedule.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.schedule.dto.ScheduleCreateRequestDTO;
+import com.soldesk.moa.schedule.dto.ScheduleMemberResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleUpdateRequestDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
@@ -179,9 +181,13 @@ public class ScheduleService {
                 scheduleRepository.delete(schedule);
         }
 
-        // 서클 일정 목록 조회 (서클 ACTIVE 멤버만)
+        // 서클 일정 목록 조회 (서클 ACTIVE 멤버만, 날짜 범위 필터 선택적)
         @Transactional(readOnly = true)
-        public List<ScheduleResponseDTO> getSchedules(Long circleId, Long userId) {
+        public List<ScheduleResponseDTO> getSchedules(
+                        Long circleId,
+                        Long userId,
+                        LocalDateTime from,
+                        LocalDateTime to) {
 
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
@@ -190,7 +196,7 @@ public class ScheduleService {
                                 .findByCircleAndUser_UserIdAndStatus(circle, userId, CircleMemberStatus.ACTIVE)
                                 .orElseThrow(() -> new AccessDeniedException("서클 멤버만 일정을 조회할 수 있습니다."));
 
-                return scheduleRepository.findByCircle_CircleId(circleId)
+                return scheduleRepository.findByCircleWithDateFilter(circleId, from, to)
                                 .stream()
                                 .map(ScheduleResponseDTO::new)
                                 .toList();
@@ -270,6 +276,30 @@ public class ScheduleService {
                                 .build();
 
                 return new ScheduleResponseDTO(scheduleRepository.save(updated));
+        }
+
+        // 일정 참여자 목록 조회 (서클 ACTIVE 멤버만)
+        @Transactional(readOnly = true)
+        public List<ScheduleMemberResponseDTO> getScheduleMembers(Long circleId, Long scheduleId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                circleMemberRepository
+                                .findByCircleAndUser_UserIdAndStatus(circle, userId, CircleMemberStatus.ACTIVE)
+                                .orElseThrow(() -> new AccessDeniedException("서클 멤버만 참여자 목록을 조회할 수 있습니다."));
+
+                Schedule schedule = scheduleRepository.findById(scheduleId)
+                                .orElseThrow(() -> new IllegalArgumentException("일정이 존재하지 않습니다."));
+
+                if (!schedule.getCircle().getCircleId().equals(circleId)) {
+                        throw new IllegalArgumentException("해당 서클의 일정이 아닙니다.");
+                }
+
+                return scheduleMemberRepository.findBySchedule(schedule)
+                                .stream()
+                                .map(ScheduleMemberResponseDTO::new)
+                                .collect(Collectors.toList());
         }
 
         // 일정 참여 취소 (일정 시작일 하루 전까지만 참여 취소가능)

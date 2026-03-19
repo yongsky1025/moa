@@ -27,3 +27,9 @@ export interface ScheduleCreateRequest {
 }
 
 export type ScheduleUpdateRequest = ScheduleCreateRequest;
+
+export interface ScheduleMember {
+  userId: number;
+  nickname: string;
+  role: 'LEADER' | 'MEMBER';
+}

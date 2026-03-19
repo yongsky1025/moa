@@ -29,4 +29,7 @@ public interface ScheduleMemberRepository extends JpaRepository<ScheduleMember, 
 
     // 특정 CircleMember의 모든 ScheduleMember 조회 (탈퇴/강퇴 시 정리용)
     List<ScheduleMember> findByCircleMember(CircleMember circleMember);
+
+    // 일정의 참여자 목록 조회
+    List<ScheduleMember> findBySchedule(Schedule schedule);
 }

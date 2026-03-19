@@ -3,16 +3,21 @@ import type {
   ScheduleResponse,
   ScheduleCreateRequest,
   ScheduleUpdateRequest,
+  ScheduleMember,
 } from '../schedule/types/schedule';
 
 export const scheduleApi = {
-  // 일정 목록 (서클 멤버만)
-  getSchedules: (circleId: number) =>
-    api.get<ScheduleResponse[]>(`/circles/${circleId}/schedules`),
+  // 일정 목록 (서클 멤버만, from/to 날짜 필터 선택적)
+  getSchedules: (circleId: number, params?: { from?: string; to?: string }) =>
+    api.get<ScheduleResponse[]>(`/circles/${circleId}/schedules`, { params }),
 
   // 일정 상세 (서클 멤버만)
   getSchedule: (circleId: number, scheduleId: number) =>
     api.get<ScheduleResponse>(`/circles/${circleId}/schedules/${scheduleId}`),
+
+  // 일정 참여자 목록
+  getScheduleMembers: (circleId: number, scheduleId: number) =>
+    api.get<ScheduleMember[]>(`/circles/${circleId}/schedules/${scheduleId}/members`),
 
   // 일정 생성
   createSchedule: (circleId: number, data: ScheduleCreateRequest) =>
