@@ -76,7 +76,7 @@ public class SearchPostRepositoryImpl extends QuerydslRepositorySupport
         EntityManager em = getEntityManager();
         JPQLQueryFactory queryFactory = new JPAQueryFactory(em);
 
-        StringTemplate dateExpr = Expressions.stringTemplate("DATE({0})", post.createDate);
+        StringTemplate dateExpr = Expressions.stringTemplate("DATE_FORMAT({0}, '%Y-%m-%d')", post.createDate);
 
         return queryFactory
                 .select(dateExpr, post.postId.count())

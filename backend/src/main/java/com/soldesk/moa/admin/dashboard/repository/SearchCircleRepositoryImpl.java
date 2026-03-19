@@ -10,21 +10,20 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Query;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
-import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.soldesk.moa.admin.dashboard.dto.AdminCircleSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.QCircle;
 import com.soldesk.moa.circle.entity.QCircleCategory;
 import com.soldesk.moa.circle.entity.QCircleMember;
 import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
+import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.schedule.entity.QSchedule;
 import com.soldesk.moa.users.entity.QUsers;
 
@@ -189,20 +188,27 @@ public class SearchCircleRepositoryImpl extends QuerydslRepositorySupport
 
                 return queryFactory.select(circle.count())
                                 .from(circle)
+                                .where(circle.status.eq(CircleStatus.OPEN).or(circle.status.eq(CircleStatus.FULL)))
                                 .fetchOne();
         }
 
         @Override
-        public Long countActiveCircle(LocalDateTime since) {
+        public Long countInactiveMatureCircle(LocalDateTime maturityThreshold, LocalDateTime activityThreshold) {
                 QCircle circle = QCircle.circle;
                 QSchedule schedule = QSchedule.schedule;
 
                 JPAQueryFactory queryFactory = new JPAQueryFactory(getEntityManager());
 
-                return queryFactory.select(circle.countDistinct())
+                // OPEN/FULL 상태인 성숙 모임(생성 30일 이상) 중 최근 30일 내 일정이 하나도 없는 모임
+                return queryFactory.select(circle.count())
                                 .from(circle)
-                                .leftJoin(schedule).on(schedule.circle.eq(circle).and(schedule.startAt.goe(since)))
-                                .where(schedule.scheduleId.isNotNull())
+                                .where(circle.status.eq(CircleStatus.OPEN).or(circle.status.eq(CircleStatus.FULL))
+                                                .and(circle.createDate.lt(maturityThreshold))
+                                                .and(JPAExpressions.selectOne()
+                                                                .from(schedule)
+                                                                .where(schedule.circle.eq(circle)
+                                                                                .and(schedule.startAt.goe(activityThreshold)))
+                                                                .notExists()))
                                 .fetchOne();
         }
 

@@ -18,7 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.AdminUserSearchDTO;
 import com.soldesk.moa.admin.dashboard.repository.AdminBoardRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleRepository;
@@ -81,9 +81,11 @@ public class AdminRepositoryTest {
                     .email("test" + i + "@google.com")
                     .password("1111")
                     .nickname("nicknick" + i)
+                    // .address("Seoul")
                     .userRole(UserRole.ADMIN)
                     .userGender(UserGender.FEMALE)
                     .birthDate(LocalDate.now().minusYears(i + 20))
+                    // .phone("010-1111-1111")
                     .build();
 
             adminUsersRepository.save(users);
@@ -104,7 +106,9 @@ public class AdminRepositoryTest {
                     .email("member" + i + "naver.com")
                     .password("1111")
                     .nickname("hehehehe" + i)
+                    // .address("Seoul")
                     .birthDate(birth)
+                    // .phone("010-1111-1111")
                     .userRole(UserRole.USER)
                     .userGender(gender)
                     .build();
@@ -328,6 +332,9 @@ public class AdminRepositoryTest {
         // nickname 수정
         Users user = adminUsersRepository.findById(3L).orElseThrow();
         user.changeNickname("update nickname!");
+
+        // address 수정
+        // user.changeAddress("Busan");
 
         // pwd 수정
         user.changePassword("2222");

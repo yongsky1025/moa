@@ -80,8 +80,8 @@ export default function Navbar() {
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          backgroundColor: 'white',
-          borderBottom: '1px solid #f0f0f0',
+          backgroundColor: '#EAF4F0',
+          borderBottom: '1px solid #A9C8BB',
         }}
       >
         <div
@@ -129,7 +129,7 @@ export default function Navbar() {
                     style={{
                       fontSize: 14,
                       fontWeight: 400,
-                      color: hoveredItem === item ? '#111' : '#888',
+                      color: hoveredItem === item ? '#3D5F52' : '#5F8F7B',
                       textDecoration: 'none',
                       display: 'inline-block',
                       textAlign: 'center',
@@ -199,12 +199,12 @@ export default function Navbar() {
                   padding: '5px 0',
                   width: '100%',
                   borderRadius: 6,
-                  border: '1px solid #e5e5e5',
-                  background: 'white',
+                  border: '1px solid #A9C8BB',
+                  background: 'transparent',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
-                  color: '#111',
+                  color: '#3D5F52',
                 }}
               >
                 {isLoggedIn ? '로그아웃' : '로그인'}
@@ -219,7 +219,7 @@ export default function Navbar() {
                   title="채팅"
                   style={{
                     width: 34, height: 34, borderRadius: '50%', border: 'none',
-                    backgroundColor: '#f0f0f0', color: '#111', fontSize: 18,
+                    backgroundColor: '#A9C8BB', color: '#3D5F52', fontSize: 18,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >
@@ -252,7 +252,7 @@ export default function Navbar() {
                 <div
                   style={{
                     width: 34, height: 34, borderRadius: '50%',
-                    backgroundColor: '#111', display: 'flex',
+                    backgroundColor: '#5F8F7B', display: 'flex',
                     alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                   }}
                 >
@@ -266,7 +266,7 @@ export default function Navbar() {
                   onClick={() => navigate('/users/signup')}
                   style={{
                     padding: '5px 0', width: '100%', borderRadius: 6,
-                    border: 'none', background: '#111', color: 'white',
+                    border: 'none', background: '#5F8F7B', color: '#fff',
                     fontSize: 13, fontWeight: 600, cursor: 'pointer',
                   }}
                 >

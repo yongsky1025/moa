@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
-@RequestMapping("api/admin/logs")
+@RequestMapping("/api/admin/logs")
 @Tag(name = "Admin log section", description = "Response MOA API")
 @RequiredArgsConstructor
 @Log4j2
