@@ -5,7 +5,7 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/moa
-    username: root
+    username: team_moa
     password: 12345
   # 테이블 자동 생성 여부
   jpa:
@@ -17,7 +17,12 @@ spring:
         "[format_sql]": true
         "[highlight_sql]": true
   profiles:
-    include: oauth2
+    include: oauth2,local
+  # Redis (채팅 메시지 브로커)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   # 파일 업로드 설정
   servlet:
     multipart:
@@ -25,8 +30,12 @@ spring:
       max-file-size: 10MB
       max-request-size: 30MB
 
+# 파일 업로드 경로
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:${user.dir}/uploads}
+
 jwt:
-  secret: 238ef5a0a77a9d3335b778313550888ce82f391d84b5cc4f9de6d4bb74335f883515c43a547e306f608572196b0c04fff6be43336909bcc13bcd404cc7a2d2bf
+  secret: ${JWT_SECRET}
   access-exp-ms: 1800000
   refresh-exp-ms: 1209600000
 
@@ -47,35 +56,6 @@ logging:
 
 # 실제 파일이 저장될 경로 (WebConfig에서 /images/** 로 서빙)
 upload:
-  path: ${user.home}/upload
-
-# thymeleaf
-# spring.thymeleaf.cache: false
-
-# 오라클
-# spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
-# spring.datasource.url=jdbc:oracle:thin:@localhost:1521:xe
-# spring.datasource.username=javadb
-# spring.datasource.password=12345
-# spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
-
-# spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
-
-# 테이블 자동 생성 여부
-# none : 운영환경
-# validate : 엔티티와 테이블 정상 매핑 확인(운영환경)
-# create : 기존 테이블 삭제 후 테이블 생성(개발시)
-# create-drop : 기존 테이블 삭제 후 테이블 생성, 종료 시점에 테이블 삭제(개발시)
-# update : 변경된 부분만 적용(기존 컬럼 제거는 안해줌)(개발시)
-# spring.jpa.hibernate.ddl-auto: update
-# 생성되는 sql 구문 출력 여부
-# spring.jpa.show-sql=true
-# 이쁘게 sql 구문 출력
-# spring.jpa.properties.hibernate.format_sql: true
-# spring.jpa.properties.hibernate.highlight_sql: true
-
-# 로그출력(개발용)
-# logging.level.org.hibernate.SQL: debug
-# logging.level.org.hibernate.orm.jdbc.bind: trace
+  path: ${UPLOAD_PATH:${user.home}/upload}
 
 # 소셜(구글) → application-oauth2.yml 로 분리됨

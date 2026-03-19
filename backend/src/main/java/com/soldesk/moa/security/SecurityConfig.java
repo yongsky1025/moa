@@ -13,6 +13,8 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -68,6 +70,7 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .requestMatchers(
                                                                 "/",
+                                                                "/*.html",
                                                                 "/assets/**",
                                                                 "/css/**",
                                                                 "/js/**",
@@ -78,7 +81,8 @@ public class SecurityConfig {
                                                                 "/favicon.ico",
                                                                 "/swagger-ui.html",
                                                                 "/swagger-ui/**",
-                                                                "/v3/api-docs/**")
+                                                                "/v3/api-docs/**",
+                                                                "/webjars/**")
                                                 .permitAll()
 
                                                 // ----------- user 시큐리티 파트 ---------
@@ -106,6 +110,11 @@ public class SecurityConfig {
                                                 // viewcount 비회원도 허용
                                                 .requestMatchers("/api/posts/*/view").permitAll()
                                                 // ----------- 보드 시큐리티 끝 ----------
+                                                .requestMatchers("/ws/chat/**", "/ws/chat-raw").permitAll() // WebSocket
+                                                                                                            // 핸드셰이크
+                                                // 채팅: 로그인한 유저만 접근 허용
+                                                .requestMatchers("/chat/**").authenticated()
+                                                .requestMatchers("/api/chat/**").authenticated()
 
                                                 // ---------- 관리자, 장소 ----------
                                                 .requestMatchers("/api/admin/**").permitAll() // 임시로 다 열어둠
@@ -126,6 +135,13 @@ public class SecurityConfig {
                                                 .userInfoEndpoint(info -> info.userService(customOAuth2UserService))
                                                 .successHandler(oAuth2LoginSuccessHandler)
                                                 .failureHandler(oAuth2LoginFailureHandler))
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint((request, response, authException) -> {
+                                                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                                        response.setContentType("application/json;charset=UTF-8");
+                                                        response.getWriter().write(
+                                                                        "{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Authentication required.\"}");
+                                                }))
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
                                                 UsernamePasswordAuthenticationFilter.class);

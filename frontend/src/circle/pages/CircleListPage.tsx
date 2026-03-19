@@ -37,7 +37,10 @@ export default function CircleListPage() {
   const [circles, setCircles] = useState<CircleResponse[]>([]);
   const [categories, setCategories] = useState<{ categoryId: number; categoryName: string }[]>([]);
   const [recommended, setRecommended] = useState<CircleResponse[]>([]);
+  const [noEnergyProfile, setNoEnergyProfile] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [keyword, setKeyword] = useState('');
+  const [inputValue, setInputValue] = useState('');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageNumList, setPageNumList] = useState<number[]>([]);
@@ -46,6 +49,7 @@ export default function CircleListPage() {
   const [prevPage, setPrevPage] = useState(0);
   const [nextPage, setNextPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [onlyOpen, setOnlyOpen] = useState(false);
 
   useEffect(() => {
     circleApi.getCategories().then((res) => setCategories(res.data));
@@ -55,7 +59,7 @@ export default function CircleListPage() {
     if (!isLoggedIn) return;
     circleApi.getRecommendedCircles()
       .then((res) => setRecommended(res.data))
-      .catch(() => {});
+      .catch(() => { setNoEnergyProfile(true); });
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -64,6 +68,8 @@ export default function CircleListPage() {
       try {
         const res = await circleApi.getCircles({
           ...(selectedCategoryId ? { categoryId: selectedCategoryId } : {}),
+          ...(keyword ? { keyword } : {}),
+          ...(onlyOpen ? { type: 'OPEN' } : {}),
           page,
           size: PAGE_SIZE,
         });
@@ -80,12 +86,19 @@ export default function CircleListPage() {
       }
     };
     fetchCircles();
-  }, [selectedCategoryId, page]);
+  }, [selectedCategoryId, keyword, page, onlyOpen]);
 
   const handleCategoryClick = (categoryId: number | null) => {
     setSelectedCategoryId(categoryId);
     setPage(1);
   };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setKeyword(inputValue);
+    setPage(1);
+  };
+
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8', color: '#111' }}>
@@ -116,6 +129,28 @@ export default function CircleListPage() {
 
         {/* 사이드바 */}
         <aside style={{ width: 200, flexShrink: 0 }}>
+
+          {/* 에너지 프로필 없을 때 안내 */}
+          {(!isLoggedIn || noEnergyProfile) && (
+            <div style={{ backgroundColor: 'white', borderRadius: 12, border: '1px solid #f0f0f0', padding: '16px', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <Sparkles style={{ width: 14, height: 14, color: '#f59e0b' }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>나의 추천 모임</span>
+              </div>
+              <p style={{ fontSize: 12, color: '#888', lineHeight: 1.6, marginBottom: 12 }}>
+                에너지 프로필을 설정하면 나와 잘 맞는 모임을 추천해드려요.
+              </p>
+              <button
+                style={{
+                  width: '100%', padding: '9px 0', borderRadius: 8,
+                  border: '1px solid #e5e5e5', backgroundColor: '#f5f5f5',
+                  fontSize: 12, fontWeight: 600, color: '#555', cursor: 'not-allowed',
+                }}
+              >
+                에너지 프로필 측정하기
+              </button>
+            </div>
+          )}
 
           {/* 추천 모임 */}
           {isLoggedIn && recommended.length > 0 && (
@@ -187,6 +222,41 @@ export default function CircleListPage() {
 
         {/* 메인 */}
         <main style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20, alignItems: 'center' }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 0, flex: 1 }}>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              placeholder="모임 이름으로 검색해보세요"
+              style={{
+                flex: 1, padding: '11px 18px', borderRadius: '10px 0 0 10px',
+                border: '1px solid #e5e5e5', borderRight: 'none',
+                fontSize: 14, color: '#111', outline: 'none', backgroundColor: 'white',
+              }}
+            />
+            <button
+              type="submit"
+              style={{ padding: '11px 24px', borderRadius: '0 10px 10px 0', border: '1px solid #111', backgroundColor: '#111', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            >
+              검색
+            </button>
+          </form>
+          <button
+            type="button"
+            onClick={() => { setOnlyOpen(v => !v); setPage(1); }}
+            style={{
+              padding: '11px 18px', borderRadius: 10, border: `1px solid ${onlyOpen ? '#16a34a' : '#e5e5e5'}`,
+              backgroundColor: onlyOpen ? '#f0fdf4' : 'white',
+              color: onlyOpen ? '#16a34a' : '#888',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+              transition: 'all 0.15s',
+            }}
+          >
+            모집중만 보기
+          </button>
+          </div>
+
           {loading ? (
             <p style={{ textAlign: 'center', color: '#888', padding: '60px 0' }}>로딩 중...</p>
           ) : (

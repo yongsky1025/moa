@@ -7,7 +7,12 @@ export interface ScheduleResponse {
   startAt: string;
   endAt: string;
   maxMember: number;
+  currentMember?: number;
   status: ScheduleStatus;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  joined?: boolean;
 }
 
 export interface ScheduleCreateRequest {

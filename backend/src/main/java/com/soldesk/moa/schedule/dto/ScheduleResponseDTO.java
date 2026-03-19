@@ -20,7 +20,12 @@ public class ScheduleResponseDTO {
     private LocalDateTime startAt;
     private LocalDateTime endAt;
     private int maxMember;
+    private int currentMember;
     private ScheduleStatus status;
+    private String location;
+    private Double latitude;
+    private Double longitude;
+    private boolean joined;
 
     public ScheduleResponseDTO(Schedule schedule) {
         this.scheduleId = schedule.getScheduleId();
@@ -29,6 +34,15 @@ public class ScheduleResponseDTO {
         this.startAt = schedule.getStartAt();
         this.endAt = schedule.getEndAt();
         this.maxMember = schedule.getMaxMember();
+        this.currentMember = schedule.getCurrentMember();
         this.status = schedule.getStatus();
+        this.location = schedule.getAddress();
+        this.latitude = schedule.getLatitude();
+        this.longitude = schedule.getLongitude();
+    }
+
+    public ScheduleResponseDTO(Schedule schedule, boolean joined) {
+        this(schedule);
+        this.joined = joined;
     }
 }

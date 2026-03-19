@@ -40,7 +40,7 @@ export default function ScheduleListPage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
       <Navbar />
-      <main style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px 60px' }}>
+      <main style={{ maxWidth: 900, margin: '0 auto', padding: '32px 20px 60px' }}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
@@ -74,46 +74,53 @@ export default function ScheduleListPage() {
             <p style={{ fontSize: 13 }}>첫 번째 일정을 만들어보세요!</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {schedules.map(s => {
               const statusInfo = STATUS_LABEL[s.status];
+              const startDate = new Date(s.startAt);
+              const month = startDate.getMonth() + 1;
+              const day = startDate.getDate();
+              const timeStr = startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
               return (
                 <div
                   key={s.scheduleId}
                   onClick={() => navigate(`/circle/${cid}/schedules/${s.scheduleId}`)}
                   style={{
                     backgroundColor: 'white', borderRadius: 12,
-                    padding: '18px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                     cursor: 'pointer', border: '1px solid #f0f0f0', transition: 'box-shadow 0.15s',
+                    display: 'flex', alignItems: 'flex-start', gap: 14,
                   }}
                   onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)')}
                   onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)')}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ marginBottom: 6 }}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 700, padding: '2px 8px',
-                          borderRadius: 999, backgroundColor: statusInfo.bg, color: statusInfo.color,
-                        }}>
-                          {statusInfo.text}
-                        </span>
+                  {/* 날짜 */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 36 }}>
+                    <span style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>{month}월</span>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: '#111', lineHeight: 1.1 }}>{day}</span>
+                  </div>
+
+                  {/* 내용 */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.title}
+                    </h3>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: statusInfo.color,
+                      display: 'block', marginBottom: 8,
+                    }}>
+                      {statusInfo.text}
+                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#888' }}>
+                        <Clock size={12} />
+                        <span>{timeStr}</span>
                       </div>
-                      <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 8 }}>
-                        {s.title}
-                      </h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#666' }}>
-                          <Clock size={13} />
-                          <span>{formatDate(s.startAt)} ~ {formatDate(s.endAt)}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#666' }}>
-                          <Users size={13} />
-                          <span>최대 {s.maxMember}명</span>
-                        </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#888' }}>
+                        <Users size={12} />
+                        <span>{s.currentMember ?? 0}/{s.maxMember}명</span>
                       </div>
                     </div>
-                    <span style={{ fontSize: 20, color: '#ccc', marginLeft: 12 }}>›</span>
                   </div>
                 </div>
               );

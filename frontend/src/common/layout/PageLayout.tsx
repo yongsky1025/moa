@@ -2,16 +2,12 @@ import type { ReactNode } from 'react';
 import Footer from './Footer';
 import Navbar from './Navbar';
 
-interface PageLayoutProps extends NavbarProps {
+interface PageLayoutProps {
   children: ReactNode;
 }
 
-export default function PageLayout({
-  children,
-  isLoggedIn,
-  onToggleLogin,
-  isAdmin,
-}: PageLayoutProps) {
+export default function PageLayout({ children }: PageLayoutProps) {
+
   return (
     <div
       style={{
@@ -21,11 +17,7 @@ export default function PageLayout({
         background: 'oklch(0.985 0.012 80)',
       }}
     >
-      <Navbar
-        isLoggedIn={isLoggedIn}
-        onToggleLogin={onToggleLogin}
-        isAdmin={isAdmin}
-      />
+      <Navbar />
       <main
         style={{
           flex: 1,
@@ -38,6 +30,7 @@ export default function PageLayout({
         {children}
       </main>
       <Footer />
+
     </div>
   );
 }

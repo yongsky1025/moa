@@ -267,6 +267,13 @@ gradle-app.setting
 # Custom rules (everything added below won't be overriden by 'Generate .gitignore File' if you use 'Update' option)
 
 src/main/resources/application.properties
+
 bin/main/application-oauth2.yml
 src/main/resources/application-oauth2.yml
 backend/src/main/resources/application.yml
+backend/src/main/resources/application-oauth2.yml
+backend/src/test/resources/application.yml
+backend/src/test/resources/application-local.yml
+
+# Claude Code
+.claude/
