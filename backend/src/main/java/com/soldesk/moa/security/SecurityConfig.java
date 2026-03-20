@@ -24,6 +24,8 @@ import com.soldesk.moa.security.oauth2.handler.OAuth2LoginSuccessHandler;
 import com.soldesk.moa.security.oauth2.repository.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.soldesk.moa.security.oauth2.service.CustomOAuth2UserService;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import lombok.extern.log4j.Log4j2;
 
 @EnableMethodSecurity
@@ -31,6 +33,9 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @Configuration
 public class SecurityConfig {
+
+        @Value("${app.frontend-url:http://localhost:5173}")
+        private String frontendUrl;
 
         private final CustomOAuth2UserService customOAuth2UserService;
         private final JwtTokenProvider jwtTokenProvider;
@@ -82,7 +87,12 @@ public class SecurityConfig {
 
                                                 // ----------- user 시큐리티 파트 ---------
 
-                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers(
+                                                                "/api/auth/login",
+                                                                "/api/auth/signup",
+                                                                "/api/auth/refresh",
+                                                                "/api/auth/logout")
+                                                .permitAll()
                                                 .requestMatchers("/api/users/profile/check-nickname").permitAll()
                                                 .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**")
                                                 .permitAll()
@@ -120,6 +130,7 @@ public class SecurityConfig {
 
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth2 -> oauth2
+                                                .loginPage(frontendUrl + "/users/login")
                                                 .authorizationEndpoint(endpoint -> endpoint
                                                                 .authorizationRequestRepository(
                                                                                 cookieAuthorizationRequestRepository))

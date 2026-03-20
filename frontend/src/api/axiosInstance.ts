@@ -1,9 +1,9 @@
-import axios from 'axios';
-import { useAuthStore } from '../store/authStore';
+import axios from "axios";
+import { useAuthStore } from "../store/authStore";
 
 const api = axios.create({
-  baseURL: '/',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: "/",
+  headers: { "Content-Type": "application/json" },
 });
 
 // 동시 401이 여러 개 올 때 refresh를 한 번만 호출하기 위한 락
@@ -22,7 +22,7 @@ function rejectQueue(err: unknown) {
 
 // 요청 인터셉터: accessToken 자동 첨부
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem("accessToken");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -49,10 +49,10 @@ api.interceptors.response.use(
 
       isRefreshing = true;
       try {
-        const res = await axios.post('/api/auth/refresh', null, { withCredentials: true });
+        const res = await axios.post("/api/auth/refresh", null, { withCredentials: true });
         const newToken: string = res.data.accessToken;
         const user = res.data.user;
-        localStorage.setItem('accessToken', newToken);
+        localStorage.setItem("accessToken", newToken);
         if (user) useAuthStore.getState().setAuth(newToken, user);
         processQueue(newToken);
         original.headers.Authorization = `Bearer ${newToken}`;
@@ -60,14 +60,14 @@ api.interceptors.response.use(
       } catch (refreshError) {
         rejectQueue(refreshError);
         useAuthStore.getState().clearAuth();
-        window.location.href = '/users/login';
+        window.location.href = "/users/login";
         return Promise.reject(error);
       } finally {
         isRefreshing = false;
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

@@ -2,6 +2,7 @@ package com.soldesk.moa.place.entity;
 
 import java.time.LocalDateTime;
 
+import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.place.entity.constant.ReservationStatus;
 import com.soldesk.moa.schedule.entity.Schedule;
 import jakarta.persistence.Column;
@@ -26,7 +27,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @Builder
 @ToString(exclude = { "place", "schedule" })
-public class Reservation {
+public class Reservation extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

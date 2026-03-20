@@ -6,8 +6,10 @@ import com.soldesk.moa.admin.dashboard.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -95,16 +97,21 @@ public class AdminStatisticsService {
                 }).toList();
     }
 
-    // 모임 생존률(현재를 기점으로 한달 내 일정이 있는 활동하는 모임)
+    // 모임 생존률
+    // 활성 = 신생모임(30일 미만) + 성숙모임(30일 이상) 중 최근 30일 내 일정 있음
+    // 비활성 = 성숙모임 중 최근 30일 내 일정 없음
+    // 생존률 = (전체 - 비활성) / 전체
     @Transactional(readOnly = true)
     public CircleSurvivalDTO getCircleSurvival() {
 
-        LocalDateTime since = LocalDateTime.now().minusDays(30);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime monthAgo = now.minusDays(30);
 
         long total = adminCircleRepository.countTotalCircle();
-        long active = adminCircleRepository.countActiveCircle(since);
+        long inactiveMature = adminCircleRepository.countInactiveMatureCircle(monthAgo, monthAgo);
+        long active = total - inactiveMature;
 
-        double rate = Math.round(active / total * 100) * 100 / 100.0;
+        double rate = total == 0 ? 0.0 : Math.round((double) active / total * 10000.0) / 100.0;
 
         return CircleSurvivalDTO.builder()
                 .totalCircle(total)
@@ -113,28 +120,49 @@ public class AdminStatisticsService {
                 .build();
     }
 
-    // 시간대별 활동량 // 에너지테스트 기록 추후 추가
+    // 시간대별 활동량 (활동 유형별 분리) // 에너지테스트 활동도 추후 추가
     @Transactional(readOnly = true)
     public List<ActivityHeatmapDTO> getActivityHeatmap() {
 
-        LocalDateTime since = LocalDateTime.now().minusDays(60); // 일주일 간
+        LocalDateTime since = LocalDateTime.now().minusDays(7);
 
-        Map<String, Long> map = new HashMap<>();
+        Map<String, Long> userMap = new HashMap<>();
+        Map<String, Long> circleMap = new HashMap<>();
+        Map<String, Long> postMap = new HashMap<>();
+        Map<String, Long> replyMap = new HashMap<>();
+        Map<String, Long> scheduleMap = new HashMap<>();
 
-        merge(map, adminUsersRepository.findUserRegisterActivity(since));
-        merge(map, adminCircleRepository.findCircleCreateActivity(since));
-        merge(map, adminPostRepository.findPostActivity(since));
-        merge(map, adminReplyRepository.findReplyActivity(since));
-        merge(map, adminScheduleRepository.findScheduleStartActivity(since));
+        merge(userMap, adminUsersRepository.findUserRegisterActivity(since));
+        merge(circleMap, adminCircleRepository.findCircleCreateActivity(since));
+        merge(postMap, adminPostRepository.findPostActivity(since));
+        merge(replyMap, adminReplyRepository.findReplyActivity(since));
+        merge(scheduleMap, adminScheduleRepository.findScheduleStartActivity(since));
 
-        return map.entrySet().stream()
-                .map(e -> {
-                    String[] parts = e.getKey().split("_");
+        Set<String> allKeys = new HashSet<>();
+        allKeys.addAll(userMap.keySet());
+        allKeys.addAll(circleMap.keySet());
+        allKeys.addAll(postMap.keySet());
+        allKeys.addAll(replyMap.keySet());
+        allKeys.addAll(scheduleMap.keySet());
+
+        return allKeys.stream()
+                .map(key -> {
+                    String[] parts = key.split("_");
+                    long user = userMap.getOrDefault(key, 0L);
+                    long circle = circleMap.getOrDefault(key, 0L);
+                    long post = postMap.getOrDefault(key, 0L);
+                    long reply = replyMap.getOrDefault(key, 0L);
+                    long schedule = scheduleMap.getOrDefault(key, 0L);
 
                     return ActivityHeatmapDTO.builder()
                             .dayOfweek(Integer.parseInt(parts[0]))
                             .hour(Integer.parseInt(parts[1]))
-                            .activityCount(e.getValue())
+                            .activityCount(user + circle + post + reply + schedule)
+                            .userRegisterCount(user)
+                            .circleCreateCount(circle)
+                            .postCount(post)
+                            .replyCount(reply)
+                            .scheduleCount(schedule)
                             .build();
                 }).toList();
     }

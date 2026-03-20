@@ -73,6 +73,11 @@ public class EnergyProfileService {
                                 request.getActivityIntensity(),
                                 request.getCommitmentLevel());
 
+                // 꼬인 계정 복구 : 프로필은 있는데 완료 안 눌렀을 때
+                if (user.getOnboardingCompletedAt() == null) {
+                        user.completeOnboarding();
+                }
+
                 return EnergyProfileResponseDTO.from(profile);
         }
 

@@ -54,6 +54,11 @@ public class Circle extends BaseEntity {
     @JoinColumn(name = "cover_image_id", nullable = true)
     private Image coverImage;
 
+    // 신고 누적 횟수 컬럼
+    @Column(nullable = false)
+    @Builder.Default
+    private int sanctionCount = 0;
+
     // 상태 변경
     public void increaseMember() {
         if (this.status == CircleStatus.FULL) {
@@ -85,5 +90,20 @@ public class Circle extends BaseEntity {
         if (this.status == CircleStatus.FULL && maxMember > this.currentMember) {
             this.status = CircleStatus.OPEN;
         }
+    }
+
+    // admin - status 변경 메소드입니다(신고/제재용)
+    public void setStatus(CircleStatus status) {
+        this.status = status;
+    }
+
+    // admin - 신고 누적 횟수 메소드
+    public void increaseSanctionCount() {
+        this.sanctionCount++;
+    }
+
+    public void decreaseSanctionCount() {
+        if (this.sanctionCount > 0)
+            this.sanctionCount--;
     }
 }

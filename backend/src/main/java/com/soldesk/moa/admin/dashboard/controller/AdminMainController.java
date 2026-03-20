@@ -3,8 +3,8 @@ package com.soldesk.moa.admin.dashboard.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.soldesk.moa.admin.dashboard.dto.AdminMainDTO;
-import com.soldesk.moa.admin.dashboard.dto.PostActivitySummaryDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.AdminMainDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.PostActivitySummaryDTO;
 import com.soldesk.moa.admin.dashboard.service.AdminService;
 
 import io.swagger.v3.oas.annotations.Operation;

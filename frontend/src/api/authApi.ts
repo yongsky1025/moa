@@ -3,6 +3,7 @@ import type {
   AuthResponse,
   LoginRequest,
   SignUpRequest,
+  SocialSignUpCompleteRequest,
 } from "../users/types/auth";
 
 export const authApi = {
@@ -17,4 +18,7 @@ export const authApi = {
 
   refresh: () =>
     api.post<AuthResponse>("/api/auth/refresh"),
+
+  socialSignUpComplete: (req: SocialSignUpCompleteRequest) =>
+    api.post("/api/auth/social-complete", req),
 };

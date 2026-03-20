@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
-@RequestMapping("/users/me/energy-profile")
+@RequestMapping("/api/users/me/energy-profile")
 @RequiredArgsConstructor
 public class EnergyProfileController {
 

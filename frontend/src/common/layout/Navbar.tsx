@@ -17,15 +17,10 @@ const dropdownItems: Record<string, { label: string; href: string }[]> = {
     { label: 'Q&A', href: '#' },
     { label: '공지사항', href: '#' },
   ],
-  '에너지 테스트': [
-    { label: '테스트 시작', href: '#' },
-    { label: '에너지 유형 소개', href: '#' },
-    { label: '결과 공유', href: '#' },
-  ],
+  '에너지 테스트': [{ label: '테스트 시작', href: '/users/energy-test' }],
   '내 에너지': [
-    { label: '내 결과 보기', href: '#' },
-    { label: '에너지 유형 소개', href: '#' },
-    { label: '결과 공유', href: '#' },
+    { label: '내 결과 보기', href: '/users/energy-test/result' },
+    { label: '테스트 다시 하기', href: '/users/energy-test?mode=retest' },
   ],
 };
 
@@ -62,15 +57,15 @@ export default function Navbar() {
   const navLinks: Record<string, string> = {
     '모임 찾기': '/circle',
     커뮤니티: '#',
-    '에너지 테스트': '#',
-    '내 에너지': '#',
+    '에너지 테스트': '/users/energy-test',
+    '내 에너지': '/users/energy-test/result',
     '장소 추천': '#',
     '관리자 페이지': '/admin',
   };
 
   const handleLogout = async () => {
     await dispatch(logout());
-    navigate('/');
+    navigate('/main');
   };
 
   return (
@@ -80,8 +75,8 @@ export default function Navbar() {
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          backgroundColor: 'white',
-          borderBottom: '1px solid #f0f0f0',
+          backgroundColor: '#fff',
+          borderBottom: '1px solid #e5e5e5',
         }}
       >
         <div
@@ -96,7 +91,7 @@ export default function Navbar() {
           }}
         >
           <Link
-            to="/"
+            to="/main"
             style={{
               fontSize: 22,
               fontWeight: 900,
@@ -129,7 +124,7 @@ export default function Navbar() {
                     style={{
                       fontSize: 14,
                       fontWeight: 400,
-                      color: hoveredItem === item ? '#111' : '#888',
+                      color: hoveredItem === item ? '#5F8F7B' : '#555',
                       textDecoration: 'none',
                       display: 'inline-block',
                       textAlign: 'center',
@@ -199,19 +194,18 @@ export default function Navbar() {
                   padding: '5px 0',
                   width: '100%',
                   borderRadius: 6,
-                  border: '1px solid #e5e5e5',
-                  background: 'white',
+                  border: '1px solid #5F8F7B',
+                  background: 'transparent',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
-                  color: '#111',
+                  color: '#5F8F7B',
                 }}
               >
                 {isLoggedIn ? '로그아웃' : '로그인'}
               </button>
             </div>
 
-            {/* 채팅 아이콘 - 프로필 옆 */}
             {isLoggedIn && (
               <div style={{ position: 'relative' }}>
                 <button
@@ -219,7 +213,7 @@ export default function Navbar() {
                   title="채팅"
                   style={{
                     width: 34, height: 34, borderRadius: '50%', border: 'none',
-                    backgroundColor: '#f0f0f0', color: '#111', fontSize: 18,
+                    backgroundColor: '#5F8F7B', color: '#fff', fontSize: 18,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >
@@ -252,7 +246,7 @@ export default function Navbar() {
                 <div
                   style={{
                     width: 34, height: 34, borderRadius: '50%',
-                    backgroundColor: '#111', display: 'flex',
+                    backgroundColor: '#5F8F7B', display: 'flex',
                     alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                   }}
                 >
@@ -266,7 +260,7 @@ export default function Navbar() {
                   onClick={() => navigate('/users/signup')}
                   style={{
                     padding: '5px 0', width: '100%', borderRadius: 6,
-                    border: 'none', background: '#111', color: 'white',
+                    border: 'none', background: '#5F8F7B', color: '#fff',
                     fontSize: 13, fontWeight: 600, cursor: 'pointer',
                   }}
                 >
