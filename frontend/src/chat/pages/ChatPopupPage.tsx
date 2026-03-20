@@ -14,6 +14,29 @@ const avatarColor = (id: number) => AVATAR_COLORS[id % AVATAR_COLORS.length];
 
 const EMOJIS = ['😀','😂','😍','😎','🥺','😭','😡','🤔','👍','👎','❤️','🔥','✨','🎉','😊','🙏','💪','😅','🤣','😇','😘','🥳','😴','🤯','😱'];
 
+const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
+function renderMsgContent(content: string, mine: boolean) {
+  if (content.startsWith('/api/chat/files/')) {
+    if (IMAGE_EXTS.test(content)) {
+      return (
+        <img
+          src={content}
+          alt="이미지"
+          style={{ maxWidth: 220, maxHeight: 220, borderRadius: 12, display: 'block', cursor: 'pointer', objectFit: 'cover' }}
+          onClick={() => window.open(content, '_blank')}
+        />
+      );
+    }
+    const fileName = content.split('/').pop() ?? '파일';
+    return (
+      <a href={content} download style={{ color: mine ? '#fff' : '#d07856', textDecoration: 'underline', fontSize: 13 }}>
+        📎 {fileName}
+      </a>
+    );
+  }
+  return content;
+}
+
 export default function ChatPopupPage() {
   const { userId } = useAuthStore();
 
@@ -36,6 +59,8 @@ export default function ChatPopupPage() {
   const [roomCtxMenu, setRoomCtxMenu] = useState<{ x: number; y: number; room: ChatRoomSummary } | null>(null);
   const [renaming, setRenaming] = useState<{ roomId: number; value: string } | null>(null);
   const [profileModal, setProfileModal] = useState<{ nickname: string; senderId: number } | null>(null);
+  const [profileChatError, setProfileChatError] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,7 +106,11 @@ export default function ChatPopupPage() {
       }
       setRooms(updated);
       if (found) setActiveRoom(found);
-    } catch (e) { console.error('[handleRoomHash] 에러:', e); }
+    } catch (e: any) {
+      console.error('[handleRoomHash] 에러:', e);
+      const msg = e?.response?.data?.message;
+      setErrorMsg(msg ?? '채팅방을 열 수 없습니다.');
+    }
   }, []);
 
   // 마운트 시 + 팝업 재사용 시(hashchange) 모두 처리
@@ -190,10 +219,11 @@ export default function ChatPopupPage() {
     return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   };
 
-  const roomLabel = (r: ChatRoomSummary) =>
-    r.roomType === 'GROUP'
-      ? (r.name ?? `모임 채팅 #${r.circleId}`)
-      : (r.otherUserNickname ?? '1:1 채팅');
+  const roomLabel = (r: ChatRoomSummary) => {
+    if (r.roomType === 'GROUP') return r.name ?? `모임 채팅 #${r.circleId}`;
+    if (r.roomType === 'SCHEDULE') return r.name ?? `일정 채팅 #${r.scheduleId}`;
+    return r.otherUserNickname ?? '1:1 채팅';
+  };
 
   const handleDeleteMsg = async (messageId: number) => {
     if (!confirm('메시지를 삭제할까요?')) return;
@@ -234,16 +264,10 @@ export default function ChatPopupPage() {
   const nickColor = (nick: string) => AVATAR_COLORS2[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS2.length];
 
   const startDirectChat = async (targetUserId: number) => {
-    console.log('[startDirectChat] targetUserId:', targetUserId, 'userId:', userId);
-    if (targetUserId === userId) {
-      console.warn('[startDirectChat] 자기 자신 - 조기 탈출');
-      return;
-    }
+    if (targetUserId === userId) return;
     try {
       const roomId = await chatApi.getOrCreateDirectRoom(targetUserId);
-      console.log('[startDirectChat] roomId:', roomId);
       let updatedRooms = await chatApi.getMyRooms();
-      console.log('[startDirectChat] rooms:', updatedRooms);
       let found = updatedRooms.find((r) => r.roomId === roomId);
       if (!found) {
         await new Promise((res) => setTimeout(res, 500));
@@ -251,13 +275,13 @@ export default function ChatPopupPage() {
         found = updatedRooms.find((r) => r.roomId === roomId);
       }
       setRooms(updatedRooms);
-      console.log('[startDirectChat] found:', found);
       if (found) setActiveRoom(found);
-    } catch (e) {
-      console.error('[startDirectChat] 에러:', e);
-      alert('채팅방 생성 실패');
+      setProfileModal(null);
+      setProfileChatError(null);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message;
+      setProfileChatError(msg ?? '채팅방 생성 실패');
     }
-    setProfileModal(null);
   };
 
   const filteredRooms = rooms.filter((r) =>
@@ -268,6 +292,13 @@ export default function ChatPopupPage() {
 
   return (
     <div style={s.root}>
+      {/* 에러 토스트 */}
+      {errorMsg && (
+        <div style={s.errorToast}>
+          {errorMsg}
+          <button style={s.errorClose} onClick={() => setErrorMsg(null)}>✕</button>
+        </div>
+      )}
       {/* ── 사이드바 ── */}
       <div style={s.sidebar}>
         {/* 사이드바 헤더 */}
@@ -330,8 +361,8 @@ export default function ChatPopupPage() {
                 onClick={() => setActiveRoom(r)}
                 onContextMenu={(e) => handleRoomContextMenu(e, r)}
               >
-                <div style={{ ...s.roomAvatar, background: r.roomType === 'GROUP' ? '#d07856' : '#b8643d' }}>
-                  {r.roomType === 'GROUP' ? '👥' : '👤'}
+                <div style={{ ...s.roomAvatar, background: r.roomType === 'GROUP' ? '#d07856' : r.roomType === 'SCHEDULE' ? '#5b8def' : '#b8643d' }}>
+                  {r.roomType === 'GROUP' ? '👥' : r.roomType === 'SCHEDULE' ? '📅' : '👤'}
                 </div>
                 <div style={s.roomMeta}>
                   <div style={s.roomTop}>
@@ -401,7 +432,7 @@ export default function ChatPopupPage() {
       {profileModal && createPortal(
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}
-          onClick={() => setProfileModal(null)}
+          onClick={() => { setProfileModal(null); setProfileChatError(null); }}
         >
           <div
             style={{ background: '#fff', borderRadius: 20, width: 280, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
@@ -415,6 +446,11 @@ export default function ChatPopupPage() {
             <div style={{ paddingTop: 42, paddingBottom: 20, textAlign: 'center' }}>
               <div style={{ fontWeight: 700, fontSize: 17, color: '#262626' }}>{profileModal.nickname}</div>
             </div>
+            {profileChatError && (
+              <div style={{ margin: '0 20px 12px', padding: '10px 14px', background: '#fff3f3', border: '1px solid #f5c6c6', borderRadius: 8, fontSize: 13, color: '#c62828', textAlign: 'center' as const }}>
+                {profileChatError}
+              </div>
+            )}
             <div style={{ borderTop: '1px solid #f2e8e0', padding: '12px 20px' }}>
               <button
                 style={{ width: '100%', padding: '11px 0', background: '#d07856', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
@@ -511,7 +547,7 @@ export default function ChatPopupPage() {
                             {(msg.senderNickname ?? String(msg.senderId)).charAt(0)}
                           </div>
                         )}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '65%' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '80%', minWidth: 0 }}>
                           {!mine && <span style={s.senderName}>{msg.senderNickname ?? `사용자 #${msg.senderId}`}</span>}
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, flexDirection: mine ? 'row-reverse' : 'row' }}>
                             {editingMsgId === msg.messageId ? (
@@ -536,9 +572,13 @@ export default function ChatPopupPage() {
                                 style={{
                                   ...s.bubble,
                                   position: 'relative',
-                                  background: msg.isDeleted ? '#e0e0e0' : mine ? '#d07856' : '#fff',
-                                  color: msg.isDeleted ? '#999' : mine ? '#fff' : '#262626',
+                                  background: msg.isDeleted ? '#e0e0e0' : !msg.content.startsWith('/api/chat/files/') ? (mine ? '#d07856' : '#fff') : 'transparent',
+                                  color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1a1a1a',
                                   fontStyle: msg.isDeleted ? 'italic' : 'normal',
+                                  borderRadius: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 8 : 6,
+                                  padding: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 0 : undefined,
+                                  boxShadow: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(208,120,86,0.35)' : '0 2px 6px rgba(0,0,0,0.12)',
+                                  border: !msg.content.startsWith('/api/chat/files/') && !mine && !msg.isDeleted ? '1px solid #e8e8e8' : 'none',
                                 }}
                                 onContextMenu={mine && !msg.isDeleted ? (e) => {
                                   e.preventDefault();
@@ -546,7 +586,7 @@ export default function ChatPopupPage() {
                                   setMenuId(menuId === msg.messageId ? null : msg.messageId);
                                 } : undefined}
                               >
-                                {msg.isDeleted ? '삭제된 메시지입니다.' : msg.content}
+                                {msg.isDeleted ? '삭제된 메시지입니다.' : renderMsgContent(msg.content, mine)}
                                 {!msg.isDeleted && msg.updatedAt && (
                                   <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 6 }}>(수정됨)</span>
                                 )}
@@ -659,17 +699,17 @@ const s: Record<string, React.CSSProperties> = {
   leaderTag: { fontSize: 10, background: '#fdf0e8', color: '#b8643d', borderRadius: 6, padding: '1px 5px' },
 
   // 메시지
-  msgArea: { flex: 1, overflowY: 'auto' as const, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 },
+  msgArea: { flex: 1, overflowY: 'auto' as const, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 12 },
   firstMsg: { textAlign: 'center' as const, color: '#888', fontSize: 13, marginTop: 20 },
   msgRow: { display: 'flex', alignItems: 'flex-end', gap: 8 },
   avatar: { width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: 14, flexShrink: 0, alignSelf: 'flex-start' },
   senderName: { fontSize: 11, color: '#666', marginBottom: 3, marginLeft: 2 },
-  bubble: { padding: '9px 13px', borderRadius: 16, fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word' as const, boxShadow: '0 1px 2px rgba(0,0,0,0.08)', maxWidth: 280 },
-  msgTime: { fontSize: 11, color: '#777', flexShrink: 0 },
+  bubble: { padding: '11px 15px', borderRadius: 4, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word' as const, width: 'fit-content', maxWidth: 400, textAlign: 'left' as const },
+  msgTime: { fontSize: 11, color: '#bbb', flexShrink: 0, marginBottom: 2 },
 
   // 메시지 수정/삭제 메뉴
-  menuBox: { position: 'absolute' as const, right: 0, bottom: 24, background: '#fff', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 80 },
-  menuItem: { display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left' as const, cursor: 'pointer', fontSize: 13, color: '#262626' },
+  menuBox: { position: 'absolute' as const, right: 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 90, overflow: 'hidden' as const },
+  menuItem: { display: 'block', width: '100%', padding: '11px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left' as const, cursor: 'pointer', fontSize: 13, color: '#262626' },
   editInput: { padding: '7px 10px', border: '1px solid #d07856', borderRadius: 8, fontSize: 13, outline: 'none' },
   editConfirmBtn: { flex: 1, padding: '4px', background: '#d07856', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
   editCancelBtn: { flex: 1, padding: '4px', background: '#f2e8e0', color: '#262626', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
@@ -696,4 +736,7 @@ const s: Record<string, React.CSSProperties> = {
   modalBtns: { display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' },
   modalCancel: { padding: '8px 16px', background: '#f2e8e0', color: '#262626', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
   modalConfirm: { padding: '8px 16px', background: '#d07856', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 'bold' },
+  // 에러 토스트
+  errorToast: { position: 'fixed' as const, top: 16, left: '50%', transform: 'translateX(-50%)', background: '#c62828', color: '#fff', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 'bold', zIndex: 99999, display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.25)', maxWidth: 380, whiteSpace: 'pre-wrap' as const },
+  errorClose: { background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16, padding: 0, flexShrink: 0 },
 };

@@ -73,7 +73,9 @@ export default function ChatListPage() {
 
   const roomLabel = (room: ChatRoomSummary) => {
     if (room.name) return room.name;
-    return room.roomType === 'GROUP' ? `모임 채팅 #${room.circleId}` : `1:1 채팅 #${room.roomId}`;
+    if (room.roomType === 'GROUP') return `모임 채팅 #${room.circleId}`;
+    if (room.roomType === 'SCHEDULE') return `일정 채팅 #${room.scheduleId}`;
+    return `1:1 채팅 #${room.roomId}`;
   };
 
   if (loading) return <div style={styles.center}>불러오는 중...</div>;
@@ -94,7 +96,7 @@ export default function ChatListPage() {
             onClick={() => navigate(`/chat/room/${room.roomId}`)}
             onContextMenu={(e) => handleContextMenu(e, room)}
           >
-            <div style={styles.avatar}>{room.roomType === 'GROUP' ? '👥' : '👤'}</div>
+            <div style={styles.avatar}>{room.roomType === 'GROUP' ? '👥' : room.roomType === 'SCHEDULE' ? '📅' : '👤'}</div>
             <div style={styles.info}>
               <div style={styles.row}>
                 <span style={styles.name}>{roomLabel(room)}</span>

@@ -9,6 +9,8 @@ import com.soldesk.moa.chat.exception.ChatException;
 import com.soldesk.moa.chat.repository.ChatMessageRepository;
 import com.soldesk.moa.chat.repository.ChatRoomMemberRepository;
 import com.soldesk.moa.chat.repository.ChatRoomRepository;
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
+import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.users.repository.UsersRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -23,13 +25,16 @@ public class ChatRoomService {
     private final ChatRoomMemberRepository memberRepo;
     private final ChatMessageRepository messageRepo;
     private final UsersRepository usersRepo;
+    private final CircleMemberRepository circleMemberRepo;
 
     public ChatRoomService(ChatRoomRepository roomRepo, ChatRoomMemberRepository memberRepo,
-            ChatMessageRepository messageRepo, UsersRepository usersRepo) {
+            ChatMessageRepository messageRepo, UsersRepository usersRepo,
+            CircleMemberRepository circleMemberRepo) {
         this.roomRepo = roomRepo;
         this.memberRepo = memberRepo;
         this.messageRepo = messageRepo;
         this.usersRepo = usersRepo;
+        this.circleMemberRepo = circleMemberRepo;
     }
 
     /**
@@ -40,6 +45,9 @@ public class ChatRoomService {
     public ChatRoom getOrCreateDirectRoom(Long myId, Long otherId) {
         if (myId.equals(otherId)) {
             throw new ChatException(ChatErrorCode.INVALID_REQUEST, "자기 자신과 1:1 채팅을 할 수 없습니다.");
+        }
+        if (circleMemberRepo.findSharedActiveCircles(myId, otherId, CircleMemberStatus.ACTIVE).isEmpty()) {
+            throw new ChatException(ChatErrorCode.FORBIDDEN, "같은 서클에 속한 멤버와만 1:1 채팅을 할 수 있습니다.");
         }
         String key = directKey(myId, otherId);
         ChatRoom room = roomRepo.findByDirectKey(key).orElseGet(() -> {
@@ -139,6 +147,7 @@ public class ChatRoomService {
                             room.getId(),
                             room.getType(),
                             room.getCircleId(),
+                            room.getScheduleId(),
                             lastMsg.map(m -> m.getContent()).orElse(null),
                             lastMsg.map(m -> m.getCreatedAt()).orElse(null),
                             unread,
@@ -149,14 +158,40 @@ public class ChatRoomService {
     }
 
     /**
-     * 모임 채팅방 이름 변경 (멤버만 가능, GROUP 방만 가능).
+     * 일정 채팅방 조회 또는 생성.
+     * 일정당 1개 방이 보장됨.
+     */
+    @Transactional
+    public ChatRoom getOrCreateScheduleRoom(Long scheduleId, String scheduleName, Long userId) {
+        return roomRepo.findByScheduleId(scheduleId).map(room -> {
+            if (!memberRepo.existsByRoomIdAndUserId(room.getId(), userId)) {
+                memberRepo.save(ChatRoomMember.join(room.getId(), userId));
+            }
+            return room;
+        }).orElseGet(() -> {
+            try {
+                ChatRoom room = roomRepo.save(ChatRoom.schedule(scheduleId, scheduleName));
+                memberRepo.save(ChatRoomMember.join(room.getId(), userId));
+                return room;
+            } catch (DataIntegrityViolationException e) {
+                ChatRoom room = roomRepo.findByScheduleId(scheduleId).orElseThrow(() -> e);
+                if (!memberRepo.existsByRoomIdAndUserId(room.getId(), userId)) {
+                    memberRepo.save(ChatRoomMember.join(room.getId(), userId));
+                }
+                return room;
+            }
+        });
+    }
+
+    /**
+     * 모임/일정 채팅방 이름 변경 (멤버만 가능).
      */
     @Transactional
     public void updateRoomName(Long roomId, Long userId, String name) {
         assertMember(roomId, userId);
         ChatRoom room = getRoomOrThrow(roomId);
-        if (room.getType() != com.soldesk.moa.chat.domain.RoomType.GROUP) {
-            throw new ChatException(ChatErrorCode.INVALID_REQUEST, "모임 채팅방만 이름을 변경할 수 있습니다.");
+        if (room.getType() == com.soldesk.moa.chat.domain.RoomType.DIRECT) {
+            throw new ChatException(ChatErrorCode.INVALID_REQUEST, "1:1 채팅방은 이름을 변경할 수 없습니다.");
         }
         room.updateName(name);
     }

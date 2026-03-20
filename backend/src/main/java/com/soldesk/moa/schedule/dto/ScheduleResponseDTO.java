@@ -26,6 +26,7 @@ public class ScheduleResponseDTO {
     private Double latitude;
     private Double longitude;
     private boolean joined;
+    private Long chatRoomId;
 
     public ScheduleResponseDTO(Schedule schedule) {
         this.scheduleId = schedule.getScheduleId();
@@ -44,5 +45,10 @@ public class ScheduleResponseDTO {
     public ScheduleResponseDTO(Schedule schedule, boolean joined) {
         this(schedule);
         this.joined = joined;
+    }
+
+    public ScheduleResponseDTO(Schedule schedule, Long chatRoomId) {
+        this(schedule);
+        this.chatRoomId = chatRoomId;
     }
 }

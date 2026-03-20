@@ -5,6 +5,7 @@ import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { circleApi } from '../../api/circleApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
+import { useDirectChat } from '../../chat/hooks/useDirectChat';
 import type { CircleMember } from '../types/circle';
 import type { RootState } from '../../users/reducers/store';
 
@@ -19,6 +20,7 @@ export default function CircleMembersPage() {
   const [myMember, setMyMember] = useState<CircleMember | null>(null);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
+  const [profileModal, setProfileModal] = useState<CircleMember | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -72,8 +74,48 @@ export default function CircleMembersPage() {
 
   const isLeader = myMember?.role === 'LEADER';
 
+  const { startDirectChat, directChatError, clearDirectChatError } = useDirectChat();
+
+  const nickColor = (nickname: string) => `hsl(${[...nickname].reduce((a, c) => a + c.charCodeAt(0), 0) % 360}, 55%, 55%)`;
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
+      {profileModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+          onClick={() => { setProfileModal(null); clearDirectChatError(); }}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 20, width: 300, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ background: nickColor(profileModal.nickname), height: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              <div style={{ width: 72, height: 72, borderRadius: '50%', background: nickColor(profileModal.nickname), border: '4px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: '#fff', marginBottom: -36 }}>
+                {profileModal.nickname.charAt(0)}
+              </div>
+            </div>
+            <div style={{ paddingTop: 44, paddingBottom: 24, textAlign: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: 18, color: '#111' }}>{profileModal.nickname}</div>
+              {profileModal.role === 'LEADER' && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#d97706', backgroundColor: '#fef3c7', padding: '2px 8px', borderRadius: 4, marginTop: 6, display: 'inline-block' }}>리더</span>
+              )}
+            </div>
+            {directChatError && (
+              <div style={{ margin: '0 24px 12px', padding: '10px 14px', background: '#fff3f3', border: '1px solid #f5c6c6', borderRadius: 8, fontSize: 13, color: '#c62828', textAlign: 'center' }}>
+                {directChatError}
+              </div>
+            )}
+            <div style={{ borderTop: '1px solid #f0f0f0', padding: '14px 24px' }}>
+              <button
+                style={{ width: '100%', padding: '12px 0', background: '#111', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+                onClick={() => startDirectChat(profileModal.userId)}
+              >
+                💬 1:1 채팅하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <Navbar />
       <main style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px 60px' }}>
 
@@ -148,16 +190,16 @@ export default function CircleMembersPage() {
                       padding: '12px 0', borderBottom: '1px solid #f5f5f5',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{
-                          width: 36, height: 36, borderRadius: '50%',
-                          backgroundColor: m.role === 'LEADER' ? '#D07856' : '#e5e7eb',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                            stroke={m.role === 'LEADER' ? 'white' : '#6b7280'}
-                            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                          </svg>
+                        <div
+                          onClick={() => { if (m.nickname !== user?.nickname) setProfileModal(m); }}
+                          style={{
+                            width: 36, height: 36, borderRadius: '50%',
+                            background: nickColor(m.nickname),
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: m.nickname !== user?.nickname ? 'pointer' : 'default',
+                            fontSize: 15, fontWeight: 700, color: '#fff',
+                          }}>
+                          {m.nickname.charAt(0)}
                         </div>
                         <div>
                           <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{m.nickname}</span>

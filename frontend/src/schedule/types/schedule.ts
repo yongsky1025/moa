@@ -13,6 +13,7 @@ export interface ScheduleResponse {
   latitude?: number;
   longitude?: number;
   joined?: boolean;
+  chatRoomId?: number;
 }
 
 export interface ScheduleCreateRequest {

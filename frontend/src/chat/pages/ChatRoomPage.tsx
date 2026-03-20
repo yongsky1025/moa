@@ -28,6 +28,8 @@ export default function ChatRoomPage() {
   const [headerCtx, setHeaderCtx] = useState<{ x: number; y: number } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [profileModal, setProfileModal] = useState<{ nickname: string; senderId: number } | null>(null);
+  const [profileChatError, setProfileChatError] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const headerCtxRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,8 +79,16 @@ export default function ChatRoomPage() {
     };
   }, []);
 
-  const startDirectChat = (targetUserId: number) => {
+  const startDirectChat = async (targetUserId: number) => {
     if (targetUserId === userId) return;
+    try {
+      await chatApi.getOrCreateDirectRoom(targetUserId);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message;
+      setProfileChatError(msg ?? '채팅방 생성 실패');
+      return;
+    }
+    setProfileChatError(null);
     const popup = window.open(`/chat/popup#direct-${targetUserId}`, 'moa-chat', 'width=760,height=600,resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no');
     if (popup && !popup.closed) {
       setTimeout(() => {
@@ -184,6 +194,13 @@ export default function ChatRoomPage() {
 
   return (
     <div style={styles.container}>
+      {/* 에러 토스트 */}
+      {toastMsg && (
+        <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', background: '#c62828', color: '#fff', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 'bold', zIndex: 99999, display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.25)', maxWidth: 380 }}>
+          {toastMsg}
+          <button style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16, padding: 0 }} onClick={() => setToastMsg(null)}>✕</button>
+        </div>
+      )}
       <div style={styles.header}>
         <button onClick={() => navigate('/chat')} style={styles.backBtn}>←</button>
         <span
@@ -193,7 +210,7 @@ export default function ChatRoomPage() {
         >
           {roomInfo?.roomType === 'DIRECT'
             ? (roomInfo.otherUserNickname ?? '1:1 채팅')
-            : (roomInfo?.name ?? `채팅방 #${rid}`)}
+            : (roomInfo?.name ?? (roomInfo?.roomType === 'SCHEDULE' ? `일정 채팅 #${rid}` : `채팅방 #${rid}`))}
         </span>
         {roomInfo?.roomType === 'GROUP' && (
           <button onClick={() => setShowMembers((v) => !v)} style={styles.memberBtn}>
@@ -275,7 +292,7 @@ export default function ChatRoomPage() {
                   {msg.senderNickname?.charAt(0) ?? '?'}
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '65%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '75%' }}>
                 {!mine && <span style={styles.nick}>{msg.senderNickname}</span>}
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexDirection: mine ? 'row-reverse' : 'row' }}>
 
@@ -301,9 +318,12 @@ export default function ChatRoomPage() {
                     <div
                       style={{
                         ...styles.bubble,
-                        background: msg.isDeleted ? '#e0e0e0' : mine ? '#d07856' : '#f2e8e0',
-                        color: msg.isDeleted ? '#999' : mine ? '#fff' : '#262626',
+                        background: msg.isDeleted ? '#e0e0e0' : mine ? '#d07856' : '#fff',
+                        color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1a1a1a',
                         fontStyle: msg.isDeleted ? 'italic' : 'normal',
+                        borderRadius: 6,
+                        boxShadow: msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(208,120,86,0.35)' : '0 2px 6px rgba(0,0,0,0.12)',
+                        border: !mine && !msg.isDeleted ? '1px solid #e8e8e8' : 'none',
                       }}
                     >
                       {msg.isDeleted ? '삭제된 메시지입니다.' : msg.content}
@@ -344,7 +364,7 @@ export default function ChatRoomPage() {
       {profileModal && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
-          onClick={() => setProfileModal(null)}
+          onClick={() => { setProfileModal(null); setProfileChatError(null); }}
         >
           <div
             style={{ background: '#fff', borderRadius: 20, width: 300, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
@@ -360,6 +380,12 @@ export default function ChatRoomPage() {
             <div style={{ paddingTop: 44, paddingBottom: 24, textAlign: 'center' }}>
               <div style={{ fontWeight: 700, fontSize: 18, color: '#262626' }}>{profileModal.nickname}</div>
             </div>
+            {/* 에러 메시지 */}
+            {profileChatError && (
+              <div style={{ margin: '0 24px 12px', padding: '10px 14px', background: '#fff3f3', border: '1px solid #f5c6c6', borderRadius: 8, fontSize: 13, color: '#c62828', textAlign: 'center' as const }}>
+                {profileChatError}
+              </div>
+            )}
             {/* 버튼 */}
             <div style={{ borderTop: '1px solid #f2e8e0', padding: '14px 24px' }}>
               <button
@@ -440,8 +466,8 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0, alignSelf: 'flex-start',
   },
   nick: { fontSize: 11, color: '#888', marginBottom: 3, marginLeft: 4 },
-  bubble: { padding: '9px 13px', borderRadius: 16, fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word' },
-  time: { fontSize: 11, color: '#aaa', flexShrink: 0 },
+  bubble: { padding: '11px 15px', borderRadius: 4, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', width: 'fit-content', maxWidth: 520, textAlign: 'left' as const },
+  time: { fontSize: 11, color: '#bbb', flexShrink: 0, marginBottom: 2 },
   menuBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#aaa', padding: '0 2px', lineHeight: 1 },
   menuBox: { position: 'absolute', right: 0, bottom: 24, background: '#fff', borderRadius: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 80 },
   menuItem: { display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' },

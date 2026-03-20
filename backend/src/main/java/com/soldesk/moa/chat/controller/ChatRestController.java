@@ -65,6 +65,17 @@ public class ChatRestController {
         return ResponseEntity.ok(Map.of("roomId", room.getId()));
     }
 
+    /** 일정 채팅방 조회 또는 생성 */
+    @PostMapping("/rooms/schedule")
+    public ResponseEntity<Map<String, Long>> getOrCreateScheduleRoom(
+            @RequestParam Long scheduleId,
+            @RequestParam String scheduleName,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        ChatRoom room = roomService.getOrCreateScheduleRoom(scheduleId, scheduleName, auth.getUserId());
+        return ResponseEntity.ok(Map.of("roomId", room.getId()));
+    }
+
     /** 채팅 내역 조회 (최신순 페이징) */
     @GetMapping("/rooms/{roomId}/messages")
     public ResponseEntity<Page<ChatMessageResponse>> getMessages(

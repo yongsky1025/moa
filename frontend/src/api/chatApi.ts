@@ -44,6 +44,12 @@ export const chatApi = {
       .post<{ roomId: number }>('/api/chat/rooms/group', null, { params: { circleId } })
       .then((r) => r.data.roomId),
 
+  // 일정 채팅방 조회/생성 - 백엔드가 { roomId: number } 반환
+  getOrCreateScheduleRoom: (scheduleId: number, scheduleName: string) =>
+    api
+      .post<{ roomId: number }>('/api/chat/rooms/schedule', null, { params: { scheduleId, scheduleName } })
+      .then((r) => r.data.roomId),
+
   // 메시지 수정
   editMessage: (messageId: number, content: string) =>
     api.patch<ChatMessage>(`/api/chat/messages/${messageId}`, { content }).then((r) => r.data),
