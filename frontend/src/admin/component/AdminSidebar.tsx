@@ -25,11 +25,20 @@ const MENU_ITEMS: MenuItem[] = [
     label: '모임 관리',
     icon:  '◎',
     children: [
-      { key: 'circles-pending', label: '생성 승인 대기', path: '/admin/circles/pending' },
-      { key: 'circles-all',     label: '전체 모임 관리', path: '/admin/circles'         },
+      { key: 'circles-pending',  label: '생성 승인 대기', path: '/admin/circles/pending'  },
+      { key: 'circles-all',      label: '전체 모임 관리', path: '/admin/circles'          },
+      { key: 'circles-category', label: '카테고리 관리',  path: '/admin/circles/category' },
     ],
   },
-  { key: 'posts',  label: '게시글 관리', icon: '📋', path: '/admin/posts'  },
+  {
+    key:   'posts',
+    label: '게시글 관리',
+    icon:  '📋',
+    children: [
+      { key: 'posts-all',     label: '전체 게시글',    path: '/admin/posts'          },
+      { key: 'posts-notices', label: '공지사항 관리',  path: '/admin/posts/notices'  },
+    ],
+  },
   { key: 'places', label: '장소 관리',   icon: '📍', path: '/admin/places' },
   {
     key:   'reports',
@@ -52,8 +61,8 @@ const MENU_ITEMS: MenuItem[] = [
   },
 ];
 
-// 구분선 표시할 인덱스
-const DIVIDER_BEFORE = new Set([2, 5, 6]);
+// 구분선 표시할 인덱스 (모든 메뉴 섹션 사이)
+const DIVIDER_BEFORE = new Set([1, 2, 3, 4, 5, 6, 7]);
 
 export default function AdminSidebar() {
   const navigate  = useNavigate();
@@ -61,7 +70,7 @@ export default function AdminSidebar() {
 
   // 기본으로 열려있는 서브메뉴
   const [openMenus, setOpenMenus] = useState<Set<string>>(
-    new Set(['circles', 'reports', 'logs'])
+    new Set(['circles', 'posts', 'reports', 'logs'])
   );
 
   const toggleMenu = (key: string) => {
@@ -72,9 +81,9 @@ export default function AdminSidebar() {
     });
   };
 
-  const isActive       = (path?: string) => !!path && location.pathname === path;
+  const isChildActive  = (path: string) => location.pathname === path;
   const isParentActive = (item: MenuItem) =>
-    item.children?.some(c => location.pathname === c.path) ?? false;
+    item.children?.some(c => location.pathname === c.path || location.pathname.startsWith(c.path + '/')) ?? false;
 
   return (
     <aside className="sticky top-16 flex h-[calc(100vh-64px)] w-55 shrink-0 flex-col overflow-y-auto border-r border-gray-100 bg-white pt-4">
@@ -89,7 +98,7 @@ export default function AdminSidebar() {
 
       {/* 메뉴 목록 */}
       {MENU_ITEMS.map((item, idx) => {
-        const active  = isActive(item.path);
+        const active  = !!item.path && location.pathname === item.path;
         const pActive = isParentActive(item);
         const open    = openMenus.has(item.key);
 
@@ -133,10 +142,10 @@ export default function AdminSidebar() {
                   <button
                     key={child.key}
                     className={`sb-sub block w-full cursor-pointer border-none py-1.75 pr-4.5 pl-10.5 text-left text-xs transition-colors duration-150 ${
-                      isActive(child.path) ? 'font-semibold' : 'bg-transparent font-normal'
+                      isChildActive(child.path) ? 'font-semibold' : 'bg-transparent font-normal'
                     }`}
                     style={
-                      isActive(child.path)
+                      isChildActive(child.path)
                         ? { background: '#EAF4F0', color: '#5F8F7B' }
                         : { color: '#6B7280' }
                     }

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -19,6 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.Tuple;
+import com.soldesk.moa.admin.dashboard.dto.postInfo.AdminPostDetailDTO;
+import com.soldesk.moa.admin.dashboard.dto.postInfo.AdminPostDetailDTO.AdminReplyDTO;
+import com.soldesk.moa.admin.dashboard.dto.postInfo.AdminPostResponseDTO;
+import com.soldesk.moa.admin.dashboard.dto.postInfo.AdminPostSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleCategoryRequestDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleDetailDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleMemberDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCirclePostDTO;
@@ -41,6 +47,7 @@ import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoDTO;
 import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoPostDTO;
 import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoReplyDTO;
 import com.soldesk.moa.admin.dashboard.repository.AdminBoardRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminCircleCategoryRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminPostRepository;
@@ -48,11 +55,19 @@ import com.soldesk.moa.admin.dashboard.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminScheduleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
+import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.Reply;
+import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.circle.entity.Circle;
+import com.soldesk.moa.circle.entity.CircleCategory;
 import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
+import com.soldesk.moa.admin.report.entity.Sanction;
+import com.soldesk.moa.admin.report.entity.constant.ReportTargetType;
+import com.soldesk.moa.admin.report.entity.constant.SanctionState;
+import com.soldesk.moa.admin.report.repository.SanctionRepository;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.common.entity.Image;
@@ -73,6 +88,9 @@ public class AdminService {
         private final AdminScheduleRepository adminScheduleRepository;
         private final AdminScheduleMemberRepository adminScheduleMemberRepository;
         private final AdminPostRepository adminPostRepository;
+        private final AdminCircleCategoryRepository adminCircleCategoryRepository;
+        private final BoardRepository boardRepository;
+        private final SanctionRepository sanctionRepository;
 
         // admin main page
         @Transactional(readOnly = true)
@@ -339,16 +357,14 @@ public class AdminService {
                 Page<Object[]> result = adminCircleRepository.getCircleMembers(circleId, pageable);
 
                 long totalCount = result.getTotalElements();
-                List<AdminCircleMemberDTO> dtoList = result.stream().map(obj ->
-                        AdminCircleMemberDTO.builder()
+                List<AdminCircleMemberDTO> dtoList = result.stream().map(obj -> AdminCircleMemberDTO.builder()
                                 .userId((Long) obj[0])
                                 .userName((String) obj[1])
                                 .gender(obj[2] != null ? obj[2].toString() : "UNSPECIFIED")
                                 .role(obj[3].toString())
                                 .status(obj[4].toString())
                                 .joinDate((LocalDateTime) obj[5])
-                                .build()
-                ).collect(Collectors.toList());
+                                .build()).collect(Collectors.toList());
 
                 return PageResultDTO.<AdminCircleMemberDTO>withAll()
                                 .dtoList(dtoList)
@@ -364,16 +380,14 @@ public class AdminService {
                 Page<Object[]> result = adminCircleRepository.getCirclePosts(circleId, pageable);
 
                 long totalCount = result.getTotalElements();
-                List<AdminCirclePostDTO> dtoList = result.stream().map(obj ->
-                        AdminCirclePostDTO.builder()
+                List<AdminCirclePostDTO> dtoList = result.stream().map(obj -> AdminCirclePostDTO.builder()
                                 .postId((Long) obj[0])
                                 .title((String) obj[1])
                                 .authorName((String) obj[2])
                                 .viewCount((Integer) obj[3])
                                 .replyCount(((Long) obj[4]).intValue())
                                 .createDate((LocalDateTime) obj[5])
-                                .build()
-                ).collect(Collectors.toList());
+                                .build()).collect(Collectors.toList());
 
                 return PageResultDTO.<AdminCirclePostDTO>withAll()
                                 .dtoList(dtoList)
@@ -396,6 +410,16 @@ public class AdminService {
                                 .score((Double) c[4])
                                 .build()).collect(Collectors.toList());
 
+        }
+
+        // 관리자 서클 카테고리 추가
+        @Transactional
+        public void createCircleCategory(AdminCircleCategoryRequestDTO dto) {
+                CircleCategory category = CircleCategory.builder()
+                                .categoryName(dto.getCategoryName())
+                                .build();
+
+                adminCircleCategoryRepository.save(category);
         }
 
         // 게시글 활동
@@ -610,5 +634,170 @@ public class AdminService {
                                 .role(circleMember.getRole().toString())
                                 .build();
                 return dto;
+        }
+
+        // ===== 게시글 관리 =====
+
+        // 게시글 목록 조회 (필터/검색/정렬)
+        @Transactional(readOnly = true)
+        public PageResultDTO<AdminPostResponseDTO> getAdminPosts(AdminPostSearchDTO searchDTO) {
+                Pageable pageable = PageRequest.of(searchDTO.getPage() - 1, searchDTO.getSize());
+                Page<Tuple> page = adminPostRepository.searchAdminPosts(searchDTO, pageable);
+
+                List<AdminPostResponseDTO> dtoList = page.getContent().stream()
+                                .map(tuple -> {
+                                        Post post = tuple.get(0, Post.class);
+                                        String boardName = tuple.get(1, String.class);
+                                        Long replyCount = tuple.get(2, Long.class);
+                                        String circleName = tuple.get(3, String.class);
+
+                                        Board board = post.getBoardId();
+                                        return AdminPostResponseDTO.builder()
+                                                        .postId(post.getPostId())
+                                                        .title(post.getTitle())
+                                                        .authorName(post.getUserId().getName())
+                                                        .authorId(post.getUserId().getUserId())
+                                                        .boardName(boardName)
+                                                        .boardType(board.getBoardType())
+                                                        .circleName(circleName)
+                                                        .circleId(board.getCircleId() != null
+                                                                        ? board.getCircleId().getCircleId()
+                                                                        : null)
+                                                        .viewCount(post.getViewCount())
+                                                        .replyCount(replyCount != null ? replyCount : 0L)
+                                                        .deleted(post.isDeleted())
+                                                        .createDate(post.getCreateDate())
+                                                        .build();
+                                })
+                                .toList();
+
+                return PageResultDTO.<AdminPostResponseDTO>withAll()
+                                .dtoList(dtoList)
+                                .pageRequestDTO(searchDTO)
+                                .totalCount(page.getTotalElements())
+                                .build();
+        }
+
+        // 게시글 상세 조회 (댓글 포함)
+        @Transactional(readOnly = true)
+        public AdminPostDetailDTO getPostDetail(Long postId) {
+                Post post = adminPostRepository.findById(postId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+                Board board = post.getBoardId();
+                Users author = post.getUserId();
+
+                // 댓글 목록 조회 (admin용 repository 사용)
+                List<Reply> replies = adminReplyRepository.findByPostId_PostIdOrderByCreateDateAsc(postId);
+
+                List<AdminReplyDTO> replyDTOs = replies.stream()
+                                .sorted(Comparator.comparing(Reply::getCreateDate))
+                                .map(reply -> AdminReplyDTO.builder()
+                                                .replyId(reply.getReplyId())
+                                                .content(reply.isDeleted() ? "삭제된 댓글입니다." : reply.getContent())
+                                                .authorName(reply.getUserId().getName())
+                                                .authorId(reply.getUserId().getUserId())
+                                                .parentId(reply.getParentId() != null
+                                                                ? reply.getParentId().getReplyId()
+                                                                : null)
+                                                .depth(reply.getDepth())
+                                                .deleted(reply.isDeleted())
+                                                .createDate(reply.getCreateDate())
+                                                .build())
+                                .toList();
+
+                // 삭제된 게시글인 경우 CONTENT_DELETE 활성 제재 ID 조회
+                Long sanctionId = null;
+                if (post.isDeleted()) {
+                        sanctionId = sanctionRepository
+                                        .findFirstByTargetTypeAndTargetIdAndSanctionStateOrderByCreateDateDesc(
+                                                        ReportTargetType.POST, postId, SanctionState.ACTIVE)
+                                        .map(Sanction::getId)
+                                        .orElse(null);
+                }
+
+                return AdminPostDetailDTO.builder()
+                                .postId(post.getPostId())
+                                .title(post.getTitle())
+                                .content(post.getContent())
+                                .authorName(author.getName())
+                                .authorId(author.getUserId())
+                                .boardName(board.getName())
+                                .boardType(board.getBoardType())
+                                .circleName(board.getCircleId() != null ? board.getCircleId().getName() : null)
+                                .circleId(board.getCircleId() != null ? board.getCircleId().getCircleId() : null)
+                                .boardId(board.getBoardId())
+                                .viewCount(post.getViewCount())
+                                .deleted(post.isDeleted())
+                                .sanctionId(sanctionId)
+                                .createDate(post.getCreateDate())
+                                .updateDate(post.getUpdateDate())
+                                .replies(replyDTOs)
+                                .build();
+        }
+
+        // ===== 공지사항 관리 =====
+
+        // 공지사항 작성
+        @Transactional
+        public Long createNotice(Long adminId, String title, String content) {
+                Users admin = adminUsersRepository.findById(adminId)
+                                .orElseThrow(() -> new IllegalArgumentException("해당 관리자를 찾을 수 없습니다."));
+
+                Board noticeBoard = boardRepository.findByBoardTypeAndCircleIdIsNull(BoardType.NOTICE)
+                                .orElseThrow(() -> new IllegalArgumentException("공지사항 게시판을 찾을 수 없습니다."));
+
+                Post notice = Post.builder()
+                                .title(title)
+                                .content(content)
+                                .userId(admin)
+                                .boardId(noticeBoard)
+                                .build();
+
+                return adminPostRepository.save(notice).getPostId();
+        }
+
+        // 공지사항 수정
+        @Transactional
+        public void updateNotice(Long postId, String title, String content) {
+                Post post = adminPostRepository.findById(postId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+                if (post.getBoardId().getBoardType() != BoardType.NOTICE) {
+                        throw new IllegalArgumentException("공지사항이 아닙니다.");
+                }
+
+                post.changeTitle(title);
+                post.changeContent(content);
+        }
+
+        // 공지사항 삭제 (soft delete - 제재 시스템 미사용)
+        @Transactional
+        public void deleteNotice(Long postId) {
+                Post post = adminPostRepository.findById(postId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+                if (post.getBoardId().getBoardType() != BoardType.NOTICE) {
+                        throw new IllegalArgumentException("공지사항이 아닙니다.");
+                }
+
+                post.markDeleted();
+        }
+
+        // 공지사항 복원
+        @Transactional
+        public void restoreNotice(Long postId) {
+                Post post = adminPostRepository.findById(postId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+                if (post.getBoardId().getBoardType() != BoardType.NOTICE) {
+                        throw new IllegalArgumentException("공지사항이 아닙니다.");
+                }
+
+                if (!post.isDeleted()) {
+                        throw new IllegalStateException("삭제되지 않은 게시글은 복원할 수 없습니다.");
+                }
+
+                post.restore();
         }
 }

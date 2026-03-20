@@ -1,6 +1,7 @@
 package com.soldesk.moa.common.entity;
 
 import com.soldesk.moa.board.entity.Post;
+import com.soldesk.moa.place.entity.Place;
 import com.soldesk.moa.users.entity.Users;
 
 import jakarta.persistence.Column;

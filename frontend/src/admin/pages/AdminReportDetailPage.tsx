@@ -4,6 +4,7 @@ import type {
   ReportResponseDTO,
   ReportStatus,
   ReportStatusUpdateRequest,
+  ReportTargetContentDTO,
 } from "../types/adminTypes";
 import {
   fetchReportDetail,
@@ -48,6 +49,175 @@ function ActionButton({
     >
       {label}
     </button>
+  );
+}
+
+const TARGET_TYPE_LABEL: Record<string, string> = {
+  POST: "게시글",
+  REPLY: "댓글",
+  CIRCLE: "모임",
+  USER: "유저",
+};
+
+function ReportTargetContentCard({ content }: { content: ReportTargetContentDTO }) {
+  const label = TARGET_TYPE_LABEL[content.targetType] ?? content.targetType;
+
+  return (
+    <section className="border-moa-border rounded-2xl border bg-white shadow-sm">
+      <div className="border-moa-border flex items-center justify-between border-b px-6 py-5">
+        <div className="flex items-center gap-2">
+          <div className="bg-moa-primary h-4 w-1 rounded-full" />
+          <h2 className="text-moa-text text-sm font-black tracking-tight">
+            신고 대상 콘텐츠
+          </h2>
+          <span className="bg-moa-light text-moa-secondary rounded-lg px-2 py-0.5 text-xs font-bold">
+            {label}
+          </span>
+        </div>
+        {content.deleted && (
+          <span className="rounded-lg bg-red-50 px-2 py-0.5 text-xs font-bold text-red-600">
+            삭제됨
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-3 px-6 py-5 text-sm">
+        {content.targetType === "POST" && <PostContent content={content} />}
+        {content.targetType === "REPLY" && <ReplyContent content={content} />}
+        {content.targetType === "CIRCLE" && <CircleContent content={content} />}
+        {content.targetType === "USER" && <UserContent content={content} />}
+
+        {content.linkUrl && (
+          <a
+            href={content.linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-moa-primary mt-2 inline-flex items-center gap-1 text-xs font-bold hover:underline"
+          >
+            원본 보기 →
+          </a>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ContentRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <span className="text-moa-subtle shrink-0 text-xs font-semibold">{label}</span>
+      <span className="text-moa-text text-right text-xs">{children}</span>
+    </div>
+  );
+}
+
+function PostContent({ content }: { content: ReportTargetContentDTO }) {
+  return (
+    <>
+      <ContentRow label="제목">
+        <span className="font-semibold">{content.postTitle}</span>
+      </ContentRow>
+      <ContentRow label="작성자">{content.postAuthorName}</ContentRow>
+      <ContentRow label="작성일">{formatDateTime(content.postCreatedAt)}</ContentRow>
+      {content.postContent && (
+        <div className="border-moa-border mt-2 rounded-xl border bg-stone-50 px-4 py-3">
+          <p className="text-moa-text whitespace-pre-wrap text-sm leading-relaxed">
+            {content.postContent}
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ReplyContent({ content }: { content: ReportTargetContentDTO }) {
+  return (
+    <>
+      <ContentRow label="원글 제목">
+        <span className="font-semibold">{content.replyPostTitle}</span>
+      </ContentRow>
+      <ContentRow label="작성자">{content.replyAuthorName}</ContentRow>
+      <ContentRow label="작성일">{formatDateTime(content.replyCreatedAt)}</ContentRow>
+      {content.replyContent && (
+        <div className="border-moa-border mt-2 rounded-xl border bg-stone-50 px-4 py-3">
+          <p className="text-moa-text whitespace-pre-wrap text-sm leading-relaxed">
+            {content.replyContent}
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function CircleContent({ content }: { content: ReportTargetContentDTO }) {
+  return (
+    <>
+      <ContentRow label="모임명">
+        <span className="font-semibold">{content.circleName}</span>
+      </ContentRow>
+      <ContentRow label="상태">{content.circleStatus}</ContentRow>
+      <ContentRow label="인원">
+        {content.circleCurrentMember}/{content.circleMaxMember}명
+      </ContentRow>
+      <ContentRow label="개설일">{formatDateTime(content.circleCreatedAt)}</ContentRow>
+      {content.circleDescription && (
+        <div className="border-moa-border mt-2 rounded-xl border bg-stone-50 px-4 py-3">
+          <p className="text-moa-text whitespace-pre-wrap text-sm leading-relaxed">
+            {content.circleDescription}
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function UserContent({ content }: { content: ReportTargetContentDTO }) {
+  return (
+    <>
+      <ContentRow label="닉네임">
+        <span className="font-semibold">{content.userNickname}</span>
+      </ContentRow>
+      <ContentRow label="이메일">{content.userEmail}</ContentRow>
+      <ContentRow label="상태">{content.userStatus}</ContentRow>
+      <ContentRow label="제재 횟수">
+        <span className={content.userSanctionCount ? "font-bold text-red-600" : ""}>
+          {content.userSanctionCount}회
+        </span>
+      </ContentRow>
+
+      {content.userRecentActivities && content.userRecentActivities.length > 0 && (
+        <div className="mt-3">
+          <span className="text-moa-subtle text-xs font-semibold">최근 활동</span>
+          <div className="mt-2 space-y-2">
+            {content.userRecentActivities.map((act) => (
+              <div
+                key={`${act.type}-${act.id}`}
+                className="border-moa-border rounded-xl border bg-stone-50 px-4 py-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                    act.type === "POST"
+                      ? "bg-blue-50 text-blue-600"
+                      : "bg-amber-50 text-amber-600"
+                  }`}>
+                    {act.type === "POST" ? "글" : "댓글"}
+                  </span>
+                  <span className="text-moa-text text-xs font-semibold truncate">
+                    {act.title}
+                  </span>
+                  <span className="text-moa-subtle ml-auto shrink-0 text-[10px]">
+                    {formatDateTime(act.createdAt)}
+                  </span>
+                </div>
+                <p className="text-moa-secondary mt-1 text-xs line-clamp-2">
+                  {act.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -128,7 +298,7 @@ export default function AdminReportDetailPage() {
 
   return (
     <div className="flex min-h-full flex-col gap-6 bg-[#FDFAF8] px-6 py-6">
-      {toast && <AdminToast msg={toast.msg} type={toast.type} />}
+      <AdminToast toast={toast} />
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-moa-primary flex h-10 w-10 items-center justify-center rounded-xl shadow-sm">
@@ -222,6 +392,14 @@ export default function AdminReportDetailPage() {
                     {formatDateTime(data.createdAt)}
                   </span>
                 </div>
+                {data.description && (
+                  <div className="border-moa-border mt-2 rounded-xl border bg-stone-50 px-4 py-3">
+                    <span className="text-moa-subtle text-xs font-semibold">신고 사유</span>
+                    <p className="text-moa-text mt-1 whitespace-pre-wrap text-sm leading-relaxed">
+                      {data.description}
+                    </p>
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-moa-subtle text-sm">데이터가 없습니다.</div>
@@ -285,6 +463,11 @@ export default function AdminReportDetailPage() {
           </div>
         </section>
       </div>
+
+      {/* 신고 대상 콘텐츠 */}
+      {data?.targetContent && (
+        <ReportTargetContentCard content={data.targetContent} />
+      )}
 
       <AdminConfirmModal
         open={!!confirmAction}

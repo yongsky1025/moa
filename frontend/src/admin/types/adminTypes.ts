@@ -1,30 +1,32 @@
-export type UserRole = 'USER' | 'ADMIN';
-export type UserStatus = 'ACTIVE' | 'WITHDRAWN' | 'SUSPENDED' | 'BANNED';
-export type UserGender = 'MALE' | 'FEMALE' | 'UNSPECIFIED'; // 미설정
+export type UserRole = "USER" | "ADMIN";
+export type UserStatus = "ACTIVE" | "WITHDRAWN" | "SUSPENDED" | "BANNED";
+export type UserGender = "MALE" | "FEMALE" | "UNSPECIFIED"; // 미설정
 
-export type CircleStatus = 'OPEN' | 'FULL' | 'CLOSED' | 'PENDING' | 'REJECTED';
-export type CircleMemberRole = 'LEADER' | 'MEMBER';
+export type CircleStatus = "OPEN" | "FULL" | "CLOSED" | "PENDING" | "REJECTED";
+export type CircleMemberRole = "LEADER" | "MEMBER";
 
-export type ReportTargetType = 'USER' | 'POST' | 'REPLY' | 'CIRCLE';
-export type ReportStatus = 'PENDING' | 'REVIEWING' | 'RESOLVED' | 'REJECTED';
-export type SanctionState = 'ACTIVE' | 'LIFTED' | 'CANCELLED';
+export type BoardType = "NOTICE" | "FREE" | "SUPPORT" | "CIRCLE";
+
+export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE";
+export type ReportStatus = "PENDING" | "REVIEWING" | "RESOLVED" | "REJECTED";
+export type SanctionState = "ACTIVE" | "LIFTED" | "CANCELLED";
 
 export type ReportCategory =
-  | 'SPAM'
-  | 'OBSCENE'
-  | 'ABUSE'
-  | 'FRAUD'
-  | 'PRIVACY'
-  | 'INAPPROPRIATE'
-  | 'OTHER';
+  | "SPAM"
+  | "OBSCENE"
+  | "ABUSE"
+  | "FRAUD"
+  | "PRIVACY"
+  | "INAPPROPRIATE"
+  | "OTHER";
 
 export type SanctionType =
-  | 'WARNING'
-  | 'BAN_1D'
-  | 'BAN_3D'
-  | 'BAN_30D'
-  | 'PERMANENT_BAN'
-  | 'CONTENT_DELETE';
+  | "WARNING"
+  | "BAN_1D"
+  | "BAN_3D"
+  | "BAN_30D"
+  | "PERMANENT_BAN"
+  | "CONTENT_DELETE";
 
 export interface PageRequestDTO {
   type?: string;
@@ -192,6 +194,10 @@ export interface PopularCircleDTO {
   score: number;
 }
 
+export interface AdminCircleCategoryRequestDTO {
+  categoryName: string;
+}
+
 // ======= 모임 상세 =======
 export interface AdminCircleDetailDTO {
   circleId: number;
@@ -239,6 +245,66 @@ export interface PendingCircleDTO {
   coverImageUrl: string | null;
 }
 
+// ===== 게시글 관리 =====
+export interface AdminPostSearchDTO extends PageRequestDTO {
+  boardType?: BoardType;
+  deleted?: boolean;
+  startDate?: string; // yyyy-MM-dd
+  endDate?: string; // yyyy-MM-dd
+  circleId?: number;
+  sort?: string; // newest, views, replies
+}
+
+export interface AdminPostResponseDTO {
+  postId: number;
+  title: string;
+  authorName: string;
+  authorId: number;
+  boardName: string;
+  boardType: BoardType;
+  circleName: string | null;
+  circleId: number | null;
+  viewCount: number;
+  replyCount: number;
+  deleted: boolean;
+  createDate: string;
+}
+
+export interface AdminReplyDTO {
+  replyId: number;
+  content: string;
+  authorName: string;
+  authorId: number;
+  parentId: number | null;
+  depth: number;
+  deleted: boolean;
+  createDate: string;
+}
+
+export interface AdminPostDetailDTO {
+  postId: number;
+  title: string;
+  content: string;
+  authorName: string;
+  authorId: number;
+  boardName: string;
+  boardType: BoardType;
+  circleName: string | null;
+  circleId: number | null;
+  boardId: number;
+  viewCount: number;
+  deleted: boolean;
+  sanctionId: number | null;
+  createDate: string;
+  updateDate: string;
+  replies: AdminReplyDTO[];
+}
+
+export interface AdminNoticeRequestDTO {
+  title: string;
+  content: string;
+}
+
 // ==========신고관리===============
 export interface ReportFilterDTO extends PageRequestDTO {
   targetType?: ReportTargetType;
@@ -253,15 +319,57 @@ export interface ReportRequestDTO {
   description: string;
 }
 
+export interface UserRecentActivityDTO {
+  type: "POST" | "REPLY";
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface ReportTargetContentDTO {
+  targetType: ReportTargetType;
+  targetId: number;
+  deleted: boolean;
+  linkUrl?: string | null;
+  // POST
+  postTitle?: string | null;
+  postContent?: string | null;
+  postAuthorName?: string | null;
+  postBoardId?: number | null;
+  postCreatedAt?: string | null;
+  // REPLY
+  replyContent?: string | null;
+  replyAuthorName?: string | null;
+  replyPostId?: number | null;
+  replyPostTitle?: string | null;
+  replyCreatedAt?: string | null;
+  // CIRCLE
+  circleName?: string | null;
+  circleDescription?: string | null;
+  circleStatus?: string | null;
+  circleMaxMember?: number | null;
+  circleCurrentMember?: number | null;
+  circleCreatedAt?: string | null;
+  // USER
+  userNickname?: string | null;
+  userEmail?: string | null;
+  userStatus?: string | null;
+  userSanctionCount?: number | null;
+  userRecentActivities?: UserRecentActivityDTO[] | null;
+}
+
 export interface ReportResponseDTO {
   reportId: number;
   reporterName: string;
   targetType: ReportTargetType;
   targetId: number;
   category: ReportCategory;
+  description: string;
   status: ReportStatus;
   adminNote?: string | null;
   createdAt: string;
+  targetContent?: ReportTargetContentDTO | null;
 }
 
 export interface ReportStatusUpdateRequest {
@@ -285,9 +393,9 @@ export interface CircleSurvivalStatsDTO {
 }
 
 export interface ActivityHeatmapStatsDTO {
-  dayOfweek: number;        // 1=Mon ... 7=Sun (Java DayOfWeek)
-  hour: number;             // 0-23
-  activityCount: number;    // 합산
+  dayOfweek: number; // 1=Mon ... 7=Sun (Java DayOfWeek)
+  hour: number; // 0-23
+  activityCount: number; // 합산
   userRegisterCount: number;
   circleCreateCount: number;
   postCount: number;
@@ -343,15 +451,15 @@ export interface SanctionCancelRequest {
 
 // ===== 유저 활동 로그 =====
 export type ActionType =
-  | 'CREATE'
-  | 'UPDATE'
-  | 'DELETE'
-  | 'LOGIN'
-  | 'LOGOUT'
-  | 'WITHDRAW'
-  | 'JOIN_CIRCLE'
-  | 'LEAVE_CIRCLE'
-  | 'UNKNOWN';
+  | "CREATE"
+  | "UPDATE"
+  | "DELETE"
+  | "LOGIN"
+  | "LOGOUT"
+  | "WITHDRAW"
+  | "JOIN_CIRCLE"
+  | "LEAVE_CIRCLE"
+  | "UNKNOWN";
 
 export interface AdminActionLog {
   id: number;

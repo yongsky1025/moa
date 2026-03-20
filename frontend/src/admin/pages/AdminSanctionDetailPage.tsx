@@ -169,7 +169,7 @@ export default function AdminSanctionDetailPage() {
 
   return (
     <div className="flex min-h-full flex-col gap-6 bg-[#FDFAF8] px-6 py-6">
-      {toast && <AdminToast msg={toast.msg} type={toast.type} />}
+      <AdminToast toast={toast} />
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-moa-primary flex h-10 w-10 items-center justify-center rounded-xl shadow-sm">

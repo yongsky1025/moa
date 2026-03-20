@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { API_SERVER_HOST_ADMIN } from './adminDashboardApi';
+import axios from "axios";
+import { API_SERVER_HOST_ADMIN } from "./adminDashboardApi";
 import type {
   AdminCircleSearchDTO,
   AdminCircleDetailDTO,
@@ -10,64 +10,106 @@ import type {
   PendingCircleDTO,
   PopularCircleDTO,
   PageRequestDTO,
-} from '../types/adminTypes';
+  AdminCircleCategoryRequestDTO,
+} from "../types/adminTypes";
 
 // 전체 모임 리스트 (페이징 + 필터)
 export const fetchCircleList = async (dto: AdminCircleSearchDTO) => {
-  const res = await axios.get<PageResultDTO<AdminCircleResponseDTO>>(`${API_SERVER_HOST_ADMIN}/circles/list`, { params: dto });
+  const res = await axios.get<PageResultDTO<AdminCircleResponseDTO>>(
+    `${API_SERVER_HOST_ADMIN}/circles/list`,
+    { params: dto },
+  );
   return res.data;
 };
 
 // 모임 상세 조회
 export const fetchCircleDetail = async (circleId: number) => {
-  const res = await axios.get<AdminCircleDetailDTO>(`${API_SERVER_HOST_ADMIN}/circles/${circleId}`);
+  const res = await axios.get<AdminCircleDetailDTO>(
+    `${API_SERVER_HOST_ADMIN}/circles/${circleId}`,
+  );
   return res.data;
 };
 
 // 모임 회원 목록
-export const fetchCircleMembers = async (circleId: number, dto: PageRequestDTO) => {
-  const res = await axios.get<PageResultDTO<AdminCircleMemberDTO>>(`${API_SERVER_HOST_ADMIN}/circles/${circleId}/members`, { params: dto });
+export const fetchCircleMembers = async (
+  circleId: number,
+  dto: PageRequestDTO,
+) => {
+  const res = await axios.get<PageResultDTO<AdminCircleMemberDTO>>(
+    `${API_SERVER_HOST_ADMIN}/circles/${circleId}/members`,
+    { params: dto },
+  );
   return res.data;
 };
 
 // 모임 게시물 목록
-export const fetchCirclePosts = async (circleId: number, dto: PageRequestDTO) => {
-  const res = await axios.get<PageResultDTO<AdminCirclePostDTO>>(`${API_SERVER_HOST_ADMIN}/circles/${circleId}/posts`, { params: dto });
+export const fetchCirclePosts = async (
+  circleId: number,
+  dto: PageRequestDTO,
+) => {
+  const res = await axios.get<PageResultDTO<AdminCirclePostDTO>>(
+    `${API_SERVER_HOST_ADMIN}/circles/${circleId}/posts`,
+    { params: dto },
+  );
   return res.data;
 };
 
 // 승인 대기 목록
 export const fetchPendingCircles = async () => {
-  const res = await axios.get<PendingCircleDTO[]>(`${API_SERVER_HOST_ADMIN}/circles/pending`);
+  const res = await axios.get<PendingCircleDTO[]>(
+    `${API_SERVER_HOST_ADMIN}/circles/pending`,
+  );
   return res.data;
 };
 
 // 모임 승인
 export const approveCircle = async (circleId: number) => {
-  const res = await axios.patch(`${API_SERVER_HOST_ADMIN}/circles/${circleId}/approve`);
+  const res = await axios.patch(
+    `${API_SERVER_HOST_ADMIN}/circles/${circleId}/approve`,
+  );
   return res.data;
 };
 
 // 모임 반려
 export const rejectCircle = async (circleId: number) => {
-  const res = await axios.patch(`${API_SERVER_HOST_ADMIN}/circles/${circleId}/reject`);
+  const res = await axios.patch(
+    `${API_SERVER_HOST_ADMIN}/circles/${circleId}/reject`,
+  );
   return res.data;
 };
 
 // 모임 강제 해산
 export const closeCircle = async (circleId: number) => {
-  const res = await axios.patch(`${API_SERVER_HOST_ADMIN}/circles/${circleId}/close`);
+  const res = await axios.patch(
+    `${API_SERVER_HOST_ADMIN}/circles/${circleId}/close`,
+  );
   return res.data;
 };
 
 // 카테고리 이름 목록
 export const fetchCircleCategories = async () => {
-  const res = await axios.get<string[]>(`${API_SERVER_HOST_ADMIN}/circles/categories`);
+  const res = await axios.get<string[]>(
+    `${API_SERVER_HOST_ADMIN}/circles/categories`,
+  );
   return res.data;
 };
 
 // 인기모임 TOP5
 export const fetchPopularCircles = async () => {
-  const res = await axios.get<PopularCircleDTO[]>(`${API_SERVER_HOST_ADMIN}/circles/popular-circles`);
+  const res = await axios.get<PopularCircleDTO[]>(
+    `${API_SERVER_HOST_ADMIN}/circles/popular-circles`,
+  );
+  return res.data;
+};
+
+// 서클 카테고리 추가
+export const createCircleCategory = async (
+  dto: AdminCircleCategoryRequestDTO,
+) => {
+  const res = await axios.post(
+    `${API_SERVER_HOST_ADMIN}/circles/category`,
+    dto,
+  );
+  console.log("circle category name", dto);
   return res.data;
 };

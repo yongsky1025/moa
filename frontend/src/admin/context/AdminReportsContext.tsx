@@ -1,16 +1,33 @@
-import type { ReportFilterDTO, ReportResponseDTO, PageResultDTO } from '../types/adminTypes';
+import type { ReportFilterDTO, ReportResponseDTO, PageResultDTO, ReportStatus, ReportTargetType, ReportCategory } from '../types/adminTypes';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchReportList } from '../api/adminReportAndSanctionApi';
 
-const initialParams: ReportFilterDTO = {
-  page: 1,
-  size: 20,
-  type: undefined,
-  keyword: undefined,
-  status: undefined,
-  targetType: undefined,
-  category: undefined,
-};
+const DEFAULT_SIZE = 20;
+
+function paramsToDTO(sp: URLSearchParams): ReportFilterDTO {
+  return {
+    page: Number(sp.get('page')) || 1,
+    size: Number(sp.get('size')) || DEFAULT_SIZE,
+    type: sp.get('type') || undefined,
+    keyword: sp.get('keyword') || undefined,
+    status: (sp.get('status') ?? undefined) as ReportStatus | undefined,
+    targetType: (sp.get('targetType') ?? undefined) as ReportTargetType | undefined,
+    category: (sp.get('category') ?? undefined) as ReportCategory | undefined,
+  };
+}
+
+function dtoToParams(dto: ReportFilterDTO): Record<string, string> {
+  const r: Record<string, string> = {};
+  if (dto.page > 1) r.page = String(dto.page);
+  if (dto.size && dto.size !== DEFAULT_SIZE) r.size = String(dto.size);
+  if (dto.type) r.type = dto.type;
+  if (dto.keyword) r.keyword = dto.keyword;
+  if (dto.status) r.status = dto.status;
+  if (dto.targetType) r.targetType = dto.targetType;
+  if (dto.category) r.category = dto.category;
+  return r;
+}
 
 interface AdminReportsContextValue {
   params: ReportFilterDTO;
@@ -26,10 +43,12 @@ interface AdminReportsContextValue {
 const AdminReportsContext = createContext<AdminReportsContextValue | null>(null);
 
 export function AdminReportsProvider({ children }: { children: ReactNode }) {
-  const [params, setParams] = useState<ReportFilterDTO>(initialParams);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState<PageResultDTO<ReportResponseDTO> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const params = paramsToDTO(searchParams);
 
   const load = useCallback(async (dto: ReportFilterDTO) => {
     setLoading(true);
@@ -43,34 +62,25 @@ export function AdminReportsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
-    load(params);
-  }, [params, load]);
+  useEffect(() => { load(paramsToDTO(searchParams)); }, [searchParams, load]);
 
   const applyFilter = useCallback((partial: Partial<ReportFilterDTO>) => {
-    setParams((prev) => ({ ...prev, ...partial, page: 1 }));
-  }, []);
+    const next = { ...params, ...partial, page: 1 };
+    setSearchParams(dtoToParams(next), { replace: true });
+  }, [params, setSearchParams]);
 
   const handlePageChange = useCallback(({ selected }: { selected: number }) => {
-    setParams((prev) => ({ ...prev, page: selected + 1 }));
-  }, []);
+    const next = { ...params, page: selected + 1 };
+    setSearchParams(dtoToParams(next), { replace: true });
+  }, [params, setSearchParams]);
 
   const refresh = useCallback(() => load(params), [load, params]);
 
-  const actualTotalPage = data ? Math.ceil((data.totalCount ?? 0) / (params.size ?? 20)) : 0;
+  const actualTotalPage = data ? Math.ceil((data.totalCount ?? 0) / (params.size ?? DEFAULT_SIZE)) : 0;
 
   return (
     <AdminReportsContext.Provider
-      value={{
-        params,
-        data,
-        loading,
-        error,
-        actualTotalPage,
-        applyFilter,
-        handlePageChange,
-        refresh,
-      }}
+      value={{ params, data, loading, error, actualTotalPage, applyFilter, handlePageChange, refresh }}
     >
       {children}
     </AdminReportsContext.Provider>
@@ -80,4 +90,3 @@ export function AdminReportsProvider({ children }: { children: ReactNode }) {
 export function useAdminReports() {
   return useContext(AdminReportsContext)!;
 }
-

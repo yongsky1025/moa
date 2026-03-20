@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.common.entity.Image;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -87,6 +88,10 @@ public class Place extends BaseEntity {
     @OneToMany(mappedBy = "place", cascade = CascadeType.REMOVE)
     @Builder.Default
     private List<PlaceClosedDay> placeClosedDays = new ArrayList<>();
+
+    // @OneToMany(mappedBy = "place")
+    // @Builder.Default
+    // private List<Image> images = new ArrayList<>();
 
     public void setName(String name) {
         this.name = name;

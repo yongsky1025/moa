@@ -1,15 +1,31 @@
-import type { AdminCircleSearchDTO, AdminCircleResponseDTO, PageResultDTO } from '../types/adminTypes';
+import type { AdminCircleSearchDTO, AdminCircleResponseDTO, PageResultDTO, CircleStatus } from '../types/adminTypes';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchCircleList } from '../api/adminCircleApi';
 
-const initialParams: AdminCircleSearchDTO = {
-  page: 1,
-  size: 5,
-  type: undefined,
-  keyword: undefined,
-  status: undefined,
-  categoryName: undefined,
-};
+const DEFAULT_SIZE = 5;
+
+function paramsToDTO(sp: URLSearchParams): AdminCircleSearchDTO {
+  return {
+    page: Number(sp.get('page')) || 1,
+    size: Number(sp.get('size')) || DEFAULT_SIZE,
+    type: sp.get('type') || undefined,
+    keyword: sp.get('keyword') || undefined,
+    status: (sp.get('status') as CircleStatus) || undefined,
+    categoryName: sp.get('categoryName') || undefined,
+  };
+}
+
+function dtoToParams(dto: AdminCircleSearchDTO): Record<string, string> {
+  const r: Record<string, string> = {};
+  if (dto.page > 1) r.page = String(dto.page);
+  if (dto.size && dto.size !== DEFAULT_SIZE) r.size = String(dto.size);
+  if (dto.type) r.type = dto.type;
+  if (dto.keyword) r.keyword = dto.keyword;
+  if (dto.status) r.status = dto.status;
+  if (dto.categoryName) r.categoryName = dto.categoryName;
+  return r;
+}
 
 interface AdminCirclesContextValue {
   params: AdminCircleSearchDTO;
@@ -25,10 +41,12 @@ interface AdminCirclesContextValue {
 const AdminCirclesContext = createContext<AdminCirclesContextValue | null>(null);
 
 export function AdminCirclesProvider({ children }: { children: ReactNode }) {
-  const [params, setParams] = useState<AdminCircleSearchDTO>(initialParams);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState<PageResultDTO<AdminCircleResponseDTO> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const params = paramsToDTO(searchParams);
 
   const load = useCallback(async (dto: AdminCircleSearchDTO) => {
     setLoading(true);
@@ -42,19 +60,21 @@ export function AdminCirclesProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { load(params); }, [params, load]);
+  useEffect(() => { load(paramsToDTO(searchParams)); }, [searchParams, load]);
 
   const applyFilter = useCallback((partial: Partial<AdminCircleSearchDTO>) => {
-    setParams((prev) => ({ ...prev, ...partial, page: 1 }));
-  }, []);
+    const next = { ...params, ...partial, page: 1 };
+    setSearchParams(dtoToParams(next), { replace: true });
+  }, [params, setSearchParams]);
 
   const handlePageChange = useCallback(({ selected }: { selected: number }) => {
-    setParams((prev) => ({ ...prev, page: selected + 1 }));
-  }, []);
+    const next = { ...params, page: selected + 1 };
+    setSearchParams(dtoToParams(next), { replace: true });
+  }, [params, setSearchParams]);
 
   const refresh = useCallback(() => load(params), [load, params]);
 
-  const actualTotalPage = data ? Math.ceil((data.totalCount ?? 0) / (params.size ?? 5)) : 0;
+  const actualTotalPage = data ? Math.ceil((data.totalCount ?? 0) / (params.size ?? DEFAULT_SIZE)) : 0;
 
   return (
     <AdminCirclesContext.Provider
