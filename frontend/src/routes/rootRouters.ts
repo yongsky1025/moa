@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, redirect } from "react-router-dom";
 import LandingPage from "../common/LandingPage";
 import MainIndexWrapper from "./MainIndexWrapper";
 import OAuthCallbackPage from "../users/pages/OAuthCallbackPage";
@@ -16,10 +16,7 @@ const rootRouter = createBrowserRouter([
   },
   {
     path: "/login",
-    loader: () => {
-      window.location.replace("/users/login");
-      return null;
-    },
+    loader: () => redirect("/users/login"),
   },
   {
     path: "/main",
