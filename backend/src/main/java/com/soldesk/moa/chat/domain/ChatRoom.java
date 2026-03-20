@@ -26,6 +26,10 @@ public class ChatRoom {
     @Column(name = "direct_key", length = 50)
     private String directKey;
 
+    /** 모임 채팅방 사용자 지정 이름 (null이면 기본값 사용) */
+    @Column(name = "room_name", length = 100)
+    private String name;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -51,5 +55,8 @@ public class ChatRoom {
     public RoomType getType() { return type; }
     public Long getCircleId() { return circleId; }
     public String getDirectKey() { return directKey; }
+    public String getName() { return name; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+
+    public void updateName(String name) { this.name = name; }
 }

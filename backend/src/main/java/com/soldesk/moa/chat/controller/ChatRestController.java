@@ -94,6 +94,17 @@ public class ChatRestController {
         return ResponseEntity.ok(Map.of("totalUnread", total));
     }
 
+    /** 모임 채팅방 이름 변경 */
+    @PatchMapping("/rooms/{roomId}/name")
+    public ResponseEntity<Void> updateRoomName(
+            @PathVariable Long roomId,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        roomService.updateRoomName(roomId, auth.getUserId(), body.get("name"));
+        return ResponseEntity.ok().build();
+    }
+
     /** 채팅방 나가기 */
     @DeleteMapping("/rooms/{roomId}/leave")
     public ResponseEntity<Void> leaveRoom(

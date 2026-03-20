@@ -4,6 +4,7 @@ import Footer from "../common/layout/Footer";
 import CircleCard from "../common/components/CircleCard";
 import PlaceCard from "../common/components/PlaceCard";
 import SectionHeader from "../common/components/SectionHeader";
+import { MapPin, CalendarDays, Heart, Star, Users } from "lucide-react";
 
 const socialings = [
   {
@@ -190,11 +191,8 @@ export default function MainPage({ isLoggedIn, onToggleLogin, isAdmin }: MainPag
   const toggleLike = (id: number) => {
     setLikedItems((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };

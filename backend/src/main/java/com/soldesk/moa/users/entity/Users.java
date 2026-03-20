@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-// import com.soldesk.moa.board.entity.Board;
-
 import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.common.entity.BaseEntity;
@@ -132,6 +130,11 @@ public class Users extends BaseEntity {
     // 회원 탈퇴(withdrawn) 일시
     private LocalDateTime withdrawnAt;
 
+    // --- 신고/제재용 컬럼 ---
+    @Column(nullable = false)
+    @Builder.Default
+    private int sanctionCount = 0;
+
     // === 메서드 ===
 
     public void changeNickname(String nickname) {
@@ -203,6 +206,13 @@ public class Users extends BaseEntity {
         if (birthDate == null) {
             return;
         }
+        // publicId 초기화 (최초 저장 시에만 생성)
+        if (this.publicId == null) {
+            this.publicId = UUID.randomUUID().toString();
+        }
+        if (birthDate == null) {
+            return;
+        }
         // 만 나이 계산
         LocalDate now = LocalDate.now();
         this.age = now.getYear() - birthDate.getYear();
@@ -211,4 +221,13 @@ public class Users extends BaseEntity {
         }
     }
 
+    // 신고/제재용 메소드
+    public void increaseSanctionCount() {
+        this.sanctionCount++;
+    }
+
+    public void decreaseSanctionCount() {
+        if (this.sanctionCount > 0)
+            this.sanctionCount--;
+    }
 }

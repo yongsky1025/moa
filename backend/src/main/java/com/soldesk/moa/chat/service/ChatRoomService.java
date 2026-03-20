@@ -9,6 +9,7 @@ import com.soldesk.moa.chat.exception.ChatException;
 import com.soldesk.moa.chat.repository.ChatMessageRepository;
 import com.soldesk.moa.chat.repository.ChatRoomMemberRepository;
 import com.soldesk.moa.chat.repository.ChatRoomRepository;
+import com.soldesk.moa.users.repository.UsersRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,12 +22,14 @@ public class ChatRoomService {
     private final ChatRoomRepository roomRepo;
     private final ChatRoomMemberRepository memberRepo;
     private final ChatMessageRepository messageRepo;
+    private final UsersRepository usersRepo;
 
     public ChatRoomService(ChatRoomRepository roomRepo, ChatRoomMemberRepository memberRepo,
-            ChatMessageRepository messageRepo) {
+            ChatMessageRepository messageRepo, UsersRepository usersRepo) {
         this.roomRepo = roomRepo;
         this.memberRepo = memberRepo;
         this.messageRepo = messageRepo;
+        this.usersRepo = usersRepo;
     }
 
     /**
@@ -39,17 +42,25 @@ public class ChatRoomService {
             throw new ChatException(ChatErrorCode.INVALID_REQUEST, "자기 자신과 1:1 채팅을 할 수 없습니다.");
         }
         String key = directKey(myId, otherId);
-        return roomRepo.findByDirectKey(key).orElseGet(() -> {
+        ChatRoom room = roomRepo.findByDirectKey(key).orElseGet(() -> {
             try {
-                ChatRoom room = roomRepo.save(ChatRoom.direct(key));
-                memberRepo.save(ChatRoomMember.join(room.getId(), myId));
-                memberRepo.save(ChatRoomMember.join(room.getId(), otherId));
-                return room;
+                ChatRoom r = roomRepo.save(ChatRoom.direct(key));
+                memberRepo.save(ChatRoomMember.join(r.getId(), myId));
+                memberRepo.save(ChatRoomMember.join(r.getId(), otherId));
+                return r;
             } catch (DataIntegrityViolationException e) {
                 // 동시 요청으로 UNIQUE 충돌 → 재조회
                 return roomRepo.findByDirectKey(key).orElseThrow(() -> e);
             }
         });
+        // 기존 방이 있어도 두 유저가 멤버인지 확인 (탈퇴 후 재진입 등 대비)
+        if (!memberRepo.existsByRoomIdAndUserId(room.getId(), myId)) {
+            memberRepo.save(ChatRoomMember.join(room.getId(), myId));
+        }
+        if (!memberRepo.existsByRoomIdAndUserId(room.getId(), otherId)) {
+            memberRepo.save(ChatRoomMember.join(room.getId(), otherId));
+        }
+        return room;
     }
 
     /**
@@ -115,15 +126,39 @@ public class ChatRoomService {
                             .orElseThrow(() -> new ChatException(ChatErrorCode.ROOM_NOT_FOUND, "채팅방을 찾을 수 없습니다."));
                     var lastMsg = messageRepo.findTopByRoomIdOrderByCreatedAtDesc(room.getId());
                     long unread = messageRepo.countByRoomIdAndCreatedAtAfter(room.getId(), member.getLastReadAt());
+                    String otherNickname = null;
+                    if (room.getType() == com.soldesk.moa.chat.domain.RoomType.DIRECT) {
+                        otherNickname = memberRepo.findByRoomId(room.getId()).stream()
+                                .filter(m -> !m.getUserId().equals(userId))
+                                .findFirst()
+                                .flatMap(m -> usersRepo.findById(m.getUserId()))
+                                .map(u -> u.getNickname())
+                                .orElse(null);
+                    }
                     return new ChatRoomSummaryResponse(
                             room.getId(),
                             room.getType(),
                             room.getCircleId(),
                             lastMsg.map(m -> m.getContent()).orElse(null),
                             lastMsg.map(m -> m.getCreatedAt()).orElse(null),
-                            unread);
+                            unread,
+                            otherNickname,
+                            room.getName());
                 })
                 .toList();
+    }
+
+    /**
+     * 모임 채팅방 이름 변경 (멤버만 가능, GROUP 방만 가능).
+     */
+    @Transactional
+    public void updateRoomName(Long roomId, Long userId, String name) {
+        assertMember(roomId, userId);
+        ChatRoom room = getRoomOrThrow(roomId);
+        if (room.getType() != com.soldesk.moa.chat.domain.RoomType.GROUP) {
+            throw new ChatException(ChatErrorCode.INVALID_REQUEST, "모임 채팅방만 이름을 변경할 수 있습니다.");
+        }
+        room.updateName(name);
     }
 
     /**

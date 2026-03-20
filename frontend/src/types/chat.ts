@@ -1,4 +1,4 @@
-export type RoomType = 'DIRECT' | 'GROUP';
+export type RoomType = "DIRECT" | "GROUP";
 
 export interface ChatRoomSummary {
   roomId: number;
@@ -7,6 +7,8 @@ export interface ChatRoomSummary {
   lastMessage: string | null;
   lastMessageAt: string | null;
   unreadCount: number;
+  otherUserNickname: string | null;
+  name: string | null;
 }
 
 export interface ChatMessage {

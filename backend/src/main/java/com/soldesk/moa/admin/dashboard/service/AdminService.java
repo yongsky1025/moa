@@ -19,24 +19,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.Tuple;
-import com.soldesk.moa.admin.dashboard.dto.AdminCircleResponseDTO;
-import com.soldesk.moa.admin.dashboard.dto.AdminCircleSearchDTO;
-import com.soldesk.moa.admin.dashboard.dto.AdminMainDTO;
-import com.soldesk.moa.admin.dashboard.dto.AdminUserResponseDTO;
-import com.soldesk.moa.admin.dashboard.dto.AdminUserSearchDTO;
-import com.soldesk.moa.admin.dashboard.dto.CircleDataDTO;
-import com.soldesk.moa.admin.dashboard.dto.CircleSummaryDTO;
-import com.soldesk.moa.admin.dashboard.dto.DailyCountDTO;
-import com.soldesk.moa.admin.dashboard.dto.DashboardChartDTO;
-import com.soldesk.moa.admin.dashboard.dto.MonthlyCountDTO;
-import com.soldesk.moa.admin.dashboard.dto.PopularCircleDTO;
-import com.soldesk.moa.admin.dashboard.dto.PostActivitySummaryDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserCountDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoCircleDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoPostDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserInfoReplyDTO;
-import com.soldesk.moa.admin.dashboard.dto.UserStatusDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleResponseDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.PopularCircleDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.AdminMainDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.CircleDataDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.CircleSummaryDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.DailyCountDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.DashboardChartDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.MonthlyCountDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.PostActivitySummaryDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.UserCountDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.UserStatusDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.AdminUserResponseDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.AdminUserSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoCircleDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoPostDTO;
+import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoReplyDTO;
 import com.soldesk.moa.admin.dashboard.repository.AdminBoardRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleRepository;
@@ -73,24 +73,31 @@ public class AdminService {
         @Transactional(readOnly = true)
         public AdminMainDTO mainDashBoard() {
 
-                // 유저 수, 성비 (TODO: Hibernate 6 enum 타입 수정 필요)
-                // Object[] result1 = adminUsersRepository.getCountAllAndMale();
-                // Object[] row = (Object[]) result1[0];
-                // long countTotalUser = (long) row[0];
-                // long maleUser = (long) row[1];
-                long countTotalUser = 0L;
-                long maleUser = 0L;
-                long femaleUser = 0L;
-                double maleRatio = 0.0;
-                double femaleRatio = 0.0;
+                // 유저 수, 성비
+                Object[] result1 = adminUsersRepository.getCountAllAndMale();
+                Object[] row = (Object[]) result1[0];
+
+                long countTotalUser = (long) row[0];
+                long maleUser = (long) row[1];
+                long unspecifiedUser = (long) row[2];
+                long femaleUser = countTotalUser - maleUser - unspecifiedUser;
+
+                // 0명일 경우 오류방지
+                double maleRatio, femaleRatio, unspecifiedRatio;
+                if (countTotalUser == 0) {
+                        maleRatio = femaleRatio = unspecifiedRatio = 0.0;
+                } else {
+                        maleRatio = Math.round((double) maleUser / countTotalUser * 1000) / 10.0;
+                        unspecifiedRatio = Math.round((double) unspecifiedUser / countTotalUser * 1000) / 10.0;
+                        femaleRatio = 100.0 - maleRatio - unspecifiedRatio;
+                }
 
                 // 모임에 가입되어있는 유저 수 (모임 가입률)
                 long countJoinUser = adminCircleMemberRepository.getCountCircleMember();
 
-                UserCountDTO userCountDTO = entityToUserCountDTO(countTotalUser, maleUser,
-                                femaleUser, maleRatio,
-                                femaleRatio,
-                                countJoinUser);
+                UserCountDTO userCountDTO = entityToUserCountDTO(
+                                countTotalUser, maleUser, femaleUser, unspecifiedUser, maleRatio, femaleRatio,
+                                unspecifiedRatio, countJoinUser);
 
                 // 최근 한 달간 가입자 and 탈퇴자 수
                 LocalDateTime start = LocalDateTime.now().minusMonths(1L);
@@ -144,10 +151,10 @@ public class AdminService {
 
                         long countYear = ym.getYear();
                         long countMonth = ym.getMonthValue();
-                        signUpCount = adminUsersRepository.getSignUpCount(targetStart, targetEnd);
+                        long withdrawnCount2 = adminUsersRepository.getWithdrawnUsersCount(targetStart, targetEnd);
 
                         MonthlyCountDTO monthlyCountDTO = entityToMonthlyCountDTO(countYear,
-                                        countMonth, signUpCount);
+                                        countMonth, withdrawnCount2);
 
                         withdrawnChart.add(monthlyCountDTO);
                 }
@@ -316,14 +323,14 @@ public class AdminService {
                 // 주간 통계
                 List<DailyCountDTO> weeklyPosts = postActivitytoDto(adminPostRepository.countPostsGroupedByDay(weekAgo),
                                 today);
-                List<DailyCountDTO> weeklyReplis = postActivitytoDto(
+                List<DailyCountDTO> weeklyReplies = postActivitytoDto(
                                 adminReplyRepository.countRepliesGroupedByDay(weekAgo), today);
 
                 return PostActivitySummaryDTO.builder()
                                 .todayPostCount(todayPostCount)
                                 .todayReplyCount(todayReplyCount)
                                 .weeklyPosts(weeklyPosts)
-                                .weeklyReplis(weeklyReplis)
+                                .weeklyReplies(weeklyReplies)
                                 .build();
         }
 
@@ -337,10 +344,19 @@ public class AdminService {
                                 .map(date -> {
                                         long count = tuples.stream()
                                                         .filter(t -> {
-                                                                String dateStr = t.get(0, String.class);
-                                                                if (dateStr == null)
+                                                                // object로 꺼낸 뒤 타입에 따라 나누기
+                                                                Object raw = t.get(0, Object.class);
+                                                                if (raw == null)
                                                                         return false;
-                                                                return date.equals(LocalDate.parse(dateStr));
+
+                                                                LocalDate tupleDate;
+                                                                if (raw instanceof java.sql.Date) {
+                                                                        tupleDate = ((java.sql.Date) raw).toLocalDate();
+                                                                } else {
+                                                                        // DATE_FORMAT 썼을 때는 String으로 옴
+                                                                        tupleDate = LocalDate.parse(raw.toString());
+                                                                }
+                                                                return date.equals(tupleDate);
                                                         })
                                                         .map(t -> t.get(1, Long.class))
                                                         .findFirst()
@@ -358,15 +374,18 @@ public class AdminService {
         private UserCountDTO entityToUserCountDTO(long countTotalUser,
                         long maleUser,
                         long femaleUser,
+                        long unspecifiedUser,
                         double maleRatio,
-                        double femaleRatio, long countJoinUser) {
+                        double femaleRatio, double unspecifiedRatio, long countJoinUser) {
 
                 UserCountDTO dto = UserCountDTO.builder()
                                 .countTotalUser(countTotalUser)
                                 .maleUser(maleUser)
                                 .femaleUser(femaleUser)
+                                .unspecifiedUser(unspecifiedUser)
                                 .maleRatio(maleRatio)
                                 .femaleRatio(femaleRatio)
+                                .unspecifiedRatio(unspecifiedRatio)
                                 .countJoinUser(countJoinUser)
                                 .build();
 

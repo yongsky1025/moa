@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
-import { notificationApi } from '../../api/notificationApi';
-import type { Notification } from '../../types/notification';
+import { useState, useEffect } from "react";
+import { notificationApi } from "../../api/notificationApi";
+import type { Notification } from "../../types/notification";
 
 const typeLabel: Record<string, string> = {
-  CHAT_MESSAGE: '새 메시지',
-  CIRCLE_JOIN_REQUEST: '가입 신청',
-  CIRCLE_JOIN_APPROVED: '가입 승인',
-  CIRCLE_JOIN_REJECTED: '가입 거절',
-  CIRCLE_KICKED: '강퇴',
-  CIRCLE_DISBANDED: '모임 해산',
+  CHAT_MESSAGE: "새 메시지",
+  CIRCLE_JOIN_REQUEST: "가입 신청",
+  CIRCLE_JOIN_APPROVED: "가입 승인",
+  CIRCLE_JOIN_REJECTED: "가입 거절",
+  CIRCLE_KICKED: "강퇴",
+  CIRCLE_DISBANDED: "모임 해산",
+  COMMENT: "댓글",
+  REPLY_COMMENT: "답글",
 };
 
 export default function NotificationBell() {
@@ -39,13 +41,11 @@ export default function NotificationBell() {
 
   const handleReadOne = async (id: number) => {
     await notificationApi.readOne(id);
-    setList((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
+    setList((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
   };
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
+    <div style={{ position: "relative", display: "inline-block" }}>
       <button onClick={() => setOpen((o) => !o)} style={styles.bellBtn}>
         🔔
         {unread > 0 && <span style={styles.badge}>{unread}</span>}
@@ -70,15 +70,13 @@ export default function NotificationBell() {
                 onClick={() => !n.isRead && handleReadOne(n.id)}
                 style={{
                   ...styles.item,
-                  background: n.isRead ? '#f9f9f9' : '#eaf4ff',
-                  cursor: n.isRead ? 'default' : 'pointer',
+                  background: n.isRead ? "#f9f9f9" : "#eaf4ff",
+                  cursor: n.isRead ? "default" : "pointer",
                 }}
               >
                 <span style={styles.tag}>[{typeLabel[n.type] ?? n.type}]</span>
                 <span style={styles.msg}>{n.message}</span>
-                <span style={styles.time}>
-                  {new Date(n.createdAt).toLocaleTimeString()}
-                </span>
+                <span style={styles.time}>{new Date(n.createdAt).toLocaleTimeString()}</span>
               </div>
             ))
           )}
@@ -90,64 +88,64 @@ export default function NotificationBell() {
 
 const styles: Record<string, React.CSSProperties> = {
   bellBtn: {
-    background: 'none',
-    border: 'none',
+    background: "none",
+    border: "none",
     fontSize: 22,
-    cursor: 'pointer',
-    position: 'relative',
+    cursor: "pointer",
+    position: "relative",
   },
   badge: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -6,
-    background: '#e53935',
-    color: '#fff',
-    borderRadius: '50%',
+    background: "#e53935",
+    color: "#fff",
+    borderRadius: "50%",
     fontSize: 11,
-    padding: '1px 5px',
-    fontWeight: 'bold',
+    padding: "1px 5px",
+    fontWeight: "bold",
   },
   dropdown: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     top: 36,
     width: 300,
     maxHeight: 400,
-    overflowY: 'auto',
-    background: '#fff',
+    overflowY: "auto",
+    background: "#fff",
     borderRadius: 8,
-    boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+    boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
     zIndex: 1000,
   },
   dropHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '10px 14px',
-    borderBottom: '1px solid #eee',
-    fontWeight: 'bold',
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "10px 14px",
+    borderBottom: "1px solid #eee",
+    fontWeight: "bold",
   },
   readAllBtn: {
-    background: 'none',
-    border: 'none',
-    color: '#1976d2',
-    cursor: 'pointer',
+    background: "none",
+    border: "none",
+    color: "#1976d2",
+    cursor: "pointer",
     fontSize: 12,
   },
   empty: {
     padding: 20,
-    textAlign: 'center',
-    color: '#999',
+    textAlign: "center",
+    color: "#999",
     fontSize: 14,
   },
   item: {
-    padding: '10px 14px',
-    borderBottom: '1px solid #f0f0f0',
-    display: 'flex',
-    flexDirection: 'column',
+    padding: "10px 14px",
+    borderBottom: "1px solid #f0f0f0",
+    display: "flex",
+    flexDirection: "column",
     gap: 2,
   },
-  tag: { fontSize: 11, color: '#1976d2', fontWeight: 'bold' },
-  msg: { fontSize: 13, color: '#333' },
-  time: { fontSize: 11, color: '#aaa' },
+  tag: { fontSize: 11, color: "#1976d2", fontWeight: "bold" },
+  msg: { fontSize: 13, color: "#333" },
+  time: { fontSize: 11, color: "#aaa" },
 };

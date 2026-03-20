@@ -20,7 +20,8 @@ public class ReservationScheduler {
 
     private final ReservationRepository reservationRepository;
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Transactional
+    @Scheduled(cron = "0 * * * * *")
     public void updateReservationStatus() {
 
         List<Reservation> reservations = reservationRepository.findExpiredReservations(LocalDateTime.now());

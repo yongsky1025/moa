@@ -15,6 +15,13 @@ const rootRouter = createBrowserRouter([
     Component: LandingPage,
   },
   {
+    path: "/login",
+    loader: () => {
+      window.location.replace("/users/login");
+      return null;
+    },
+  },
+  {
     path: "/main",
     Component: MainIndexWrapper,
   },
