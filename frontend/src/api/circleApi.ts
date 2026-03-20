@@ -5,6 +5,7 @@ import type {
   CircleUpdateRequest,
   CircleMember,
   PageResult,
+  RecommendationBundle,
 } from '../circle/types/circle';
 import type { CircleMemberStatus } from '../circle/types/circle';
 
@@ -21,9 +22,9 @@ export const circleApi = {
   getMyCircles: () =>
     api.get<CircleResponse[]>('/circles/me'),
 
-  // 추천 서클 (에너지 프로필 기반)
-  getRecommendedCircles: () =>
-    api.get<CircleResponse[]>('/circles/recommended'),
+  // 추천 서클 번들 (에너지 프로필 기반 — 5축/사회/활동 3가지 기준)
+  getRecommendationBundle: (limit = 5) =>
+    api.post<RecommendationBundle>('/users/me/energy-profile/recommend', null, { params: { limit } }),
 
   // 서클 상세
   getCircle: (circleId: number) =>

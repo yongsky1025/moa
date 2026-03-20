@@ -40,6 +40,20 @@ export interface CircleMember {
   status: CircleMemberStatus;
 }
 
+export interface RecommendationItem {
+  circleId: number;
+  name: string;
+  description: string;
+  categoryName: string;
+  similarity: number;
+}
+
+export interface RecommendationBundle {
+  overall: RecommendationItem[];  // 5축 전체 매칭
+  social: RecommendationItem[];   // socialLoad + interactionMode
+  activity: RecommendationItem[]; // activityIntensity + commitmentLevel + structureLevel
+}
+
 // 백엔드 PageResultDTO 구조
 export interface PageResult<T> {
   dtoList: T[];

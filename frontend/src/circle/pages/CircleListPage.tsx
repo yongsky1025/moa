@@ -5,7 +5,7 @@ import { Users, Sparkles } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { circleApi } from '../../api/circleApi';
-import type { CircleResponse } from '../types/circle';
+import type { CircleResponse, RecommendationBundle, RecommendationItem } from '../types/circle';
 import type { RootState } from '../../users/reducers/store';
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -36,7 +36,8 @@ export default function CircleListPage() {
 
   const [circles, setCircles] = useState<CircleResponse[]>([]);
   const [categories, setCategories] = useState<{ categoryId: number; categoryName: string }[]>([]);
-  const [recommended, setRecommended] = useState<CircleResponse[]>([]);
+  const [recommendBundle, setRecommendBundle] = useState<RecommendationBundle | null>(null);
+  const [recommendTab, setRecommendTab] = useState<'overall' | 'social' | 'activity'>('overall');
   const [noEnergyProfile, setNoEnergyProfile] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [keyword, setKeyword] = useState('');
@@ -57,8 +58,8 @@ export default function CircleListPage() {
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    circleApi.getRecommendedCircles()
-      .then((res) => setRecommended(res.data))
+    circleApi.getRecommendationBundle()
+      .then((res) => setRecommendBundle(res.data))
       .catch(() => { setNoEnergyProfile(true); });
   }, [isLoggedIn]);
 
@@ -152,37 +153,69 @@ export default function CircleListPage() {
             </div>
           )}
 
-          {/* 추천 모임 */}
-          {isLoggedIn && recommended.length > 0 && (
+          {/* 추천 모임 — 3기준 탭 */}
+          {isLoggedIn && recommendBundle && (
             <div style={{ backgroundColor: 'white', borderRadius: 12, border: '1px solid #f0f0f0', padding: '16px', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                 <Sparkles style={{ width: 14, height: 14, color: '#f59e0b' }} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>나의 추천 모임</span>
               </div>
+
+              {/* 탭 */}
+              <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+                {(
+                  [
+                    { key: 'overall',  label: '전체' },
+                    { key: 'social',   label: '사교' },
+                    { key: 'activity', label: '활동' },
+                  ] as { key: 'overall' | 'social' | 'activity'; label: string }[]
+                ).map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setRecommendTab(key)}
+                    style={{
+                      flex: 1, padding: '4px 0', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                      backgroundColor: recommendTab === key ? '#111' : '#f5f5f5',
+                      color: recommendTab === key ? 'white' : '#888',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* 탭별 설명 */}
+              <p style={{ fontSize: 11, color: '#aaa', marginBottom: 8, lineHeight: 1.4 }}>
+                {recommendTab === 'overall'  && '에너지 프로필 전체 기준'}
+                {recommendTab === 'social'   && '사교 성향 · 교류 방식 기준'}
+                {recommendTab === 'activity' && '활동 강도 · 몰입 · 구조 기준'}
+              </p>
+
+              {/* 목록 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {recommended.slice(0, 5).map((c, idx) => (
+                {(recommendBundle[recommendTab] as RecommendationItem[]).map((c, idx, arr) => (
                   <div
                     key={c.circleId}
                     onClick={() => navigate(`/circle/${c.circleId}`)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
                       padding: '7px 0',
-                      borderBottom: idx < Math.min(recommended.length, 5) - 1 ? '1px solid #f5f5f5' : 'none',
+                      borderBottom: idx < arr.length - 1 ? '1px solid #f5f5f5' : 'none',
                     }}
                   >
                     <div style={{
-                      width: 34, height: 34, borderRadius: 8, flexShrink: 0, overflow: 'hidden',
-                      background: c.coverImageUrl ? 'none' : (CATEGORY_COLORS[c.categoryName] ?? DEFAULT_GRADIENT),
-                    }}>
-                      {c.coverImageUrl && (
-                        <img src={c.coverImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      )}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
+                      width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+                      background: CATEGORY_COLORS[c.categoryName] ?? DEFAULT_GRADIENT,
+                    }} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {c.name}
                       </div>
                       <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{c.categoryName}</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }}>
+                      {Math.round(c.similarity * 100)}%
                     </div>
                   </div>
                 ))}

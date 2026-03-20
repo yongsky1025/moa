@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.users.dto.energyprofile.EnergyProfileRequestDTO;
 import com.soldesk.moa.users.dto.energyprofile.EnergyProfileResponseDTO;
-import com.soldesk.moa.users.dto.energyprofile.RecommendationResponseDTO;
+import com.soldesk.moa.users.dto.energyprofile.RecommendationBundleDTO;
 import com.soldesk.moa.users.service.EnergyProfileService;
 import com.soldesk.moa.users.service.RecommendationService;
 
@@ -15,8 +15,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
-
-import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -65,11 +63,10 @@ public class EnergyProfileController {
 
     // 에너지 기반 서클 추천
     @PostMapping("/recommend")
-    public ResponseEntity<List<RecommendationResponseDTO>> recommend(@AuthenticationPrincipal AuthUserDTO authUserDTO,
+    public ResponseEntity<RecommendationBundleDTO> recommend(@AuthenticationPrincipal AuthUserDTO authUserDTO,
             @RequestParam(defaultValue = "5") @Min(1) @Max(20) int limit) {
 
-        List<RecommendationResponseDTO> recommendations = recommendationService.recommend(authUserDTO.getUserId(),
-                limit);
+        RecommendationBundleDTO recommendations = recommendationService.recommend(authUserDTO.getUserId(), limit);
         return ResponseEntity.ok(recommendations);
     }
 
