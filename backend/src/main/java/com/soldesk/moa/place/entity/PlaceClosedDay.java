@@ -17,6 +17,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,6 +26,10 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Entity
+@Table(uniqueConstraints = { // 복합 유니크 키 설정
+        @UniqueConstraint(columnNames = { "place_id", "date" }),
+        @UniqueConstraint(columnNames = { "place_id", "day_of_week" })
+})
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,10 +41,10 @@ public class PlaceClosedDay {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = true, unique = true)
+    @Column(nullable = true)
     private LocalDate date;
 
-    @Column(nullable = true, unique = true)
+    @Column(nullable = true)
     @Enumerated(EnumType.STRING)
     private DayOfWeek dayOfWeek;
 

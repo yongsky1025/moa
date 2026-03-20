@@ -2,8 +2,8 @@ export default function Footer() {
   return (
     <footer
       style={{
-        backgroundColor: '#111',
-        color: '#aaa',
+        backgroundColor: '#3D5F52',
+        color: '#A9C8BB',
         padding: '48px 0 32px',
         marginTop: 64,
       }}
@@ -34,7 +34,7 @@ export default function Footer() {
                 fontSize: 13,
                 lineHeight: 1.8,
                 margin: 0,
-                color: '#888',
+                color: 'rgba(255,255,255,0.6)',
               }}
             >
               취향이 맞는 사람들과
@@ -61,7 +61,7 @@ export default function Footer() {
                   style={{
                     display: 'block',
                     fontSize: 13,
-                    color: '#888',
+                    color: 'rgba(255,255,255,0.6)',
                     textDecoration: 'none',
                     marginBottom: 8,
                   }}
@@ -90,7 +90,7 @@ export default function Footer() {
                   style={{
                     display: 'block',
                     fontSize: 13,
-                    color: '#888',
+                    color: 'rgba(255,255,255,0.6)',
                     textDecoration: 'none',
                     marginBottom: 8,
                   }}
@@ -103,7 +103,7 @@ export default function Footer() {
         </div>
         <div
           style={{
-            borderTop: '1px solid #222',
+            borderTop: '1px solid rgba(255,255,255,0.15)',
             paddingTop: 24,
             display: 'flex',
             justifyContent: 'space-between',
@@ -112,10 +112,10 @@ export default function Footer() {
             gap: 8,
           }}
         >
-          <p style={{ margin: 0, fontSize: 12, color: '#555' }}>
+          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
             © 2026 moa. All rights reserved.
           </p>
-          <p style={{ margin: 0, fontSize: 12, color: '#555' }}>
+          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
             사업자등록번호 123-45-67890 | 대표 홍길동
           </p>
         </div>

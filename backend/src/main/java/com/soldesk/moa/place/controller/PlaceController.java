@@ -25,8 +25,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/place")
-@Tag(name = "moa place section", description = "모아 장소 api 명세서")
+@RequestMapping("/api/places")
+@Tag(name = "Place section", description = "Response MOA API")
 @Log4j2
 public class PlaceController {
 

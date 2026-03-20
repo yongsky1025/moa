@@ -62,4 +62,9 @@ public class Reply extends BaseEntity {
         this.deleted = true;
     }
 
+    // 신고/제재용 메소드 추가 - admin
+    public void restore() {
+        this.deleted = false;
+    }
+
 }
