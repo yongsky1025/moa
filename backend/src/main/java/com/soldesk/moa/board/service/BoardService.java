@@ -8,12 +8,18 @@ import org.springframework.transaction.annotation.Transactional;
 import com.soldesk.moa.board.dto.BoardRequestDTO;
 import com.soldesk.moa.board.dto.BoardResponseDTO;
 import com.soldesk.moa.board.entity.Board;
-import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.exception.BoardNotFoundException;
+import com.soldesk.moa.board.exception.CircleBoardCreationNotAllowedException;
+import com.soldesk.moa.board.exception.CircleNotFoundException;
+import com.soldesk.moa.board.exception.GlobalBoardTypeInvalidException;
+import com.soldesk.moa.board.exception.InvalidBoardTypeException;
+import com.soldesk.moa.board.exception.MissingCircleIdException;
 import com.soldesk.moa.board.repository.BoardRepository;
-import com.soldesk.moa.board.repository.PostRepository;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.post.repository.PostRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -29,7 +35,7 @@ public class BoardService {
 
     // ===== Global boards =====
     public List<BoardResponseDTO> listGlobalBoards() {
-        return List.of(BoardType.NOTICE, BoardType.FREE, BoardType.SUPPORT).stream()
+        return List.of(BoardType.NOTICE, BoardType.FREE).stream()
                 .map(this::getGlobalBoardOrThrow)
                 .map(this::toBoardResponse)
                 .toList();
@@ -43,17 +49,17 @@ public class BoardService {
     @Transactional
     public Long updateBoardName(Long boardId, String newName) {
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new NotFoundException("board not found"));
+                .orElseThrow(() -> new BoardNotFoundException("[#BOARD] 게시판을 찾을 수 없습니다."));
         board.changeName(newName);
         return board.getBoardId();
     }
 
     private Board getGlobalBoardOrThrow(BoardType type) {
         if (type == BoardType.CIRCLE) {
-            throw new IllegalArgumentException("CIRCLE is not global");
+            throw new GlobalBoardTypeInvalidException("[#BOARD] CIRCLE 타입은 글로벌 게시판이 아닙니다.");
         }
         return boardRepository.findByBoardTypeAndCircleIdIsNull(type)
-                .orElseThrow(() -> new NotFoundException("global board not found: " + type));
+                .orElseThrow(() -> new InvalidBoardTypeException("[#BOARD] 잘못된 게시판 타입입니다."));
     }
 
     // ===== Circle boards =====
@@ -69,14 +75,14 @@ public class BoardService {
     @Transactional
     public Long createCircleBoard(BoardRequestDTO dto) {
         if (dto.getBoardType() != BoardType.CIRCLE) {
-            throw new IllegalArgumentException("only CIRCLE board can be created here");
+            throw new CircleBoardCreationNotAllowedException("[#BOARD] 이 API에서는 CIRCLE 게시판만 생성할 수 있습니다.");
         }
         if (dto.getCircleId() == null) {
-            throw new IllegalArgumentException("circleId is required for CIRCLE board");
+            throw new MissingCircleIdException("[#BOARD] CIRCLE 게시판 생성 시 circleId는 필수입니다.");
         }
 
         Circle circle = circleRepository.findById(dto.getCircleId())
-                .orElseThrow(() -> new NotFoundException("circle not found"));
+                .orElseThrow(() -> new CircleNotFoundException(dto.getCircleId()));
 
         Board board = Board
                 .builder()
@@ -93,7 +99,7 @@ public class BoardService {
         Board board = boardRepository
                 .findByBoardIdAndBoardTypeAndCircleId_CircleId(
                         boardId, BoardType.CIRCLE, circleId)
-                .orElseThrow(() -> new NotFoundException("board not found"));
+                .orElseThrow(() -> new BoardNotFoundException("[#BOARD] 게시판을 찾을 수 없습니다."));
 
         board.changeName(newName);
         return board.getBoardId();
@@ -104,7 +110,7 @@ public class BoardService {
         Board board = boardRepository
                 .findByBoardIdAndBoardTypeAndCircleId_CircleId(
                         boardId, BoardType.CIRCLE, circleId)
-                .orElseThrow(() -> new NotFoundException("board not found"));
+                .orElseThrow(() -> new BoardNotFoundException("[#BOARD] 게시판을 찾을 수 없습니다."));
 
         boardRepository.delete(board);
     }

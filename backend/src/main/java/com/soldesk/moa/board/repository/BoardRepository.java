@@ -9,8 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.soldesk.moa.board.entity.Board;
-import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.post.entity.Post;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
 
@@ -18,7 +18,6 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     Optional<Board> findByBoardTypeAndCircleIdIsNull(BoardType type);
 
     // Circle 보드 검증: boardId + circleId가 맞는지
-    // ⚠️ Circle PK 필드명이 circleId가 아니라면 여기 수정 필요
     Optional<Board> findByBoardIdAndBoardTypeAndCircleId_CircleId(Long boardId, BoardType type, Long circleId);
 
     List<Board> findByBoardTypeAndCircleId_CircleId(BoardType boardType, Long circleId);

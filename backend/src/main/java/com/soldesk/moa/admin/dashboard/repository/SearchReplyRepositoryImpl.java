@@ -12,8 +12,8 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.StringTemplate;
 import com.querydsl.jpa.JPQLQuery;
-import com.soldesk.moa.board.entity.QReply;
-import com.soldesk.moa.board.entity.Reply;
+import com.soldesk.moa.reply.entity.QReply;
+import com.soldesk.moa.reply.entity.Reply;
 
 import lombok.extern.log4j.Log4j2;
 

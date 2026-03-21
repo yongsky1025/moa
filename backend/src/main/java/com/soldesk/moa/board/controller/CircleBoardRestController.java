@@ -15,13 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.board.dto.BoardRequestDTO;
 import com.soldesk.moa.board.dto.BoardResponseDTO;
-import com.soldesk.moa.board.dto.PostRequestDTO;
-import com.soldesk.moa.board.dto.PostResponseDTO;
-import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.constant.BoardType;
-import com.soldesk.moa.board.repository.PostRepository;
 import com.soldesk.moa.board.service.BoardService;
-import com.soldesk.moa.board.service.PostService;
+import com.soldesk.moa.post.dto.PostRequestDTO;
+import com.soldesk.moa.post.dto.PostResponseDTO;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.post.repository.PostRepository;
+import com.soldesk.moa.post.service.PostService;
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,7 +53,7 @@ public class CircleBoardRestController {
     }
 
     // 게시판 생성 (일단 로그인만 컷, 방장/관리자 확장은 나중에)
-    // @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Circle/Board 생성", description = "해당 써클의 게시판 추가 API")
     @PostMapping
     public Long create(@PathVariable("circleId") Long circleId,
@@ -68,7 +68,7 @@ public class CircleBoardRestController {
     }
 
     // 게시판 이름 변경
-    // @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Circle/Board 수정", description = "해당 써클의 게시판 수정 - 제목 API")
     @PutMapping("/{boardId}")
     public Long update(@PathVariable("circleId") Long circleId,
@@ -80,7 +80,7 @@ public class CircleBoardRestController {
     }
 
     // 게시판 삭제
-    // @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Circle/Board 삭제", description = "해당 써클의 게시판 삭제 API")
     @DeleteMapping("/{boardId}")
     public void delete(@PathVariable("circleId") Long circleId,

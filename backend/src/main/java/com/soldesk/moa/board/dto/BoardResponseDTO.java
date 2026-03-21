@@ -27,5 +27,4 @@ public class BoardResponseDTO {
     private LocalDateTime createDate;
     private LocalDateTime updateDate;
 
-    // getter/setter
 }

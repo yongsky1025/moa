@@ -45,12 +45,12 @@ import com.soldesk.moa.admin.dashboard.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminScheduleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;

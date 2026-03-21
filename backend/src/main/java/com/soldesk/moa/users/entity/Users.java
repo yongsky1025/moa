@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.users.entity.constant.AuthProvider;
 import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;

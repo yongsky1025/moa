@@ -6,6 +6,7 @@ import java.util.List;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.post.entity.Post;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
