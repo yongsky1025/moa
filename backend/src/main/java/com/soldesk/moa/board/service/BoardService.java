@@ -18,8 +18,6 @@ import com.soldesk.moa.board.exception.MissingCircleIdException;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
-import com.soldesk.moa.post.entity.Post;
-import com.soldesk.moa.post.repository.PostRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -32,6 +30,7 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
     private final CircleRepository circleRepository; // Circle board 생성 시 필요
+    private final CirclePermissionService circlePermissionService;
 
     // ===== Global boards =====
     public List<BoardResponseDTO> listGlobalBoards() {
@@ -64,7 +63,8 @@ public class BoardService {
 
     // ===== Circle boards =====
 
-    public List<BoardResponseDTO> listCircleBoards(Long circleId) {
+    public List<BoardResponseDTO> listCircleBoards(Long circleId, Long userId) {
+        circlePermissionService.requireActiveMember(circleId, userId);
         return boardRepository
                 .findByBoardTypeAndCircleId_CircleId(BoardType.CIRCLE, circleId)
                 .stream()
@@ -73,13 +73,14 @@ public class BoardService {
     }
 
     @Transactional
-    public Long createCircleBoard(BoardRequestDTO dto) {
+    public Long createCircleBoard(BoardRequestDTO dto, Long userId) {
         if (dto.getBoardType() != BoardType.CIRCLE) {
             throw new CircleBoardCreationNotAllowedException("[#BOARD] 이 API에서는 CIRCLE 게시판만 생성할 수 있습니다.");
         }
         if (dto.getCircleId() == null) {
             throw new MissingCircleIdException("[#BOARD] CIRCLE 게시판 생성 시 circleId는 필수입니다.");
         }
+        circlePermissionService.requireLeader(dto.getCircleId(), userId);
 
         Circle circle = circleRepository.findById(dto.getCircleId())
                 .orElseThrow(() -> new CircleNotFoundException(dto.getCircleId()));
@@ -95,7 +96,8 @@ public class BoardService {
     }
 
     @Transactional
-    public Long updateCircleBoardName(Long circleId, Long boardId, String newName) {
+    public Long updateCircleBoardName(Long circleId, Long boardId, String newName, Long userId) {
+        circlePermissionService.requireLeader(circleId, userId);
         Board board = boardRepository
                 .findByBoardIdAndBoardTypeAndCircleId_CircleId(
                         boardId, BoardType.CIRCLE, circleId)
@@ -106,7 +108,8 @@ public class BoardService {
     }
 
     @Transactional
-    public void deleteCircleBoard(Long circleId, Long boardId) {
+    public void deleteCircleBoard(Long circleId, Long boardId, Long userId) {
+        circlePermissionService.requireLeader(circleId, userId);
         Board board = boardRepository
                 .findByBoardIdAndBoardTypeAndCircleId_CircleId(
                         boardId, BoardType.CIRCLE, circleId)

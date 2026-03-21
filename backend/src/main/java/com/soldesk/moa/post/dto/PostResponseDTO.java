@@ -2,15 +2,6 @@ package com.soldesk.moa.post.dto;
 
 import java.time.LocalDateTime;
 
-import com.soldesk.moa.board.entity.Board;
-import com.soldesk.moa.board.entity.constant.BoardType;
-import com.soldesk.moa.users.entity.Users;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,6 +26,8 @@ public class PostResponseDTO {
     private String content;
 
     private String authorName;
+
+    private String authorPublicId;
 
     private int viewCount;
 

@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
-import com.soldesk.moa.circle.repository.CircleMemberRepository;
+import com.soldesk.moa.board.service.CirclePermissionService;
 import com.soldesk.moa.post.dto.PostRequestDTO;
 import com.soldesk.moa.post.dto.PostResponseDTO;
 import com.soldesk.moa.post.entity.Post;
@@ -35,7 +35,7 @@ public class PostService {
         private final ReplyRepository replyRepository;
         private final BoardRepository boardRepository;
         private final UsersRepository usersRepository;
-        private final CircleMemberRepository circleMemberRepository; // 선택
+        private final CirclePermissionService circlePermissionService;
 
         // ===== Global =====
 
@@ -100,7 +100,7 @@ public class PostService {
                 Post post = postRepository.findGlobalPost(BoardType.FREE, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
 
-                if (!isOwner(post, auth.getUserId()) && !isAdmin(auth)) {
+                if (!isOwner(post, auth.getUserId())) {
                         throw new PostForbiddenException("[#POST] 작성자만 수정할 수 있습니다.");
                 }
 
@@ -131,7 +131,8 @@ public class PostService {
         // }
 
         // 써클보드 게시글 리스트(댓글 포함)
-        public List<PostResponseDTO> listCircle(Long circleId, Long boardId) {
+        public List<PostResponseDTO> listCircle(Long circleId, Long boardId, Long userId) {
+                circlePermissionService.requireActiveMember(circleId, userId);
                 return postRepository.findCirclePostsWithReplyCount(circleId, boardId).stream()
                                 .map(this::toPostResponseWithCount)
                                 .toList();
@@ -145,13 +146,15 @@ public class PostService {
         // }
 
         // 써클보드 전체 게시글 리스트(댓글 포함)
-        public List<PostResponseDTO> listCircleAllBoardsPosts(Long circleId) {
+        public List<PostResponseDTO> listCircleAllBoardsPosts(Long circleId, Long userId) {
+                circlePermissionService.requireActiveMember(circleId, userId);
                 return postRepository.findCirclePostsAllBoardsWithReplyCount(circleId).stream()
                                 .map(this::toPostResponseWithCount)
                                 .toList();
         }
 
-        public PostResponseDTO readCircle(Long circleId, Long boardId, Long postId) {
+        public PostResponseDTO readCircle(Long circleId, Long boardId, Long postId, Long userId) {
+                circlePermissionService.requireActiveMember(circleId, userId);
                 Post post = postRepository.findCirclePost(circleId, boardId, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
                 return toPostResponse(post);
@@ -159,12 +162,7 @@ public class PostService {
 
         @Transactional
         public Long createCircle(Long circleId, Long boardId, Long userId, PostRequestDTO req) {
-                // // 1) 써클멤버 체크 (써클멤버만 작성 가능)
-                // if (!circleMemberRepository.existsByCircle_CircleIdAndUser_UserId(circleId,
-                //
-                // {
-                // throw new PostForbiddenException("[#POST] 써클 멤버만 작성할 수 있습니다.");
-                // }
+                circlePermissionService.requireActiveMember(circleId, userId);
 
                 // 2) board가 circle에 속한 CIRCLE board인지 검증
                 Board board = boardRepository
@@ -187,10 +185,11 @@ public class PostService {
 
         @Transactional
         public Long updateCircleAsOwner(Long circleId, Long boardId, Long postId, Long userId, PostRequestDTO req) {
+                circlePermissionService.requireActiveMember(circleId, userId);
                 Post post = postRepository.findCirclePost(circleId, boardId, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
 
-                if (!isOwner(post, userId)) {
+                if (!circlePermissionService.canEditOwnContent(post.getUserId().getUserId(), userId)) {
                         throw new PostForbiddenException("[#POST] 작성자만 수정할 수 있습니다.");
                 }
 
@@ -201,11 +200,14 @@ public class PostService {
 
         @Transactional
         public void deleteCircleAsOwner(Long circleId, Long boardId, Long postId, AuthUserDTO auth) {
+                circlePermissionService.requireActiveMember(circleId, auth.getUserId());
                 Post post = postRepository.findCirclePost(circleId, boardId, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
 
-                if (!isOwner(post, auth.getUserId()) && !isAdmin(auth)) {
-                        throw new PostForbiddenException("[#POST] 작성자 또는 관리자만 삭제할 수 있습니다.");
+                boolean owner = circlePermissionService.canEditOwnContent(post.getUserId().getUserId(),
+                                auth.getUserId());
+                if (!owner) {
+                        circlePermissionService.requireLeader(circleId, auth.getUserId());
                 }
 
                 deletePostWithReplies(post);
@@ -249,6 +251,7 @@ public class PostService {
                                 .title(p.getTitle())
                                 .content(p.getContent())
                                 .authorName(p.getUserId().getName()) // Users PK명 맞춰 수정
+                                .authorPublicId(p.getUserId().getPublicId())
                                 .viewCount(p.getViewCount())
                                 .createDate(p.getCreateDate())
                                 .updateDate(p.getUpdateDate())
@@ -265,6 +268,7 @@ public class PostService {
                                 .title(p.getTitle())
                                 .content(p.getContent())
                                 .authorName(p.getUserId().getName())
+                                .authorPublicId(p.getUserId().getPublicId())
                                 .viewCount(p.getViewCount())
                                 .createDate(p.getCreateDate())
                                 .updateDate(p.getUpdateDate())

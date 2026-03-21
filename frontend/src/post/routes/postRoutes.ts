@@ -33,6 +33,9 @@ export const postRoutes = {
   circleCreate: (circleId: number | string, boardId: number | string) =>
     `/board/circle/${circleId}/boards/${boardId}/posts/create`,
   circleCreatePattern: "circle/:circleId/boards/:boardId/posts/create",
+  circleCreateAll: (circleId: number | string) =>
+    `/board/circle/${circleId}/posts/create`,
+  circleCreateAllPattern: "circle/:circleId/posts/create",
   circleEdit: (circleId: number | string, boardId: number | string, postId: number | string) =>
     `/board/circle/${circleId}/boards/${boardId}/posts/${postId}/edit`,
   circleEditPattern: "circle/:circleId/boards/:boardId/posts/:postId/edit",

@@ -6,6 +6,7 @@ export interface ReplyResponse {
   replyId: number;
   content: string;
   authorName: string;
+  authorPublicId: string | null;
   createDate: string;
   parentId: number | null;
   depth: number;

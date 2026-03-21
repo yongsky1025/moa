@@ -42,26 +42,32 @@ public class CirclePostRestController {
     private final PostService postService;
 
     // 써클 전체 게시물
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/posts")
-    public List<PostResponseDTO> listAllBoards(@PathVariable("circleId") Long circleId) {
-        return postService.listCircleAllBoardsPosts(circleId);
+    public List<PostResponseDTO> listAllBoards(@PathVariable("circleId") Long circleId,
+            @AuthenticationPrincipal AuthUserDTO auth) {
+        return postService.listCircleAllBoardsPosts(circleId, auth.getUserId());
     }
 
     // 써클 Board, Post 리스트
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/boards/{boardId}/posts")
     public List<PostResponseDTO> list(@PathVariable("circleId") Long circleId,
-            @PathVariable("boardId") Long boardId) {
-        return postService.listCircle(circleId, boardId);
+            @PathVariable("boardId") Long boardId,
+            @AuthenticationPrincipal AuthUserDTO auth) {
+        return postService.listCircle(circleId, boardId, auth.getUserId());
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/boards/{boardId}/posts/{postId}")
     public PostResponseDTO read(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
-            @PathVariable("postId") Long postId) {
-        return postService.readCircle(circleId, boardId, postId);
+            @PathVariable("postId") Long postId,
+            @AuthenticationPrincipal AuthUserDTO auth) {
+        return postService.readCircle(circleId, boardId, postId, auth.getUserId());
     }
 
-    // @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/boards/{boardId}/posts")
     public Long create(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
@@ -70,7 +76,7 @@ public class CirclePostRestController {
         return postService.createCircle(circleId, boardId, auth.getUserId(), req);
     }
 
-    // @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @PutMapping("/boards/{boardId}/posts/{postId}")
     public Long update(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
@@ -80,7 +86,7 @@ public class CirclePostRestController {
         return postService.updateCircleAsOwner(circleId, boardId, postId, auth.getUserId(), req);
     }
 
-    // @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/boards/{boardId}/posts/{postId}")
     public void delete(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,

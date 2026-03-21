@@ -23,3 +23,9 @@ jwt:
 
 cors:
   allowed-origins: http://localhost:5173
+
+app:
+  seed:
+    enabled: true
+    reset: true
+    random-seed: 20260321

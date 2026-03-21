@@ -22,6 +22,7 @@ export const boardRouter = () => {
     { path: postRoutes.noticeEditPattern, Component: PostFormPage },
     // 써클
     { path: postRoutes.circleAllPattern, Component: CirclePostListPage },
+    { path: postRoutes.circleCreateAllPattern, Component: CirclePostFormPage },
     { path: postRoutes.circleBoardPattern, Component: CirclePostListPage },
     { path: postRoutes.circleCreatePattern, Component: CirclePostFormPage },
     { path: postRoutes.circleDetailPattern, Component: CirclePostDetailPage },

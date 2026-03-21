@@ -24,6 +24,8 @@ public class ReplyResponseDTO {
 
     private String authorName;
 
+    private String authorPublicId;
+
     private LocalDateTime createDate;
 
     private Long parentId;

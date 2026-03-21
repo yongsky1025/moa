@@ -9,6 +9,8 @@ import { useReplies } from "../../reply/hooks/useReplies";
 import ReplyForm from "../../reply/components/ReplyForm";
 import { useReplyForm } from "../../reply/hooks/useReplyForm";
 import ReplyList from "../../reply/components/ReplyList";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../users/reducers/store";
 
 export default function CirclePostDetailPage() {
   const { circleId, boardId, postId } = useParams<{ circleId: string; boardId: string; postId: string }>();
@@ -29,7 +31,9 @@ export default function CirclePostDetailPage() {
     postId: postIdNumber ?? 0,
     enabled: hasValidParams,
   });
-  const { create } = useReplyForm();
+  const { create, update, remove, error: replySubmitError } = useReplyForm();
+  const { isLoggedIn, user } = useSelector((state: RootState) => state.auth);
+  const isOwner = !!data && !!user && data.authorPublicId === user.publicId;
 
   if (!hasValidParams) {
     return (
@@ -57,27 +61,39 @@ export default function CirclePostDetailPage() {
             <h2>{data.title}</h2>
             <PostMeta post={data} />
             <article style={{ marginTop: 16, whiteSpace: "pre-wrap" }}>{data.content}</article>
-            <div style={{ marginTop: 12 }}>
-              <button type="button" onClick={() => navigate(postRoutes.circleEdit(circleIdNumber, boardIdNumber, postIdNumber))}>
-                수정
-              </button>
-            </div>
+            {isOwner && (
+              <div style={{ marginTop: 12 }}>
+                <button type="button" onClick={() => navigate(postRoutes.circleEdit(circleIdNumber, boardIdNumber, postIdNumber))}>
+                  수정
+                </button>
+              </div>
+            )}
 
             <section style={{ marginTop: 28 }}>
               <h3>댓글</h3>
-              <ReplyForm
-                postId={postIdNumber}
-                onSubmitReply={async (content) => {
-                  await create({ postId: postIdNumber, content });
-                }}
-                onSuccess={() => void refetch()}
-              />
+              {!isLoggedIn && <p style={{ color: "#666" }}>댓글 작성은 로그인 후 가능합니다.</p>}
+              {isLoggedIn && (
+                <ReplyForm
+                  postId={postIdNumber}
+                  onSubmitReply={async (content) => {
+                    await create({ postId: postIdNumber, content });
+                  }}
+                  onSuccess={() => void refetch()}
+                />
+              )}
+              {replySubmitError && <p style={{ color: "#dc2626" }}>{replySubmitError}</p>}
               {replyLoading && <p>댓글 불러오는 중...</p>}
               {replyError && <p style={{ color: "#dc2626" }}>{replyError}</p>}
               {!replyLoading && !replyError && (
                 <ReplyList
                   postId={postIdNumber}
                   tree={tree}
+                  currentUserPublicId={user?.publicId}
+                  isAdmin={false}
+                  canWrite={isLoggedIn}
+                  canDeleteAsAdmin={false}
+                  onUpdate={(replyId, content) => update({ postId: postIdNumber, replyId, content }).then(() => refetch())}
+                  onDelete={(replyId) => remove({ postId: postIdNumber, replyId }).then(() => refetch())}
                   onCreateChild={(content, parentId) => create({ postId: postIdNumber, content, parentId }).then(() => refetch())}
                 />
               )}

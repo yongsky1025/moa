@@ -11,6 +11,7 @@ export interface PostResponse {
   title: string;
   content: string;
   authorName: string;
+  authorPublicId: string;
   viewCount: number;
   replyCount: number;
   createDate: string;

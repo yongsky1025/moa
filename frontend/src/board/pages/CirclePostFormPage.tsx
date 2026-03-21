@@ -1,22 +1,48 @@
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
-import PostForm from "../../post/components/PostForm";
+import CircleBoardSelector from "../components/CircleBoardSelector";
+import { useCircleBoards } from "../hooks/useCircleBoards";
+import PostEditorPageShell from "../../post/components/PostEditorPageShell";
 import { parseRouteNumber } from "../utils/boardRouteHelpers";
 import { usePostDetail } from "../../post/hooks/usePostDetail";
 import { usePostForm } from "../../post/hooks/usePostForm";
 import { postRoutes } from "../../post/routes/postRoutes";
 
 export default function CirclePostFormPage() {
-  const { circleId, boardId, postId } = useParams<{ circleId: string; boardId: string; postId?: string }>();
+  const { circleId, boardId, postId } = useParams<{
+    circleId: string;
+    boardId?: string;
+    postId?: string;
+  }>();
   const location = useLocation();
   const navigate = useNavigate();
   const isEdit = location.pathname.endsWith("/edit");
 
   const circleIdNumber = parseRouteNumber(circleId);
-  const boardIdNumber = parseRouteNumber(boardId);
+  const boardIdNumber = parseRouteNumber(boardId ?? "");
   const postIdNumber = parseRouteNumber(postId ?? "");
-  const hasValidParams = circleIdNumber !== null && boardIdNumber !== null && (!isEdit || postIdNumber !== null);
+  const hasValidRouteBoardId = boardId == null || boardIdNumber !== null;
+  const hasValidParams =
+    circleIdNumber !== null &&
+    hasValidRouteBoardId &&
+    (!isEdit || (boardIdNumber !== null && postIdNumber !== null));
+  const [selectedBoardId, setSelectedBoardId] = useState<number | undefined>(
+    !isEdit && boardIdNumber !== null ? boardIdNumber : undefined,
+  );
+  const [boardValidationError, setBoardValidationError] = useState("");
+
+  const { data: boards, loading: boardsLoading, error: boardsError } = useCircleBoards({
+    circleId: circleIdNumber ?? 0,
+    enabled: hasValidParams && !isEdit,
+  });
+
+  useEffect(() => {
+    if (isEdit) return;
+    setSelectedBoardId(boardIdNumber !== null ? boardIdNumber : undefined);
+    setBoardValidationError("");
+  }, [isEdit, boardIdNumber]);
 
   const { data, loading: detailLoading, error: detailError } = usePostDetail({
     kind: "circle",
@@ -26,6 +52,10 @@ export default function CirclePostFormPage() {
     enabled: hasValidParams && isEdit,
   });
   const { submitting, error, submit } = usePostForm();
+  const listTargetBoardId = isEdit ? boardIdNumber : selectedBoardId;
+  const listPath = listTargetBoardId !== null && listTargetBoardId !== undefined
+    ? postRoutes.circleBoard(circleIdNumber ?? 0, listTargetBoardId)
+    : postRoutes.circleAll(circleIdNumber ?? 0);
 
   if (!hasValidParams) {
     return (
@@ -42,33 +72,48 @@ export default function CirclePostFormPage() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px" }}>
-        <h2>{isEdit ? "써클 게시글 수정" : "써클 게시글 작성"}</h2>
-        <p>
-          <Link to={postRoutes.circleBoard(circleIdNumber, boardIdNumber)}>목록으로</Link>
-        </p>
-        {isEdit && detailLoading && <p>기존 글을 불러오는 중...</p>}
-        {isEdit && detailError && <p style={{ color: "#dc2626" }}>{detailError}</p>}
-        {error && <p style={{ color: "#dc2626" }}>{error}</p>}
-
-        {(!isEdit || data) && (
-          <PostForm
-            mode={isEdit ? "edit" : "create"}
-            initialValue={data ? { title: data.title, content: data.content } : undefined}
-            submitting={submitting}
-            onSubmit={async (values) => {
-              const savedPostId = await submit({
-                kind: "circle",
-                values,
-                circleId: circleIdNumber,
-                boardId: boardIdNumber,
-                postId: isEdit ? postIdNumber ?? undefined : undefined,
-              });
-              navigate(postRoutes.circleDetail(circleIdNumber, boardIdNumber, savedPostId));
-            }}
-          />
-        )}
-      </main>
+      <PostEditorPageShell
+        title={isEdit ? "써클 게시글 수정" : "써클 게시글 작성"}
+        listPath={listPath}
+        mode={isEdit ? "edit" : "create"}
+        detailLoading={detailLoading}
+        detailError={detailError}
+        submitError={error}
+        showForm={!isEdit || !!data}
+        initialValue={data ? { title: data.title, content: data.content } : undefined}
+        submitting={submitting}
+        preFormSlot={!isEdit ? (
+          <div style={{ marginBottom: 12 }}>
+            <CircleBoardSelector
+              boards={boards}
+              selectedBoardId={selectedBoardId}
+              onChange={(nextBoardId) => {
+                setSelectedBoardId(nextBoardId);
+                setBoardValidationError("");
+              }}
+              placeholderLabel="게시판 선택"
+            />
+            {boardsLoading && <p style={{ margin: "8px 0 0", fontSize: 13, color: "#777" }}>게시판 불러오는 중...</p>}
+            {boardsError && <p style={{ margin: "8px 0 0", fontSize: 13, color: "#dc2626" }}>{boardsError}</p>}
+            {boardValidationError && <p style={{ margin: "8px 0 0", fontSize: 13, color: "#dc2626" }}>{boardValidationError}</p>}
+          </div>
+        ) : undefined}
+        onSubmit={async (values) => {
+          const activeBoardId = isEdit ? boardIdNumber : selectedBoardId;
+          if (activeBoardId === null || activeBoardId === undefined) {
+            setBoardValidationError("게시판을 선택해주세요.");
+            return;
+          }
+          const savedPostId = await submit({
+            kind: "circle",
+            values,
+            circleId: circleIdNumber,
+            boardId: activeBoardId,
+            postId: isEdit ? postIdNumber ?? undefined : undefined,
+          });
+          navigate(postRoutes.circleDetail(circleIdNumber, activeBoardId, savedPostId));
+        }}
+      />
       <Footer />
     </div>
   );
