@@ -57,7 +57,7 @@ public class Image extends BaseEntity {
 
     // 게시글 이미지일 때 사용 (서클 대표 이미지는 null)
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "board_id", nullable = true)
+    @JoinColumn(name = "post_id", nullable = true)
     private Post post;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
