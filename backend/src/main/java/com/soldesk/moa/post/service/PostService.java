@@ -20,15 +20,17 @@ import com.soldesk.moa.common.repository.ImageRepository;
 import com.soldesk.moa.post.dto.PostRequestDTO;
 import com.soldesk.moa.post.dto.PostResponseDTO;
 import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.post.entity.PostViewLog;
 import com.soldesk.moa.post.exception.PostForbiddenException;
 import com.soldesk.moa.post.exception.PostNotFoundException;
 import com.soldesk.moa.post.repository.PostRepository;
+import com.soldesk.moa.post.repository.PostViewLogRepository;
 import com.soldesk.moa.reply.repository.ReplyRepository;
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
-import jakarta.servlet.http.HttpSession;
+import org.springframework.dao.DataIntegrityViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -47,6 +49,7 @@ public class PostService {
         private final UsersRepository usersRepository;
         private final CirclePermissionService circlePermissionService;
         private final ImageRepository imageRepository;
+        private final PostViewLogRepository postViewLogRepository;
 
         // ===== Global =====
 
@@ -233,15 +236,22 @@ public class PostService {
                 deletePostWithReplies(post);
         }
 
-        // 세션 조회수 증가
+        // IP 기준 조회수 증가
         @Transactional
-        public void increaseViewCountOnce(Long postId, HttpSession session) {
-                String key = "viewed:post:" + postId;
-                if (session.getAttribute(key) != null)
+        public void increaseViewCountOnce(Long postId, String viewerIp) {
+                if (viewerIp == null || viewerIp.isBlank()) {
                         return;
+                }
 
-                postRepository.incrementViewCount(postId);
-                session.setAttribute(key, true);
+                try {
+                        postViewLogRepository.save(PostViewLog.builder()
+                                        .postId(postId)
+                                        .viewerIp(viewerIp)
+                                        .build());
+                        postRepository.incrementViewCount(postId);
+                } catch (DataIntegrityViolationException ignored) {
+                        // postId + ip가 이미 존재하면 중복 조회로 판단하여 증가하지 않음
+                }
         }
 
         // ===== helpers =====
