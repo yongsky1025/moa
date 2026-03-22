@@ -7,6 +7,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.service.CirclePermissionService;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.common.repository.ImageRepository;
 import com.soldesk.moa.post.dto.PostRequestDTO;
 import com.soldesk.moa.post.dto.PostResponseDTO;
@@ -270,20 +273,38 @@ public class PostService {
 
         private void deletePostWithReplies(Post post) {
                 replyRepository.softDeleteByPostId(post.getPostId());
+                imageRepository.softDeleteByPost(post);
                 post.markDeleted();
         }
 
         private void syncPostImages(Post post, Users user, String content) {
-                imageRepository.deleteByPost(post);
+                imageRepository.softDeleteByPost(post);
 
                 List<String> imagePaths = extractPostImagePaths(content);
                 if (imagePaths.isEmpty()) {
                         return;
                 }
 
+                Set<String> tempMatchedPaths = new HashSet<>(imageRepository.findPathsByUserAndStatusAndPathIn(
+                                user.getUserId(),
+                                ImageStatus.TEMP,
+                                imagePaths));
+
+                if (!tempMatchedPaths.isEmpty()) {
+                        imageRepository.updateStatusAndPostByUserAndPaths(
+                                        user.getUserId(),
+                                        new ArrayList<>(tempMatchedPaths),
+                                        ImageStatus.TEMP,
+                                        ImageStatus.USED,
+                                        post);
+                }
+
                 List<Image> images = new ArrayList<>();
                 for (int i = 0; i < imagePaths.size(); i++) {
                         String path = imagePaths.get(i);
+                        if (tempMatchedPaths.contains(path)) {
+                                continue;
+                        }
                         images.add(Image.builder()
                                         .name(extractFileName(path))
                                         .uuid(UUID.randomUUID().toString())
@@ -291,10 +312,13 @@ public class PostService {
                                         .ord((long) (i + 1))
                                         .post(post)
                                         .user(user)
+                                        .status(ImageStatus.USED)
                                         .build());
                 }
 
-                imageRepository.saveAll(images);
+                if (!images.isEmpty()) {
+                        imageRepository.saveAll(images);
+                }
         }
 
         private List<String> extractPostImagePaths(String content) {

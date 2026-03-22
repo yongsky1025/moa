@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.common.storage.dto.CreateUploadUrlRequestDTO;
 import com.soldesk.moa.common.storage.dto.CreateUploadUrlResponseDTO;
 import com.soldesk.moa.common.storage.service.ImageUploadService;
@@ -26,7 +28,8 @@ public class ImageUploadController {
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/upload-url")
     public ResponseEntity<CreateUploadUrlResponseDTO> createUploadUrl(
+            @AuthenticationPrincipal AuthUserDTO authUser,
             @Valid @RequestBody CreateUploadUrlRequestDTO request) {
-        return ResponseEntity.ok(imageUploadService.createUploadUrl(request));
+        return ResponseEntity.ok(imageUploadService.createUploadUrl(request, authUser.getUserId()));
     }
 }

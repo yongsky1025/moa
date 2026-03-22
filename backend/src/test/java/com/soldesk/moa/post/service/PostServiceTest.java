@@ -67,7 +67,6 @@ class PostServiceTest {
         assertTrue(post.isDeleted());
         verify(replyRepository).softDeleteByPostId(10L);
         verify(postRepository, never()).delete(post);
-        verify(imageRepository, never()).deleteByPost(post);
         assertEquals("content", post.getContent());
     }
 }

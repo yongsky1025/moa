@@ -121,11 +121,25 @@ public interface PostRepository extends JpaRepository<Post, Long> {
   Optional<Post> findByPostIdAndDeletedFalseAndBoardId_DeletedFalse(Long postId);
 
   @Modifying
-  @Query("update Post p set p.deleted = true where p.boardId.boardId = :boardId and p.deleted = false")
+  @Query("""
+      update Post p
+         set p.deleted = true,
+             p.updateDate = CURRENT_TIMESTAMP
+       where p.boardId.boardId = :boardId
+         and p.deleted = false
+      """)
   int softDeleteByBoardId(@Param("boardId") Long boardId);
 
   @Modifying
   @Query("update Post p set p.viewCount = p.viewCount + 1 where p.postId = :postId")
   int incrementViewCount(@Param("postId") Long postId);
+
+  @Modifying
+  @Query("""
+      delete from Post p
+       where p.deleted = true
+         and p.updateDate < :cutoff
+      """)
+  int hardDeleteSoftDeletedBefore(@Param("cutoff") java.time.LocalDateTime cutoff);
 
 }

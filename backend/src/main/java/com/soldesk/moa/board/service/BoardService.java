@@ -18,6 +18,7 @@ import com.soldesk.moa.board.exception.MissingCircleIdException;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.common.repository.ImageRepository;
 import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.reply.repository.ReplyRepository;
 
@@ -35,6 +36,7 @@ public class BoardService {
     private final CirclePermissionService circlePermissionService;
     private final PostRepository postRepository;
     private final ReplyRepository replyRepository;
+    private final ImageRepository imageRepository;
 
     // ===== Global boards =====
     public List<BoardResponseDTO> listGlobalBoards() {
@@ -120,6 +122,7 @@ public class BoardService {
                 .orElseThrow(() -> new BoardNotFoundException("[#BOARD] 게시판을 찾을 수 없습니다."));
 
         replyRepository.softDeleteByBoardId(board.getBoardId());
+        imageRepository.softDeleteByBoardId(board.getBoardId());
         postRepository.softDeleteByBoardId(board.getBoardId());
         board.markDeleted();
     }

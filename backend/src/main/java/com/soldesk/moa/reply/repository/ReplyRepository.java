@@ -29,7 +29,8 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
     @Modifying
     @Query("""
             update Reply r
-            set r.deleted = true
+            set r.deleted = true,
+                r.updateDate = CURRENT_TIMESTAMP
             where r.postId.postId = :postId
               and r.deleted = false
             """)
@@ -38,10 +39,29 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
     @Modifying
     @Query("""
             update Reply r
-            set r.deleted = true
+            set r.deleted = true,
+                r.updateDate = CURRENT_TIMESTAMP
             where r.postId.boardId.boardId = :boardId
               and r.deleted = false
             """)
     int softDeleteByBoardId(@Param("boardId") Long boardId);
+
+    @Modifying
+    @Query("""
+            update Reply r
+            set r.parentId = null
+            where r.deleted = true
+              and r.updateDate < :cutoff
+              and r.parentId is not null
+            """)
+    int unlinkParentReferencesForHardDelete(@Param("cutoff") java.time.LocalDateTime cutoff);
+
+    @Modifying
+    @Query("""
+            delete from Reply r
+            where r.deleted = true
+              and r.updateDate < :cutoff
+            """)
+    int hardDeleteSoftDeletedBefore(@Param("cutoff") java.time.LocalDateTime cutoff);
 
 }
