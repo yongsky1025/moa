@@ -61,6 +61,7 @@ export default function ReplyItem({
     setError("");
     try {
       await onDelete(reply.replyId);
+      window.alert("댓글 삭제가 완료되었습니다.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "댓글 삭제에 실패했습니다.");
     }

@@ -127,6 +127,7 @@ export default function CirclePostFormPage() {
             boardId: boardIdNumber,
             postId: postIdNumber,
           });
+          window.alert("게시글 삭제가 완료되었습니다.");
           navigate(postRoutes.circleBoard(circleIdNumber ?? 0, boardIdNumber));
         } : undefined}
       />
