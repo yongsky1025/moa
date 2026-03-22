@@ -20,6 +20,7 @@ import com.soldesk.moa.board.service.CirclePermissionService;
 import com.soldesk.moa.common.entity.Image;
 import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.common.repository.ImageRepository;
+import com.soldesk.moa.common.service.ProfanityFilterService;
 import com.soldesk.moa.post.dto.PostRequestDTO;
 import com.soldesk.moa.post.dto.PostResponseDTO;
 import com.soldesk.moa.post.entity.Post;
@@ -53,6 +54,7 @@ public class PostService {
         private final CirclePermissionService circlePermissionService;
         private final ImageRepository imageRepository;
         private final PostViewLogRepository postViewLogRepository;
+        private final ProfanityFilterService profanityFilterService;
 
         // ===== Global =====
 
@@ -78,6 +80,8 @@ public class PostService {
 
         @Transactional
         public Long createGlobal(BoardType type, AuthUserDTO auth, PostRequestDTO req) {
+                validatePostText(req);
+
                 Board board = boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(type)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 글로벌 게시판을 찾을 수 없습니다."));
 
@@ -98,6 +102,8 @@ public class PostService {
 
         @Transactional
         public Long updateGlobal(BoardType type, Long postId, PostRequestDTO req) {
+                validatePostText(req);
+
                 Post post = postRepository.findGlobalPost(type, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
                 post.changeTitle(req.getTitle());
@@ -117,6 +123,8 @@ public class PostService {
 
         @Transactional
         public Long updateFreeAsOwner(Long postId, AuthUserDTO auth, PostRequestDTO req) {
+                validatePostText(req);
+
                 Post post = postRepository.findGlobalPost(BoardType.FREE, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
 
@@ -183,6 +191,8 @@ public class PostService {
 
         @Transactional
         public Long createCircle(Long circleId, Long boardId, Long userId, PostRequestDTO req) {
+                validatePostText(req);
+
                 circlePermissionService.requireActiveMember(circleId, userId);
 
                 // 2) board가 circle에 속한 CIRCLE board인지 검증
@@ -210,6 +220,8 @@ public class PostService {
 
         @Transactional
         public Long updateCircleAsOwner(Long circleId, Long boardId, Long postId, Long userId, PostRequestDTO req) {
+                validatePostText(req);
+
                 circlePermissionService.requireActiveMember(circleId, userId);
                 Post post = postRepository.findCirclePost(circleId, boardId, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
@@ -368,6 +380,15 @@ public class PostService {
                 }
 
                 return path.substring(slashIndex + 1);
+        }
+
+        private void validatePostText(PostRequestDTO req) {
+                profanityFilterService.validateNoProfanity(
+                                req.getTitle(),
+                                "[#POST] 제목에 사용할 수 없는 표현이 포함되어 있습니다.");
+                profanityFilterService.validateNoProfanityInHtml(
+                                req.getContent(),
+                                "[#POST] 내용에 사용할 수 없는 표현이 포함되어 있습니다.");
         }
 
         private PostResponseDTO toPostResponse(Post p) {

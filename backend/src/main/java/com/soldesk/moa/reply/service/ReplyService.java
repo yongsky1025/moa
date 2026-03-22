@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.service.CirclePermissionService;
+import com.soldesk.moa.common.service.ProfanityFilterService;
 import com.soldesk.moa.post.entity.Post;
 import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.reply.dto.ReplyRequestDTO;
@@ -33,6 +34,7 @@ public class ReplyService {
     private final PostRepository postRepository;
     private final UsersRepository usersRepository;
     private final CirclePermissionService circlePermissionService;
+    private final ProfanityFilterService profanityFilterService;
 
     // 댓글 리스트
     public List<ReplyResponseDTO> list(Long postId, Long userId) {
@@ -48,6 +50,7 @@ public class ReplyService {
     // 댓글 생성
     @Transactional
     public Long createReply(Long postId, Long userId, ReplyRequestDTO req) {
+        validateReplyText(req);
         requireAuthenticated(userId, "[#REPLY] 로그인 후 댓글을 작성할 수 있습니다.");
         Post post = postRepository.findByPostIdAndDeletedFalseAndBoardId_DeletedFalse(postId)
                 .orElseThrow(() -> new ReplyNotFoundException("[#REPLY] 게시글을 찾을 수 없습니다."));
@@ -70,6 +73,7 @@ public class ReplyService {
     // 대댓글 생성
     @Transactional
     public Long createChildReply(Long postId, Long parentReplyId, Long userId, ReplyRequestDTO req) {
+        validateReplyText(req);
         requireAuthenticated(userId, "[#REPLY] 로그인 후 대댓글을 작성할 수 있습니다.");
         Reply parent = replyRepository.findById(parentReplyId)
                 .orElseThrow(() -> new ReplyNotFoundException("[#REPLY] 부모 댓글을 찾을 수 없습니다."));
@@ -101,6 +105,7 @@ public class ReplyService {
     // 댓글 수정
     @Transactional
     public Long update(Long replyId, Long userId, ReplyRequestDTO req) {
+        validateReplyText(req);
         requireAuthenticated(userId, "[#REPLY] 로그인 후 댓글을 수정할 수 있습니다.");
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new ReplyNotFoundException("[#REPLY] 댓글을 찾을 수 없습니다."));
@@ -189,6 +194,12 @@ public class ReplyService {
             return null;
         }
         return post.getBoardId().getCircleId().getCircleId();
+    }
+
+    private void validateReplyText(ReplyRequestDTO req) {
+        profanityFilterService.validateNoProfanity(
+                req.getContent(),
+                "[#REPLY] 댓글에 사용할 수 없는 표현이 포함되어 있습니다.");
     }
 
 }

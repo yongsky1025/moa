@@ -19,6 +19,7 @@ import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.repository.ImageRepository;
+import com.soldesk.moa.common.service.ProfanityFilterService;
 import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.reply.repository.ReplyRepository;
 
@@ -37,6 +38,7 @@ public class BoardService {
     private final PostRepository postRepository;
     private final ReplyRepository replyRepository;
     private final ImageRepository imageRepository;
+    private final ProfanityFilterService profanityFilterService;
 
     // ===== Global boards =====
     public List<BoardResponseDTO> listGlobalBoards() {
@@ -53,6 +55,7 @@ public class BoardService {
 
     @Transactional
     public Long updateBoardName(Long boardId, String newName) {
+        validateBoardName(newName);
         Board board = boardRepository.findByBoardIdAndDeletedFalse(boardId)
                 .orElseThrow(() -> new BoardNotFoundException("[#BOARD] 게시판을 찾을 수 없습니다."));
         board.changeName(newName);
@@ -80,6 +83,7 @@ public class BoardService {
 
     @Transactional
     public Long createCircleBoard(BoardRequestDTO dto, Long userId) {
+        validateBoardName(dto.getName());
         if (dto.getBoardType() != BoardType.CIRCLE) {
             throw new CircleBoardCreationNotAllowedException("[#BOARD] 이 API에서는 CIRCLE 게시판만 생성할 수 있습니다.");
         }
@@ -103,6 +107,7 @@ public class BoardService {
 
     @Transactional
     public Long updateCircleBoardName(Long circleId, Long boardId, String newName, Long userId) {
+        validateBoardName(newName);
         circlePermissionService.requireLeader(circleId, userId);
         Board board = boardRepository
                 .findByBoardIdAndBoardTypeAndCircleId_CircleIdAndDeletedFalse(
@@ -138,5 +143,11 @@ public class BoardService {
                 .updateDate(b.getUpdateDate())
                 .build();
         return dto;
+    }
+
+    private void validateBoardName(String name) {
+        profanityFilterService.validateNoProfanity(
+                name,
+                "[#BOARD] 게시판 이름에 사용할 수 없는 표현이 포함되어 있습니다.");
     }
 }
