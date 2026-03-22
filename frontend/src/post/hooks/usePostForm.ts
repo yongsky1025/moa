@@ -11,8 +11,16 @@ interface SubmitOptions {
   boardId?: number;
 }
 
+interface RemoveOptions {
+  kind: PostKind;
+  postId?: number;
+  circleId?: number;
+  boardId?: number;
+}
+
 export function usePostForm() {
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   const submit = async ({ kind, values, postId, circleId, boardId }: SubmitOptions): Promise<number> => {
@@ -40,5 +48,33 @@ export function usePostForm() {
     }
   };
 
-  return { submitting, error, submit };
+  const remove = async ({ kind, postId, circleId, boardId }: RemoveOptions): Promise<void> => {
+    if (!postId) {
+      throw new Error("삭제할 게시글 정보가 올바르지 않습니다.");
+    }
+
+    setDeleting(true);
+    setError("");
+    try {
+      if (kind === "free") {
+        await postApi.deleteFreePost(postId);
+        return;
+      }
+
+      if (kind === "notice") {
+        await postApi.deleteNoticePost(postId);
+        return;
+      }
+
+      await postApi.deleteCirclePost(circleId ?? 0, boardId ?? 0, postId);
+    } catch (e) {
+      const message = getErrorMessage(e);
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return { submitting, deleting, error, submit, remove };
 }

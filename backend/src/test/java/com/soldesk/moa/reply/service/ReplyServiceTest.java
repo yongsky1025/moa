@@ -1,7 +1,9 @@
 package com.soldesk.moa.reply.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,6 +27,7 @@ import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.reply.exception.ReplyForbiddenException;
 import com.soldesk.moa.reply.repository.ReplyRepository;
 import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.users.entity.constant.UserRole;
 import com.soldesk.moa.users.repository.UsersRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,7 +51,7 @@ class ReplyServiceTest {
     @Test
     void list_requiresActiveMember_whenCirclePost() {
         Post circlePost = createPost(100L, BoardType.CIRCLE, 1L);
-        when(postRepository.findById(100L)).thenReturn(Optional.of(circlePost));
+        when(postRepository.findByPostIdAndDeletedFalseAndBoardId_DeletedFalse(100L)).thenReturn(Optional.of(circlePost));
         when(replyRepository.findByPostId_PostIdOrderByCreateDateAsc(100L)).thenReturn(java.util.List.of());
 
         replyService.list(100L, 10L);
@@ -66,7 +69,8 @@ class ReplyServiceTest {
 
         verify(circlePermissionService).requireActiveMember(1L, 10L);
         verify(circlePermissionService).requireLeader(1L, 10L);
-        assertEquals("삭제된 댓글입니다.", reply.getContent());
+        assertTrue(reply.isDeleted());
+        assertEquals("before", reply.getContent());
     }
 
     @Test
@@ -84,8 +88,11 @@ class ReplyServiceTest {
         Reply reply = createReply(51L, 20L, BoardType.FREE, null);
         when(replyRepository.findById(51L)).thenReturn(Optional.of(reply));
         when(circlePermissionService.canEditOwnContent(20L, 10L)).thenReturn(false);
+        when(usersRepository.findById(10L))
+                .thenReturn(Optional.of(Users.builder().userId(10L).userRole(UserRole.USER).build()));
 
         assertThrows(ReplyForbiddenException.class, () -> replyService.delete(51L, 10L));
+        assertFalse(reply.isDeleted());
     }
 
     private Reply createReply(Long replyId, Long ownerId, BoardType boardType, Long circleId) {

@@ -36,7 +36,7 @@ public class ReplyService {
 
     // 댓글 리스트
     public List<ReplyResponseDTO> list(Long postId, Long userId) {
-        Post post = postRepository.findById(postId)
+        Post post = postRepository.findByPostIdAndDeletedFalseAndBoardId_DeletedFalse(postId)
                 .orElseThrow(() -> new ReplyNotFoundException("[#REPLY] 게시글을 찾을 수 없습니다."));
         requireReadPermission(post, userId);
 
@@ -49,7 +49,7 @@ public class ReplyService {
     @Transactional
     public Long createReply(Long postId, Long userId, ReplyRequestDTO req) {
         requireAuthenticated(userId, "[#REPLY] 로그인 후 댓글을 작성할 수 있습니다.");
-        Post post = postRepository.findById(postId)
+        Post post = postRepository.findByPostIdAndDeletedFalseAndBoardId_DeletedFalse(postId)
                 .orElseThrow(() -> new ReplyNotFoundException("[#REPLY] 게시글을 찾을 수 없습니다."));
         requireWritePermission(post, userId);
 
@@ -134,7 +134,6 @@ public class ReplyService {
             }
         }
 
-        reply.changeContent("삭제된 댓글입니다.");
         reply.markDeleted();
     }
 

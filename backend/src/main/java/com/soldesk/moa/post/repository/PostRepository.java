@@ -22,6 +22,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
         join p.boardId b
         where b.boardType = :type
           and b.circleId is null
+          and b.deleted = false
+          and p.deleted = false
         order by p.postId desc
       """)
   List<Post> findGlobalPosts(@Param("type") BoardType type);
@@ -34,6 +36,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
         where p.postId = :postId
           and b.boardType = :type
           and b.circleId is null
+          and b.deleted = false
+          and p.deleted = false
       """)
   Optional<Post> findGlobalPost(@Param("type") BoardType type, @Param("postId") Long postId);
 
@@ -42,9 +46,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
   @Query("""
           select p, count(r)
           from Post p
-          left join Reply r on r.postId = p
+          left join Reply r on r.postId = p and r.deleted = false
           where p.boardId.boardType = :type
             and p.boardId.circleId is null
+            and p.boardId.deleted = false
+            and p.deleted = false
           group by p
           order by p.postId desc
       """)
@@ -58,6 +64,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
         where b.boardType = 'CIRCLE'
           and b.boardId = :boardId
           and b.circleId.circleId = :circleId
+          and b.deleted = false
+          and p.deleted = false
         order by p.postId desc
       """)
   List<Post> findCirclePosts(@Param("circleId") Long circleId, @Param("boardId") Long boardId);
@@ -70,6 +78,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
           and b.boardType = 'CIRCLE'
           and b.boardId = :boardId
           and b.circleId.circleId = :circleId
+          and b.deleted = false
+          and p.deleted = false
       """)
   Optional<Post> findCirclePost(@Param("circleId") Long circleId,
       @Param("boardId") Long boardId,
@@ -80,10 +90,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
   @Query("""
           select p, count(r)
           from Post p
-          left join Reply r on r.postId = p
+          left join Reply r on r.postId = p and r.deleted = false
           where p.boardId.boardType = 'CIRCLE'
             and p.boardId.circleId.circleId = :circleId
             and p.boardId.boardId = :boardId
+            and p.boardId.deleted = false
+            and p.deleted = false
           group by p
           order by p.postId desc
       """)
@@ -96,13 +108,21 @@ public interface PostRepository extends JpaRepository<Post, Long> {
   @Query("""
           select p, count(r)
           from Post p
-          left join Reply r on r.postId = p
+          left join Reply r on r.postId = p and r.deleted = false
           where p.boardId.boardType = 'CIRCLE'
             and p.boardId.circleId.circleId = :circleId
+            and p.boardId.deleted = false
+            and p.deleted = false
           group by p
           order by p.postId desc
       """)
   List<Object[]> findCirclePostsAllBoardsWithReplyCount(@Param("circleId") Long circleId);
+
+  Optional<Post> findByPostIdAndDeletedFalseAndBoardId_DeletedFalse(Long postId);
+
+  @Modifying
+  @Query("update Post p set p.deleted = true where p.boardId.boardId = :boardId and p.deleted = false")
+  int softDeleteByBoardId(@Param("boardId") Long boardId);
 
   @Modifying
   @Query("update Post p set p.viewCount = p.viewCount + 1 where p.postId = :postId")

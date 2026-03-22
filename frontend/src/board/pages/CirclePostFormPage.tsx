@@ -51,7 +51,7 @@ export default function CirclePostFormPage() {
     postId: postIdNumber ?? 0,
     enabled: hasValidParams && isEdit,
   });
-  const { submitting, error, submit } = usePostForm();
+  const { submitting, deleting, error, submit, remove } = usePostForm();
   const listTargetBoardId = isEdit ? boardIdNumber : selectedBoardId;
   const listPath = listTargetBoardId !== null && listTargetBoardId !== undefined
     ? postRoutes.circleBoard(circleIdNumber ?? 0, listTargetBoardId)
@@ -82,6 +82,7 @@ export default function CirclePostFormPage() {
         showForm={!isEdit || !!data}
         initialValue={data ? { title: data.title, content: data.content } : undefined}
         submitting={submitting}
+        deleting={deleting}
         preFormSlot={!isEdit ? (
           <div style={{ marginBottom: 12 }}>
             <CircleBoardSelector
@@ -113,6 +114,21 @@ export default function CirclePostFormPage() {
           });
           navigate(postRoutes.circleDetail(circleIdNumber, activeBoardId, savedPostId));
         }}
+        onDelete={isEdit ? async () => {
+          if (boardIdNumber === null || postIdNumber === null) {
+            return;
+          }
+          if (!window.confirm("게시글을 삭제하시겠습니까?")) {
+            return;
+          }
+          await remove({
+            kind: "circle",
+            circleId: circleIdNumber ?? 0,
+            boardId: boardIdNumber,
+            postId: postIdNumber,
+          });
+          navigate(postRoutes.circleBoard(circleIdNumber ?? 0, boardIdNumber));
+        } : undefined}
       />
       <Footer />
     </div>

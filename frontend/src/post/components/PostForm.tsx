@@ -7,12 +7,21 @@ interface PostFormProps {
   initialValue?: PostFormValues;
   mode: "create" | "edit";
   onSubmit: (values: PostFormValues) => Promise<void>;
+  onDelete?: () => Promise<void>;
   submitting: boolean;
+  deleting?: boolean;
 }
 
 const EMPTY_FORM: PostFormValues = { title: "", content: "" };
 
-export default function PostForm({ initialValue, mode, onSubmit, submitting }: PostFormProps) {
+export default function PostForm({
+  initialValue,
+  mode,
+  onSubmit,
+  onDelete,
+  submitting,
+  deleting = false,
+}: PostFormProps) {
   const [values, setValues] = useState<PostFormValues>(initialValue ?? EMPTY_FORM);
   const [localError, setLocalError] = useState("");
 
@@ -47,21 +56,41 @@ export default function PostForm({ initialValue, mode, onSubmit, submitting }: P
           }}
         />
       </div>
-      <button
-        type="submit"
-        disabled={submitting}
-        style={{
-          width: 120,
-          padding: "10px 12px",
-          borderRadius: 8,
-          border: "none",
-          backgroundColor: "#111",
-          color: "white",
-          cursor: "pointer",
-        }}
-      >
-        {submitting ? "저장 중..." : mode === "create" ? "등록" : "수정"}
-      </button>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="submit"
+          disabled={submitting || deleting}
+          style={{
+            width: 120,
+            padding: "10px 12px",
+            borderRadius: 8,
+            border: "none",
+            backgroundColor: "#111",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          {submitting ? "저장 중..." : mode === "create" ? "등록" : "수정"}
+        </button>
+        {mode === "edit" && onDelete && (
+          <button
+            type="button"
+            disabled={submitting || deleting}
+            onClick={() => void onDelete()}
+            style={{
+              width: 120,
+              padding: "10px 12px",
+              borderRadius: 8,
+              border: "none",
+              backgroundColor: "#dc2626",
+              color: "white",
+              cursor: "pointer",
+            }}
+          >
+            {deleting ? "삭제 중..." : "삭제"}
+          </button>
+        )}
+      </div>
     </form>
   );
 }

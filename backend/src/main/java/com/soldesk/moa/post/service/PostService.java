@@ -72,7 +72,7 @@ public class PostService {
 
         @Transactional
         public Long createGlobal(BoardType type, AuthUserDTO auth, PostRequestDTO req) {
-                Board board = boardRepository.findByBoardTypeAndCircleIdIsNull(type)
+                Board board = boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(type)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 글로벌 게시판을 찾을 수 없습니다."));
 
                 Users user = usersRepository.findById(auth.getUserId())
@@ -181,7 +181,9 @@ public class PostService {
 
                 // 2) board가 circle에 속한 CIRCLE board인지 검증
                 Board board = boardRepository
-                                .findByBoardIdAndBoardTypeAndCircleId_CircleId(boardId, BoardType.CIRCLE, circleId)
+                                .findByBoardIdAndBoardTypeAndCircleId_CircleIdAndDeletedFalse(boardId,
+                                                BoardType.CIRCLE,
+                                                circleId)
                                 .orElseThrow(() -> new PostForbiddenException("[#POST] 해당 게시판은 이 써클에 속하지 않습니다."));
 
                 Users user = usersRepository.findById(userId)
@@ -257,9 +259,8 @@ public class PostService {
         }
 
         private void deletePostWithReplies(Post post) {
-                replyRepository.deleteByPostId_PostId(post.getPostId());
-                imageRepository.deleteByPost(post);
-                postRepository.delete(post);
+                replyRepository.softDeleteByPostId(post.getPostId());
+                post.markDeleted();
         }
 
         private void syncPostImages(Post post, Users user, String content) {

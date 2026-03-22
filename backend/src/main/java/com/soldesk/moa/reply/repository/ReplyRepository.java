@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.soldesk.moa.reply.entity.Reply;
 
@@ -24,5 +25,23 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
     long countByPostId_PostId(Long postId);
 
     void deleteByPostId_PostId(Long postId);
+
+    @Modifying
+    @Query("""
+            update Reply r
+            set r.deleted = true
+            where r.postId.postId = :postId
+              and r.deleted = false
+            """)
+    int softDeleteByPostId(@Param("postId") Long postId);
+
+    @Modifying
+    @Query("""
+            update Reply r
+            set r.deleted = true
+            where r.postId.boardId.boardId = :boardId
+              and r.deleted = false
+            """)
+    int softDeleteByBoardId(@Param("boardId") Long boardId);
 
 }

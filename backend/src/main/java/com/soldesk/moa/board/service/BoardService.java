@@ -18,6 +18,8 @@ import com.soldesk.moa.board.exception.MissingCircleIdException;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.post.repository.PostRepository;
+import com.soldesk.moa.reply.repository.ReplyRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -31,6 +33,8 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final CircleRepository circleRepository; // Circle board 생성 시 필요
     private final CirclePermissionService circlePermissionService;
+    private final PostRepository postRepository;
+    private final ReplyRepository replyRepository;
 
     // ===== Global boards =====
     public List<BoardResponseDTO> listGlobalBoards() {
@@ -47,7 +51,7 @@ public class BoardService {
 
     @Transactional
     public Long updateBoardName(Long boardId, String newName) {
-        Board board = boardRepository.findById(boardId)
+        Board board = boardRepository.findByBoardIdAndDeletedFalse(boardId)
                 .orElseThrow(() -> new BoardNotFoundException("[#BOARD] 게시판을 찾을 수 없습니다."));
         board.changeName(newName);
         return board.getBoardId();
@@ -57,7 +61,7 @@ public class BoardService {
         if (type == BoardType.CIRCLE) {
             throw new GlobalBoardTypeInvalidException("[#BOARD] CIRCLE 타입은 글로벌 게시판이 아닙니다.");
         }
-        return boardRepository.findByBoardTypeAndCircleIdIsNull(type)
+        return boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(type)
                 .orElseThrow(() -> new InvalidBoardTypeException("[#BOARD] 잘못된 게시판 타입입니다."));
     }
 
@@ -66,7 +70,7 @@ public class BoardService {
     public List<BoardResponseDTO> listCircleBoards(Long circleId, Long userId) {
         circlePermissionService.requireActiveMember(circleId, userId);
         return boardRepository
-                .findByBoardTypeAndCircleId_CircleId(BoardType.CIRCLE, circleId)
+                .findByBoardTypeAndCircleId_CircleIdAndDeletedFalse(BoardType.CIRCLE, circleId)
                 .stream()
                 .map(this::toBoardResponse)
                 .toList();
@@ -99,7 +103,7 @@ public class BoardService {
     public Long updateCircleBoardName(Long circleId, Long boardId, String newName, Long userId) {
         circlePermissionService.requireLeader(circleId, userId);
         Board board = boardRepository
-                .findByBoardIdAndBoardTypeAndCircleId_CircleId(
+                .findByBoardIdAndBoardTypeAndCircleId_CircleIdAndDeletedFalse(
                         boardId, BoardType.CIRCLE, circleId)
                 .orElseThrow(() -> new BoardNotFoundException("[#BOARD] 게시판을 찾을 수 없습니다."));
 
@@ -111,11 +115,13 @@ public class BoardService {
     public void deleteCircleBoard(Long circleId, Long boardId, Long userId) {
         circlePermissionService.requireLeader(circleId, userId);
         Board board = boardRepository
-                .findByBoardIdAndBoardTypeAndCircleId_CircleId(
+                .findByBoardIdAndBoardTypeAndCircleId_CircleIdAndDeletedFalse(
                         boardId, BoardType.CIRCLE, circleId)
                 .orElseThrow(() -> new BoardNotFoundException("[#BOARD] 게시판을 찾을 수 없습니다."));
 
-        boardRepository.delete(board);
+        replyRepository.softDeleteByBoardId(board.getBoardId());
+        postRepository.softDeleteByBoardId(board.getBoardId());
+        board.markDeleted();
     }
 
     private BoardResponseDTO toBoardResponse(Board b) {

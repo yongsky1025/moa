@@ -10,7 +10,9 @@ interface PostEditorPageShellProps {
   showForm: boolean;
   initialValue?: PostFormValues;
   submitting: boolean;
+  deleting?: boolean;
   onSubmit: (values: PostFormValues) => Promise<void>;
+  onDelete?: () => Promise<void>;
   detailLoading?: boolean;
   detailError?: string;
   submitError?: string;
@@ -24,7 +26,9 @@ export default function PostEditorPageShell({
   showForm,
   initialValue,
   submitting,
+  deleting = false,
   onSubmit,
+  onDelete,
   detailLoading = false,
   detailError = "",
   submitError = "",
@@ -49,7 +53,9 @@ export default function PostEditorPageShell({
           mode={mode}
           initialValue={initialValue}
           submitting={submitting}
+          deleting={deleting}
           onSubmit={onSubmit}
+          onDelete={onDelete}
         />
       )}
     </main>

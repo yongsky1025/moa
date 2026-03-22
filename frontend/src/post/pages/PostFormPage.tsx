@@ -35,7 +35,7 @@ export default function PostFormPage() {
     postId: postIdNumber,
     enabled: isEdit && !Number.isNaN(postIdNumber),
   });
-  const { submitting, error, submit } = usePostForm();
+  const { submitting, deleting, error, submit, remove } = usePostForm();
   const listPath =
     kind === "notice" ? postRoutes.noticeBase : postRoutes.freeBase;
   const detailPath =
@@ -103,6 +103,7 @@ export default function PostFormPage() {
         showForm={!isEdit || !!data}
         initialValue={data ? { title: data.title, content: data.content } : undefined}
         submitting={submitting}
+        deleting={deleting}
         onSubmit={async (values) => {
           const savedPostId = await submit({
             kind,
@@ -115,6 +116,16 @@ export default function PostFormPage() {
               : postRoutes.freeDetail(savedPostId);
           navigate(savedDetailPath);
         }}
+        onDelete={isEdit ? async () => {
+          if (!window.confirm("게시글을 삭제하시겠습니까?")) {
+            return;
+          }
+          await remove({
+            kind,
+            postId: postIdNumber,
+          });
+          navigate(listPath);
+        } : undefined}
       />
       <Footer />
     </div>
