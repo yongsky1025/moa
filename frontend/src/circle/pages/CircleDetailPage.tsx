@@ -1019,8 +1019,6 @@ export default function CircleDetailPage() {
               </Link>
             </div>
 
-            <CircleBoardSideMenu circleId={cid} />
-
             {/* 가장 가까운 일정 위치 지도 */}
             {isMember && (
               <div
@@ -1084,6 +1082,8 @@ export default function CircleDetailPage() {
                 )}
               </div>
             )}
+            {/* 써클 게시판 */}
+            <CircleBoardSideMenu circleId={cid} />
           </div>
         </div>
       </main>

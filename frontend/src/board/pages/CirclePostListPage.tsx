@@ -33,8 +33,8 @@ export default function CirclePostListPage() {
   const selectedBoardName =
     boardIdNumber == null
       ? "전체 게시글"
-      : (boards ?? []).find((board) => board.boardId === boardIdNumber)?.name ??
-        "게시판";
+      : ((boards ?? []).find((board) => board.boardId === boardIdNumber)
+          ?.name ?? "게시판");
 
   if (!hasValidCircleId) {
     return (
@@ -116,7 +116,6 @@ export default function CirclePostListPage() {
                   ))}
                   {posts.length === 0 && <li>게시글이 없습니다.</li>}
                 </ul>
-                <CircleBoardPostPreviewSection circleId={circleIdNumber} />
               </>
             )}
           </section>
