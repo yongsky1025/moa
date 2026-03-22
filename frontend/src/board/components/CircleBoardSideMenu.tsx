@@ -16,6 +16,7 @@ export interface CircleBoardSideMenuProps {
   title?: string;
   showAllItem?: boolean;
   currentBoardId?: number;
+  onBoardSelect?: (boardId: number | null) => void;
 }
 
 export default function CircleBoardSideMenu({
@@ -23,6 +24,7 @@ export default function CircleBoardSideMenu({
   title = "게시판",
   showAllItem = true,
   currentBoardId,
+  onBoardSelect,
 }: CircleBoardSideMenuProps) {
   const {
     data: boards,
@@ -357,6 +359,7 @@ export default function CircleBoardSideMenu({
             <Link
               to={postRoutes.circleAll(circleId)}
               style={getItemStyle(currentBoardId == null)}
+              onClick={() => onBoardSelect?.(null)}
               onMouseEnter={(e) => {
                 if (currentBoardId == null) return;
                 e.currentTarget.style.backgroundColor = "#f8fafc";
@@ -379,6 +382,7 @@ export default function CircleBoardSideMenu({
                   key={board.boardId}
                   to={postRoutes.circleBoard(circleId, board.boardId)}
                   style={getItemStyle(active)}
+                  onClick={() => onBoardSelect?.(board.boardId)}
                   onMouseEnter={(e) => {
                     if (active) return;
                     e.currentTarget.style.backgroundColor = "#f8fafc";

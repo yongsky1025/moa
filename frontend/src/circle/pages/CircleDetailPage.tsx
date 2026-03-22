@@ -71,6 +71,7 @@ export default function CircleDetailPage() {
   );
   const [profileModal, setProfileModal] = useState<CircleMember | null>(null);
   const [kakaoReady, setKakaoReady] = useState(false);
+  const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -871,7 +872,11 @@ export default function CircleDetailPage() {
               )}
             </div>
 
-            <CircleBoardPostPreviewSection circleId={cid} />
+            <CircleBoardPostPreviewSection
+              circleId={cid}
+              selectedBoardId={selectedBoardId}
+              onSelectedBoardChange={setSelectedBoardId}
+            />
           </div>
 
           {/* 오른쪽: 멤버 사이드바 + 지도 */}
@@ -1083,7 +1088,12 @@ export default function CircleDetailPage() {
               </div>
             )}
             {/* 써클 게시판 */}
-            <CircleBoardSideMenu circleId={cid} />
+            <CircleBoardSideMenu
+              circleId={cid}
+              showAllItem
+              currentBoardId={selectedBoardId ?? undefined}
+              onBoardSelect={setSelectedBoardId}
+            />
           </div>
         </div>
       </main>

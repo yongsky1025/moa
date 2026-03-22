@@ -10,16 +10,42 @@ interface BoardPreviewCardProps {
   posts: PostResponse[];
 }
 
-export default function BoardPreviewCard({ circleId, board, posts }: BoardPreviewCardProps) {
+export default function BoardPreviewCard({
+  circleId,
+  board,
+  posts,
+}: BoardPreviewCardProps) {
   return (
-    <section style={{ backgroundColor: "white", border: "1px solid #ececec", borderRadius: 12, padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+    <section
+      style={{
+        backgroundColor: "white",
+        border: "1px solid #ececec",
+        borderRadius: 12,
+        padding: 16,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
         <h3 style={{ margin: 0, fontSize: 17, color: "#111" }}>{board.name}</h3>
-        <Link to={postRoutes.circleBoard(circleId, board.boardId)} style={{ fontSize: 13, color: "#555" }}>
+        {/* <Link
+          to={postRoutes.circleBoard(circleId, board.boardId)}
+          style={{ fontSize: 13, color: "#555" }}
+        >
           전체 보기
-        </Link>
+        </Link> */}
       </div>
-      <BoardPreviewPostList circleId={circleId} boardId={board.boardId} boardName={board.name} posts={posts} />
+      <BoardPreviewPostList
+        circleId={circleId}
+        boardId={board.boardId}
+        boardName={board.name}
+        posts={posts}
+      />
     </section>
   );
 }
