@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import type { PostFormValues } from "../types/postTypes";
 import { validatePostForm } from "../utils/postValidators";
+import { hasProfanity, stripHtmlToText } from "../../common/utils/profanityFilter";
 import PostCkEditor from "./PostCkEditor";
 
 interface PostFormProps {
@@ -24,6 +25,11 @@ export default function PostForm({
 }: PostFormProps) {
   const [values, setValues] = useState<PostFormValues>(initialValue ?? EMPTY_FORM);
   const [localError, setLocalError] = useState("");
+  const plainContent = stripHtmlToText(values.content);
+  const hasBadWordInTitle = hasProfanity(values.title);
+  const hasBadWordInContent = hasProfanity(plainContent);
+  const hasBadWord = hasBadWordInTitle || hasBadWordInContent;
+  const disableSubmit = submitting || deleting || hasBadWord || !values.title.trim() || !plainContent;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -39,6 +45,7 @@ export default function PostForm({
   return (
     <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
       {localError && <p style={{ color: "#dc2626", margin: 0 }}>{localError}</p>}
+      {hasBadWord && <p style={{ color: "#dc2626", margin: 0 }}>⚠️ 부적절한 표현이 포함되어 있습니다.</p>}
       <input
         value={values.title}
         onChange={(e) => setValues((prev) => ({ ...prev, title: e.target.value }))}
@@ -59,7 +66,7 @@ export default function PostForm({
       <div style={{ display: "flex", gap: 8 }}>
         <button
           type="submit"
-          disabled={submitting || deleting}
+          disabled={disableSubmit}
           style={{
             width: 120,
             padding: "10px 12px",

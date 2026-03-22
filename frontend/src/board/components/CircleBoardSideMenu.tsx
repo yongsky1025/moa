@@ -10,6 +10,7 @@ import { circleApi } from "../../api/circleApi";
 import type { BoardResponse } from "../types/boardTypes";
 import type { RootState } from "../../users/reducers/store";
 import { getErrorMessage } from "../../common/utils/errorMessage";
+import { validateBoardName } from "../utils/boardValidators";
 
 export interface CircleBoardSideMenuProps {
   circleId: number;
@@ -52,6 +53,7 @@ export default function CircleBoardSideMenu({
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState("");
   const [nextTempId, setNextTempId] = useState(-1);
+  const editingNameError = editingBoardId != null ? validateBoardName(editingName) : "";
 
   useEffect(() => {
     if (editMode) return;
@@ -135,7 +137,7 @@ export default function CircleBoardSideMenu({
   const removeDraftBoard = (boardId: number) => {
     const target = draftBoards.find((board) => board.boardId === boardId);
     const targetName = target?.name.trim() || "이 게시판";
-    const ok = window.confirm(`정말 삭제하시겠습니까?`);
+    const ok = window.confirm(`${targetName}을(를) 정말 삭제하시겠습니까?`);
     if (!ok) return;
 
     setDraftBoards((prev) => prev.filter((board) => board.boardId !== boardId));
@@ -168,11 +170,12 @@ export default function CircleBoardSideMenu({
   };
 
   const confirmRowEdit = (boardId: number) => {
-    const trimmedName = editingName.trim();
-    if (!trimmedName) {
-      setEditError("게시판 이름을 입력해주세요.");
+    const message = validateBoardName(editingName);
+    if (message) {
+      setEditError(message);
       return;
     }
+    const trimmedName = editingName.trim();
 
     setDraftBoards((prev) =>
       prev.map((board) =>
@@ -195,10 +198,16 @@ export default function CircleBoardSideMenu({
   const hasEmptyName = draftBoards.some(
     (board) => board.name.trim().length === 0,
   );
+  const hasInvalidName = draftBoards.some((board) => !!validateBoardName(board.name));
 
   const handleApply = async () => {
     if (hasEmptyName) {
       setEditError("게시판 이름을 입력해주세요.");
+      return;
+    }
+
+    if (hasInvalidName) {
+      setEditError("게시판 이름에 사용할 수 없는 표현이 포함되어 있습니다.");
       return;
     }
 
@@ -319,7 +328,7 @@ export default function CircleBoardSideMenu({
                   type="button"
                   aria-label="변경사항 적용"
                   onClick={() => void handleApply()}
-                  disabled={saving}
+                  disabled={saving || hasInvalidName}
                   style={iconButtonStyle}
                 >
                   <Check size={16} />
@@ -468,6 +477,7 @@ export default function CircleBoardSideMenu({
                     aria-label="게시판 이름 확인"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => confirmRowEdit(board.boardId)}
+                    disabled={!!editingNameError}
                     style={iconButtonStyle}
                   >
                     <Check size={14} />
@@ -502,6 +512,11 @@ export default function CircleBoardSideMenu({
               <Plus size={14} />
               게시판 추가
             </button>
+          )}
+          {editMode && editingNameError && (
+            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#dc2626" }}>
+              ⚠️ {editingNameError}
+            </p>
           )}
         </nav>
       )}

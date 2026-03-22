@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { ReplyResponse } from "../types/replyTypes";
 import { formatDateTime } from "../../post/utils/dateFormat";
+import { hasProfanity } from "../../common/utils/profanityFilter";
+import { validateReplyContent } from "../utils/replyValidators";
 import ReplyForm from "./ReplyForm";
 
 interface ReplyItemProps {
@@ -34,6 +36,8 @@ export default function ReplyItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editingContent, setEditingContent] = useState(reply.content);
   const [error, setError] = useState("");
+  const hasEditingBadWord = hasProfanity(editingContent);
+  const disableEditSave = hasEditingBadWord || !editingContent.trim();
 
   const isOwner = !!currentUserPublicId && reply.authorPublicId === currentUserPublicId;
   const canEdit = !reply.deleted && isOwner;
@@ -42,8 +46,9 @@ export default function ReplyItem({
 
   const submitUpdate = async () => {
     const trimmed = editingContent.trim();
-    if (!trimmed) {
-      setError("댓글 내용을 입력하세요.");
+    const message = validateReplyContent(trimmed);
+    if (message) {
+      setError(message);
       return;
     }
 
@@ -73,6 +78,7 @@ export default function ReplyItem({
       {!reply.deleted && isEditing ? (
         <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
           {error && <p style={{ margin: 0, color: "#dc2626" }}>{error}</p>}
+          {hasEditingBadWord && <p style={{ margin: 0, color: "#dc2626" }}>⚠️ 부적절한 표현이 포함되어 있습니다.</p>}
           <textarea
             value={editingContent}
             onChange={(e) => setEditingContent(e.target.value)}
@@ -80,7 +86,7 @@ export default function ReplyItem({
             style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
           />
           <div style={{ display: "flex", gap: 8 }}>
-            <button type="button" onClick={() => void submitUpdate()}>
+            <button type="button" disabled={disableEditSave} onClick={() => void submitUpdate()}>
               저장
             </button>
             <button

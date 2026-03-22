@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { hasProfanity } from "../../common/utils/profanityFilter";
 import { validateReplyContent } from "../utils/replyValidators";
 
 interface ReplyFormProps {
@@ -12,6 +13,8 @@ export default function ReplyForm({ parentId, onSuccess, onSubmitReply }: ReplyF
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const hasBadWord = hasProfanity(content);
+  const disableSubmit = submitting || hasBadWord || !content.trim();
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -37,6 +40,7 @@ export default function ReplyForm({ parentId, onSuccess, onSubmitReply }: ReplyF
   return (
     <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
       {error && <p style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
+      {hasBadWord && <p style={{ color: "#dc2626", margin: 0 }}>⚠️ 부적절한 표현이 포함되어 있습니다.</p>}
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
@@ -46,7 +50,7 @@ export default function ReplyForm({ parentId, onSuccess, onSubmitReply }: ReplyF
       />
       <button
         type="submit"
-        disabled={submitting}
+        disabled={disableSubmit}
         style={{ width: 100, padding: "8px 10px", borderRadius: 8, border: "1px solid #111", background: "white" }}
       >
         {submitting ? "저장 중..." : "댓글 등록"}
