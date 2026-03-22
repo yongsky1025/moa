@@ -57,6 +57,7 @@ export default function ReplyItem({
   };
 
   const submitDelete = async () => {
+    if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
     setError("");
     try {
       await onDelete(reply.replyId);

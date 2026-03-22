@@ -201,30 +201,48 @@ export default function CircleBoardSideMenu({
       setEditError("게시판 이름을 입력해주세요.");
       return;
     }
+
+    const snapshotMap = new Map(
+      snapshotBoards.map((board) => [board.boardId, board]),
+    );
+    const draftIdSet = new Set(draftBoards.map((board) => board.boardId));
+
+    const deleteTargets = snapshotBoards
+      .filter((board) => !draftIdSet.has(board.boardId))
+      .map((board) => board.boardId);
+
+    const updateTargets = draftBoards.filter((board) => {
+      if (board.boardId <= 0) return false;
+      const original = snapshotMap.get(board.boardId);
+      if (!original) return false;
+      return original.name !== board.name.trim();
+    });
+
+    const createTargets = draftBoards.filter((board) => board.boardId <= 0);
+    const hasChanges =
+      deleteTargets.length > 0 ||
+      updateTargets.length > 0 ||
+      createTargets.length > 0;
+
+    if (!hasChanges) {
+      setEditMode(false);
+      setEditingBoardId(null);
+      setEditingName("");
+      setUnconfirmedNewBoardIds([]);
+      setEditError("");
+      return;
+    }
+
     const ok = window.confirm("변경사항을 적용하시겠습니까?");
     if (!ok) return;
 
     setSaving(true);
     setEditError("");
     try {
-      const snapshotMap = new Map(
-        snapshotBoards.map((board) => [board.boardId, board]),
-      );
-      const draftIdSet = new Set(draftBoards.map((board) => board.boardId));
-
-      const deleteTargets = snapshotBoards
-        .filter((board) => !draftIdSet.has(board.boardId))
-        .map((board) => board.boardId);
       for (const boardId of deleteTargets) {
         await boardApi.deleteCircleBoard(circleId, boardId);
       }
 
-      const updateTargets = draftBoards.filter((board) => {
-        if (board.boardId <= 0) return false;
-        const original = snapshotMap.get(board.boardId);
-        if (!original) return false;
-        return original.name !== board.name.trim();
-      });
       for (const board of updateTargets) {
         await boardApi.updateCircleBoard(circleId, board.boardId, {
           boardType: "CIRCLE",
@@ -232,7 +250,6 @@ export default function CircleBoardSideMenu({
         });
       }
 
-      const createTargets = draftBoards.filter((board) => board.boardId <= 0);
       for (const board of createTargets) {
         await boardApi.createCircleBoard(circleId, {
           boardType: "CIRCLE",
@@ -246,6 +263,7 @@ export default function CircleBoardSideMenu({
       setEditingName("");
       setUnconfirmedNewBoardIds([]);
       setEditError("");
+      window.alert("변경사항 적용이 완료되었습니다.");
     } catch (e) {
       setEditError(getErrorMessage(e));
     } finally {
