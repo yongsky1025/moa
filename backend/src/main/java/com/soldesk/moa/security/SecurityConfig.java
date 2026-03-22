@@ -77,6 +77,7 @@ public class SecurityConfig {
                                                                 "/js/**",
                                                                 "/img/**",
                                                                 "/images/**",
+                                                                "/uploads/**",
                                                                 "/vendor/**",
                                                                 "/fonts/**",
                                                                 "/favicon.ico",

@@ -1,0 +1,32 @@
+package com.soldesk.moa.common.storage.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.context.annotation.Profile;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.soldesk.moa.common.storage.dto.CreateUploadUrlRequestDTO;
+import com.soldesk.moa.common.storage.dto.CreateUploadUrlResponseDTO;
+import com.soldesk.moa.common.storage.service.ImageUploadService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@Profile({ "local", "dev" })
+@RequestMapping("/api/images")
+@RequiredArgsConstructor
+public class ImageUploadController {
+
+    private final ImageUploadService imageUploadService;
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/upload-url")
+    public ResponseEntity<CreateUploadUrlResponseDTO> createUploadUrl(
+            @Valid @RequestBody CreateUploadUrlRequestDTO request) {
+        return ResponseEntity.ok(imageUploadService.createUploadUrl(request));
+    }
+}

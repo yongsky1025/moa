@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import type { PostFormValues } from "../types/postTypes";
 import { validatePostForm } from "../utils/postValidators";
+import PostCkEditor from "./PostCkEditor";
 
 interface PostFormProps {
   initialValue?: PostFormValues;
@@ -35,13 +36,17 @@ export default function PostForm({ initialValue, mode, onSubmit, submitting }: P
         placeholder="제목"
         style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
       />
-      <textarea
-        value={values.content}
-        onChange={(e) => setValues((prev) => ({ ...prev, content: e.target.value }))}
-        placeholder="내용"
-        rows={10}
-        style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-      />
+      <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 8 }}>
+        <PostCkEditor
+          value={values.content}
+          onChange={(content) => {
+            setValues((prev) => ({ ...prev, content }));
+          }}
+          onError={(message) => {
+            setLocalError(message);
+          }}
+        />
+      </div>
       <button
         type="submit"
         disabled={submitting}

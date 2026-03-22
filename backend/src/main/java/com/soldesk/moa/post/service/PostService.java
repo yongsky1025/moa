@@ -2,6 +2,11 @@ package com.soldesk.moa.post.service;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +15,8 @@ import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.service.CirclePermissionService;
+import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.common.repository.ImageRepository;
 import com.soldesk.moa.post.dto.PostRequestDTO;
 import com.soldesk.moa.post.dto.PostResponseDTO;
 import com.soldesk.moa.post.entity.Post;
@@ -31,11 +38,15 @@ import lombok.extern.log4j.Log4j2;
 @Transactional(readOnly = true)
 public class PostService {
 
+        private static final Pattern IMG_SRC_PATTERN = Pattern.compile("<img[^>]*\\bsrc\\s*=\\s*['\\\"]([^'\\\"]+)['\\\"][^>]*>",
+                        Pattern.CASE_INSENSITIVE);
+
         private final PostRepository postRepository;
         private final ReplyRepository replyRepository;
         private final BoardRepository boardRepository;
         private final UsersRepository usersRepository;
         private final CirclePermissionService circlePermissionService;
+        private final ImageRepository imageRepository;
 
         // ===== Global =====
 
@@ -74,7 +85,9 @@ public class PostService {
                                 .userId(user)
                                 .build();
 
-                return postRepository.save(post).getPostId();
+                Post saved = postRepository.save(post);
+                syncPostImages(saved, user, req.getContent());
+                return saved.getPostId();
         }
 
         @Transactional
@@ -83,6 +96,7 @@ public class PostService {
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
                 post.changeTitle(req.getTitle());
                 post.changeContent(req.getContent());
+                syncPostImages(post, post.getUserId(), req.getContent());
                 return post.getPostId();
         }
 
@@ -106,6 +120,7 @@ public class PostService {
 
                 post.changeTitle(req.getTitle());
                 post.changeContent(req.getContent());
+                syncPostImages(post, post.getUserId(), req.getContent());
                 return post.getPostId();
         }
 
@@ -180,7 +195,9 @@ public class PostService {
                                 .userId(user)
                                 .build();
 
-                return postRepository.save(post).getPostId();
+                Post saved = postRepository.save(post);
+                syncPostImages(saved, user, req.getContent());
+                return saved.getPostId();
         }
 
         @Transactional
@@ -195,6 +212,7 @@ public class PostService {
 
                 post.changeTitle(req.getTitle());
                 post.changeContent(req.getContent());
+                syncPostImages(post, post.getUserId(), req.getContent());
                 return post.getPostId();
         }
 
@@ -240,7 +258,81 @@ public class PostService {
 
         private void deletePostWithReplies(Post post) {
                 replyRepository.deleteByPostId_PostId(post.getPostId());
+                imageRepository.deleteByPost(post);
                 postRepository.delete(post);
+        }
+
+        private void syncPostImages(Post post, Users user, String content) {
+                imageRepository.deleteByPost(post);
+
+                List<String> imagePaths = extractPostImagePaths(content);
+                if (imagePaths.isEmpty()) {
+                        return;
+                }
+
+                List<Image> images = new ArrayList<>();
+                for (int i = 0; i < imagePaths.size(); i++) {
+                        String path = imagePaths.get(i);
+                        images.add(Image.builder()
+                                        .name(extractFileName(path))
+                                        .uuid(UUID.randomUUID().toString())
+                                        .path(path)
+                                        .ord((long) (i + 1))
+                                        .post(post)
+                                        .user(user)
+                                        .build());
+                }
+
+                imageRepository.saveAll(images);
+        }
+
+        private List<String> extractPostImagePaths(String content) {
+                if (content == null || content.isBlank()) {
+                        return List.of();
+                }
+
+                Matcher matcher = IMG_SRC_PATTERN.matcher(content);
+                LinkedHashSet<String> orderedUniquePaths = new LinkedHashSet<>();
+                while (matcher.find()) {
+                        String src = matcher.group(1);
+                        String normalized = normalizeToPostUploadPath(src);
+                        if (normalized != null) {
+                                orderedUniquePaths.add(normalized);
+                        }
+                }
+
+                return new ArrayList<>(orderedUniquePaths);
+        }
+
+        private String normalizeToPostUploadPath(String src) {
+                if (src == null || src.isBlank()) {
+                        return null;
+                }
+
+                String trimmed = src.trim();
+                if (trimmed.startsWith("/uploads/post/")) {
+                        return trimmed;
+                }
+
+                int idx = trimmed.indexOf("/uploads/post/");
+                if (idx >= 0) {
+                        return trimmed.substring(idx);
+                }
+
+                return null;
+        }
+
+        private String extractFileName(String path) {
+                if (path == null || path.isBlank()) {
+                        return "uploaded-file";
+                }
+
+                int slashIndex = path.lastIndexOf('/');
+                if (slashIndex < 0 || slashIndex == path.length() - 1) {
+                        return "uploaded-file";
+                }
+
+                return path.substring(slashIndex + 1);
         }
 
         private PostResponseDTO toPostResponse(Post p) {

@@ -44,6 +44,10 @@ public class Post extends BaseEntity {
     @Builder.Default
     private int viewCount = 0;
 
+    @Column(name = "like_count", nullable = false)
+    @Builder.Default
+    private int likeCount = 0;
+
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

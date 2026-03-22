@@ -23,6 +23,7 @@ import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.chat.repository.ChatMessageRepository;
 import com.soldesk.moa.chat.repository.ChatRoomMemberRepository;
 import com.soldesk.moa.chat.repository.ChatRoomRepository;
+import com.soldesk.moa.common.repository.ImageRepository;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleCategory;
 import com.soldesk.moa.circle.entity.CircleEnergyProfile;
@@ -60,10 +61,10 @@ import lombok.extern.log4j.Log4j2;
 @RequiredArgsConstructor
 public class LocalSeedDataRunner implements CommandLineRunner {
 
-    private static final int USER_COUNT = 20;
-    private static final int CIRCLE_COUNT = 20;
+    private static final int USER_COUNT = 10;
+    private static final int CIRCLE_COUNT = 5;
     private static final int CIRCLE_BOARD_PER_CIRCLE = 5;
-    private static final int POSTS_PER_BOARD = 20;
+    private static final int POSTS_PER_BOARD = 10;
 
     @Value("${app.seed.enabled:true}")
     private boolean seedEnabled;
@@ -91,6 +92,7 @@ public class LocalSeedDataRunner implements CommandLineRunner {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ImageRepository imageRepository;
 
     @Override
     @Transactional
@@ -130,6 +132,9 @@ public class LocalSeedDataRunner implements CommandLineRunner {
         scheduleRepository.deleteAllInBatch();
         replyRepository.unlinkParentReferences();
         replyRepository.deleteAllInBatch();
+        circleRepository.clearAllCoverImages();
+        usersRepository.clearAllProfileImages();
+        imageRepository.deleteAllInBatch();
         postRepository.deleteAllInBatch();
         boardRepository.deleteAllInBatch();
         circleMemberRepository.deleteAllInBatch();

@@ -1,9 +1,9 @@
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import BoardTabs from "../../board/components/BoardTabs";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import PostMeta from "../components/PostMeta";
+import PostContent from "../components/PostContent";
 import { usePostDetail } from "../hooks/usePostDetail";
 import { useReplies } from "../../reply/hooks/useReplies";
 import { useReplyForm } from "../../reply/hooks/useReplyForm";
@@ -63,9 +63,7 @@ export default function PostDetailPage() {
           <>
             <h2>{data.title}</h2>
             <PostMeta post={data} />
-            <article style={{ marginTop: 16, whiteSpace: "pre-wrap" }}>
-              {data.content}
-            </article>
+            <PostContent html={data.content} />
             {canEdit && (
               <div style={{ marginTop: 12 }}>
                 <button type="button" onClick={() => navigate(editPath)}>

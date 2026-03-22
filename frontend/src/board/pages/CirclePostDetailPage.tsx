@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import PostMeta from "../../post/components/PostMeta";
+import PostContent from "../../post/components/PostContent";
 import { usePostDetail } from "../../post/hooks/usePostDetail";
 import { parseRouteNumber } from "../utils/boardRouteHelpers";
 import { postRoutes } from "../../post/routes/postRoutes";
@@ -60,7 +61,7 @@ export default function CirclePostDetailPage() {
           <>
             <h2>{data.title}</h2>
             <PostMeta post={data} />
-            <article style={{ marginTop: 16, whiteSpace: "pre-wrap" }}>{data.content}</article>
+            <PostContent html={data.content} />
             {isOwner && (
               <div style={{ marginTop: 12 }}>
                 <button type="button" onClick={() => navigate(postRoutes.circleEdit(circleIdNumber, boardIdNumber, postIdNumber))}>

@@ -25,6 +25,8 @@ cors:
   allowed-origins: http://localhost:5173
 
 app:
+  local-upload-dir: ${FILE_UPLOAD_DIR:${user.dir}/uploads}
+  local-base-url: ${APP_LOCAL_BASE_URL:http://localhost:8080}
   seed:
     enabled: true
     reset: true
