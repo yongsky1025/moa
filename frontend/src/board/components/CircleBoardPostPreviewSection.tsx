@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import BoardPreviewCard from "./BoardPreviewCard";
 import { useCircleBoardPostPreview } from "../hooks/useCircleBoardPostPreview";
 import { postRoutes } from "../../post/routes/postRoutes";
+import { BoardPreviewSectionSkeleton } from "../../common/components/BoardLoadingSkeletons";
 
 export interface CircleBoardPostPreviewSectionProps {
   circleId: number;
@@ -92,7 +93,7 @@ export default function CircleBoardPostPreviewSection({
         </h2>
       </div>
 
-      {loading && <p style={{ color: "#777" }}>게시판/게시글 불러오는 중...</p>}
+      {loading && <BoardPreviewSectionSkeleton />}
       {error && (
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <p style={{ color: "#dc2626", margin: 0 }}>

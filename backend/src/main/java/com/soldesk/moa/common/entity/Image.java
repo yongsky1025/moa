@@ -1,17 +1,13 @@
 package com.soldesk.moa.common.entity;
 
-import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.common.entity.constant.ImageDomain;
 import com.soldesk.moa.common.entity.constant.ImageStatus;
-import com.soldesk.moa.users.entity.Users;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -27,7 +23,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = { "post", "user" })
+@ToString
 public class Image extends BaseEntity {
 
     @Id
@@ -43,6 +39,17 @@ public class Image extends BaseEntity {
     @Column(nullable = false)
     private String path;
 
+    @Column(nullable = false, length = 30)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private ImageDomain domain = ImageDomain.COMMON;
+
+    @Column(nullable = true)
+    private Long ownerId;
+
+    @Column(nullable = false)
+    private Long uploadedByUserId;
+
     @Column(nullable = false)
     private Long ord;
 
@@ -54,15 +61,6 @@ public class Image extends BaseEntity {
     @Column(nullable = false, length = 10)
     @Builder.Default
     private ImageStatus status = ImageStatus.USED;
-
-    // 게시글 이미지일 때 사용 (서클 대표 이미지는 null)
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "post_id", nullable = true)
-    private Post post;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
-    private Users user;
 
     public void markDeleted() {
         this.deleted = true;

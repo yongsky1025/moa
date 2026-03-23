@@ -11,6 +11,7 @@ import type { BoardResponse } from "../types/boardTypes";
 import type { RootState } from "../../users/reducers/store";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import { validateBoardName } from "../utils/boardValidators";
+import { BoardSideMenuSkeleton } from "../../common/components/BoardLoadingSkeletons";
 
 export interface CircleBoardSideMenuProps {
   circleId: number;
@@ -340,9 +341,7 @@ export default function CircleBoardSideMenu({
       </div>
 
       {loading && (
-        <p style={{ margin: 0, fontSize: 13, color: "#777" }}>
-          게시판 불러오는 중...
-        </p>
+        <BoardSideMenuSkeleton />
       )}
 
       {!loading && error && (

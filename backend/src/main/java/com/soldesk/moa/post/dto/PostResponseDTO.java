@@ -1,6 +1,7 @@
 package com.soldesk.moa.post.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +25,8 @@ public class PostResponseDTO {
     private String title;
 
     private String content;
+
+    private List<String> imagePaths;
 
     private String authorName;
 

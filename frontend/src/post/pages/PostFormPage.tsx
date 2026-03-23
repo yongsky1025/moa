@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
+import BoardSectionHeader from "../../common/components/BoardSectionHeader";
 import PostEditorPageShell from "../components/PostEditorPageShell";
 import { usePostDetail } from "../hooks/usePostDetail";
 import { usePostForm } from "../hooks/usePostForm";
@@ -38,6 +39,7 @@ export default function PostFormPage() {
   const { submitting, deleting, error, submit, remove } = usePostForm();
   const listPath =
     kind === "notice" ? postRoutes.noticeBase : postRoutes.freeBase;
+  const boardTitle = kind === "notice" ? "공지게시판" : "자유게시판";
   const detailPath =
     isEdit && !Number.isNaN(postIdNumber)
       ? kind === "notice"
@@ -93,6 +95,11 @@ export default function PostFormPage() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
+      <BoardSectionHeader
+        title={boardTitle}
+        backTo={listPath}
+        backLabel="목록으로 이동"
+      />
       <PostEditorPageShell
         title={isEdit ? "게시글 수정" : "게시글 작성"}
         listPath={listPath}

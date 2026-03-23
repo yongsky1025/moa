@@ -40,7 +40,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = { "images", "posts", "replies", "energyProfile" })
+@ToString(exclude = { "posts", "replies", "energyProfile" })
 @Table(name = "users")
 @Entity
 public class Users extends BaseEntity {
@@ -114,10 +114,6 @@ public class Users extends BaseEntity {
     // 에너지 프로필 (1:1)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UsersEnergyProfile energyProfile;
-
-    @OneToMany(mappedBy = "user")
-    @Builder.Default
-    private List<Image> images = new ArrayList<>();
 
     @OneToMany(mappedBy = "userId")
     @Builder.Default

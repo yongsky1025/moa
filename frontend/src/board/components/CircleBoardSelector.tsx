@@ -5,6 +5,7 @@ interface CircleBoardSelectorProps {
   selectedBoardId?: number;
   onChange: (boardId?: number) => void;
   placeholderLabel?: string;
+  className?: string;
 }
 
 export default function CircleBoardSelector({
@@ -12,12 +13,14 @@ export default function CircleBoardSelector({
   selectedBoardId,
   onChange,
   placeholderLabel = "전체 게시판",
+  className,
 }: CircleBoardSelectorProps) {
   return (
     <select
       value={selectedBoardId ?? ""}
       onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
-      style={{ padding: 8, borderRadius: 8, border: "1px solid #ddd" }}
+      className={className}
+      style={className ? undefined : { padding: 8, borderRadius: 8, border: "1px solid #ddd" }}
     >
       <option value="">{placeholderLabel}</option>
       {boards.map((board) => (

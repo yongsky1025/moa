@@ -13,7 +13,11 @@ export default function PostContent({ html }: PostContentProps) {
       className="ck-content"
       style={{
         marginTop: 0,
-        lineHeight: 1.95,
+        padding: 16,
+        maxWidth: 760,
+        marginLeft: "auto",
+        marginRight: "auto",
+        lineHeight: 1.75,
         fontSize: 16,
         color: "#111827",
         wordBreak: "break-word",
