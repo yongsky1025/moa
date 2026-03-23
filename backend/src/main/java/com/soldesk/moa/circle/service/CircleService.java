@@ -179,7 +179,9 @@ public class CircleService {
                 return new CircleResponseDTO(circle);
         }
 
-        // 서클 대표 이미지 업로드/교체 (리더만 가능, POST multipart)
+        // 서클 대표 이미지 업로드/교체 legacy 경로 (리더만 가능, POST multipart)
+        // 신규 코드는 updateCoverImageByUrl 사용 권장
+        @Deprecated(since = "upload-url-introduced")
         @Transactional
         public CircleResponseDTO uploadCoverImage(Long circleId, MultipartFile imageFile, Long userId) {
 
@@ -199,6 +201,25 @@ public class CircleService {
                 } catch (IOException e) {
                         throw new IllegalStateException("이미지 업로드에 실패했습니다: " + e.getMessage());
                 }
+
+                return new CircleResponseDTO(circle);
+        }
+
+        @Transactional
+        public CircleResponseDTO updateCoverImageByUrl(Long circleId, String fileUrl, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 이미지를 변경할 수 있습니다."));
+
+                Image newImage = circleImageService.saveCoverImageByUrl(fileUrl, userId);
+                circle.update(circle.getName(), circle.getDescription(), circle.getMaxMember(), newImage);
 
                 return new CircleResponseDTO(circle);
         }

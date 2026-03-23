@@ -6,6 +6,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import com.soldesk.moa.users.entity.constant.UserGender;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -49,4 +50,7 @@ public class SignUpRequestDTO {
     private UserGender userGender;
 
     private int age;
+
+    @AssertTrue(message = "개인정보 수집 및 이용에 동의해주세요.")
+    private boolean privacyAgreed;
 }

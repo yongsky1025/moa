@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/moa
+    username: root
+    password: 12345
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        "[format_sql]": true
+        "[highlight_sql]": true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret: 238ef5a0a77a9d3335b778313550888ce82f391d84b5cc4f9de6d4bb74335f883515c43a547e306f608572196b0c04fff6be43336909bcc13bcd404cc7a2d2bf
+
+cors:
+  allowed-origins: http://localhost:5173
+
+app:
+  local-upload-dir: ${FILE_UPLOAD_DIR:${user.dir}/uploads}
+  local-base-url: ${APP_LOCAL_BASE_URL:http://localhost:8080}
+  seed:
+    enabled: true
+    reset: true
+    random-seed: 20260321

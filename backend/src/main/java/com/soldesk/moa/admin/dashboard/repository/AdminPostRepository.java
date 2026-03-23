@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import com.soldesk.moa.board.entity.Post;
+import com.soldesk.moa.post.entity.Post;
 
 public interface AdminPostRepository extends JpaRepository<Post, Long>, SearchPostRepository {
 

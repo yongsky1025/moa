@@ -8,6 +8,7 @@ import type {
   RecommendationBundle,
 } from '../circle/types/circle';
 import type { CircleMemberStatus } from '../circle/types/circle';
+import { requestUploadUrl, uploadByContract } from './uploadUrlApi';
 
 export const circleApi = {
   // 카테고리 전체 목록
@@ -43,10 +44,18 @@ export const circleApi = {
     api.put<CircleResponse>(`/circles/${circleId}`, data),
 
   // 서클 대표 이미지 업로드/교체 (POST multipart)
-  uploadCoverImage: (circleId: number, imageFile: File) => {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    return api.post<CircleResponse>(`/circles/${circleId}/image`, formData);
+  uploadCoverImage: async (circleId: number, imageFile: File) => {
+    const metadata = await requestUploadUrl({
+      domain: 'circle',
+      fileName: imageFile.name,
+      contentType: imageFile.type || 'application/octet-stream',
+    });
+
+    await uploadByContract(metadata, imageFile);
+
+    return api.post<CircleResponse>(`/circles/${circleId}/image-url`, {
+      fileUrl: metadata.fileUrl,
+    });
   },
 
   // 서클 삭제

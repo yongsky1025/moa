@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,6 +25,8 @@ import com.soldesk.moa.security.oauth2.handler.OAuth2LoginSuccessHandler;
 import com.soldesk.moa.security.oauth2.repository.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.soldesk.moa.security.oauth2.service.CustomOAuth2UserService;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import lombok.extern.log4j.Log4j2;
 
 @EnableMethodSecurity
@@ -31,6 +34,9 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @Configuration
 public class SecurityConfig {
+
+        @Value("${app.frontend-url:http://localhost:5173}")
+        private String frontendUrl;
 
         private final CustomOAuth2UserService customOAuth2UserService;
         private final JwtTokenProvider jwtTokenProvider;
@@ -71,6 +77,7 @@ public class SecurityConfig {
                                                                 "/js/**",
                                                                 "/img/**",
                                                                 "/images/**",
+                                                                "/uploads/**",
                                                                 "/vendor/**",
                                                                 "/fonts/**",
                                                                 "/favicon.ico",
@@ -82,7 +89,12 @@ public class SecurityConfig {
 
                                                 // ----------- user 시큐리티 파트 ---------
 
-                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers(
+                                                                "/api/auth/login",
+                                                                "/api/auth/signup",
+                                                                "/api/auth/refresh",
+                                                                "/api/auth/logout")
+                                                .permitAll()
                                                 .requestMatchers("/api/users/profile/check-nickname").permitAll()
                                                 .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**")
                                                 .permitAll()
@@ -92,9 +104,9 @@ public class SecurityConfig {
                                                 .requestMatchers("/board/**").permitAll()
                                                 // board 열람 비회원도 허용(컨트롤러에서 crud 권한 설정예정)
                                                 .requestMatchers("/notice/**", "/free/**", "/support/**").permitAll()
-                                                .requestMatchers("/api/notice/posts/**", "/api/free/posts/**",
-                                                                "/api/support/posts/**")
+                                                .requestMatchers("/api/notice/**", "/api/free/**", "/api/support/**")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/*/replies").permitAll()
                                                 // board 써클 회원만 열람?(예정)
                                                 // .requestMatchers("/circle/**").permitAll()
                                                 // viewcount 비회원도 허용
@@ -118,6 +130,7 @@ public class SecurityConfig {
 
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth2 -> oauth2
+                                                .loginPage(frontendUrl + "/users/login")
                                                 .authorizationEndpoint(endpoint -> endpoint
                                                                 .authorizationRequestRepository(
                                                                                 cookieAuthorizationRequestRepository))

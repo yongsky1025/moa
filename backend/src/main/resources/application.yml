@@ -1,8 +1,23 @@
 spring:
   application:
     name: moa
+  # DB 서버 연동 정보
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/moa
+    username: team_moa
+    password: 12345
+  # 테이블 자동 생성 여부
+  jpa:
+    hibernate:
+      ddl-auto: create
+      # sql 구문 예쁘게 출력
+    properties:
+      hibernate:
+        "[format_sql]": true
+        "[highlight_sql]": true
   profiles:
-    include: local, oauth2
+    include: oauth2,local
   # Redis (채팅 메시지 브로커)
   data:
     redis:
@@ -32,6 +47,9 @@ jwt:
   refresh-exp-ms: 1209600000
 
 app:
+  frontend-url: http://localhost:5173
+  local-upload-dir: ${APP_LOCAL_UPLOAD_DIR:${upload.path}}
+  local-base-url: ${APP_LOCAL_BASE_URL:http://localhost:8080}
   cookie:
     secure: false
     same-site: Lax

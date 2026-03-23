@@ -1,11 +1,14 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react-swc';
-import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react-swc";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    dedupe: ["react", "react-dom", "react-router", "react-router-dom"],
+  },
   define: {
-    global: 'globalThis',
+    global: "globalThis",
   },
   server: {
     proxy: {
@@ -28,6 +31,23 @@ export default defineConfig({
         target: "http://localhost:8080",
         changeOrigin: true,
         secure: false,
+      },
+      "/uploads": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/oauth2/authorization": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: "localhost",
+      },
+      "/login/oauth2": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: "localhost",
       },
       "/ws": {
         target: "http://localhost:8080",

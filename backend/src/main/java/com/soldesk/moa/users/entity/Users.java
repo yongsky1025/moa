@@ -1,17 +1,16 @@
 package com.soldesk.moa.users.entity;
 
-import com.soldesk.moa.users.entity.constant.AuthProvider;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.Reply;
-import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.reply.entity.Reply;
+import com.soldesk.moa.users.entity.constant.AuthProvider;
 import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
 import com.soldesk.moa.users.entity.constant.UserStatus;
@@ -25,6 +24,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
@@ -61,7 +61,7 @@ public class Users extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String nickname;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDate birthDate;
 
     @Column(nullable = true)
@@ -89,10 +89,10 @@ public class Users extends BaseEntity {
     @Builder.Default
     private UserStatus userStatus = UserStatus.ACTIVE;
 
-    // === 추가된 필드 ===
+    // === 추가된 필드 (회원가입, 프로필 관련) ===
 
-    // 개인정보 동의 시점 (가입 시 필수)
-    @Column(nullable = false)
+    // 개인정보 동의 시점 (가입 시 필수, 소셜은 추가정보 입력 시 설정)
+    @Column(nullable = true)
     private LocalDateTime privacyAgreedAt;
 
     // 온보딩(에너지 프로필) 완료 시점 (null이면 미완료)
@@ -101,6 +101,15 @@ public class Users extends BaseEntity {
     // 상태 메시지
     @Column(name = "status_message", length = 100)
     private String statusMessage;
+
+    // 자기 소개
+    @Column(length = 300)
+    private String bio;
+
+    // 프로필 이미지
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_image_id")
+    private Image userProfileImage;
 
     // 에너지 프로필 (1:1)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -157,6 +166,14 @@ public class Users extends BaseEntity {
         this.userStatus = userStatus;
     }
 
+    public void changeUserProfileImage(Image userProfileImage) {
+        this.userProfileImage = userProfileImage;
+    }
+
+    public void changeBio(String bio) {
+        this.bio = bio;
+    }
+
     // 탈퇴 시점 DB 삽입
     // 탈퇴자 더미데이터 생성을 위한 메소드 (개발용)
     public void setUserStatus(UserStatus userStatus) {
@@ -170,6 +187,13 @@ public class Users extends BaseEntity {
 
     public void completeOnboarding() {
         this.onboardingCompletedAt = LocalDateTime.now();
+    }
+
+    // 소셜 회원가입 추가정보 완료
+    public void completeSocialSignUp(LocalDate birthDate, UserGender userGender) {
+        this.birthDate = birthDate;
+        this.userGender = userGender;
+        this.privacyAgreedAt = LocalDateTime.now();
     }
 
     @PrePersist
