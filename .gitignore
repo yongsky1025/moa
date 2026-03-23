@@ -279,3 +279,7 @@ backend/src/test/resources/application-local.yml
 
 # Claude Code
 .claude/
+
+# Uploaded files
+/uploads/**
+/backend/uploads/**

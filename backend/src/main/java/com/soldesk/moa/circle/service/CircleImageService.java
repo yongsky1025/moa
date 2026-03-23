@@ -48,7 +48,7 @@ public class CircleImageService {
         }
 
         String originalName = file.getOriginalFilename();
-        String key = StorageKeyGenerator.generate("circle", originalName);
+        String key = StorageKeyGenerator.generate("images", "circle", originalName);
 
         // 업로드 디렉토리 생성 후 파일 저장
         Path uploadDir = Paths.get(localUploadDir);
