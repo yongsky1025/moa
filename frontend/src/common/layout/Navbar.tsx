@@ -7,7 +7,6 @@ import type { AppDispatch, RootState } from "../../users/reducers/store";
 import { notificationApi } from "../../api/notificationApi";
 import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
 
-
 export default function Navbar() {
   const navigate = useNavigate();
   const { isLoggedIn, user } = useSelector((s: RootState) => s.auth);
@@ -15,14 +14,14 @@ export default function Navbar() {
 
   const dropdownItems: Record<string, { label: string; href: string; icon: React.ReactNode }[]> = {
     "모임 찾기": [
-      { label: "전체 모임", href: "/circle",    icon: <LayoutGrid size={15} /> },
-      { label: "내 모임",   href: "/circle/my", icon: <Users size={15} /> },
+      { label: "전체 모임", href: "/circle", icon: <LayoutGrid size={15} /> },
+      { label: "내 모임", href: "/circle/my", icon: <Users size={15} /> },
     ],
     커뮤니티: [
       { label: "자유게시판", href: "#", icon: <MessageSquare size={15} /> },
-      { label: "모임 후기",  href: "#", icon: <Star size={15} /> },
-      { label: "Q&A",       href: "#", icon: <HelpCircle size={15} /> },
-      { label: "공지사항",   href: "#", icon: <Megaphone size={15} /> },
+      { label: "모임 후기", href: "#", icon: <Star size={15} /> },
+      { label: "Q&A", href: "#", icon: <HelpCircle size={15} /> },
+      { label: "공지사항", href: "#", icon: <Megaphone size={15} /> },
     ],
   };
 
@@ -192,7 +191,7 @@ export default function Navbar() {
               ))}
             </nav>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16, width: 210 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {!isLoggedIn && (
               <div style={{ width: 68 }}>
                 <button
@@ -340,7 +339,7 @@ export default function Navbar() {
                     {user?.profileImageUrl ? (
                       <img src={user.profileImageUrl} alt="프로필" style={{ width: 40, height: 40, objectFit: "cover" }} />
                     ) : (
-                      user?.nickname?.[0]?.toUpperCase() ?? "U"
+                      (user?.nickname?.[0]?.toUpperCase() ?? "U")
                     )}
                   </div>
                   <span
@@ -361,27 +360,40 @@ export default function Navbar() {
                     {user?.nickname}
                   </span>
                   {profileOpen && (
-                    <div style={{
-                      position: "absolute",
-                      top: "calc(100% + 4px)",
-                      left: 0,
-                      backgroundColor: "white",
-                      border: "1px solid #efefef",
-                      borderRadius: 12,
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-                      padding: "6px",
-                      minWidth: 150,
-                      zIndex: 100,
-                    }}>
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 4px)",
+                        left: 0,
+                        backgroundColor: "white",
+                        border: "1px solid #efefef",
+                        borderRadius: 12,
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                        padding: "6px",
+                        minWidth: 150,
+                        zIndex: 100,
+                      }}
+                    >
                       {[
                         { label: "마이 프로필", href: "/users/profile", icon: <User size={15} /> },
-                        { label: "계정",        href: "/users/profile", icon: <Settings size={15} /> },
+                        { label: "계정", href: "/users/profile", icon: <Settings size={15} /> },
                       ].map((item) => (
                         <Link
                           key={item.label}
                           to={item.href}
                           onClick={() => setProfileOpen(false)}
-                          style={{ display: "flex", alignItems: "center", gap: 10, height: 40, padding: "0 12px", borderRadius: 8, fontSize: 13, color: "#444", textDecoration: "none", whiteSpace: "nowrap" }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            height: 40,
+                            padding: "0 12px",
+                            borderRadius: 8,
+                            fontSize: 13,
+                            color: "#444",
+                            textDecoration: "none",
+                            whiteSpace: "nowrap",
+                          }}
                           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                         >
@@ -392,7 +404,21 @@ export default function Navbar() {
                       <div style={{ height: 1, backgroundColor: "#f0f0f0", margin: "4px 6px" }} />
                       <button
                         onClick={handleLogout}
-                        style={{ display: "flex", alignItems: "center", gap: 10, height: 40, padding: "0 12px", borderRadius: 8, fontSize: 13, color: "#e53e3e", background: "none", border: "none", cursor: "pointer", width: "100%", whiteSpace: "nowrap" }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          height: 40,
+                          padding: "0 12px",
+                          borderRadius: 8,
+                          fontSize: 13,
+                          color: "#e53e3e",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          width: "100%",
+                          whiteSpace: "nowrap",
+                        }}
                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fff5f5")}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                       >
