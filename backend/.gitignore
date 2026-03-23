@@ -108,3 +108,4 @@ package-lock.json
 application-oauth2.yml
 application-local.yml
 application.yml
+uploads/
