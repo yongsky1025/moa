@@ -25,7 +25,7 @@ public class PlaceLikeController {
 
     private PlaceService placeService;
 
-    @PostMapping("/{targetType/{targetId}}")
+    @PostMapping("/{targetType}/{targetId}")
     public ResponseEntity<PlaceLikiResponseDTO> postPlaceLike(
             @PathVariable LikeTargetType targetType,
             @PathVariable Long targetId,

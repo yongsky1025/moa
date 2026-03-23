@@ -19,8 +19,8 @@ public record PlaceCreateDTO( // 지도 api 추가 후 위경도는 자동으로
                 int openTimeMinute,
                 int closeTimeHour,
                 int closeTimeMinute,
-                int minReservationHour,
-                int maxReservationHour,
+                int minReservationMinutes,
+                int maxReservationMinutes,
                 List<Long> tagIds,
                 List<PlaceClosedDayDTO> placeClosedDays) {
 

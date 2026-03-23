@@ -126,7 +126,7 @@ test_api POST "$BASE/api/admin/sanctions?adminId=1" \
 
 # Place - create
 test_api POST "$BASE/api/place/register" \
-  '{"name":"Smoke Test Place","address":"Seoul","city":"Seoul","district":"Gangnam","latitude":37.5,"longitude":127.0,"capacity":10,"pricePerHour":10000,"description":"test","openTimeHour":9,"openTimeMinute":0,"closeTimeHour":22,"closeTimeMinute":0,"minReservationHour":1,"maxReservationHour":4,"tagIds":[],"placeClosedDays":[]}' \
+  '{"name":"Smoke Test Place","address":"Seoul","city":"Seoul","district":"Gangnam","latitude":37.5,"longitude":127.0,"capacity":10,"pricePerHour":10000,"description":"test","openTimeHour":9,"openTimeMinute":0,"closeTimeHour":22,"closeTimeMinute":0,"minReservationMinutes":60,"maxReservationMinutes":240,"tagIds":[],"placeClosedDays":[]}' \
   "POST /place/register"
 
 # Circle - approve/reject (use non-existing ID to avoid side effects)

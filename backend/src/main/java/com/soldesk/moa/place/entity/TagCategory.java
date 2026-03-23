@@ -1,13 +1,10 @@
 package com.soldesk.moa.place.entity;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,25 +12,22 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Entity
+@Table
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = { "tagCategory" })
 @Builder
-public class Tag {
+@ToString(exclude = {})
+public class TagCategory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String name;
+    private String name; // 예: 공간 유형, 시설, 분위기, 용도, 인원 등등등
 
-    @Column(nullable = false)
+    private Integer sortOrder; // 표시 순서
+
     @Builder.Default
     private Boolean isActive = true;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tag_category_id")
-    private TagCategory tagCategory;
 }

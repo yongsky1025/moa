@@ -18,6 +18,9 @@ import AdminPostDetailPage from "../admin/pages/AdminPostDetailPage";
 import AdminNoticesPage from "../admin/pages/AdminNoticesPage";
 import AdminNoticeWritePage from "../admin/pages/AdminNoticeWritePage";
 import AdminNoticeEditPage from "../admin/pages/AdminNoticeEditPage";
+import AdminPlacesPage from "../admin/pages/AdminPlacesPage";
+import AdminPlaceRegisterPage from "../admin/pages/AdminPlaceRegisterPage";
+import AdminPlaceEditPage from "../admin/pages/AdminPlaceEditPage";
 
 export const adminRouter = () => {
   return [
@@ -45,8 +48,9 @@ export const adminRouter = () => {
         { path: "circles/pending", Component: AdminCirclesPendingPage },
         { path: "circles/category", Component: AdminCircleCategoryPage },
         { path: "circles/:id", Component: AdminCircleDetailPage },
-        // 추후 추가
-        // { path: 'places',         Component: AdminPlacesPage    },
+        { path: "places", Component: AdminPlacesPage },
+        { path: "places/register", Component: AdminPlaceRegisterPage },
+        { path: "places/:id/edit", Component: AdminPlaceEditPage },
       ],
     },
   ];

@@ -68,9 +68,23 @@ import com.soldesk.moa.admin.report.entity.Sanction;
 import com.soldesk.moa.admin.report.entity.constant.ReportTargetType;
 import com.soldesk.moa.admin.report.entity.constant.SanctionState;
 import com.soldesk.moa.admin.report.repository.SanctionRepository;
+import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceDetailDTO;
+import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceResponseDTO;
+import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceSearchDTO;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.place.dto.PlaceCreateDTO;
+import com.soldesk.moa.place.entity.Place;
+import com.soldesk.moa.place.entity.PlaceClosedDay;
+import com.soldesk.moa.place.entity.PlaceTag;
+import com.soldesk.moa.place.entity.Tag;
+import com.soldesk.moa.place.entity.constant.ClosedType;
+import com.soldesk.moa.place.entity.constant.PlaceStatus;
+import com.soldesk.moa.place.repository.PlaceClosedDayRepository;
+import com.soldesk.moa.place.repository.PlaceRepository;
+import com.soldesk.moa.place.repository.PlaceTagRepository;
+import com.soldesk.moa.place.repository.TagRepository;
 import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;
@@ -91,6 +105,10 @@ public class AdminService {
         private final AdminCircleCategoryRepository adminCircleCategoryRepository;
         private final BoardRepository boardRepository;
         private final SanctionRepository sanctionRepository;
+        private final PlaceRepository placeRepository;
+        private final TagRepository tagRepository;
+        private final PlaceTagRepository placeTagRepository;
+        private final PlaceClosedDayRepository placeClosedDayRepository;
 
         // admin main page
         @Transactional(readOnly = true)
@@ -484,158 +502,6 @@ public class AdminService {
                                 .collect(Collectors.toList());
         }
 
-        // UserCountDTO
-        private UserCountDTO entityToUserCountDTO(long countTotalUser,
-                        long maleUser,
-                        long femaleUser,
-                        long unspecifiedUser,
-                        double maleRatio,
-                        double femaleRatio, double unspecifiedRatio, long countJoinUser) {
-
-                UserCountDTO dto = UserCountDTO.builder()
-                                .countTotalUser(countTotalUser)
-                                .maleUser(maleUser)
-                                .femaleUser(femaleUser)
-                                .unspecifiedUser(unspecifiedUser)
-                                .maleRatio(maleRatio)
-                                .femaleRatio(femaleRatio)
-                                .unspecifiedRatio(unspecifiedRatio)
-                                .countJoinUser(countJoinUser)
-                                .build();
-
-                return dto;
-        }
-
-        // UserStatusDTO
-        private UserStatusDTO entityToUserStatusDTO(long year, long month, long date,
-                        long signUpCount, long withdrawnCount) {
-
-                UserStatusDTO dto = UserStatusDTO.builder()
-                                .year(year)
-                                .month(month)
-                                .date(date)
-                                .signUpCount(signUpCount)
-                                .withdrawnCount(withdrawnCount)
-                                .build();
-
-                return dto;
-        }
-
-        // AdminUserResponseDTO
-        private AdminUserResponseDTO entityToUserResponseDTO(Users user) {
-                AdminUserResponseDTO dto = AdminUserResponseDTO.builder()
-                                .age(user.getAge())
-                                .birth(user.getBirthDate())
-                                .gender(user.getUserGender())
-                                .name(user.getName())
-                                // .phone(user.getPhone()) // phone 필드 미사용
-                                .role(user.getUserRole())
-                                .status(user.getUserStatus())
-                                .userId(user.getUserId())
-                                .createDate(user.getCreateDate())
-                                .build();
-                return dto;
-        }
-
-        // UserInfoDTO
-        private UserInfoDTO entityToUserInfoDTO(Users user, Long countCreateBoard, Long countCreateReply,
-                        Long countJoinCircle) {
-
-                UserInfoDTO userInfoDTO = UserInfoDTO.builder()
-                                .userId(user.getUserId())
-                                .name(user.getName())
-                                .age(user.getAge())
-                                // .address(user.getAddress()) // address 필드 미사용
-                                .userStatus(user.getUserStatus())
-                                .createDate(user.getCreateDate())
-                                .countCreateBoard(countCreateBoard != null ? countCreateBoard.intValue() : 0)
-                                .countCreateReply(countCreateReply != null ? countCreateReply.intValue() : 0)
-                                .countJoinCircle(countJoinCircle)
-                                .build();
-
-                return userInfoDTO;
-        }
-
-        // CircleDataDTO
-        private CircleDataDTO entityToCircleDataDTO(String categoryName, Long countPerCategory) {
-                CircleDataDTO dto = CircleDataDTO.builder()
-                                .categoryName(categoryName)
-                                .countPerCategory(countPerCategory)
-                                .build();
-
-                return dto;
-        }
-
-        // CircleSummaryDTO
-        private CircleSummaryDTO entityToCircleSummaryDTO(Long circleCount, List<CircleDataDTO> circleDataDTOs) {
-                CircleSummaryDTO dto = CircleSummaryDTO.builder()
-                                .circleCount(circleCount)
-                                .circleDataDTOs(circleDataDTOs)
-                                .build();
-
-                return dto;
-        }
-
-        // DashboardChartDTO
-        private DashboardChartDTO entityToDashboardChartDTO(List<MonthlyCountDTO> signUpChart,
-                        List<MonthlyCountDTO> withdrawnChart) {
-                DashboardChartDTO dto = DashboardChartDTO.builder()
-                                .signUpChart(signUpChart)
-                                .withdrawnChart(withdrawnChart)
-                                .build();
-
-                return dto;
-        }
-
-        // MonthlyCountDTO
-        private MonthlyCountDTO entityToMonthlyCountDTO(Long year, Long month, Long count) {
-                MonthlyCountDTO dto = MonthlyCountDTO.builder()
-                                .year(year)
-                                .month(month)
-                                .count(count)
-                                .build();
-
-                return dto;
-        }
-
-        // UserInfoPostDTO
-        private UserInfoPostDTO entityToUserInfoPostDTO(String boardName, Post post, Long countReply) {
-                UserInfoPostDTO dto = UserInfoPostDTO.builder()
-                                .boardName(boardName)
-                                .title(post.getTitle())
-                                .content(post.getContent())
-                                .createDate(post.getCreateDate())
-                                .countReply(countReply)
-                                .build();
-                return dto;
-        }
-
-        // UserInfoReplyDTO
-        private UserInfoReplyDTO entityToUserInfoReplyDTO(String title, Reply reply) {
-                UserInfoReplyDTO dto = UserInfoReplyDTO.builder()
-                                .title(title)
-                                .content(reply.getContent())
-                                .createDate(reply.getCreateDate())
-                                .build();
-
-                return dto;
-        }
-
-        // UserInfoCircleDTO
-        private UserInfoCircleDTO entityToUserInfoCircleDTO(Circle circle, String userName,
-                        String categoryName, CircleMember circleMember) {
-                UserInfoCircleDTO dto = UserInfoCircleDTO.builder()
-                                .circleId(circle.getCircleId())
-                                .userName(userName)
-                                .circleName(circle.getName())
-                                .currentMember(circle.getCurrentMember())
-                                .createDate(circleMember.getCreateDate())
-                                .categoryName(categoryName)
-                                .role(circleMember.getRole().toString())
-                                .build();
-                return dto;
-        }
-
         // ===== 게시글 관리 =====
 
         // 게시글 목록 조회 (필터/검색/정렬)
@@ -800,4 +666,359 @@ public class AdminService {
 
                 post.restore();
         }
+
+        // ── 장소 관리 ──────────────────────────────────────────────────────
+
+        // 장소 생성
+        public Long createPlace(PlaceCreateDTO dto) {
+                LocalTime openTime = LocalTime.of(dto.openTimeHour(), dto.openTimeMinute());
+                LocalTime closeTime = LocalTime.of(dto.closeTimeHour(), dto.closeTimeMinute());
+
+                if (openTime.isAfter(closeTime)) {
+                        throw new IllegalArgumentException("운영시간이 올바르지 않음");
+                }
+
+                Place place = Place.builder()
+                                .name(dto.name())
+                                .address(dto.address())
+                                .city(dto.city())
+                                .district(dto.district())
+                                .latitude(dto.latitude())
+                                .longitude(dto.longitude())
+                                .capacity(dto.capacity())
+                                .pricePerHour(dto.pricePerHour())
+                                .description(dto.description())
+                                .openTime(openTime)
+                                .closeTime(closeTime)
+                                .minReservationMinutes(dto.minReservationMinutes())
+                                .maxReservationMinutes(dto.maxReservationMinutes())
+                                .build();
+
+                placeRepository.save(place);
+
+                List<Tag> tags = tagRepository.findAllById(dto.tagIds());
+                List<PlaceTag> placeTags = tags.stream()
+                                .map(tag -> PlaceTag.builder().place(place).tag(tag).build())
+                                .toList();
+                placeTagRepository.saveAll(placeTags);
+
+                List<PlaceClosedDay> closedDays = dto.placeClosedDays().stream()
+                                .map(day -> PlaceClosedDay.builder()
+                                                .place(place)
+                                                .dayOfWeek(day.dayOfWeek())
+                                                .date(day.date())
+                                                .reason(day.reason())
+                                                .closedType(ClosedType.valueOf(day.closedType()))
+                                                .build())
+                                .toList();
+                placeClosedDayRepository.saveAll(closedDays);
+
+                return place.getId();
+        }
+
+        // 장소 수정
+        public Long updatePlace(Long id, PlaceCreateDTO dto) {
+                Place place = placeRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("place not found"));
+
+                place.setAddress(dto.address());
+                place.setCapacity(dto.capacity());
+                place.setCity(dto.city());
+                place.setDescription(dto.description());
+                place.setDistrict(dto.district());
+                place.setMinReservationMinutes(dto.minReservationMinutes());
+                place.setMaxReservationMinutes(dto.maxReservationMinutes());
+                place.setName(dto.name());
+                place.setPricePerHour(dto.pricePerHour());
+
+                return place.getId();
+        }
+
+        // 장소 소프트 삭제
+        public void deletePlace(Long id) {
+                Place place = placeRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("place not found"));
+                place.setStatus(PlaceStatus.INACTIVE);
+        }
+
+        // 장소 목록 조회 (검색/필터/정렬)
+        @Transactional(readOnly = true)
+        public PageResultDTO<AdminPlaceResponseDTO> getAdminPlaces(AdminPlaceSearchDTO searchDTO) {
+                Pageable pageable = PageRequest.of(searchDTO.getPage() - 1, searchDTO.getSize());
+                Page<Place> page = placeRepository.searchAdminPlaces(searchDTO, pageable);
+
+                List<AdminPlaceResponseDTO> dtoList = page.getContent().stream()
+                                .map(place -> AdminPlaceResponseDTO.builder()
+                                                .id(place.getId())
+                                                .name(place.getName())
+                                                .address(place.getAddress())
+                                                .city(place.getCity())
+                                                .district(place.getDistrict())
+                                                .capacity(place.getCapacity())
+                                                .pricePerHour(place.getPricePerHour())
+                                                .avgRating(place.getAverageRating() != null ? place.getAverageRating()
+                                                                : 0.0)
+                                                .reviewCount(place.getReviewCount() != null ? place.getReviewCount()
+                                                                : 0)
+                                                .status(place.getStatus().name())
+                                                .build())
+                                .toList();
+
+                return PageResultDTO.<AdminPlaceResponseDTO>withAll()
+                                .dtoList(dtoList)
+                                .pageRequestDTO(searchDTO)
+                                .totalCount(page.getTotalElements())
+                                .build();
+        }
+
+        // 장소 단건 조회 (수정 페이지용)
+        @Transactional(readOnly = true)
+        public AdminPlaceDetailDTO getAdminPlace(Long id) {
+                Place place = placeRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("place not found"));
+
+                List<Long> tagIds = place.getTags().stream()
+                                .map(pt -> pt.getTag().getId())
+                                .toList();
+
+                List<AdminPlaceDetailDTO.ClosedDayDTO> closedDays = place.getPlaceClosedDays().stream()
+                                .map(cd -> AdminPlaceDetailDTO.ClosedDayDTO.builder()
+                                                .id(cd.getId())
+                                                .dayOfWeek(cd.getDayOfWeek() != null ? cd.getDayOfWeek().name() : null)
+                                                .date(cd.getDate() != null ? cd.getDate().toString() : null)
+                                                .reason(cd.getReason())
+                                                .closedType(cd.getClosedType().name())
+                                                .build())
+                                .toList();
+
+                return AdminPlaceDetailDTO.builder()
+                                .id(place.getId())
+                                .name(place.getName())
+                                .address(place.getAddress())
+                                .city(place.getCity())
+                                .district(place.getDistrict())
+                                .latitude(place.getLatitude())
+                                .longitude(place.getLongitude())
+                                .capacity(place.getCapacity())
+                                .pricePerHour(place.getPricePerHour())
+                                .description(place.getDescription())
+                                .openTimeHour(place.getOpenTime().getHour())
+                                .openTimeMinute(place.getOpenTime().getMinute())
+                                .closeTimeHour(place.getCloseTime().getHour())
+                                .closeTimeMinute(place.getCloseTime().getMinute())
+                                .minReservationMinutes(place.getMinReservationMinutes())
+                                .maxReservationMinutes(place.getMaxReservationMinutes())
+                                .status(place.getStatus().name())
+                                .avgRating(place.getAverageRating() != null ? place.getAverageRating() : 0.0)
+                                .reviewCount(place.getReviewCount() != null ? place.getReviewCount() : 0)
+                                .tagIds(tagIds)
+                                .closedDays(closedDays)
+                                .build();
+        }
+
+        // 특정 휴무일 목록 조회
+        @Transactional(readOnly = true)
+        public List<AdminPlaceDetailDTO.ClosedDayDTO> getPlaceClosedDays(Long placeId) {
+                Place place = placeRepository.findById(placeId)
+                                .orElseThrow(() -> new RuntimeException("place not found"));
+
+                return place.getPlaceClosedDays().stream()
+                                .filter(cd -> cd.getClosedType() == ClosedType.HOLIDAY)
+                                .map(cd -> AdminPlaceDetailDTO.ClosedDayDTO.builder()
+                                                .id(cd.getId())
+                                                .date(cd.getDate() != null ? cd.getDate().toString() : null)
+                                                .reason(cd.getReason())
+                                                .closedType(cd.getClosedType().name())
+                                                .build())
+                                .toList();
+        }
+
+        // 특정 휴무일 추가
+        public AdminPlaceDetailDTO.ClosedDayDTO addPlaceClosedDay(Long placeId, String date, String reason) {
+                Place place = placeRepository.findById(placeId)
+                                .orElseThrow(() -> new RuntimeException("place not found"));
+
+                PlaceClosedDay closedDay = PlaceClosedDay.builder()
+                                .place(place)
+                                .date(LocalDate.parse(date))
+                                .reason(reason)
+                                .closedType(ClosedType.HOLIDAY)
+                                .build();
+
+                placeClosedDayRepository.save(closedDay);
+
+                return AdminPlaceDetailDTO.ClosedDayDTO.builder()
+                                .id(closedDay.getId())
+                                .date(closedDay.getDate().toString())
+                                .reason(closedDay.getReason())
+                                .closedType(closedDay.getClosedType().name())
+                                .build();
+        }
+
+        // 특정 휴무일 삭제
+        public void removePlaceClosedDay(Long placeId, Long closedDayId) {
+                PlaceClosedDay closedDay = placeClosedDayRepository.findById(closedDayId)
+                                .orElseThrow(() -> new RuntimeException("closed day not found"));
+
+                if (!closedDay.getPlace().getId().equals(placeId)) {
+                        throw new IllegalArgumentException("해당 장소의 휴무일이 아닙니다.");
+                }
+
+                placeClosedDayRepository.delete(closedDay);
+        }
+
+        // 변환 전용 메소드
+
+        // UserCountDTO
+        private UserCountDTO entityToUserCountDTO(long countTotalUser,
+                        long maleUser,
+                        long femaleUser,
+                        long unspecifiedUser,
+                        double maleRatio,
+                        double femaleRatio, double unspecifiedRatio, long countJoinUser) {
+
+                UserCountDTO dto = UserCountDTO.builder()
+                                .countTotalUser(countTotalUser)
+                                .maleUser(maleUser)
+                                .femaleUser(femaleUser)
+                                .unspecifiedUser(unspecifiedUser)
+                                .maleRatio(maleRatio)
+                                .femaleRatio(femaleRatio)
+                                .unspecifiedRatio(unspecifiedRatio)
+                                .countJoinUser(countJoinUser)
+                                .build();
+
+                return dto;
+        }
+
+        // UserStatusDTO
+        private UserStatusDTO entityToUserStatusDTO(long year, long month, long date,
+                        long signUpCount, long withdrawnCount) {
+
+                UserStatusDTO dto = UserStatusDTO.builder()
+                                .year(year)
+                                .month(month)
+                                .date(date)
+                                .signUpCount(signUpCount)
+                                .withdrawnCount(withdrawnCount)
+                                .build();
+
+                return dto;
+        }
+
+        // AdminUserResponseDTO
+        private AdminUserResponseDTO entityToUserResponseDTO(Users user) {
+                AdminUserResponseDTO dto = AdminUserResponseDTO.builder()
+                                .age(user.getAge())
+                                .birth(user.getBirthDate())
+                                .gender(user.getUserGender())
+                                .name(user.getName())
+                                // .phone(user.getPhone()) // phone 필드 미사용
+                                .role(user.getUserRole())
+                                .status(user.getUserStatus())
+                                .userId(user.getUserId())
+                                .createDate(user.getCreateDate())
+                                .build();
+                return dto;
+        }
+
+        // UserInfoDTO
+        private UserInfoDTO entityToUserInfoDTO(Users user, Long countCreateBoard, Long countCreateReply,
+                        Long countJoinCircle) {
+
+                UserInfoDTO userInfoDTO = UserInfoDTO.builder()
+                                .userId(user.getUserId())
+                                .name(user.getName())
+                                .age(user.getAge())
+                                // .address(user.getAddress()) // address 필드 미사용
+                                .userStatus(user.getUserStatus())
+                                .createDate(user.getCreateDate())
+                                .countCreateBoard(countCreateBoard != null ? countCreateBoard.intValue() : 0)
+                                .countCreateReply(countCreateReply != null ? countCreateReply.intValue() : 0)
+                                .countJoinCircle(countJoinCircle)
+                                .build();
+
+                return userInfoDTO;
+        }
+
+        // CircleDataDTO
+        private CircleDataDTO entityToCircleDataDTO(String categoryName, Long countPerCategory) {
+                CircleDataDTO dto = CircleDataDTO.builder()
+                                .categoryName(categoryName)
+                                .countPerCategory(countPerCategory)
+                                .build();
+
+                return dto;
+        }
+
+        // CircleSummaryDTO
+        private CircleSummaryDTO entityToCircleSummaryDTO(Long circleCount, List<CircleDataDTO> circleDataDTOs) {
+                CircleSummaryDTO dto = CircleSummaryDTO.builder()
+                                .circleCount(circleCount)
+                                .circleDataDTOs(circleDataDTOs)
+                                .build();
+
+                return dto;
+        }
+
+        // DashboardChartDTO
+        private DashboardChartDTO entityToDashboardChartDTO(List<MonthlyCountDTO> signUpChart,
+                        List<MonthlyCountDTO> withdrawnChart) {
+                DashboardChartDTO dto = DashboardChartDTO.builder()
+                                .signUpChart(signUpChart)
+                                .withdrawnChart(withdrawnChart)
+                                .build();
+
+                return dto;
+        }
+
+        // MonthlyCountDTO
+        private MonthlyCountDTO entityToMonthlyCountDTO(Long year, Long month, Long count) {
+                MonthlyCountDTO dto = MonthlyCountDTO.builder()
+                                .year(year)
+                                .month(month)
+                                .count(count)
+                                .build();
+
+                return dto;
+        }
+
+        // UserInfoPostDTO
+        private UserInfoPostDTO entityToUserInfoPostDTO(String boardName, Post post, Long countReply) {
+                UserInfoPostDTO dto = UserInfoPostDTO.builder()
+                                .boardName(boardName)
+                                .title(post.getTitle())
+                                .content(post.getContent())
+                                .createDate(post.getCreateDate())
+                                .countReply(countReply)
+                                .build();
+                return dto;
+        }
+
+        // UserInfoReplyDTO
+        private UserInfoReplyDTO entityToUserInfoReplyDTO(String title, Reply reply) {
+                UserInfoReplyDTO dto = UserInfoReplyDTO.builder()
+                                .title(title)
+                                .content(reply.getContent())
+                                .createDate(reply.getCreateDate())
+                                .build();
+
+                return dto;
+        }
+
+        // UserInfoCircleDTO
+        private UserInfoCircleDTO entityToUserInfoCircleDTO(Circle circle, String userName,
+                        String categoryName, CircleMember circleMember) {
+                UserInfoCircleDTO dto = UserInfoCircleDTO.builder()
+                                .circleId(circle.getCircleId())
+                                .userName(userName)
+                                .circleName(circle.getName())
+                                .currentMember(circle.getCurrentMember())
+                                .createDate(circleMember.getCreateDate())
+                                .categoryName(categoryName)
+                                .role(circleMember.getRole().toString())
+                                .build();
+                return dto;
+        }
+
 }

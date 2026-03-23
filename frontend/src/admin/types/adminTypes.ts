@@ -475,3 +475,118 @@ export interface AdminActionLog {
 }
 
 export interface LogSearchDTO extends PageRequestDTO {}
+
+// ===== 장소 관리 =====
+export type PlaceStatus = "ACTIVE" | "INACTIVE" | "MAINTENANCE";
+
+export interface AdminPlaceSearchDTO extends PageRequestDTO {
+  sort?: string; // newest, name, capacity, price, rating, reviews
+  city?: string;
+  district?: string;
+  status?: PlaceStatus;
+  minPrice?: number;
+  maxPrice?: number;
+  minCapacity?: number;
+  maxCapacity?: number;
+}
+
+export interface AdminPlaceResponseDTO {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  district: string;
+  capacity: number;
+  pricePerHour: number;
+  avgRating: number;
+  reviewCount: number;
+  status: PlaceStatus;
+}
+
+export interface AdminPlaceDetailDTO {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  district: string;
+  latitude: number;
+  longitude: number;
+  capacity: number;
+  pricePerHour: number;
+  description: string;
+  openTimeHour: number;
+  openTimeMinute: number;
+  closeTimeHour: number;
+  closeTimeMinute: number;
+  minReservationMinutes: number;
+  maxReservationMinutes: number;
+  status: PlaceStatus;
+  avgRating: number;
+  reviewCount: number;
+  tagIds: number[];
+  closedDays: ClosedDayDTO[];
+}
+
+export interface ClosedDayDTO {
+  id?: number;
+  dayOfWeek?: string;
+  date?: string;
+  reason?: string;
+  closedType: string;
+}
+
+// ── 태그 관련 ──────────────────────────────
+
+export interface TagDTO {
+  id: number;
+  name: string;
+}
+
+export interface TagCategoryGroupDTO {
+  categoryId: number;
+  categoryName: string;
+  tags: TagDTO[];
+}
+
+// ── 장소 등록 ──────────────────────────────
+
+export interface PlaceClosedDayRequest {
+  dayOfWeek?: string;
+  date?: string;
+  reason?: string;
+  closedType: string;
+}
+
+export interface PlaceCreateRequest {
+  name: string;
+  address: string;
+  city: string;
+  district: string;
+  latitude: number;
+  longitude: number;
+  capacity: number;
+  pricePerHour: number;
+  description: string;
+  openTimeHour: number;
+  openTimeMinute: number;
+  closeTimeHour: number;
+  closeTimeMinute: number;
+  minReservationMinutes: number;
+  maxReservationMinutes: number;
+  tagIds: number[];
+  placeClosedDays: PlaceClosedDayRequest[];
+}
+
+// ── 장소 목록 ──────────────────────────────
+
+export interface PlaceListItem {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  district: string;
+  capacity: number;
+  pricePerHour: number;
+  avgRating: number;
+  reviewCount: number;
+}

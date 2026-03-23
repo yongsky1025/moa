@@ -1,9 +1,9 @@
-package com.soldesk.moa.place.dto;
+package com.soldesk.moa.admin.dashboard.dto.placeInfo;
 
 import lombok.Builder;
 
 @Builder
-public record PlaceResponseDTO(
+public record AdminPlaceResponseDTO(
         long id,
         String name,
         String address,
@@ -12,6 +12,6 @@ public record PlaceResponseDTO(
         int capacity,
         int pricePerHour,
         double avgRating,
-        int reviewCount) {
-
+        int reviewCount,
+        String status) {
 }
