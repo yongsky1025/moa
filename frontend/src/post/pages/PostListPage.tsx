@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import BoardSectionHeader from "../../common/components/BoardSectionHeader";
+import { BoardListSkeleton } from "../../common/components/BoardLoadingSkeletons";
 import PostList from "../components/PostList";
 import { usePosts } from "../hooks/usePosts";
 import { postRoutes } from "../routes/postRoutes";
@@ -128,7 +129,7 @@ export default function PostListPage() {
         </div>
       </section>
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px" }}>
-        {loading && <p>로딩 중...</p>}
+        {loading && <BoardListSkeleton count={6} />}
         {error && <p style={{ color: "#dc2626" }}>{error}</p>}
         {!loading && !error && (
           kind === "notice" ? (

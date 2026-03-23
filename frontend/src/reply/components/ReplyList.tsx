@@ -1,5 +1,6 @@
 import type { ReplyTreeNode } from "../types/replyTypes";
 import ReplyItem from "./ReplyItem";
+import "../styles/replySection.css";
 
 interface ReplyListProps {
   postId: number;
@@ -26,22 +27,15 @@ export default function ReplyList({
 }: ReplyListProps) {
   if (tree.length === 0) {
     return (
-      <div
-        style={{
-          backgroundColor: "#fff",
-          border: "1px solid #d6d9dd",
-          borderRadius: 14,
-          padding: 24,
-          color: "#6b7280",
-        }}
-      >
-        댓글이 없습니다.
+      <div className="reply-empty-card">
+        <p style={{ margin: 0, fontWeight: 600, color: "#374151" }}>아직 댓글이 없습니다.</p>
+        <p style={{ margin: "6px 0 0", fontSize: 14 }}>첫 댓글을 남겨보세요!</p>
       </div>
     );
   }
 
   return (
-    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 14 }}>
+    <ul className="reply-list">
       {tree.map((reply) => (
         <ReplyItem
           key={reply.replyId}

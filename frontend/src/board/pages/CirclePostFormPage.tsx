@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
+import BoardSectionHeader from "../../common/components/BoardSectionHeader";
 import CircleBoardSelector from "../components/CircleBoardSelector";
 import { useCircleBoards } from "../hooks/useCircleBoards";
 import PostEditorPageShell from "../../post/components/PostEditorPageShell";
@@ -9,6 +10,7 @@ import { parseRouteNumber } from "../utils/boardRouteHelpers";
 import { usePostDetail } from "../../post/hooks/usePostDetail";
 import { usePostForm } from "../../post/hooks/usePostForm";
 import { postRoutes } from "../../post/routes/postRoutes";
+import { BoardSelectorSkeleton } from "../../common/components/BoardLoadingSkeletons";
 
 export default function CirclePostFormPage() {
   const { circleId, boardId, postId } = useParams<{
@@ -72,6 +74,11 @@ export default function CirclePostFormPage() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
+      <BoardSectionHeader
+        title="서클 게시판"
+        backTo={listPath}
+        backLabel="목록으로 이동"
+      />
       <PostEditorPageShell
         title={isEdit ? "써클 게시글 수정" : "써클 게시글 작성"}
         listPath={listPath}
@@ -84,7 +91,8 @@ export default function CirclePostFormPage() {
         submitting={submitting}
         deleting={deleting}
         preFormSlot={!isEdit ? (
-          <div style={{ marginBottom: 12 }}>
+          <div className="post-editor-board-group">
+            <p className="post-editor-label" style={{ marginBottom: 8 }}>게시판</p>
             <CircleBoardSelector
               boards={boards}
               selectedBoardId={selectedBoardId}
@@ -93,10 +101,15 @@ export default function CirclePostFormPage() {
                 setBoardValidationError("");
               }}
               placeholderLabel="게시판 선택"
+              className="post-editor-board-select"
             />
-            {boardsLoading && <p style={{ margin: "8px 0 0", fontSize: 13, color: "#777" }}>게시판 불러오는 중...</p>}
-            {boardsError && <p style={{ margin: "8px 0 0", fontSize: 13, color: "#dc2626" }}>{boardsError}</p>}
-            {boardValidationError && <p style={{ margin: "8px 0 0", fontSize: 13, color: "#dc2626" }}>{boardValidationError}</p>}
+            {boardsLoading && (
+              <div style={{ marginTop: 10 }}>
+                <BoardSelectorSkeleton />
+              </div>
+            )}
+            {boardsError && <p className="post-editor-message-error" style={{ marginTop: 10 }}>{boardsError}</p>}
+            {boardValidationError && <p className="post-editor-message-error" style={{ marginTop: 10 }}>{boardValidationError}</p>}
           </div>
         ) : undefined}
         onSubmit={async (values) => {

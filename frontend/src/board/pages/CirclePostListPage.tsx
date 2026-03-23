@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import BoardSectionHeader from "../../common/components/BoardSectionHeader";
+import { BoardListSkeleton } from "../../common/components/BoardLoadingSkeletons";
 import CircleBoardSideMenu from "../components/CircleBoardSideMenu";
 import { useCircleBoards } from "../hooks/useCircleBoards";
 import { useCirclePosts } from "../hooks/useCirclePosts";
@@ -168,7 +169,7 @@ export default function CirclePostListPage() {
               boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
             }}
           >
-            {loading && <p>로딩 중...</p>}
+            {loading && <BoardListSkeleton count={6} />}
             {error && <p style={{ color: "#dc2626" }}>{error}</p>}
             {!loading && !error && (
               <>

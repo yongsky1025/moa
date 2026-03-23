@@ -43,16 +43,27 @@ export default function PostForm({
   };
 
   return (
-    <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-      {localError && <p style={{ color: "#dc2626", margin: 0 }}>{localError}</p>}
-      {hasBadWord && <p style={{ color: "#dc2626", margin: 0 }}>⚠️ 부적절한 표현이 포함되어 있습니다.</p>}
-      <input
-        value={values.title}
-        onChange={(e) => setValues((prev) => ({ ...prev, title: e.target.value }))}
-        placeholder="제목"
-        style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-      />
-      <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 8 }}>
+    <form onSubmit={submit} className="post-editor-form">
+      {localError && <p className="post-editor-message-error">{localError}</p>}
+      {hasBadWord && (
+        <p className="post-editor-message-error">부적절한 표현이 포함되어 있습니다.</p>
+      )}
+
+      <div className="post-editor-title-group">
+        <label className="post-editor-label" htmlFor="post-title">
+          제목
+        </label>
+        <input
+          id="post-title"
+          value={values.title}
+          onChange={(e) => setValues((prev) => ({ ...prev, title: e.target.value }))}
+          placeholder="제목을 입력하세요"
+          className="post-editor-title-input"
+        />
+      </div>
+
+      <div className="post-editor-content-group">
+        <p className="post-editor-label">본문</p>
         <PostCkEditor
           value={values.content}
           onChange={(content) => {
@@ -63,19 +74,12 @@ export default function PostForm({
           }}
         />
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
+
+      <div className="post-editor-actions">
         <button
           type="submit"
           disabled={disableSubmit}
-          style={{
-            width: 120,
-            padding: "10px 12px",
-            borderRadius: 8,
-            border: "none",
-            backgroundColor: "#111",
-            color: "white",
-            cursor: "pointer",
-          }}
+          className={`post-editor-btn ${mode === "edit" ? "post-editor-btn-outline" : "post-editor-btn-primary"}`}
         >
           {submitting ? "저장 중..." : mode === "create" ? "등록" : "수정"}
         </button>
@@ -84,15 +88,7 @@ export default function PostForm({
             type="button"
             disabled={submitting || deleting}
             onClick={() => void onDelete()}
-            style={{
-              width: 120,
-              padding: "10px 12px",
-              borderRadius: 8,
-              border: "none",
-              backgroundColor: "#dc2626",
-              color: "white",
-              cursor: "pointer",
-            }}
+            className="post-editor-btn post-editor-btn-danger"
           >
             {deleting ? "삭제 중..." : "삭제"}
           </button>

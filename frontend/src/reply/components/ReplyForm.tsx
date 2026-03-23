@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { hasProfanity } from "../../common/utils/profanityFilter";
 import { validateReplyContent } from "../utils/replyValidators";
+import "../styles/replySection.css";
 
 interface ReplyFormProps {
   postId: number;
@@ -11,6 +12,7 @@ interface ReplyFormProps {
   submitLabel?: string;
   showCancelButton?: boolean;
   onCancel?: () => void;
+  currentUserName?: string;
 }
 
 export default function ReplyForm({
@@ -21,6 +23,7 @@ export default function ReplyForm({
   submitLabel,
   showCancelButton = false,
   onCancel,
+  currentUserName = "나",
 }: ReplyFormProps) {
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
@@ -51,62 +54,30 @@ export default function ReplyForm({
   };
 
   if (variant === "panel") {
+    const profileInitial = currentUserName.trim().charAt(0) || "나";
+
     return (
-      <form
-        onSubmit={submit}
-        style={{
-          display: "grid",
-          gap: 8,
-          backgroundColor: "#fff",
-          border: "1px solid #d6d9dd",
-          borderRadius: 14,
-          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.08)",
-          padding: 24,
-        }}
-      >
+      <form onSubmit={submit} className="reply-panel-form">
         {error && <p style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
         {hasBadWord && <p style={{ color: "#dc2626", margin: 0 }}>부적절한 표현이 포함되어 있습니다.</p>}
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+        <div className="reply-panel-input-row">
+          <div className="reply-avatar" aria-hidden="true">
+            {profileInitial}
+          </div>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={3}
             placeholder="댓글을 입력하세요"
-            style={{
-              flex: 1,
-              padding: 14,
-              border: "1px solid #e5e7eb",
-              borderRadius: 10,
-              backgroundColor: "#f9fafb",
-              resize: "vertical",
-            }}
+            className="reply-panel-textarea"
           />
           <button
             type="submit"
             disabled={disableSubmit}
-            style={{
-              width: 46,
-              height: 46,
-              borderRadius: 8,
-              border: "1px solid #c9ccd1",
-              backgroundColor: disableSubmit ? "#e5e7eb" : "#8c8f94",
-              color: "#fff",
-              cursor: disableSubmit ? "not-allowed" : "pointer",
-              fontSize: 20,
-              lineHeight: 1,
-            }}
+            className="reply-panel-submit"
             aria-label="댓글 등록"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M3 11.5 20.5 4l-7.3 16-2.2-6.3L3 11.5Z"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            등록
           </button>
         </div>
       </form>

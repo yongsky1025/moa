@@ -35,17 +35,21 @@ export default function ReplyItem({
   const [showChildForm, setShowChildForm] = useState(false);
   const [showChildren, setShowChildren] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [editingContent, setEditingContent] = useState(reply.content);
   const [error, setError] = useState("");
   const hasEditingBadWord = hasProfanity(editingContent);
   const disableEditSave = hasEditingBadWord || !editingContent.trim();
 
-  const isOwner = !!currentUserPublicId && reply.authorPublicId === currentUserPublicId;
+  const isOwner =
+    !!currentUserPublicId && reply.authorPublicId === currentUserPublicId;
   const canEdit = !reply.deleted && isOwner;
   const canDelete = !reply.deleted && (isOwner || (canDeleteAsAdmin && isAdmin));
+  const canReport = !reply.deleted && canWrite && !isOwner;
   const canCreateChild = allowChildReply && canWrite && !reply.deleted && reply.depth < 2;
   const childCount = childrenReplies.length;
   const authorInitial = reply.authorName?.trim().charAt(0) || "?";
+  const actionLikeCount = reply.replyCount ?? 0;
 
   const submitUpdate = async () => {
     const trimmed = editingContent.trim();
@@ -75,54 +79,39 @@ export default function ReplyItem({
     }
   };
 
+  const metaText = `${reply.authorName} · ${formatDateTime(reply.createDate)}`;
+
   return (
-    <li
-      style={{
-        backgroundColor: "#fff",
-        border: "1px solid #d6d9dd",
-        borderRadius: 14,
-        boxShadow: "0 1px 3px rgba(15, 23, 42, 0.08)",
-        padding: 24,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            backgroundColor: "#f3f4f6",
-            color: "#111827",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 700,
-            fontSize: 14,
-          }}
-        >
-          {authorInitial}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: 28 / 2 }}>{reply.authorName}</p>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: 14 }}>{formatDateTime(reply.createDate)}</p>
-        </div>
+    <li className="reply-card">
+      <div className="reply-header">
+        <div className="reply-avatar">{authorInitial}</div>
+        <p className="reply-meta-line">{metaText}</p>
       </div>
+
       {!reply.deleted && isEditing ? (
-        <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
-          {error && <p style={{ margin: 0, color: "#dc2626" }}>{error}</p>}
-          {hasEditingBadWord && <p style={{ margin: 0, color: "#dc2626" }}>부적절한 표현이 포함되어 있습니다.</p>}
+        <div className="reply-edit-area">
+          {error && <p className="reply-error">{error}</p>}
+          {hasEditingBadWord && (
+            <p className="reply-error">부적절한 표현이 포함되어 있습니다.</p>
+          )}
           <textarea
             value={editingContent}
             onChange={(e) => setEditingContent(e.target.value)}
-            rows={2}
-            style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+            rows={3}
+            className="reply-edit-textarea"
           />
-          <div style={{ display: "flex", gap: 8 }}>
-            <button type="button" disabled={disableEditSave} onClick={() => void submitUpdate()}>
+          <div className="reply-edit-actions">
+            <button
+              type="button"
+              disabled={disableEditSave}
+              onClick={() => void submitUpdate()}
+              className="reply-flat-btn"
+            >
               저장
             </button>
             <button
               type="button"
+              className="reply-flat-btn"
               onClick={() => {
                 setIsEditing(false);
                 setEditingContent(reply.content);
@@ -134,67 +123,93 @@ export default function ReplyItem({
           </div>
         </div>
       ) : (
-        <p style={{ margin: "10px 0 0", whiteSpace: "pre-wrap", fontSize: 16, lineHeight: 1.7 }}>
+        <p className="reply-content">
           {reply.deleted ? "삭제된 댓글입니다." : reply.content}
         </p>
       )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#4b5563", fontSize: 14 }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M7 10v10H3V10h4Zm2 10h7.2a2 2 0 0 0 2-1.7l1-6.5A2 2 0 0 0 17.2 9H13l.6-3.2A2.5 2.5 0 0 0 11.2 3L9 7.4V20Z"
-              fill="none"
-              stroke="#6b7280"
-              strokeWidth="1.6"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          </svg>
-          <span>{reply.replyCount ?? 0}</span>
-        </span>
-      </div>
+
       {!reply.deleted && !isEditing && (
-        <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-          {canEdit && (
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              style={{ border: "none", background: "none", padding: 0, color: "#4b5563", cursor: "pointer" }}
-            >
-              수정
-            </button>
-          )}
-          {canDelete && (
-            <button
-              type="button"
-              onClick={() => void submitDelete()}
-              style={{ border: "none", background: "none", padding: 0, color: "#4b5563", cursor: "pointer" }}
-            >
-              삭제
-            </button>
-          )}
+        <div className="reply-item-actions">
+          <button type="button" className="reply-action-btn">
+            👍 {actionLikeCount}
+          </button>
           {canCreateChild && (
             <button
               type="button"
-              onClick={() => setShowChildForm(true)}
-              style={{ border: "none", background: "none", color: "#555", cursor: "pointer", padding: 0 }}
+              className="reply-action-btn"
+              onClick={() => setShowChildForm((prev) => !prev)}
             >
               답글
             </button>
           )}
+          {(canEdit || canDelete || canReport) && (
+            <div className="reply-more-wrap">
+              <button
+                type="button"
+                className="reply-more-btn"
+                aria-label="댓글 더보기"
+                onClick={() => setShowMore((prev) => !prev)}
+              >
+                ⋯
+              </button>
+              {showMore && (
+                <div className="reply-more-menu">
+                  {canEdit && (
+                    <button
+                      type="button"
+                      className="reply-more-item"
+                      onClick={() => {
+                        setShowMore(false);
+                        setIsEditing(true);
+                      }}
+                    >
+                      수정
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      className="reply-more-item reply-more-item-danger"
+                      onClick={() => {
+                        setShowMore(false);
+                        void submitDelete();
+                      }}
+                    >
+                      삭제
+                    </button>
+                  )}
+                  {canReport && (
+                    <button
+                      type="button"
+                      className="reply-more-item"
+                      onClick={() => {
+                        setShowMore(false);
+                        window.alert("신고 기능은 준비 중입니다.");
+                      }}
+                    >
+                      신고
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
-      {error && !isEditing && <p style={{ margin: "6px 0 0", color: "#dc2626" }}>{error}</p>}
+
+      {error && !isEditing && <p className="reply-error">{error}</p>}
 
       {canCreateChild && showChildForm && (
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: 10 }}>
           <ReplyForm
             postId={postId}
             parentId={reply.replyId}
             submitLabel="답글"
             showCancelButton
             onCancel={() => setShowChildForm(false)}
-            onSubmitReply={(content, parentId) => onCreateChild(content, parentId ?? reply.replyId)}
+            onSubmitReply={(content, parentId) =>
+              onCreateChild(content, parentId ?? reply.replyId)
+            }
             onSuccess={() => setShowChildForm(false)}
           />
         </div>
@@ -205,18 +220,7 @@ export default function ReplyItem({
           <button
             type="button"
             onClick={() => setShowChildren((prev) => !prev)}
-            style={{
-              marginTop: 10,
-              border: "none",
-              background: "none",
-              color: "#2563eb",
-              cursor: "pointer",
-              padding: 0,
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-            }}
+            className="reply-children-toggle"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -228,27 +232,24 @@ export default function ReplyItem({
                 strokeLinejoin="round"
               />
             </svg>
-            {showChildren ? "답글 숨기기" : `답글 ${childCount}개`}
+            {showChildren ? "답글 숨기기" : `답글 ${childCount}개 보기`}
           </button>
           {showChildren && (
-            <ul style={{ listStyle: "none", margin: "12px 0 0 12px", padding: 0, display: "grid", gap: 10 }}>
+            <ul className="reply-children-list">
               {childrenReplies.map((child) => (
-                <li key={child.replyId} style={{ borderLeft: "2px solid #e5e7eb", paddingLeft: 10, listStyle: "none" }}>
-                  <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                    <ReplyItem
-                      postId={postId}
-                      reply={child}
-                      currentUserPublicId={currentUserPublicId}
-                      isAdmin={isAdmin}
-                      canWrite={canWrite}
-                      canDeleteAsAdmin={canDeleteAsAdmin}
-                      onUpdate={onUpdate}
-                      onDelete={onDelete}
-                      onCreateChild={onCreateChild}
-                      allowChildReply={false}
-                    />
-                  </ul>
-                </li>
+                <ReplyItem
+                  key={child.replyId}
+                  postId={postId}
+                  reply={child}
+                  currentUserPublicId={currentUserPublicId}
+                  isAdmin={isAdmin}
+                  canWrite={canWrite}
+                  canDeleteAsAdmin={canDeleteAsAdmin}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                  onCreateChild={onCreateChild}
+                  allowChildReply={false}
+                />
               ))}
             </ul>
           )}
