@@ -48,8 +48,11 @@ public class NoticePostRestController {
     }
 
     @GetMapping("/{postId}")
-    public PostResponseDTO read(@PathVariable("postId") Long postId, HttpServletRequest request) {
-        PostResponseDTO response = postService.readGlobal(BoardType.NOTICE, postId);
+    public PostResponseDTO read(@PathVariable("postId") Long postId,
+            @AuthenticationPrincipal AuthUserDTO auth,
+            HttpServletRequest request) {
+        PostResponseDTO response = postService.readGlobal(BoardType.NOTICE, postId,
+                auth != null ? auth.getUserId() : null);
         postService.increaseViewCountOnce(postId, PostClientIpResolver.resolve(request));
         return response;
     }

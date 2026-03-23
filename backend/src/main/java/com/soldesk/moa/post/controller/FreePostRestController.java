@@ -48,8 +48,11 @@ public class FreePostRestController {
     }
 
     @GetMapping("/{postId}")
-    public PostResponseDTO read(@PathVariable("postId") Long postId, HttpServletRequest request) {
-        PostResponseDTO response = postService.readGlobal(BoardType.FREE, postId);
+    public PostResponseDTO read(@PathVariable("postId") Long postId,
+            @AuthenticationPrincipal AuthUserDTO auth,
+            HttpServletRequest request) {
+        PostResponseDTO response = postService.readGlobal(BoardType.FREE, postId,
+                auth != null ? auth.getUserId() : null);
         postService.increaseViewCountOnce(postId, PostClientIpResolver.resolve(request));
         return response;
     }

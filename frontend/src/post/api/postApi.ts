@@ -1,5 +1,9 @@
 import api from "../../users/utils/jwtUtil";
-import type { PostRequest, PostResponse } from "../types/postTypes";
+import type {
+  PostReactionSummary,
+  PostRequest,
+  PostResponse,
+} from "../types/postTypes";
 
 // 게시글(Post) 도메인의 백엔드 호출 모음
 // - 자유/공지/써클 게시글 CRUD API를 담당
@@ -30,4 +34,7 @@ export const postApi = {
     api.put<number>(`/api/circle/${circleId}/boards/${boardId}/posts/${postId}`, data),
   deleteCirclePost: (circleId: number, boardId: number, postId: number) =>
     api.delete<void>(`/api/circle/${circleId}/boards/${boardId}/posts/${postId}`),
+
+  reactToPost: (postId: number) =>
+    api.post<PostReactionSummary>(`/api/posts/${postId}/reactions/like`),
 };

@@ -31,6 +31,10 @@ public class PostResponseDTO {
 
     private int viewCount;
 
+    private int likeCount;
+
+    private String myReaction;
+
     private long replyCount;
 
     private LocalDateTime createDate;

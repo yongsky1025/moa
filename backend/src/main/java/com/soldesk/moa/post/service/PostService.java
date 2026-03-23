@@ -17,16 +17,21 @@ import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.service.CirclePermissionService;
+import com.soldesk.moa.common.exception.InvalidRequestException;
 import com.soldesk.moa.common.entity.Image;
 import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.common.repository.ImageRepository;
 import com.soldesk.moa.common.service.ProfanityFilterService;
 import com.soldesk.moa.post.dto.PostRequestDTO;
+import com.soldesk.moa.post.dto.PostReactionSummaryDTO;
 import com.soldesk.moa.post.dto.PostResponseDTO;
 import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.post.entity.PostReaction;
 import com.soldesk.moa.post.entity.PostViewLog;
+import com.soldesk.moa.post.entity.constant.PostReactionType;
 import com.soldesk.moa.post.exception.PostForbiddenException;
 import com.soldesk.moa.post.exception.PostNotFoundException;
+import com.soldesk.moa.post.repository.PostReactionRepository;
 import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.post.repository.PostViewLogRepository;
 import com.soldesk.moa.reply.repository.ReplyRepository;
@@ -54,6 +59,7 @@ public class PostService {
         private final ImageRepository imageRepository;
         private final PostViewLogRepository postViewLogRepository;
         private final ProfanityFilterService profanityFilterService;
+        private final PostReactionRepository postReactionRepository;
 
         // ===== Global =====
 
@@ -71,10 +77,10 @@ public class PostService {
                                 .toList();
         }
 
-        public PostResponseDTO readGlobal(BoardType type, Long postId) {
+        public PostResponseDTO readGlobal(BoardType type, Long postId, Long viewerUserId) {
                 Post post = postRepository.findGlobalPost(type, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
-                return toPostResponse(post);
+                return toPostResponse(post, viewerUserId);
         }
 
         @Transactional
@@ -185,7 +191,7 @@ public class PostService {
                 circlePermissionService.requireActiveMember(circleId, userId);
                 Post post = postRepository.findCirclePost(circleId, boardId, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
-                return toPostResponse(post);
+                return toPostResponse(post, userId);
         }
 
         @Transactional
@@ -261,6 +267,35 @@ public class PostService {
                 if (inserted > 0) {
                         postRepository.incrementViewCount(postId);
                 }
+        }
+
+        @Transactional
+        public PostReactionSummaryDTO reactToPost(Long postId, Long userId) {
+                Post post = requireActivePost(postId);
+                requireReactionPermission(post, userId);
+                Users user = usersRepository.findById(userId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 사용자를 찾을 수 없습니다."));
+
+                PostReaction existing = postReactionRepository.findByPost_PostIdAndUser_UserId(postId, userId)
+                                .orElse(null);
+
+                String myReaction = "LIKE";
+                if (existing == null) {
+                        postReactionRepository.save(PostReaction.builder()
+                                        .post(post)
+                                        .user(user)
+                                        .reactionType(PostReactionType.LIKE)
+                                        .build());
+                        postRepository.incrementLikeCount(postId);
+                } else if (existing.getReactionType() == PostReactionType.LIKE) {
+                        postReactionRepository.delete(existing);
+                        postRepository.decrementLikeCount(postId);
+                        myReaction = null;
+                } else {
+                        throw new InvalidRequestException("[#POST] 지원하지 않는 반응 타입입니다.");
+                }
+
+                return buildReactionSummary(postId, myReaction);
         }
 
         // ===== helpers =====
@@ -385,8 +420,9 @@ public class PostService {
                                 "[#POST] 내용에 사용할 수 없는 표현이 포함되어 있습니다.");
         }
 
-        private PostResponseDTO toPostResponse(Post p) {
+        private PostResponseDTO toPostResponse(Post p, Long viewerUserId) {
                 long replyCount = replyRepository.countByPostId_PostIdAndDeletedFalse(p.getPostId());
+                String myReaction = resolveMyReaction(p.getPostId(), viewerUserId);
 
                 return PostResponseDTO.builder()
                                 .boardId(p.getBoardId().getBoardId())
@@ -396,6 +432,8 @@ public class PostService {
                                 .authorName(p.getUserId().getName()) // Users PK명 맞춰 수정
                                 .authorPublicId(p.getUserId().getPublicId())
                                 .viewCount(p.getViewCount())
+                                .likeCount(p.getLikeCount())
+                                .myReaction(myReaction)
                                 .replyCount(replyCount)
                                 .createDate(p.getCreateDate())
                                 .updateDate(p.getUpdateDate())
@@ -414,9 +452,40 @@ public class PostService {
                                 .authorName(p.getUserId().getName())
                                 .authorPublicId(p.getUserId().getPublicId())
                                 .viewCount(p.getViewCount())
+                                .likeCount(p.getLikeCount())
                                 .createDate(p.getCreateDate())
                                 .updateDate(p.getUpdateDate())
                                 .replyCount(replyCount)
+                                .build();
+        }
+
+        private Post requireActivePost(Long postId) {
+                return postRepository.findByPostIdAndDeletedFalseAndBoardId_DeletedFalse(postId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
+        }
+
+        private void requireReactionPermission(Post post, Long userId) {
+                if (post.getBoardId().getBoardType() != BoardType.CIRCLE || post.getBoardId().getCircleId() == null) {
+                        return;
+                }
+                circlePermissionService.requireActiveMember(post.getBoardId().getCircleId().getCircleId(), userId);
+        }
+
+        private String resolveMyReaction(Long postId, Long viewerUserId) {
+                if (viewerUserId == null) {
+                        return null;
+                }
+
+                return postReactionRepository.findByPost_PostIdAndUser_UserId(postId, viewerUserId)
+                                .map(reaction -> reaction.getReactionType().name())
+                                .orElse(null);
+        }
+
+        private PostReactionSummaryDTO buildReactionSummary(Long postId, String myReaction) {
+                Post refreshed = requireActivePost(postId);
+                return PostReactionSummaryDTO.builder()
+                                .likeCount(refreshed.getLikeCount())
+                                .myReaction(myReaction)
                                 .build();
         }
 

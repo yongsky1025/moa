@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Footer from "../../common/layout/Footer";
@@ -11,8 +12,13 @@ import { useReplyForm } from "../../reply/hooks/useReplyForm";
 import ReplyList from "../../reply/components/ReplyList";
 import ReplyForm from "../../reply/components/ReplyForm";
 import { postRoutes } from "../routes/postRoutes";
-import type { PostKind } from "../types/postTypes";
+import { postApi } from "../api/postApi";
+import type {
+  PostKind,
+  PostReactionSummary,
+} from "../types/postTypes";
 import type { RootState } from "../../users/reducers/store";
+import { getErrorMessage } from "../../common/utils/errorMessage";
 
 function resolveKind(pathname: string): Exclude<PostKind, "circle"> {
   if (pathname.includes("/notice")) return "notice";
@@ -24,6 +30,20 @@ function countReplies(nodes: Array<{ children?: unknown[] }>): number {
     const childrenCount = Array.isArray(node.children) ? node.children.length : 0;
     return sum + 1 + childrenCount;
   }, 0);
+}
+
+function applyLocalReaction(
+  current: PostReactionSummary,
+): PostReactionSummary {
+  if (current.myReaction === "LIKE") {
+    return { ...current, likeCount: Math.max(0, current.likeCount - 1), myReaction: null };
+  }
+
+  return {
+    ...current,
+    likeCount: current.likeCount + 1,
+    myReaction: "LIKE",
+  };
 }
 
 export default function PostDetailPage() {
@@ -50,6 +70,12 @@ export default function PostDetailPage() {
   const canEdit = kind === "notice" ? isAdmin : isOwner;
   const canCreateReply = isLoggedIn;
   const totalReplyCount = countReplies(tree);
+  const [reactionSummary, setReactionSummary] = useState<PostReactionSummary | null>(null);
+  const [reactionError, setReactionError] = useState("");
+
+  useEffect(() => {
+    setReactionSummary(null);
+  }, [data?.postId]);
 
   const backPath =
     kind === "notice" ? postRoutes.noticeBase : postRoutes.freeBase;
@@ -58,6 +84,25 @@ export default function PostDetailPage() {
     kind === "notice"
       ? postRoutes.noticeEdit(postIdNumber)
       : postRoutes.freeEdit(postIdNumber);
+
+  const react = async () => {
+    if (!isLoggedIn || !data) return;
+    const baseReaction: PostReactionSummary = reactionSummary ?? {
+      likeCount: data.likeCount,
+      myReaction: data.myReaction,
+    };
+    const optimisticReaction = applyLocalReaction(baseReaction);
+
+    setReactionSummary(optimisticReaction);
+    setReactionError("");
+    try {
+      const response = await postApi.reactToPost(postIdNumber);
+      setReactionSummary(response.data);
+    } catch (e) {
+      setReactionSummary(baseReaction);
+      setReactionError(getErrorMessage(e));
+    }
+  };
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
@@ -101,19 +146,43 @@ export default function PostDetailPage() {
                 <PostContent html={data.content} />
 
                 <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-                  <span
+                  <button
+                    type="button"
+                    onClick={() => void react()}
+                    disabled={!isLoggedIn}
                     style={{
                       border: "1px solid #d1d5db",
-                      backgroundColor: "#fff",
+                      backgroundColor:
+                        (reactionSummary?.myReaction ?? data.myReaction) === "LIKE"
+                          ? "#ecfdf3"
+                          : "#fff",
                       borderRadius: 8,
                       padding: "8px 12px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
                       fontSize: 15,
-                      color: "#111827",
+                      color:
+                        (reactionSummary?.myReaction ?? data.myReaction) === "LIKE"
+                          ? "#047857"
+                          : "#111827",
                       fontWeight: 600,
+                      cursor: !isLoggedIn ? "not-allowed" : "pointer",
+                      opacity: !isLoggedIn ? 0.6 : 1,
                     }}
                   >
-                    댓글 {data.replyCount}
-                  </span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M7 10v10H3V10h4Zm2 10h7.2a2 2 0 0 0 2-1.7l1-6.5A2 2 0 0 0 17.2 9H13l.6-3.2A2.5 2.5 0 0 0 11.2 3L9 7.4V20Z"
+                        fill="none"
+                        stroke={(reactionSummary?.myReaction ?? data.myReaction) === "LIKE" ? "#047857" : "#6b7280"}
+                        strokeWidth="1.6"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span>{reactionSummary?.likeCount ?? data.likeCount}</span>
+                  </button>
                   {canEdit && (
                     <button
                       type="button"
@@ -133,6 +202,9 @@ export default function PostDetailPage() {
                     </button>
                   )}
                 </div>
+                {reactionError && (
+                  <p style={{ margin: "10px 0 0", color: "#dc2626" }}>{reactionError}</p>
+                )}
               </div>
             </section>
 

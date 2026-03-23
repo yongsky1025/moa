@@ -1,5 +1,6 @@
 import type { PostResponse } from "../types/postTypes";
 import { formatDate } from "../utils/dateFormat";
+import { Eye } from "lucide-react";
 
 interface PostMetaProps {
   post: PostResponse;
@@ -41,8 +42,18 @@ export default function PostMeta({ post }: PostMetaProps) {
       <span style={{ fontSize: 15, color: "#6b7280" }}>
         {formatDate(post.createDate)}
       </span>
-      <span style={{ fontSize: 15, color: "#6b7280" }}>조회 {post.viewCount}</span>
-      <span style={{ fontSize: 15, color: "#6b7280" }}>댓글 {post.replyCount}</span>
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          fontSize: 15,
+          color: "#6b7280",
+        }}
+      >
+        <Eye size={14} />
+        {post.viewCount}
+      </span>
     </div>
   );
 }

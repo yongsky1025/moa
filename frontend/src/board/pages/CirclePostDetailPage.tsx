@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
@@ -13,21 +14,47 @@ import { useReplyForm } from "../../reply/hooks/useReplyForm";
 import ReplyList from "../../reply/components/ReplyList";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../users/reducers/store";
+import { postApi } from "../../post/api/postApi";
+import type {
+  PostReactionSummary,
+} from "../../post/types/postTypes";
+import { getErrorMessage } from "../../common/utils/errorMessage";
 
 function countReplies(nodes: Array<{ children?: unknown[] }>): number {
   return nodes.reduce((sum, node) => {
-    const childrenCount = Array.isArray(node.children) ? node.children.length : 0;
+    const childrenCount = Array.isArray(node.children)
+      ? node.children.length
+      : 0;
     return sum + 1 + childrenCount;
   }, 0);
 }
 
+function applyLocalReaction(
+  current: PostReactionSummary,
+): PostReactionSummary {
+  if (current.myReaction === "LIKE") {
+    return { ...current, likeCount: Math.max(0, current.likeCount - 1), myReaction: null };
+  }
+
+  return {
+    ...current,
+    likeCount: current.likeCount + 1,
+    myReaction: "LIKE",
+  };
+}
+
 export default function CirclePostDetailPage() {
-  const { circleId, boardId, postId } = useParams<{ circleId: string; boardId: string; postId: string }>();
+  const { circleId, boardId, postId } = useParams<{
+    circleId: string;
+    boardId: string;
+    postId: string;
+  }>();
   const navigate = useNavigate();
   const circleIdNumber = parseRouteNumber(circleId);
   const boardIdNumber = parseRouteNumber(boardId);
   const postIdNumber = parseRouteNumber(postId);
-  const hasValidParams = circleIdNumber !== null && boardIdNumber !== null && postIdNumber !== null;
+  const hasValidParams =
+    circleIdNumber !== null && boardIdNumber !== null && postIdNumber !== null;
 
   const { data, loading, error } = usePostDetail({
     kind: "circle",
@@ -36,7 +63,12 @@ export default function CirclePostDetailPage() {
     postId: postIdNumber ?? 0,
     enabled: hasValidParams,
   });
-  const { tree, loading: replyLoading, error: replyError, refetch } = useReplies({
+  const {
+    tree,
+    loading: replyLoading,
+    error: replyError,
+    refetch,
+  } = useReplies({
     postId: postIdNumber ?? 0,
     enabled: hasValidParams,
   });
@@ -44,6 +76,33 @@ export default function CirclePostDetailPage() {
   const { isLoggedIn, user } = useSelector((state: RootState) => state.auth);
   const isOwner = !!data && !!user && data.authorPublicId === user.publicId;
   const totalReplyCount = countReplies(tree);
+  const reactionPostId = postIdNumber ?? 0;
+  const [reactionSummary, setReactionSummary] =
+    useState<PostReactionSummary | null>(null);
+  const [reactionError, setReactionError] = useState("");
+
+  useEffect(() => {
+    setReactionSummary(null);
+  }, [data?.postId]);
+
+  const react = async () => {
+    if (!isLoggedIn || !data) return;
+    const baseReaction: PostReactionSummary = reactionSummary ?? {
+      likeCount: data.likeCount,
+      myReaction: data.myReaction,
+    };
+    const optimisticReaction = applyLocalReaction(baseReaction);
+
+    setReactionSummary(optimisticReaction);
+    setReactionError("");
+    try {
+      const response = await postApi.reactToPost(reactionPostId);
+      setReactionSummary(response.data);
+    } catch (e) {
+      setReactionSummary(baseReaction);
+      setReactionError(getErrorMessage(e));
+    }
+  };
 
   if (!hasValidParams) {
     return (
@@ -101,23 +160,57 @@ export default function CirclePostDetailPage() {
               <div style={{ padding: 28 }}>
                 <PostContent html={data.content} />
                 <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-                  <span
+                  <button
+                    type="button"
+                    onClick={() => void react()}
+                    disabled={!isLoggedIn}
                     style={{
                       border: "1px solid #d1d5db",
-                      backgroundColor: "#fff",
+                      backgroundColor:
+                        (reactionSummary?.myReaction ?? data.myReaction) ===
+                        "LIKE"
+                          ? "#ecfdf3"
+                          : "#fff",
                       borderRadius: 8,
                       padding: "8px 12px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
                       fontSize: 15,
-                      color: "#111827",
+                      color:
+                        (reactionSummary?.myReaction ?? data.myReaction) ===
+                        "LIKE"
+                          ? "#047857"
+                          : "#111827",
                       fontWeight: 600,
+                      cursor: !isLoggedIn ? "not-allowed" : "pointer",
+                      opacity: !isLoggedIn ? 0.6 : 1,
                     }}
                   >
-                    댓글 {data.replyCount}
-                  </span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M7 10v10H3V10h4Zm2 10h7.2a2 2 0 0 0 2-1.7l1-6.5A2 2 0 0 0 17.2 9H13l.6-3.2A2.5 2.5 0 0 0 11.2 3L9 7.4V20Z"
+                        fill="none"
+                        stroke={(reactionSummary?.myReaction ?? data.myReaction) === "LIKE" ? "#047857" : "#6b7280"}
+                        strokeWidth="1.6"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span>{reactionSummary?.likeCount ?? data.likeCount}</span>
+                  </button>
                   {isOwner && (
                     <button
                       type="button"
-                      onClick={() => navigate(postRoutes.circleEdit(circleIdNumber, boardIdNumber, postIdNumber))}
+                      onClick={() =>
+                        navigate(
+                          postRoutes.circleEdit(
+                            circleIdNumber,
+                            boardIdNumber,
+                            postIdNumber,
+                          ),
+                        )
+                      }
                       style={{
                         border: "1px solid #d1d5db",
                         backgroundColor: "#fff",
@@ -133,6 +226,11 @@ export default function CirclePostDetailPage() {
                     </button>
                   )}
                 </div>
+                {reactionError && (
+                  <p style={{ margin: "10px 0 0", color: "#dc2626" }}>
+                    {reactionError}
+                  </p>
+                )}
               </div>
             </section>
 
@@ -146,7 +244,12 @@ export default function CirclePostDetailPage() {
                   fontSize: 32 / 2,
                 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <path
                     d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v7A2.5 2.5 0 0 1 17.5 15H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 12.5v-7Z"
                     fill="none"
@@ -173,7 +276,9 @@ export default function CirclePostDetailPage() {
                   <p style={{ margin: 0, color: "#6b7280" }}>
                     댓글을 작성하려면 로그인이 필요합니다.
                   </p>
-                  <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+                  <div
+                    style={{ display: "flex", gap: 12, alignItems: "flex-end" }}
+                  >
                     <textarea
                       rows={3}
                       disabled
@@ -202,7 +307,12 @@ export default function CirclePostDetailPage() {
                       }}
                       aria-label="댓글 전송"
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
                         <path
                           d="M3 11.5 20.5 4l-7.3 16-2.2-6.3L3 11.5Z"
                           fill="none"
@@ -225,7 +335,9 @@ export default function CirclePostDetailPage() {
                   onSuccess={() => void refetch()}
                 />
               )}
-              {replySubmitError && <p style={{ color: "#dc2626" }}>{replySubmitError}</p>}
+              {replySubmitError && (
+                <p style={{ color: "#dc2626" }}>{replySubmitError}</p>
+              )}
               {replyLoading && <p>댓글 불러오는 중...</p>}
               {replyError && <p style={{ color: "#dc2626" }}>{replyError}</p>}
               {!replyLoading && !replyError && (
@@ -236,9 +348,21 @@ export default function CirclePostDetailPage() {
                   isAdmin={false}
                   canWrite={isLoggedIn}
                   canDeleteAsAdmin={false}
-                  onUpdate={(replyId, content) => update({ postId: postIdNumber, replyId, content }).then(() => refetch())}
-                  onDelete={(replyId) => remove({ postId: postIdNumber, replyId }).then(() => refetch())}
-                  onCreateChild={(content, parentId) => create({ postId: postIdNumber, content, parentId }).then(() => refetch())}
+                  onUpdate={(replyId, content) =>
+                    update({ postId: postIdNumber, replyId, content }).then(
+                      () => refetch(),
+                    )
+                  }
+                  onDelete={(replyId) =>
+                    remove({ postId: postIdNumber, replyId }).then(() =>
+                      refetch(),
+                    )
+                  }
+                  onCreateChild={(content, parentId) =>
+                    create({ postId: postIdNumber, content, parentId }).then(
+                      () => refetch(),
+                    )
+                  }
                 />
               )}
             </section>
@@ -249,5 +373,3 @@ export default function CirclePostDetailPage() {
     </div>
   );
 }
-
-
