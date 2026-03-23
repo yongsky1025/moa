@@ -240,6 +240,7 @@ export default function ScheduleFormPage() {
         latitude: selectedPlace.latitude,
         longitude: selectedPlace.longitude,
       } : {}),
+      tags: selectedTags.length > 0 ? selectedTags : undefined,
     };
     setLoading(true);
     try {

@@ -226,30 +226,28 @@ export default function CircleListPage() {
           {/* 카테고리 */}
           <div style={{ backgroundColor: 'white', borderRadius: 12, border: '1px solid #f0f0f0', padding: '16px' }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 10 }}>카테고리</p>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="category"
-                checked={selectedCategoryId === null}
-                onChange={() => handleCategoryClick(null)}
-                style={{ accentColor: '#111', width: 15, height: 15, cursor: 'pointer' }}
-              />
-              <span style={{ fontSize: 14, color: '#111', fontWeight: selectedCategoryId === null ? 700 : 400 }}>전체</span>
-            </label>
-            {categories.map((cat) => (
-              <label key={cat.categoryId} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="category"
-                  checked={selectedCategoryId === cat.categoryId}
-                  onChange={() => handleCategoryClick(cat.categoryId)}
-                  style={{ accentColor: '#111', width: 15, height: 15, cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: 14, color: '#555', fontWeight: selectedCategoryId === cat.categoryId ? 700 : 400 }}>
-                  {cat.categoryName}
-                </span>
-              </label>
-            ))}
+            {[{ categoryId: null as null, categoryName: '전체' }, ...categories].map((cat) => {
+              const isSelected = cat.categoryId === null ? selectedCategoryId === null : selectedCategoryId === cat.categoryId;
+              return (
+                <label
+                  key={cat.categoryId ?? 'all'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', cursor: 'pointer', borderRadius: 8, transition: 'background 0.15s' }}
+                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = '#f5f5f5'; }}
+                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <input
+                    type="radio"
+                    name="category"
+                    checked={isSelected}
+                    onChange={() => handleCategoryClick(cat.categoryId)}
+                    style={{ accentColor: '#111', width: 15, height: 15, cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: 14, color: isSelected ? '#111' : '#555', fontWeight: isSelected ? 700 : 400 }}>
+                    {cat.categoryName}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </aside>
 
@@ -301,7 +299,7 @@ export default function CircleListPage() {
               {circles.length === 0 ? (
                 <p style={{ textAlign: 'center', color: '#aaa', padding: '60px 0' }}>모임이 없습니다.</p>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
                   {circles.map((circle) => {
                     const statusInfo = STATUS_LABEL[circle.status] ?? { text: circle.status, color: '#888' };
                     const bgGradient = CATEGORY_COLORS[circle.categoryName] ?? DEFAULT_GRADIENT;
@@ -312,45 +310,49 @@ export default function CircleListPage() {
                         onClick={() => navigate(`/circle/${circle.circleId}`)}
                         style={{
                           backgroundColor: 'white', borderRadius: 16, overflow: 'hidden',
-                          border: '1px solid #f0f0f0', boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-                          cursor: 'pointer', transition: 'box-shadow 0.15s',
+                          border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                          cursor: 'pointer', transition: 'box-shadow 0.2s, transform 0.2s',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)')}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
                       >
-                        <div style={{ position: 'relative', height: 120, background: circle.coverImageUrl ? 'none' : bgGradient }}>
-                          {circle.coverImageUrl && (
-                            <img src={circle.coverImageUrl} alt={circle.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          )}
-                          <div style={{ position: 'absolute', top: 12, left: 12, padding: '4px 10px', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: 600, color: '#111' }}>
+                        {/* 이미지 영역 */}
+                        <div style={{ position: 'relative', height: 160, background: circle.coverImageUrl ? 'none' : bgGradient, flexShrink: 0 }}>
+                          {circle.coverImageUrl
+                            ? <img src={circle.coverImageUrl} alt={circle.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            : null
+                          }
+                          <div style={{ position: 'absolute', top: 10, left: 10, padding: '3px 8px', borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.55)', fontSize: 11, fontWeight: 700, color: 'white' }}>
                             {circle.categoryName}
                           </div>
-                          <div style={{ position: 'absolute', top: 12, right: 12, padding: '4px 10px', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: 700, color: statusInfo.color }}>
+                          <div style={{ position: 'absolute', top: 10, right: 10, padding: '3px 8px', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.92)', fontSize: 11, fontWeight: 700, color: statusInfo.color }}>
                             {statusInfo.text}
                           </div>
                         </div>
 
-                        <div style={{ padding: '14px 16px 16px' }}>
-                          <h3 style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 700, lineHeight: 1.4, color: '#111' }}>
+                        {/* 정보 영역 */}
+                        <div style={{ padding: '12px 14px 16px' }}>
+                          <h3 style={{
+                            margin: '0 0 4px', fontSize: 14, fontWeight: 800, lineHeight: 1.4, color: '#1f2937',
+                            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                          }}>
                             {circle.name}
                           </h3>
-                          <p style={{ margin: '0 0 12px', fontSize: 13, color: '#666', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          <p style={{
+                            margin: '0 0 10px', fontSize: 12, color: '#6b7280', lineHeight: 1.5,
+                            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                          }}>
                             {circle.description || '소개글이 없습니다.'}
                           </p>
-
-                          <div style={{ height: 1, backgroundColor: '#f0f0f0', margin: '12px 0' }} />
-
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#666' }}>
-                              <Users style={{ width: 13, height: 13 }} />
-                              {circle.currentMember}/{circle.maxMember}명
-                            </div>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); navigate(`/circle/${circle.circleId}`); }}
-                              style={{ padding: '8px 16px', borderRadius: 999, border: 'none', backgroundColor: '#111', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                            >
-                              자세히 보기
-                            </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}>
+                            <Users style={{ width: 12, height: 12 }} />
+                            {circle.currentMember}/{circle.maxMember}명
                           </div>
                         </div>
                       </div>

@@ -13,6 +13,7 @@ export interface ScheduleResponse {
   latitude?: number;
   longitude?: number;
   joined?: boolean;
+  tags?: string[];
 }
 
 export interface ScheduleCreateRequest {
@@ -24,6 +25,7 @@ export interface ScheduleCreateRequest {
   location?: string;
   latitude?: number;
   longitude?: number;
+  tags?: string[];
 }
 
 export type ScheduleUpdateRequest = ScheduleCreateRequest;

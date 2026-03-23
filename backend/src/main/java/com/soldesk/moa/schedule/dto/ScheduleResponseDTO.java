@@ -1,6 +1,7 @@
 package com.soldesk.moa.schedule.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.entity.constant.ScheduleStatus;
@@ -26,6 +27,7 @@ public class ScheduleResponseDTO {
     private Double latitude;
     private Double longitude;
     private boolean joined;
+    private List<String> tags;
 
     public ScheduleResponseDTO(Schedule schedule) {
         this.scheduleId = schedule.getScheduleId();
@@ -39,10 +41,16 @@ public class ScheduleResponseDTO {
         this.location = schedule.getAddress();
         this.latitude = schedule.getLatitude();
         this.longitude = schedule.getLongitude();
+        this.tags = List.of();
     }
 
     public ScheduleResponseDTO(Schedule schedule, boolean joined) {
         this(schedule);
         this.joined = joined;
+    }
+
+    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<String> tags) {
+        this(schedule, joined);
+        this.tags = tags;
     }
 }

@@ -155,7 +155,7 @@ export default function ScheduleDetailPage() {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: 20, alignItems: 'stretch' }}>
 
           {/* 일정 정보 카드 */}
           <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 28, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', flex: hasLocation ? '0 0 420px' : '1' }}>
@@ -172,9 +172,22 @@ export default function ScheduleDetailPage() {
               {schedule.title}
             </h1>
 
-            <p style={{ fontSize: 14, color: '#555', lineHeight: 1.7, marginBottom: 24, whiteSpace: 'pre-wrap' }}>
+            <p style={{ fontSize: 14, color: '#555', lineHeight: 1.7, marginBottom: schedule.tags && schedule.tags.length > 0 ? 12 : 24, whiteSpace: 'pre-wrap' }}>
               {schedule.description}
             </p>
+
+            {schedule.tags && schedule.tags.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 24 }}>
+                {schedule.tags.map(tag => (
+                  <span key={tag} style={{
+                    padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+                    backgroundColor: '#eef2ff', color: '#6366f1', border: '1px solid #c7d2fe',
+                  }}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
             <div style={{
               display: 'flex', flexDirection: 'column', gap: 10,
@@ -236,17 +249,17 @@ export default function ScheduleDetailPage() {
 
           {/* 카카오 맵 (장소 지정된 경우만) */}
           {hasLocation && (
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                 {schedule.location && (
-                  <div style={{ padding: '14px 18px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ padding: '14px 18px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                     <MapPin size={15} style={{ color: '#888', flexShrink: 0 }} />
                     <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{schedule.location}</span>
                   </div>
                 )}
                 <div
                   ref={mapContainerRef}
-                  style={{ width: '100%', height: 460, backgroundColor: '#e8e8e8' }}
+                  style={{ width: '100%', flex: 1, minHeight: 300, backgroundColor: '#e8e8e8' }}
                 />
               </div>
             </div>

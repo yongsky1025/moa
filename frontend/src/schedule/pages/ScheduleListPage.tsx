@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, Users, ChevronLeft, ChevronRight, List, CalendarDays } from 'lucide-react';
+import { Clock, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { scheduleApi } from '../../api/scheduleApi';
@@ -15,7 +15,6 @@ const STATUS_LABEL = {
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
-// 로컬 시간 기준 ISO 문자열 (백엔드 LocalDateTime 파라미터용)
 function toLocalISO(date: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
@@ -26,41 +25,10 @@ export default function ScheduleListPage() {
   const cid = Number(circleId);
   const navigate = useNavigate();
 
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [schedules, setSchedules] = useState<ScheduleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!circleId || isNaN(cid)) { navigate('/circle', { replace: true }); return; }
-
-    setLoading(true);
-    setError('');
-
-    let params: { from?: string; to?: string } | undefined;
-    if (viewMode === 'calendar') {
-      const y = currentMonth.getFullYear();
-      const m = currentMonth.getMonth();
-      params = {
-        from: toLocalISO(new Date(y, m, 1, 0, 0, 0)),
-        to:   toLocalISO(new Date(y, m + 1, 0, 23, 59, 59)),
-      };
-    }
-
-    scheduleApi.getSchedules(cid, params)
-      .then(res => setSchedules(res.data))
-      .catch(e => setError(getErrorMessage(e)))
-      .finally(() => setLoading(false));
-  }, [cid, viewMode, currentMonth]);
-
-  // 캘린더용: 날짜별 일정 맵
-  const schedulesByDay = schedules.reduce<Record<number, ScheduleResponse[]>>((acc, s) => {
-    const day = new Date(s.startAt).getDate();
-    if (!acc[day]) acc[day] = [];
-    acc[day].push(s);
-    return acc;
-  }, {});
 
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
@@ -68,10 +36,32 @@ export default function ScheduleListPage() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const today = new Date();
 
+  useEffect(() => {
+    if (!circleId || isNaN(cid)) { navigate('/circle', { replace: true }); return; }
+    setLoading(true);
+    setError('');
+    const y = currentMonth.getFullYear();
+    const m = currentMonth.getMonth();
+    scheduleApi.getSchedules(cid, {
+      from: toLocalISO(new Date(y, m, 1, 0, 0, 0)),
+      to:   toLocalISO(new Date(y, m + 1, 0, 23, 59, 59)),
+    })
+      .then(res => setSchedules(res.data))
+      .catch(e => setError(getErrorMessage(e)))
+      .finally(() => setLoading(false));
+  }, [cid, currentMonth]);
+
+  const schedulesByDay = schedules.reduce<Record<number, ScheduleResponse[]>>((acc, s) => {
+    const day = new Date(s.startAt).getDate();
+    if (!acc[day]) acc[day] = [];
+    acc[day].push(s);
+    return acc;
+  }, {});
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
       <Navbar />
-      <main style={{ maxWidth: 900, margin: '0 auto', padding: '32px 20px 60px' }}>
+      <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 20px 60px' }}>
 
         {/* 헤더 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
@@ -84,39 +74,12 @@ export default function ScheduleListPage() {
             </button>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: '#111' }}>일정</h1>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {/* 뷰 모드 토글 */}
-            <div style={{ display: 'flex', border: '1px solid #e5e5e5', borderRadius: 8, overflow: 'hidden' }}>
-              <button
-                onClick={() => setViewMode('list')}
-                style={{
-                  padding: '7px 13px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  backgroundColor: viewMode === 'list' ? '#111' : 'white',
-                  color: viewMode === 'list' ? 'white' : '#888',
-                  display: 'flex', alignItems: 'center', gap: 5,
-                }}
-              >
-                <List size={13} /> 목록
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                style={{
-                  padding: '7px 13px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  backgroundColor: viewMode === 'calendar' ? '#111' : 'white',
-                  color: viewMode === 'calendar' ? 'white' : '#888',
-                  display: 'flex', alignItems: 'center', gap: 5,
-                }}
-              >
-                <CalendarDays size={13} /> 캘린더
-              </button>
-            </div>
-            <button
-              onClick={() => navigate(`/circle/${cid}/schedules/create`)}
-              style={{ padding: '9px 18px', borderRadius: 8, border: 'none', backgroundColor: '#111', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-            >
-              + 일정 만들기
-            </button>
-          </div>
+          <button
+            onClick={() => navigate(`/circle/${cid}/schedules/create`)}
+            style={{ padding: '9px 18px', borderRadius: 8, border: 'none', backgroundColor: '#111', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+          >
+            + 일정 만들기
+          </button>
         </div>
 
         {error && (
@@ -125,65 +88,73 @@ export default function ScheduleListPage() {
           </p>
         )}
 
-        {loading ? (
-          <p style={{ textAlign: 'center', color: '#888', padding: '60px 0' }}>로딩 중...</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 20, alignItems: 'start' }}>
 
-        ) : viewMode === 'list' ? (
-          /* ── 목록 뷰 ── */
-          schedules.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: '#aaa' }}>
-              <p style={{ fontSize: 15, marginBottom: 8 }}>아직 일정이 없습니다.</p>
-              <p style={{ fontSize: 13 }}>첫 번째 일정을 만들어보세요!</p>
+          {/* ── 왼쪽: 목록 ── */}
+          <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 20, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 14 }}>
+              {year}년 {month + 1}월 일정
             </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {schedules.map(s => {
-                const statusInfo = STATUS_LABEL[s.status];
-                const startDate = new Date(s.startAt);
-                const sMonth = startDate.getMonth() + 1;
-                const sDay = startDate.getDate();
-                const timeStr = startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-                return (
-                  <div
-                    key={s.scheduleId}
-                    onClick={() => navigate(`/circle/${cid}/schedules/${s.scheduleId}`)}
-                    style={{
-                      backgroundColor: 'white', borderRadius: 12,
-                      padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                      cursor: 'pointer', border: '1px solid #f0f0f0', transition: 'box-shadow 0.15s',
-                      display: 'flex', alignItems: 'flex-start', gap: 14,
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)')}
-                    onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)')}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 36 }}>
-                      <span style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>{sMonth}월</span>
-                      <span style={{ fontSize: 22, fontWeight: 800, color: '#111', lineHeight: 1.1 }}>{sDay}</span>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {s.title}
-                      </h3>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: statusInfo.color, display: 'block', marginBottom: 8 }}>
-                        {statusInfo.text}
-                      </span>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#888' }}>
-                          <Clock size={12} /><span>{timeStr}</span>
+            {loading ? (
+              <p style={{ textAlign: 'center', color: '#888', padding: '40px 0', fontSize: 13 }}>로딩 중...</p>
+            ) : schedules.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#aaa' }}>
+                <p style={{ fontSize: 14, marginBottom: 4 }}>이달 일정이 없습니다.</p>
+                <p style={{ fontSize: 12 }}>새 일정을 만들어보세요!</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {schedules.map(s => {
+                  const statusInfo = STATUS_LABEL[s.status];
+                  const startDate = new Date(s.startAt);
+                  const sMonth = startDate.getMonth() + 1;
+                  const sDay = startDate.getDate();
+                  const timeStr = startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                  return (
+                    <div
+                      key={s.scheduleId}
+                      onClick={() => navigate(`/circle/${cid}/schedules/${s.scheduleId}`)}
+                      style={{
+                        padding: '12px 14px', borderRadius: 10, cursor: 'pointer',
+                        border: '1px solid #f0f0f0', backgroundColor: '#fafafa',
+                        display: 'flex', alignItems: 'flex-start', gap: 12, transition: 'background 0.1s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f0f4ff')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fafafa')}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 32, flexShrink: 0 }}>
+                        <span style={{ fontSize: 10, color: '#aaa', fontWeight: 500 }}>{sMonth}월</span>
+                        <span style={{ fontSize: 20, fontWeight: 800, color: '#111', lineHeight: 1.1 }}>{sDay}</span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 999,
+                            backgroundColor: statusInfo.bg, color: statusInfo.color,
+                          }}>
+                            {statusInfo.text}
+                          </span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#888' }}>
-                          <Users size={12} /><span>{s.currentMember ?? 0}/{s.maxMember}명</span>
+                        <h3 style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {s.title}
+                        </h3>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#888' }}>
+                            <Clock size={11} /><span>{timeStr}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#888' }}>
+                            <Users size={11} /><span>{s.currentMember ?? 0}/{s.maxMember}명</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
-        ) : (
-          /* ── 캘린더 뷰 ── */
+          {/* ── 오른쪽: 캘린더 ── */}
           <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
 
             {/* 월 네비게이션 */}
@@ -219,11 +190,9 @@ export default function ScheduleListPage() {
 
             {/* 날짜 그리드 */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
-              {/* 첫 주 빈 셀 */}
               {Array.from({ length: firstWeekday }).map((_, i) => (
                 <div key={`empty-${i}`} style={{ minHeight: 80 }} />
               ))}
-              {/* 날짜 셀 */}
               {Array.from({ length: daysInMonth }).map((_, i) => {
                 const day = i + 1;
                 const daySchedules = schedulesByDay[day] ?? [];
@@ -271,7 +240,7 @@ export default function ScheduleListPage() {
             </div>
 
           </div>
-        )}
+        </div>
 
       </main>
       <Footer />

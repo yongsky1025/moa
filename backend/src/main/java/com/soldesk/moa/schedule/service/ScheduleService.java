@@ -14,15 +14,19 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.place.entity.Tag;
+import com.soldesk.moa.place.repository.TagRepository;
 import com.soldesk.moa.schedule.dto.ScheduleCreateRequestDTO;
 import com.soldesk.moa.schedule.dto.ScheduleMemberResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleUpdateRequestDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.entity.ScheduleMember;
+import com.soldesk.moa.schedule.entity.ScheduleTag;
 import com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus;
 import com.soldesk.moa.schedule.repository.ScheduleMemberRepository;
 import com.soldesk.moa.schedule.repository.ScheduleRepository;
+import com.soldesk.moa.schedule.repository.ScheduleTagRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
@@ -35,9 +39,11 @@ public class ScheduleService {
 
         private final ScheduleRepository scheduleRepository;
         private final ScheduleMemberRepository scheduleMemberRepository;
+        private final ScheduleTagRepository scheduleTagRepository;
         private final CircleRepository circleRepository;
         private final CircleMemberRepository circleMemberRepository;
         private final UsersRepository usersRepository;
+        private final TagRepository tagRepository;
 
         // 일정 생성
         public ScheduleResponseDTO createSchedule(
@@ -90,7 +96,8 @@ public class ScheduleService {
                 scheduleMemberRepository.save(creatorMember);
                 saved.increaseCurrentMember();
 
-                return new ScheduleResponseDTO(saved);
+                List<String> savedTags = saveTags(saved, request.getTags());
+                return new ScheduleResponseDTO(saved, false, savedTags);
         }
 
         // 일정 참여
@@ -198,7 +205,12 @@ public class ScheduleService {
 
                 return scheduleRepository.findByCircleWithDateFilter(circleId, from, to)
                                 .stream()
-                                .map(ScheduleResponseDTO::new)
+                                .map(s -> {
+                                        List<String> tags = scheduleTagRepository.findAllBySchedule(s).stream()
+                                                        .map(st -> st.getTag().getName())
+                                                        .toList();
+                                        return new ScheduleResponseDTO(s, false, tags);
+                                })
                                 .toList();
         }
 
@@ -221,7 +233,10 @@ public class ScheduleService {
                 }
 
                 boolean joined = scheduleMemberRepository.existsByScheduleAndCircleMember(schedule, circleMember);
-                return new ScheduleResponseDTO(schedule, joined);
+                List<String> tags = scheduleTagRepository.findAllBySchedule(schedule).stream()
+                                .map(st -> st.getTag().getName())
+                                .toList();
+                return new ScheduleResponseDTO(schedule, joined, tags);
         }
 
         // 일정 수정 (생성자 또는 서클 리더)
@@ -275,7 +290,10 @@ public class ScheduleService {
                                 .longitude(request.getLongitude())
                                 .build();
 
-                return new ScheduleResponseDTO(scheduleRepository.save(updated));
+                Schedule savedUpdated = scheduleRepository.save(updated);
+                scheduleTagRepository.deleteAllBySchedule(savedUpdated);
+                List<String> updatedTags = saveTags(savedUpdated, request.getTags());
+                return new ScheduleResponseDTO(savedUpdated, false, updatedTags);
         }
 
         // 일정 참여자 목록 조회 (서클 ACTIVE 멤버만)
@@ -300,6 +318,15 @@ public class ScheduleService {
                                 .stream()
                                 .map(ScheduleMemberResponseDTO::new)
                                 .collect(Collectors.toList());
+        }
+
+        // 태그 저장 헬퍼
+        private List<String> saveTags(Schedule schedule, List<String> tagNames) {
+                if (tagNames == null || tagNames.isEmpty()) return List.of();
+                List<Tag> tags = tagRepository.findByNameIn(tagNames);
+                tags.forEach(tag -> scheduleTagRepository.save(
+                                ScheduleTag.builder().schedule(schedule).tag(tag).build()));
+                return tags.stream().map(Tag::getName).toList();
         }
 
         // 일정 참여 취소 (일정 시작일 하루 전까지만 참여 취소가능)
