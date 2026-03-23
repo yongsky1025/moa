@@ -22,7 +22,7 @@ function renderMsgContent(content: string, mine: boolean) {
     }
     const fileName = content.split('/').pop() ?? '파일';
     return (
-      <a href={content} download style={{ color: mine ? '#fff' : '#d07856', textDecoration: 'underline', fontSize: 12 }}>
+      <a href={content} download style={{ color: mine ? '#fff' : '#5F8F7B', textDecoration: 'underline', fontSize: 12 }}>
         📎 {fileName}
       </a>
     );
@@ -41,7 +41,7 @@ interface Props {
 }
 
 export default function FloatingChatWindow({ open, onClose }: Props) {
-  const { userId } = useAuthStore();
+  const { userId, user } = useAuthStore();
 
   const [pos, setPos] = useState({ x: window.innerWidth - INIT_W - 40, y: window.innerHeight - INIT_H - 60 });
   const [size, setSize] = useState({ w: INIT_W, h: INIT_H });
@@ -69,6 +69,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [showEmoji, setShowEmoji] = useState(false);
   const [roomCtxMenu, setRoomCtxMenu] = useState<{ x: number; y: number; room: ChatRoomSummary } | null>(null);
   const [renaming, setRenaming] = useState<{ roomId: number; value: string } | null>(null);
+  const [readStatus, setReadStatus] = useState<Record<number, string>>({});
   const [menuId, setMenuId] = useState<number | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
   const [editMsgContent, setEditMsgContent] = useState("");
@@ -129,6 +130,13 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
         chatApi.markAsRead(activeRoomId).catch(() => {});
       })
       .finally(() => setLoadingMsg(false));
+    chatApi.getReadStatus(activeRoomId)
+      .then((list) => {
+        const map: Record<number, string> = {};
+        list.forEach((r) => { map[r.userId] = r.lastReadAt; });
+        setReadStatus(map);
+      })
+      .catch(() => {});
   }, [activeRoomId]);
 
   useEffect(() => {
@@ -138,7 +146,17 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const handleNewMessage = useCallback(
     (msg: ChatMessage) => {
       if (msg.roomId === activeRoomId) {
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          const tempIdx = prev.findIndex(
+            (m) => m.messageId < 0 && m.senderId === msg.senderId && m.content === msg.content
+          );
+          if (tempIdx !== -1) {
+            const next = [...prev];
+            next[tempIdx] = msg;
+            return next;
+          }
+          return [...prev, msg];
+        });
         chatApi.markAsRead(msg.roomId).catch(() => {});
       }
       setRooms((prev) =>
@@ -152,15 +170,37 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     [activeRoomId],
   );
 
+  const handleReadEvent = useCallback((event: { userId: number; lastReadAt: string }) => {
+    setReadStatus((prev) => ({ ...prev, [event.userId]: event.lastReadAt }));
+  }, []);
+
   const { sendMessage } = useWebSocket({
     roomId: activeRoomId ?? 0,
     onMessage: handleNewMessage,
+    onReadEvent: handleReadEvent,
   });
 
   const handleSend = () => {
-    if (!input.trim() || !activeRoomId) return;
-    sendMessage(input.trim());
+    const content = input.trim();
+    if (!content || !activeRoomId) return;
+    const tempMsg: ChatMessage = {
+      messageId: -Date.now(),
+      roomId: activeRoomId,
+      senderId: userId!,
+      senderNickname: user?.nickname ?? '?',
+      content,
+      createdAt: new Date().toISOString(),
+      updatedAt: null,
+      isDeleted: false,
+    };
+    setMessages((prev) => [...prev, tempMsg]);
+    setRooms((prev) => prev.map((r) =>
+      r.roomId === activeRoomId
+        ? { ...r, lastMessage: content, lastMessageAt: tempMsg.createdAt }
+        : r
+    ));
     setInput("");
+    sendMessage(content);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -345,7 +385,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
             zIndex: 10002,
             minWidth: 140,
-            border: "1px solid #f2e8e0",
+            border: "1px solid #E5E7EB",
             overflow: "hidden",
           }}
           onClick={(e) => e.stopPropagation()}
@@ -413,7 +453,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
               style={{
                 width: "100%",
                 padding: "9px 12px",
-                border: "1px solid #d07856",
+                border: "1px solid #5F8F7B",
                 borderRadius: 8,
                 fontSize: 13,
                 outline: "none",
@@ -432,7 +472,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
               <button
                 style={{
                   padding: "7px 14px",
-                  background: "#f2e8e0",
+                  background: "#EAF4F0",
                   color: "#262626",
                   border: "none",
                   borderRadius: 7,
@@ -446,7 +486,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
               <button
                 style={{
                   padding: "7px 14px",
-                  background: "#d07856",
+                  background: "#5F8F7B",
                   color: "#fff",
                   border: "none",
                   borderRadius: 7,
@@ -569,13 +609,11 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                       </div>
                       <div style={s.roomRow}>
                         <span style={s.roomLast}>{r.lastMessage ?? ''}</span>
-                        {r.unreadCount > 0 && <span style={s.unreadBadge}>{r.unreadCount}</span>}
                       </div>
                     </div>
                   </div>
-                </div>
               ))
-            )}
+            }
           </div>
 
             {/* 오른쪽: 채팅방 */}
@@ -605,15 +643,15 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                               {editingMsgId === msg.messageId ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 200 }}>
                                   <input
-                                    style={{ padding: '6px 10px', border: '1px solid #d07856', borderRadius: 8, fontSize: 12, outline: 'none' }}
+                                    style={{ padding: '6px 10px', border: '1px solid #5F8F7B', borderRadius: 8, fontSize: 12, outline: 'none' }}
                                     value={editMsgContent}
                                     onChange={(e) => setEditMsgContent(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Enter') confirmEditMsg(msg.messageId); if (e.key === 'Escape') setEditingMsgId(null); }}
                                     autoFocus
                                   />
                                   <div style={{ display: 'flex', gap: 4 }}>
-                                    <button style={{ flex: 1, padding: '3px', background: '#d07856', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => confirmEditMsg(msg.messageId)}>확인</button>
-                                    <button style={{ flex: 1, padding: '3px', background: '#f2e8e0', color: '#262626', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => setEditingMsgId(null)}>취소</button>
+                                    <button style={{ flex: 1, padding: '3px', background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => confirmEditMsg(msg.messageId)}>확인</button>
+                                    <button style={{ flex: 1, padding: '3px', background: '#EAF4F0', color: '#262626', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => setEditingMsgId(null)}>취소</button>
                                   </div>
                                 </div>
                               ) : (
@@ -621,13 +659,13 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                                   style={{
                                     ...s.bubble,
                                     position: 'relative',
-                                    background: msg.isDeleted ? '#e0e0e0' : !msg.content.startsWith('/api/chat/files/') ? (mine ? '#d07856' : '#fff') : 'transparent',
+                                    background: msg.isDeleted ? '#e0e0e0' : !msg.content.startsWith('/api/chat/files/') ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
                                     color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1a1a1a',
                                     fontStyle: msg.isDeleted ? 'italic' : 'normal',
-                                    borderRadius: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 8 : 6,
+                                    borderRadius: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 8 : 18,
                                     padding: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 0 : undefined,
-                                    boxShadow: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(208,120,86,0.35)' : '0 2px 6px rgba(0,0,0,0.12)',
-                                    border: !msg.content.startsWith('/api/chat/files/') && !mine && !msg.isDeleted ? '1px solid #e8e8e8' : 'none',
+                                    boxShadow: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
+                                    border: !msg.content.startsWith('/api/chat/files/') && !mine && !msg.isDeleted ? '1px solid #E5E7EB' : 'none',
                                   }}
                                   onContextMenu={mine && !msg.isDeleted ? (e) => { e.preventDefault(); e.stopPropagation(); setMenuId(menuId === msg.messageId ? null : msg.messageId); } : undefined}
                                 >
@@ -641,11 +679,16 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                                   )}
                                 </div>
                               )}
+                              {mine && !msg.isDeleted && (() => {
+                                const unread = Object.entries(readStatus).filter(
+                                  ([uid, time]) => Number(uid) !== msg.senderId && new Date(time) < new Date(msg.createdAt)
+                                ).length;
+                                return unread > 0 ? <span style={s.unreadCount}>{unread}</span> : null;
+                              })()}
                               <span style={s.msgTime}>{formatTime(msg.createdAt)}</span>
                             </div>
                           </div>
                         </div>
-                      </div>
                     );
                   })}
                   <div ref={bottomRef} />
@@ -700,7 +743,7 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: "center",
     padding: "0 12px",
     height: 44,
-    background: "#d07856",
+    background: "#5F8F7B",
     cursor: "grab",
     flexShrink: 0,
   },
@@ -748,7 +791,7 @@ const s: Record<string, React.CSSProperties> = {
     fontWeight: "bold",
     fontSize: 13,
   },
-  notiReadAll: { background: "none", border: "none", color: "#d07856", cursor: "pointer", fontSize: 11 },
+  notiReadAll: { background: "none", border: "none", color: "#5F8F7B", cursor: "pointer", fontSize: 11 },
   notiEmpty: { padding: 16, textAlign: "center", color: "#aaa", fontSize: 13 },
   notiItem: { padding: "8px 14px", borderBottom: "1px solid #f0f0f0", cursor: "pointer", display: "flex", flexDirection: "column", gap: 2 },
   notiMsg: { fontSize: 12, color: "#333" },
@@ -759,7 +802,7 @@ const s: Record<string, React.CSSProperties> = {
   sidebar: { width: 200, borderRight: "1px solid #eee", display: "flex", flexDirection: "column", overflowY: "auto", flexShrink: 0 },
   sidebarTitle: { padding: "12px 14px", fontWeight: "bold", fontSize: 13, color: "#555", borderBottom: "1px solid #eee" },
   sideEmpty: { padding: 16, textAlign: "center", color: "#aaa", fontSize: 12 },
-  roomItem: { display: "flex", alignItems: "center", padding: "10px 12px", cursor: "pointer", gap: 10, borderBottom: "1px solid #f2e8e0" },
+  roomItem: { display: "flex", alignItems: "center", padding: "10px 12px", cursor: "pointer", gap: 10, borderBottom: "1px solid #EAF4F0" },
   roomAvatar: { fontSize: 22, flexShrink: 0 },
   roomInfo: { flex: 1, minWidth: 0 },
   roomRow: { display: "flex", justifyContent: "space-between", alignItems: "center" },
@@ -770,16 +813,17 @@ const s: Record<string, React.CSSProperties> = {
 
   chatArea: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   noRoom: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#bbb', fontSize: 14 },
-  msgArea: { flex: 1, overflowY: 'auto', padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 10, background: '#fdf0e8' },
+  msgArea: { flex: 1, overflowY: 'auto', padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 10, background: '#EAF4F0' },
   msgRow: { display: 'flex', alignItems: 'flex-end', gap: 6 },
   avatar: { width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 'bold', flexShrink: 0, alignSelf: 'flex-start' },
   nick: { fontSize: 11, color: '#666', fontWeight: 600, marginBottom: 4 },
-  bubble: { padding: '11px 15px', borderRadius: 4, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', width: 'fit-content', maxWidth: 300, textAlign: 'left' as const },
+  bubble: { padding: '8px 12px', borderRadius: 18, fontSize: 13, lineHeight: 1.45, wordBreak: 'break-word', width: 'fit-content', maxWidth: 240, textAlign: 'left' as const },
   msgTime: { fontSize: 10, color: '#bbb', flexShrink: 0, marginBottom: 2 },
+  unreadCount: { fontSize: 11, color: '#E9C46A', fontWeight: 'bold', flexShrink: 0, marginBottom: 2, lineHeight: 1 },
   inputArea: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderTop: '1px solid #eee', background: '#fff', flexShrink: 0 },
   iconBtn: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '0 2px' },
   textInput: { flex: 1, padding: '8px 12px', border: '1px solid #ddd', borderRadius: 20, fontSize: 13, outline: 'none' },
-  sendBtn: { background: '#d07856', color: '#fff', border: 'none', borderRadius: 16, padding: '8px 14px', fontWeight: 'bold', cursor: 'pointer', fontSize: 12 },
+  sendBtn: { background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 16, padding: '8px 14px', fontWeight: 'bold', cursor: 'pointer', fontSize: 12 },
 
   rHandle: { position: "absolute", zIndex: 10001 },
   rN: { top: 0, left: 8, right: 8, height: 5, cursor: "n-resize" },

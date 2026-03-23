@@ -4,6 +4,7 @@ package com.soldesk.moa.chat.service;
 import com.soldesk.moa.chat.domain.ChatRoom;
 import com.soldesk.moa.chat.domain.ChatRoomMember;
 import com.soldesk.moa.chat.dto.response.ChatRoomSummaryResponse;
+import com.soldesk.moa.chat.dto.response.ReadStatusResponse;
 import com.soldesk.moa.chat.exception.ChatErrorCode;
 import com.soldesk.moa.chat.exception.ChatException;
 import com.soldesk.moa.chat.repository.ChatMessageRepository;
@@ -117,9 +118,21 @@ public class ChatRoomService {
                 .orElseThrow(() -> new ChatException(ChatErrorCode.NOT_A_MEMBER, "채팅방 멤버가 아닙니다."));
     }
 
+    /** 읽음 처리 후 새 lastReadAt 반환 (컨트롤러에서 WebSocket 브로드캐스트용) */
     @Transactional
-    public void markAsRead(Long roomId, Long userId) {
-        getMemberOrThrow(roomId, userId).markAsRead();
+    public java.time.LocalDateTime markAsRead(Long roomId, Long userId) {
+        ChatRoomMember member = getMemberOrThrow(roomId, userId);
+        member.markAsRead();
+        return member.getLastReadAt();
+    }
+
+    /** 방 멤버 전체의 읽음 시각 조회 (읽음 표시 배지용) */
+    @Transactional(readOnly = true)
+    public List<ReadStatusResponse> getReadStatus(Long roomId, Long userId) {
+        assertMember(roomId, userId);
+        return memberRepo.findByRoomId(roomId).stream()
+                .map(m -> new ReadStatusResponse(m.getUserId(), m.getLastReadAt()))
+                .toList();
     }
 
     /**

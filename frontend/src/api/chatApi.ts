@@ -48,6 +48,10 @@ export const chatApi = {
   // 모임 채팅방 이름 변경
   updateRoomName: (roomId: number, name: string) => api.patch(`/api/chat/rooms/${roomId}/name`, { name }),
 
+  // 방 멤버별 읽음 시각 조회
+  getReadStatus: (roomId: number) =>
+    api.get<{ userId: number; lastReadAt: string }[]>(`/api/chat/rooms/${roomId}/read-status`).then((r) => r.data),
+
   // 파일 업로드
   uploadFile: (file: File) => {
     const form = new FormData();

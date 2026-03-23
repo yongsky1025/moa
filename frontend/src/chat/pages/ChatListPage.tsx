@@ -79,7 +79,7 @@ export default function ChatListPage() {
     if (room.name) return room.name;
     if (room.roomType === 'GROUP') return `모임 채팅 #${room.circleId}`;
     if (room.roomType === 'SCHEDULE') return `일정 채팅 #${room.scheduleId}`;
-    return `1:1 채팅 #${room.roomId}`;
+    return room.otherUserNickname ?? `1:1 채팅 #${room.roomId}`;
   };
 
   if (loading) return <div style={styles.center}>불러오는 중...</div>;
@@ -167,16 +167,16 @@ export default function ChatListPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { height: "100%", overflowY: "auto", background: "#fdf0e8", position: "relative" },
-  header: { padding: "16px 20px", borderBottom: "1px solid #f2e8e0", background: "#fff" },
-  title: { margin: 0, fontSize: 18, fontWeight: "bold", color: "#262626" },
-  center: { display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#888" },
-  empty: { textAlign: "center", padding: 40, color: "#aaa", fontSize: 14 },
+  container: { height: "100%", overflowY: "auto", background: "#EAF4F0", position: "relative" },
+  header: { padding: "16px 20px", borderBottom: "1px solid #E5E7EB", background: "#fff" },
+  title: { margin: 0, fontSize: 18, fontWeight: "bold", color: "#1F2937" },
+  center: { display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#6B7280" },
+  empty: { textAlign: "center", padding: 40, color: "#A9C8BB", fontSize: 14 },
   item: {
     display: "flex",
     alignItems: "center",
     padding: "14px 20px",
-    borderBottom: "1px solid #f2e8e0",
+    borderBottom: "1px solid #E5E7EB",
     cursor: "pointer",
     gap: 14,
     background: "#fff",
@@ -184,11 +184,11 @@ const styles: Record<string, React.CSSProperties> = {
   avatar: { fontSize: 28, flexShrink: 0 },
   info: { flex: 1, minWidth: 0 },
   row: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  name: { fontWeight: "bold", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#262626" },
-  time: { fontSize: 12, color: "#999", flexShrink: 0, marginLeft: 8 },
-  last: { fontSize: 13, color: "#666", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  name: { fontWeight: "bold", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#1F2937" },
+  time: { fontSize: 12, color: "#6B7280", flexShrink: 0, marginLeft: 8 },
+  last: { fontSize: 13, color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   badge: {
-    background: "#d07856",
+    background: "#E3886D",
     color: "#fff",
     borderRadius: 12,
     fontSize: 11,
@@ -202,10 +202,10 @@ const styles: Record<string, React.CSSProperties> = {
     position: "fixed",
     background: "#fff",
     borderRadius: 10,
-    boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
     zIndex: 9999,
     minWidth: 160,
-    border: "1px solid #f2e8e0",
+    border: "1px solid #E5E7EB",
     overflow: "hidden",
   },
   ctxItem: {
@@ -217,7 +217,7 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: "left",
     cursor: "pointer",
     fontSize: 13,
-    color: "#262626",
+    color: "#1F2937",
   },
   // 모달
   modalOverlay: {
@@ -229,22 +229,22 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     zIndex: 10000,
   },
-  modal: { background: "#fff", borderRadius: 14, padding: "24px 24px 20px", width: 300, boxShadow: "0 8px 32px rgba(0,0,0,0.2)" },
-  modalTitle: { fontWeight: "bold", fontSize: 15, color: "#262626", marginBottom: 14 },
+  modal: { background: "#fff", borderRadius: 14, padding: "24px 24px 20px", width: 300, boxShadow: "0 8px 32px rgba(0,0,0,0.15)" },
+  modalTitle: { fontWeight: "bold", fontSize: 15, color: "#1F2937", marginBottom: 14 },
   modalInput: {
     width: "100%",
     padding: "10px 14px",
-    border: "1px solid #d07856",
+    border: "1px solid #5F8F7B",
     borderRadius: 8,
     fontSize: 14,
     outline: "none",
     boxSizing: "border-box",
   },
   modalBtns: { display: "flex", gap: 8, marginTop: 14, justifyContent: "flex-end" },
-  modalCancel: { padding: "8px 16px", background: "#f2e8e0", color: "#262626", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13 },
+  modalCancel: { padding: "8px 16px", background: "#EAF4F0", color: "#1F2937", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13 },
   modalConfirm: {
     padding: "8px 16px",
-    background: "#d07856",
+    background: "#5F8F7B",
     color: "#fff",
     border: "none",
     borderRadius: 8,

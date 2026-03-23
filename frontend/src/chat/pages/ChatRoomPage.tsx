@@ -12,7 +12,7 @@ export default function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const rid = Number(roomId);
   const navigate = useNavigate();
-  const { userId } = useAuthStore();
+  const { userId, user } = useAuthStore();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -20,7 +20,7 @@ export default function ChatRoomPage() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
-  const [menuId, setMenuId] = useState<number | null>(null);
+  const [msgCtx, setMsgCtx] = useState<{ x: number; y: number; msgId: number } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [roomInfo, setRoomInfo] = useState<ChatRoomSummary | null>(null);
@@ -30,10 +30,23 @@ export default function ChatRoomPage() {
   const [profileModal, setProfileModal] = useState<{ nickname: string; senderId: number } | null>(null);
   const [profileChatError, setProfileChatError] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  // userId → lastReadAt (ISO string)
+  const [readStatus, setReadStatus] = useState<Record<number, string>>({});
   const headerCtxRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
+
+  // 읽음 상태 초기 로드
+  useEffect(() => {
+    chatApi.getReadStatus(rid)
+      .then((list) => {
+        const map: Record<number, string> = {};
+        list.forEach((r) => { map[r.userId] = r.lastReadAt; });
+        setReadStatus(map);
+      })
+      .catch(() => {});
+  }, [rid]);
 
   const loadMessages = useCallback(async () => {
     try {
@@ -76,12 +89,12 @@ export default function ChatRoomPage() {
   // 바깥 클릭 / ESC 시 메뉴 닫기
   useEffect(() => {
     const close = () => {
-      setMenuId(null);
+      setMsgCtx(null);
       setHeaderCtx(null);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setMenuId(null);
+        setMsgCtx(null);
         setHeaderCtx(null);
         setProfileModal(null);
       }
@@ -140,21 +153,52 @@ export default function ChatRoomPage() {
     }
   };
 
+  // 상대가 읽으면 readStatus 실시간 업데이트
+  const handleReadEvent = useCallback((event: { userId: number; lastReadAt: string }) => {
+    setReadStatus((prev) => ({ ...prev, [event.userId]: event.lastReadAt }));
+  }, []);
+
   const handleNewMessage = useCallback(
     (msg: ChatMessage) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => {
+        // 내가 보낸 메시지의 임시 항목(음수 ID)이 있으면 교체, 없으면 추가
+        const tempIdx = prev.findIndex(
+          (m) => m.messageId < 0 && m.senderId === msg.senderId && m.content === msg.content,
+        );
+        if (tempIdx !== -1) {
+          const next = [...prev];
+          next[tempIdx] = msg;
+          return next;
+        }
+        return [...prev, msg];
+      });
       chatApi.markAsRead(rid).catch(() => {});
     },
     [rid],
   );
 
-  const { sendMessage } = useWebSocket({ roomId: rid, onMessage: handleNewMessage });
+  const { sendMessage } = useWebSocket({ roomId: rid, onMessage: handleNewMessage, onReadEvent: handleReadEvent });
 
   const handleSend = () => {
     const content = input.trim();
     if (!content) return;
-    sendMessage(content);
+
+    // 즉시 UI에 추가 (optimistic update) — 임시 ID는 음수로 구분
+    const tempMsg: ChatMessage = {
+      messageId: -Date.now(),
+      roomId: rid,
+      senderId: userId!,
+      senderNickname: user?.nickname ?? '',
+      content,
+      createdAt: new Date().toISOString(),
+      updatedAt: null,
+      isDeleted: false,
+    };
+    setMessages((prev) => [...prev, tempMsg]);
     setInput("");
+
+    sendMessage(content);
+    chatApi.markAsRead(rid).catch(() => {});
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,7 +216,7 @@ export default function ChatRoomPage() {
   const startEdit = (msg: ChatMessage) => {
     setEditingId(msg.messageId);
     setEditContent(msg.content);
-    setMenuId(null);
+    setMsgCtx(null);
   };
 
   // 수정 확정
@@ -197,7 +241,7 @@ export default function ChatRoomPage() {
     } catch {
       alert("삭제 실패");
     }
-    setMenuId(null);
+    setMsgCtx(null);
   };
 
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
@@ -256,6 +300,24 @@ export default function ChatRoomPage() {
           </button>
           <button style={{ ...styles.ctxItem, color: "#c62828" }} onClick={handleLeave}>
             🚪 채팅방 나가기
+          </button>
+        </div>
+      )}
+
+      {/* 메시지 우클릭 컨텍스트 메뉴 */}
+      {msgCtx && (
+        <div style={{ ...styles.ctxMenu, top: msgCtx.y, left: msgCtx.x }} onClick={(e) => e.stopPropagation()}>
+          <button
+            style={styles.ctxItem}
+            onClick={() => {
+              const msg = messages.find((m) => m.messageId === msgCtx.msgId);
+              if (msg) startEdit(msg);
+            }}
+          >
+            ✏️ 수정
+          </button>
+          <button style={{ ...styles.ctxItem, color: "#c62828" }} onClick={() => handleDelete(msgCtx.msgId)}>
+            🗑️ 삭제
           </button>
         </div>
       )}
@@ -351,45 +413,33 @@ export default function ChatRoomPage() {
                     <div
                       style={{
                         ...styles.bubble,
-                        background: msg.isDeleted ? '#e0e0e0' : mine ? '#d07856' : '#fff',
-                        color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1a1a1a',
+                        background: msg.isDeleted ? '#e0e0e0' : mine ? '#5F8F7B' : '#fff',
+                        color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1F2937',
                         fontStyle: msg.isDeleted ? 'italic' : 'normal',
                         borderRadius: 6,
-                        boxShadow: msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(208,120,86,0.35)' : '0 2px 6px rgba(0,0,0,0.12)',
+                        boxShadow: msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
                         border: !mine && !msg.isDeleted ? '1px solid #e8e8e8' : 'none',
+                        cursor: mine && !msg.isDeleted ? 'context-menu' : 'default',
                       }}
+                      onContextMenu={mine && !msg.isDeleted ? (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setMsgCtx({ x: e.clientX, y: e.clientY, msgId: msg.messageId });
+                      } : undefined}
                     >
                       {msg.isDeleted ? "삭제된 메시지입니다." : msg.content}
                       {!msg.isDeleted && msg.updatedAt && <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 6 }}>(수정됨)</span>}
                     </div>
                   )}
 
+                  {mine && !msg.isDeleted && (() => {
+                    const unread = Object.entries(readStatus).filter(
+                      ([uid, time]) => Number(uid) !== msg.senderId && new Date(time) < new Date(msg.createdAt)
+                    ).length;
+                    return unread > 0 ? <span style={styles.unreadBadge}>{unread}</span> : null;
+                  })()}
                   <span style={styles.time}>{formatTime(msg.createdAt)}</span>
 
-                  {/* 내 메시지 & 삭제 안 된 경우만 메뉴 */}
-                  {mine && !msg.isDeleted && editingId !== msg.messageId && (
-                    <div style={{ position: "relative" }}>
-                      <button
-                        style={styles.menuBtn}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuId(menuId === msg.messageId ? null : msg.messageId);
-                        }}
-                      >
-                        ···
-                      </button>
-                      {menuId === msg.messageId && (
-                        <div style={styles.menuBox} onClick={(e) => e.stopPropagation()}>
-                          <button style={styles.menuItem} onClick={() => startEdit(msg)}>
-                            수정
-                          </button>
-                          <button style={{ ...styles.menuItem, color: "#e53935" }} onClick={() => handleDelete(msg.messageId)}>
-                            삭제
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -449,12 +499,12 @@ export default function ChatRoomPage() {
               </div>
             )}
             {/* 버튼 */}
-            <div style={{ borderTop: "1px solid #f2e8e0", padding: "14px 24px" }}>
+            <div style={{ borderTop: "1px solid #E5E7EB", padding: "14px 24px" }}>
               <button
                 style={{
                   width: "100%",
                   padding: "12px 0",
-                  background: "#d07856",
+                  background: "#5F8F7B",
                   color: "#fff",
                   border: "none",
                   borderRadius: 10,
@@ -502,33 +552,33 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     height: "100%",
-    background: "#fdf0e8",
+    background: "#EAF4F0",
   },
-  center: { display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#888" },
+  center: { display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#6B7280" },
   header: {
     display: "flex",
     alignItems: "center",
     gap: 12,
     padding: "12px 16px",
     background: "#fff",
-    borderBottom: "1px solid #f2e8e0",
+    borderBottom: "1px solid #E5E7EB",
     flexShrink: 0,
   },
-  backBtn: { background: "none", border: "none", fontSize: 20, cursor: "pointer", padding: "0 4px", color: "#d07856" },
-  headerTitle: { fontWeight: "bold", fontSize: 16, flex: 1, color: "#262626" },
+  backBtn: { background: "none", border: "none", fontSize: 20, cursor: "pointer", padding: "0 4px", color: "#5F8F7B" },
+  headerTitle: { fontWeight: "bold", fontSize: 16, flex: 1, color: "#1F2937" },
   memberBtn: {
-    background: "#fdf0e8",
-    border: "none",
+    background: "#EAF4F0",
+    border: "1px solid #A9C8BB",
     borderRadius: 16,
     padding: "5px 12px",
     cursor: "pointer",
     fontSize: 13,
-    color: "#d07856",
+    color: "#3D5F52",
     fontWeight: "bold",
   },
   memberPanel: {
     background: "#fff",
-    borderBottom: "1px solid #f2e8e0",
+    borderBottom: "1px solid #E5E7EB",
     padding: "10px 16px",
     display: "flex",
     flexDirection: "column" as const,
@@ -537,13 +587,13 @@ const styles: Record<string, React.CSSProperties> = {
     overflowY: "auto" as const,
     flexShrink: 0,
   },
-  memberPanelTitle: { fontWeight: "bold", fontSize: 13, color: "#555", marginBottom: 4 },
+  memberPanelTitle: { fontWeight: "bold", fontSize: 13, color: "#6B7280", marginBottom: 4 },
   memberItem: { display: "flex", alignItems: "center", gap: 8 },
   memberAvatar: {
     width: 28,
     height: 28,
     borderRadius: "50%",
-    background: "#d07856",
+    background: "#5F8F7B",
     color: "#fff",
     display: "flex",
     alignItems: "center",
@@ -552,8 +602,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: "bold",
     flexShrink: 0,
   } as React.CSSProperties,
-  memberNick: { fontSize: 13, color: "#262626" },
-  leaderBadge: { fontSize: 10, background: "#fdf0e8", color: "#b8643d", borderRadius: 8, padding: "2px 6px", fontWeight: "bold" },
+  memberNick: { fontSize: 13, color: "#1F2937" },
+  leaderBadge: { fontSize: 10, background: "#EAF4F0", color: "#3D5F52", borderRadius: 8, padding: "2px 6px", fontWeight: "bold" },
   msgArea: {
     flex: 1,
     overflowY: "auto",
@@ -562,7 +612,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     gap: 10,
   },
-  empty: { textAlign: "center", color: "#bbb", fontSize: 14, marginTop: 40 },
+  empty: { textAlign: "center", color: "#A9C8BB", fontSize: 14, marginTop: 40 },
   msgRow: { display: "flex", alignItems: "flex-end", gap: 8 },
   avatar: {
     width: 36,
@@ -577,39 +627,18 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
     alignSelf: "flex-start",
   },
-  nick: { fontSize: 11, color: '#888', marginBottom: 3, marginLeft: 4 },
+  nick: { fontSize: 11, color: '#6B7280', marginBottom: 3, marginLeft: 4 },
   bubble: { padding: '11px 15px', borderRadius: 4, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', width: 'fit-content', maxWidth: 520, textAlign: 'left' as const },
-  time: { fontSize: 11, color: '#bbb', flexShrink: 0, marginBottom: 2 },
-  menuBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#aaa", padding: "0 2px", lineHeight: 1 },
-  menuBox: {
-    position: "absolute",
-    right: 0,
-    bottom: 24,
-    background: "#fff",
-    borderRadius: 8,
-    boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
-    zIndex: 100,
-    minWidth: 80,
-  },
-  menuItem: {
-    display: "block",
-    width: "100%",
-    padding: "10px 16px",
-    background: "none",
-    border: "none",
-    textAlign: "left",
-    cursor: "pointer",
-    fontSize: 13,
-    color: "#262626",
-  },
+  time: { fontSize: 11, color: '#A9C8BB', flexShrink: 0, marginBottom: 2 },
+  unreadBadge: { fontSize: 11, color: '#E9C46A', fontWeight: 'bold', flexShrink: 0, marginBottom: 2, lineHeight: 1 },
   editBox: { display: "flex", flexDirection: "column", maxWidth: 260 },
-  editInput: { padding: "8px 12px", border: "1px solid #d07856", borderRadius: 8, fontSize: 14, outline: "none" },
-  editConfirmBtn: { flex: 1, padding: "5px", background: "#d07856", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12 },
+  editInput: { padding: "8px 12px", border: "1px solid #5F8F7B", borderRadius: 8, fontSize: 14, outline: "none" },
+  editConfirmBtn: { flex: 1, padding: "5px", background: "#5F8F7B", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12 },
   editCancelBtn: {
     flex: 1,
     padding: "5px",
-    background: "#f2e8e0",
-    color: "#262626",
+    background: "#EAF4F0",
+    color: "#1F2937",
     border: "none",
     borderRadius: 6,
     cursor: "pointer",
@@ -621,13 +650,13 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     padding: "12px 16px",
     background: "#fff",
-    borderTop: "1px solid #f2e8e0",
+    borderTop: "1px solid #E5E7EB",
     flexShrink: 0,
   },
   fileBtn: { background: "none", border: "none", fontSize: 20, cursor: "pointer", padding: "0 4px" },
-  textInput: { flex: 1, padding: "10px 14px", border: "1px solid #f2e8e0", borderRadius: 24, fontSize: 14, outline: "none" },
+  textInput: { flex: 1, padding: "10px 14px", border: "1px solid #E5E7EB", borderRadius: 24, fontSize: 14, outline: "none" },
   sendBtn: {
-    background: "#d07856",
+    background: "#5F8F7B",
     color: "#fff",
     border: "none",
     borderRadius: 20,
@@ -640,10 +669,10 @@ const styles: Record<string, React.CSSProperties> = {
     position: "fixed" as const,
     background: "#fff",
     borderRadius: 10,
-    boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
     zIndex: 9999,
     minWidth: 160,
-    border: "1px solid #f2e8e0",
+    border: "1px solid #E5E7EB",
     overflow: "hidden",
   },
   ctxItem: {
@@ -655,7 +684,7 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: "left" as const,
     cursor: "pointer",
     fontSize: 13,
-    color: "#262626",
+    color: "#1F2937",
   },
   modalOverlay: {
     position: "fixed" as const,
@@ -666,22 +695,22 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     zIndex: 10000,
   },
-  modal: { background: "#fff", borderRadius: 14, padding: "24px 24px 20px", width: 300, boxShadow: "0 8px 32px rgba(0,0,0,0.2)" },
-  modalTitle: { fontWeight: "bold", fontSize: 15, color: "#262626", marginBottom: 14 },
+  modal: { background: "#fff", borderRadius: 14, padding: "24px 24px 20px", width: 300, boxShadow: "0 8px 32px rgba(0,0,0,0.15)" },
+  modalTitle: { fontWeight: "bold", fontSize: 15, color: "#1F2937", marginBottom: 14 },
   modalInput: {
     width: "100%",
     padding: "10px 14px",
-    border: "1px solid #d07856",
+    border: "1px solid #5F8F7B",
     borderRadius: 8,
     fontSize: 14,
     outline: "none",
     boxSizing: "border-box" as const,
   },
   modalBtns: { display: "flex", gap: 8, marginTop: 14, justifyContent: "flex-end" },
-  modalCancel: { padding: "8px 16px", background: "#f2e8e0", color: "#262626", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13 },
+  modalCancel: { padding: "8px 16px", background: "#EAF4F0", color: "#1F2937", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13 },
   modalConfirm: {
     padding: "8px 16px",
-    background: "#d07856",
+    background: "#5F8F7B",
     color: "#fff",
     border: "none",
     borderRadius: 8,

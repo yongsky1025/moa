@@ -26,8 +26,10 @@
 <div class="box">
   <b>1. WebSocket 연결</b>
   <div class="row" style="margin-top:10px">
-    <div><label>내 userId</label><input id="myId" type="number" value="1"></div>
-    <div><label>roomId</label><input id="roomId" type="number" value="1"></div>
+    <div><label>JWT 토큰 (Bearer 제외)</label><input id="token" type="text" style="width:400px" placeholder="eyJhbGc..."></div>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <div><label>roomId</label><input id="roomId" type="number" value="2"></div>
   </div>
   <br>
   <button class="g" onclick="connect()">연결</button>
@@ -81,18 +83,19 @@ function log(msg, cls='i') {
   el.innerHTML += `<span class="${cls}">[${t}] ${msg}\n</span>`;
   el.scrollTop = el.scrollHeight;
 }
-const myId   = () => +document.getElementById('myId').value;
+const token  = () => document.getElementById('token').value.trim();
 const roomId = () => +document.getElementById('roomId').value;
 
 function connect() {
   if (stomp?.connected) { log('이미 연결됨'); return; }
+  if (!token()) { log('토큰을 입력하세요', 'e'); return; }
   const sock = new SockJS('/ws/chat');
   stomp = Stomp.over(sock);
   stomp.debug = null;
-  stomp.connect({ 'X-User-Id': myId() },
+  stomp.connect({ 'Authorization': 'Bearer ' + token() },
     () => {
       document.getElementById('badge').className = 'badge on';
-      document.getElementById('badge').textContent = '연결됨 (userId=' + myId() + ')';
+      document.getElementById('badge').textContent = '연결됨';
       log('✅ 연결 성공');
       stomp.subscribe('/topic/room/' + roomId(), frame => {
         const m = JSON.parse(frame.body);
