@@ -65,7 +65,7 @@ export default function Navbar() {
     '에너지 테스트': '#',
     '내 에너지': '#',
     '장소 추천': '#',
-    '관리자 페이지': '/admin',
+    '관리자 페이지': '/admin/maindashboard',
   };
 
   const handleLogout = async () => {

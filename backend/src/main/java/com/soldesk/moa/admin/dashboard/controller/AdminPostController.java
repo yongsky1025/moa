@@ -28,13 +28,13 @@ import lombok.extern.log4j.Log4j2;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/posts")
-@Tag(name = "Admin post management", description = "게시글 관리 API")
+@Tag(name = "Admin post section", description = "게시글 관리 API")
 @Log4j2
 public class AdminPostController {
 
     private final AdminService adminService;
 
-    // ===== 게시글 관리 =====
+    // 게시글 관리 
 
     @GetMapping("/list")
     @Operation(summary = "게시글 목록 조회 (필터/검색/정렬)")
@@ -51,7 +51,7 @@ public class AdminPostController {
         return ResponseEntity.ok(adminService.getPostDetail(postId));
     }
 
-    // ===== 공지사항 관리 =====
+    // 공지사항 관리
 
     @PostMapping("/notices")
     @Operation(summary = "공지사항 작성")

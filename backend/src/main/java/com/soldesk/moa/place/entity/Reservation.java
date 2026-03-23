@@ -55,7 +55,7 @@ public class Reservation extends BaseEntity {
     private Place place;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true) // true => 일정이 없이 장소대여를할수있기에(일반유저)
-    @JoinColumn(name = "schedule_id")
+    @JoinColumn(name = "schedule_id", nullable = true)
     private Schedule schedule; // 예약한 일정 정보
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
