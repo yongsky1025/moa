@@ -8,6 +8,13 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+  # Spring AI - OpenAI 임베딩
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      embedding:
+        options:
+          model: text-embedding-3-small
   # 파일 업로드 설정
   servlet:
     multipart:
