@@ -22,6 +22,8 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   // Kakao Maps SDK 초기화
   useEffect(() => {
@@ -34,13 +36,34 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
     return () => clearInterval(timer);
   }, []);
 
-  // 맵 초기화
+  // 맵 초기화 및 클릭 리스너
   useEffect(() => {
     if (!kakaoReady || !mapContainerRef.current || mapRef.current) return;
     mapRef.current = new kakao.maps.Map(mapContainerRef.current, {
       center: new kakao.maps.LatLng(37.5665, 126.978),
       level: 5,
     });
+
+    const handler = (mouseEvent: { latLng: { getLat: () => number; getLng: () => number } }) => {
+      const lat = mouseEvent.latLng.getLat();
+      const lng = mouseEvent.latLng.getLng();
+      const geocoder = new (kakao.maps.services as unknown as { Geocoder: new () => { coord2Address: (lng: number, lat: number, cb: (result: { address: { address_name: string; region_1depth_name: string; region_2depth_name: string } }[], status: string) => void) => void } }).Geocoder();
+      geocoder.coord2Address(lng, lat, (result, status) => {
+        if (status === (kakao.maps.services as unknown as { Status: { OK: string } }).Status.OK && result?.[0]?.address) {
+          const addr = result[0].address;
+          const addressName = addr.address_name;
+          const city = addr.region_1depth_name || "";
+          const district = addr.region_2depth_name || "";
+          onChangeRef.current({ address: addressName, city, district, latitude: lat, longitude: lng });
+        }
+      });
+    };
+    kakao.maps.event.addListener(mapRef.current, "click", handler);
+    return () => {
+      if (mapRef.current && (kakao.maps.event as { removeListener?: (target: unknown, type: string, handler: () => void) => void }).removeListener) {
+        (kakao.maps.event as { removeListener: (target: unknown, type: string, handler: () => void) => void }).removeListener(mapRef.current, "click", handler);
+      }
+    };
   }, [kakaoReady]);
 
   // value가 외부에서 세팅된 경우 마커 표시
@@ -155,6 +178,9 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
         ref={mapContainerRef}
         className="h-72 w-full overflow-hidden rounded-lg border border-gray-200"
       />
+      <p className="mt-2 text-xs text-gray-500">
+        지도에서 위치를 클릭해도 선택할 수 있습니다.
+      </p>
     </section>
   );
 }

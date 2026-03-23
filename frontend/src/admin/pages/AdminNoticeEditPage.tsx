@@ -4,6 +4,7 @@ import { fetchPostDetail } from "../api/adminPostApi";
 import { updateNotice } from "../api/adminPostApi";
 import { useAdminToast } from "../hooks/useAdminToast";
 import AdminToast from "../component/AdminToast";
+import AdminResultModal from "../component/AdminResultModal";
 
 export default function AdminNoticeEditPage() {
   const { postId } = useParams<{ postId: string }>();
@@ -14,6 +15,7 @@ export default function AdminNoticeEditPage() {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [resultModal, setResultModal] = useState<string | null>(null);
 
   useEffect(() => {
     if (!postId) return;
@@ -46,7 +48,7 @@ export default function AdminNoticeEditPage() {
         title: title.trim(),
         content: content.trim(),
       });
-      showToast("공지사항이 수정되었습니다.", { navigateTo: "/admin/posts/notices" });
+      setResultModal("공지사항이 수정되었습니다.");
     } catch (e: any) {
       showToast(
         e?.response?.data?.message ?? "공지사항 수정에 실패했습니다.",
@@ -142,6 +144,14 @@ export default function AdminNoticeEditPage() {
         </div>
       </section>
 
+      <AdminResultModal
+        open={!!resultModal}
+        message={resultModal ?? ""}
+        onClose={() => {
+          setResultModal(null);
+          navigate("/admin/posts/notices");
+        }}
+      />
       <AdminToast toast={toast} />
     </div>
   );

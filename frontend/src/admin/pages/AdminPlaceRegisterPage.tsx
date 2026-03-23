@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import PlaceBasicInfoForm from "../component/place/PlaceBasicInfoForm";
@@ -11,9 +11,13 @@ import PlaceOperationForm, {
 import PlaceTagSelector from "../component/place/PlaceTagSelector";
 import { registerPlace } from "../api/adminPlaceApi";
 import type { PlaceClosedDayRequest } from "../types/adminTypes";
+import { useAdminToast } from "../hooks/useAdminToast";
+import AdminToast from "../component/AdminToast";
 
 export default function AdminPlaceRegisterPage() {
   const navigate = useNavigate();
+  const { toast, showToast } = useAdminToast();
+  const errorRef = useRef<HTMLDivElement>(null);
 
   // ── 상태 ─────────────────────────────────
   const [name, setName] = useState("");
@@ -45,13 +49,26 @@ export default function AdminPlaceRegisterPage() {
     });
   };
 
+  // ── 유효성 에러 시 스크롤 및 토스트 표시 ───
+  const setValidationError = (msg: string) => {
+    setError(msg);
+    showToast(msg, { type: "error" });
+  };
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [error]);
+
   // ── 등록 ─────────────────────────────────
-  const handleSubmit = async () => {
-    if (!name.trim()) return setError("장소명을 입력해주세요.");
-    if (!selectedAddress) return setError("주소를 검색하여 선택해주세요.");
+  const handleSubmit = async (e?: React.MouseEvent) => {
+    e?.preventDefault?.();
+    if (!name.trim()) return setValidationError("장소명을 입력해주세요.");
+    if (!selectedAddress) return setValidationError("주소를 검색하여 선택해주세요.");
     if (selectedTagIds.size === 0)
-      return setError("태그를 1개 이상 선택해주세요.");
-    if (!description.trim()) return setError("장소 설명을 입력해주세요.");
+      return setValidationError("태그를 1개 이상 선택해주세요.");
+    if (!description.trim()) return setValidationError("장소 설명을 입력해주세요.");
 
     setSubmitting(true);
     setError("");
@@ -111,7 +128,10 @@ export default function AdminPlaceRegisterPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div
+          ref={errorRef}
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
           {error}
         </div>
       )}
@@ -144,19 +164,23 @@ export default function AdminPlaceRegisterPage() {
       {/* 하단 버튼 */}
       <div className="flex justify-end gap-3 pb-4">
         <button
+          type="button"
           onClick={() => navigate("/admin/places")}
           className="cursor-pointer rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-50"
         >
           취소
         </button>
         <button
-          onClick={handleSubmit}
+          type="button"
+          onClick={(e) => handleSubmit(e)}
           disabled={submitting}
           className="cursor-pointer rounded-xl bg-[#5F8F7B] px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#4E7C69] disabled:opacity-50"
         >
           {submitting ? "등록 중..." : "장소 등록"}
         </button>
       </div>
+
+      <AdminToast toast={toast} />
     </div>
   );
 }
