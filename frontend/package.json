@@ -6,17 +6,23 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:profanity": "powershell -ExecutionPolicy Bypass -File ../scripts/sync-profanity-list.ps1"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-react": "^11.0.1",
     "@reduxjs/toolkit": "^2.11.2",
     "@stomp/stompjs": "^7.0.0",
     "axios": "^1.13.6",
+    "badwords-ko": "^1.0.4",
+    "ckeditor5": "^47.6.1",
+    "dompurify": "^3.3.0",
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-cookie": "^8.0.1",
     "react-dom": "^19.2.0",
     "react-icons": "^5.6.0",
+    "react-loading-skeleton": "^3.5.0",
     "react-paginate": "^8.3.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.13.1",

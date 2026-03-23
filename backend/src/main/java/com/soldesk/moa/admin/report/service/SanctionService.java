@@ -24,11 +24,11 @@ import com.soldesk.moa.admin.report.entity.constant.SanctionState;
 import com.soldesk.moa.admin.report.entity.constant.SanctionType;
 import com.soldesk.moa.admin.report.repository.ReportRepository;
 import com.soldesk.moa.admin.report.repository.SanctionRepository;
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserStatus;
 

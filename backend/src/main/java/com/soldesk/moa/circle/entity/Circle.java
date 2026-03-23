@@ -49,7 +49,6 @@ public class Circle extends BaseEntity {
     @JoinColumn(name = "category_id", nullable = false)
     private CircleCategory category;
 
-    // 서클 대표 이미지 (없을 수 있음)
     @OneToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "cover_image_id", nullable = true)
     private Image coverImage;
@@ -78,18 +77,18 @@ public class Circle extends BaseEntity {
     }
 
     // 서클 정보 수정 (리더 전용)
-    // coverImage가 null이면 기존 이미지 유지
-    public void update(String name, String description, int maxMember, Image coverImage) {
+    public void update(String name, String description, int maxMember) {
         this.name = name;
         this.description = description;
         this.maxMember = maxMember;
-        if (coverImage != null) {
-            this.coverImage = coverImage;
-        }
         // 정원을 늘려서 현재 인원보다 많아지면 FULL → OPEN
         if (this.status == CircleStatus.FULL && maxMember > this.currentMember) {
             this.status = CircleStatus.OPEN;
         }
+    }
+
+    public void changeCoverImage(Image coverImage) {
+        this.coverImage = coverImage;
     }
 
     // admin - status 변경 메소드입니다(신고/제재용)

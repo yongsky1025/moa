@@ -52,4 +52,17 @@ public interface CircleMemberRepository extends JpaRepository<CircleMember, Long
 
         // 서클의 특정 역할 멤버 조회 (리더 알림용)
         Optional<CircleMember> findByCircleAndRole(Circle circle, CircleRole role);
+
+        // 써클 게시판 권한
+        // 써클 멤버만
+        boolean existsByCircle_CircleIdAndUser_UserIdAndStatus(
+                        Long circleId,
+                        Long userId,
+                        CircleMemberStatus status);
+
+        boolean existsByCircle_CircleIdAndUser_UserIdAndStatusAndRole(
+                        Long circleId,
+                        Long userId,
+                        CircleMemberStatus status,
+                        CircleRole role);
 }

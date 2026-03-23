@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.users.entity.constant.AuthProvider;
 import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
@@ -40,7 +40,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = { "images", "posts", "replies", "energyProfile" })
+@ToString(exclude = { "posts", "replies", "energyProfile" })
 @Table(name = "users")
 @Entity
 public class Users extends BaseEntity {
@@ -114,10 +114,6 @@ public class Users extends BaseEntity {
     // 에너지 프로필 (1:1)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UsersEnergyProfile energyProfile;
-
-    @OneToMany(mappedBy = "user")
-    @Builder.Default
-    private List<Image> images = new ArrayList<>();
 
     @OneToMany(mappedBy = "userId")
     @Builder.Default

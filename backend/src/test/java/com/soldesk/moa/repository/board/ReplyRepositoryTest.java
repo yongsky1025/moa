@@ -10,11 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.Reply;
 import com.soldesk.moa.board.repository.BoardRepository;
-import com.soldesk.moa.board.repository.PostRepository;
-import com.soldesk.moa.board.repository.ReplyRepository;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.post.repository.PostRepository;
+import com.soldesk.moa.reply.entity.Reply;
+import com.soldesk.moa.reply.repository.ReplyRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 

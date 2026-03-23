@@ -10,11 +10,11 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.board.entity.Board;
-import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
-import com.soldesk.moa.board.repository.PostRepository;
 import com.soldesk.moa.circle.entity.Circle;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.users.dto.UserDTO;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserRole;
@@ -36,7 +36,6 @@ public class BoardRepositoryTest {
             BoardType type = switch (i) {
                 case 1 -> BoardType.NOTICE;
                 case 2 -> BoardType.FREE;
-                case 3 -> BoardType.SUPPORT;
                 default -> BoardType.CIRCLE;
             };
 
