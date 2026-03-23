@@ -19,6 +19,7 @@ import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.service.CirclePermissionService;
 import com.soldesk.moa.common.exception.InvalidRequestException;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.common.entity.constant.ImageDomain;
 import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.common.repository.ImageRepository;
 import com.soldesk.moa.common.service.ProfanityFilterService;
@@ -48,6 +49,7 @@ import lombok.extern.log4j.Log4j2;
 @Transactional(readOnly = true)
 public class PostService {
 
+        private static final ImageDomain POST_IMAGE_DOMAIN = ImageDomain.POST;
         private static final Pattern IMG_SRC_PATTERN = Pattern.compile("<img[^>]*\\bsrc\\s*=\\s*['\\\"]([^'\\\"]+)['\\\"][^>]*>",
                         Pattern.CASE_INSENSITIVE);
 
@@ -314,15 +316,17 @@ public class PostService {
 
         private void deletePostWithReplies(Post post) {
                 replyRepository.softDeleteByPostId(post.getPostId());
-                imageRepository.softDeleteByPost(post);
+                imageRepository.softDeleteByOwner(POST_IMAGE_DOMAIN, post.getPostId());
+                post.changeImage(null);
                 post.markDeleted();
         }
 
         private void syncPostImages(Post post, Users user, String content) {
-                imageRepository.softDeleteByPost(post);
+                imageRepository.softDeleteByOwner(POST_IMAGE_DOMAIN, post.getPostId());
 
                 List<String> imagePaths = extractPostImagePaths(content);
                 if (imagePaths.isEmpty()) {
+                        post.changeImage(null);
                         return;
                 }
 
@@ -332,12 +336,13 @@ public class PostService {
                                 imagePaths));
 
                 if (!tempMatchedPaths.isEmpty()) {
-                        imageRepository.updateStatusAndPostByUserAndPaths(
+                        imageRepository.updateStatusAndOwnerByUserAndPaths(
                                         user.getUserId(),
                                         new ArrayList<>(tempMatchedPaths),
                                         ImageStatus.TEMP,
                                         ImageStatus.USED,
-                                        post);
+                                        POST_IMAGE_DOMAIN,
+                                        post.getPostId());
                 }
 
                 List<Image> images = new ArrayList<>();
@@ -350,9 +355,10 @@ public class PostService {
                                         .name(extractFileName(path))
                                         .uuid(UUID.randomUUID().toString())
                                         .path(path)
+                                        .domain(POST_IMAGE_DOMAIN)
+                                        .ownerId(post.getPostId())
+                                        .uploadedByUserId(user.getUserId())
                                         .ord((long) (i + 1))
-                                        .post(post)
-                                        .user(user)
                                         .status(ImageStatus.USED)
                                         .build());
                 }
@@ -360,6 +366,8 @@ public class PostService {
                 if (!images.isEmpty()) {
                         imageRepository.saveAll(images);
                 }
+
+                syncPostPrimaryImage(post, imagePaths.get(0));
         }
 
         private List<String> extractPostImagePaths(String content) {
@@ -429,6 +437,7 @@ public class PostService {
                                 .postId(p.getPostId())
                                 .title(p.getTitle())
                                 .content(p.getContent())
+                                .imagePaths(extractPostImagePaths(p.getContent()))
                                 .authorName(p.getUserId().getName()) // Users PK명 맞춰 수정
                                 .authorPublicId(p.getUserId().getPublicId())
                                 .viewCount(p.getViewCount())
@@ -449,6 +458,7 @@ public class PostService {
                                 .postId(p.getPostId())
                                 .title(p.getTitle())
                                 .content(p.getContent())
+                                .imagePaths(extractPostImagePaths(p.getContent()))
                                 .authorName(p.getUserId().getName())
                                 .authorPublicId(p.getUserId().getPublicId())
                                 .viewCount(p.getViewCount())
@@ -487,6 +497,21 @@ public class PostService {
                                 .likeCount(refreshed.getLikeCount())
                                 .myReaction(myReaction)
                                 .build();
+        }
+
+        private void syncPostPrimaryImage(Post post, String primaryPath) {
+                if (primaryPath == null || primaryPath.isBlank()) {
+                        post.changeImage(null);
+                        return;
+                }
+                Image primary = imageRepository
+                                .findFirstByDomainAndOwnerIdAndPathAndDeletedFalseAndStatus(
+                                                POST_IMAGE_DOMAIN,
+                                                post.getPostId(),
+                                                primaryPath,
+                                                ImageStatus.USED)
+                                .orElse(null);
+                post.changeImage(primary);
         }
 
 }

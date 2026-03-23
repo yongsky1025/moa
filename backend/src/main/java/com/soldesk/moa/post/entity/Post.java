@@ -3,6 +3,7 @@ package com.soldesk.moa.post.entity;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.common.entity.Image;
 import com.soldesk.moa.users.entity.Users;
 
 import jakarta.persistence.Column;
@@ -15,6 +16,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +28,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = { "userId", "boardId" })
+@ToString(exclude = { "userId", "boardId", "image" })
 @Table
 @Entity
 public class Post extends BaseEntity {
@@ -57,6 +59,10 @@ public class Post extends BaseEntity {
     @JoinColumn(name = "board_id", nullable = false)
     private Board boardId;
 
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "image_id", nullable = true)
+    private Image image;
+
     // 신고/제재용 컬럼추가(soft delete)
     @Column(nullable = false)
     @Builder.Default
@@ -70,6 +76,10 @@ public class Post extends BaseEntity {
 
     public void changeContent(String content) {
         this.content = content;
+    }
+
+    public void changeImage(Image image) {
+        this.image = image;
     }
 
     // 신고/제재용 메소드 추가
