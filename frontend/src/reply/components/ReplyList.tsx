@@ -24,10 +24,24 @@ export default function ReplyList({
   onDelete,
   onCreateChild,
 }: ReplyListProps) {
-  if (tree.length === 0) return <p style={{ color: "#666" }}>댓글이 없습니다.</p>;
+  if (tree.length === 0) {
+    return (
+      <div
+        style={{
+          backgroundColor: "#fff",
+          border: "1px solid #d6d9dd",
+          borderRadius: 14,
+          padding: 24,
+          color: "#6b7280",
+        }}
+      >
+        댓글이 없습니다.
+      </div>
+    );
+  }
 
   return (
-    <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 14 }}>
       {tree.map((reply) => (
         <ReplyItem
           key={reply.replyId}

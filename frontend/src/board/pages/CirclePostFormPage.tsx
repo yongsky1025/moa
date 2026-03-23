@@ -105,6 +105,14 @@ export default function CirclePostFormPage() {
             setBoardValidationError("게시판을 선택해주세요.");
             return;
           }
+          if (isEdit && data && boardIdNumber !== null && postIdNumber !== null) {
+            const isChanged =
+              values.title !== data.title || values.content !== data.content;
+            if (!isChanged) {
+              navigate(postRoutes.circleDetail(circleIdNumber, boardIdNumber, postIdNumber));
+              return;
+            }
+          }
           const savedPostId = await submit({
             kind: "circle",
             values,
@@ -112,6 +120,9 @@ export default function CirclePostFormPage() {
             boardId: activeBoardId,
             postId: isEdit ? postIdNumber ?? undefined : undefined,
           });
+          if (isEdit) {
+            window.alert("게시글 수정이 완료되었습니다.");
+          }
           navigate(postRoutes.circleDetail(circleIdNumber, activeBoardId, savedPostId));
         }}
         onDelete={isEdit ? async () => {

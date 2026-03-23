@@ -34,7 +34,6 @@ import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -258,14 +257,9 @@ public class PostService {
                         return;
                 }
 
-                try {
-                        postViewLogRepository.save(PostViewLog.builder()
-                                        .postId(postId)
-                                        .viewerIp(viewerIp)
-                                        .build());
+                int inserted = postViewLogRepository.insertIgnore(postId, viewerIp);
+                if (inserted > 0) {
                         postRepository.incrementViewCount(postId);
-                } catch (DataIntegrityViolationException ignored) {
-                        // postId + ip가 이미 존재하면 중복 조회로 판단하여 증가하지 않음
                 }
         }
 
@@ -392,6 +386,7 @@ public class PostService {
         }
 
         private PostResponseDTO toPostResponse(Post p) {
+                long replyCount = replyRepository.countByPostId_PostIdAndDeletedFalse(p.getPostId());
 
                 return PostResponseDTO.builder()
                                 .boardId(p.getBoardId().getBoardId())
@@ -401,6 +396,7 @@ public class PostService {
                                 .authorName(p.getUserId().getName()) // Users PK명 맞춰 수정
                                 .authorPublicId(p.getUserId().getPublicId())
                                 .viewCount(p.getViewCount())
+                                .replyCount(replyCount)
                                 .createDate(p.getCreateDate())
                                 .updateDate(p.getUpdateDate())
                                 .build();

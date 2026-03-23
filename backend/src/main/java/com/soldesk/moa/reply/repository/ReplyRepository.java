@@ -23,6 +23,7 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
 
     // (선택) 게시글별 댓글 개수
     long countByPostId_PostId(Long postId);
+    long countByPostId_PostIdAndDeletedFalse(Long postId);
 
     void deleteByPostId_PostId(Long postId);
 

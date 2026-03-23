@@ -11,7 +11,13 @@ export default function PostContent({ html }: PostContentProps) {
   return (
     <article
       className="ck-content"
-      style={{ marginTop: 16, lineHeight: 1.7 }}
+      style={{
+        marginTop: 0,
+        lineHeight: 1.95,
+        fontSize: 16,
+        color: "#111827",
+        wordBreak: "break-word",
+      }}
       dangerouslySetInnerHTML={{ __html: sanitized }}
     />
   );

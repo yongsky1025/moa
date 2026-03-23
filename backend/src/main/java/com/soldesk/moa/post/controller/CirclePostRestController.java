@@ -25,6 +25,7 @@ import com.soldesk.moa.auth.dto.AuthUserDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -63,8 +64,11 @@ public class CirclePostRestController {
     public PostResponseDTO read(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
             @PathVariable("postId") Long postId,
-            @AuthenticationPrincipal AuthUserDTO auth) {
-        return postService.readCircle(circleId, boardId, postId, auth.getUserId());
+            @AuthenticationPrincipal AuthUserDTO auth,
+            HttpServletRequest request) {
+        PostResponseDTO response = postService.readCircle(circleId, boardId, postId, auth.getUserId());
+        postService.increaseViewCountOnce(postId, PostClientIpResolver.resolve(request));
+        return response;
     }
 
     @PreAuthorize("isAuthenticated()")

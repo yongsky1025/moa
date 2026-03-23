@@ -105,6 +105,15 @@ export default function PostFormPage() {
         submitting={submitting}
         deleting={deleting}
         onSubmit={async (values) => {
+          if (isEdit && data) {
+            const isChanged =
+              values.title !== data.title || values.content !== data.content;
+            if (!isChanged) {
+              navigate(detailPath);
+              return;
+            }
+          }
+
           const savedPostId = await submit({
             kind,
             values,
@@ -114,6 +123,9 @@ export default function PostFormPage() {
             kind === "notice"
               ? postRoutes.noticeDetail(savedPostId)
               : postRoutes.freeDetail(savedPostId);
+          if (isEdit) {
+            window.alert("게시글 수정이 완료되었습니다.");
+          }
           navigate(savedDetailPath);
         }}
         onDelete={isEdit ? async () => {

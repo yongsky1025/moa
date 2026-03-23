@@ -12,3 +12,16 @@ export function formatDateTime(value: string): string {
     minute: "2-digit",
   });
 }
+
+export function formatDate(value: string): string {
+  if (!value) return "-";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
