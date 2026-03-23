@@ -11,13 +11,21 @@ public final class StorageKeyGenerator {
     private StorageKeyGenerator() {
     }
 
-    public static String generate(String domain, String fileName) {
+    public static String generate(String resourceType, String domain, String fileName) {
+        String safeResourceType = sanitizeResourceType(resourceType);
         String safeDomain = sanitizeDomain(domain);
         String extension = extractExtension(fileName);
         String datePath = LocalDate.now().format(DATE_PATH_FORMATTER);
         String uuid = UUID.randomUUID().toString().replace("-", "");
 
-        return safeDomain + "/" + datePath + "/" + uuid + (extension.isEmpty() ? "" : "." + extension);
+        return safeResourceType + "/" + safeDomain + "/" + datePath + "/" + uuid + (extension.isEmpty() ? "" : "." + extension);
+    }
+
+    private static String sanitizeResourceType(String resourceType) {
+        if (resourceType == null || resourceType.isBlank()) {
+            return "common";
+        }
+        return resourceType.replaceAll("[^a-zA-Z0-9_-]", "").toLowerCase();
     }
 
     private static String sanitizeDomain(String domain) {
