@@ -106,3 +106,4 @@ gradle-app.setting
 node_modules/
 package-lock.json
 application-oauth2.yml
+application-local.yml
