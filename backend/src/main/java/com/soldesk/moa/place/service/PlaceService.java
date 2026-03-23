@@ -7,8 +7,12 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
+import com.soldesk.moa.common.entity.Likes;
+import com.soldesk.moa.common.entity.constant.LikeTargetType;
 import com.soldesk.moa.place.dto.NearbyPlaceResponseDTO;
 import com.soldesk.moa.place.dto.PlaceCreateDTO;
+import com.soldesk.moa.place.dto.PlaceLikiResponseDTO;
 import com.soldesk.moa.place.dto.PlaceResponseDTO;
 import com.soldesk.moa.place.entity.Place;
 import com.soldesk.moa.place.entity.PlaceClosedDay;
@@ -16,9 +20,11 @@ import com.soldesk.moa.place.entity.PlaceTag;
 import com.soldesk.moa.place.entity.Tag;
 import com.soldesk.moa.place.entity.constant.ClosedType;
 import com.soldesk.moa.place.repository.PlaceClosedDayRepository;
+import com.soldesk.moa.place.repository.PlaceLikesRepository;
 import com.soldesk.moa.place.repository.PlaceRepository;
 import com.soldesk.moa.place.repository.PlaceTagRepository;
 import com.soldesk.moa.place.repository.TagRepository;
+import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -33,6 +39,8 @@ public class PlaceService {
     private final TagRepository tagRepository;
     private final PlaceTagRepository placeTagRepository;
     private final PlaceClosedDayRepository placeClosedDayRepository;
+    private final PlaceLikesRepository placeLikesRepository;
+    private final AdminUsersRepository usersRepository;
 
     // 장소 생성
     public Long createPlace(PlaceCreateDTO dto) {
@@ -146,24 +154,53 @@ public class PlaceService {
         placeRepository.deleteById(id);
     }
 
+    // 장소 좋아요 메소드
+    public PlaceLikiResponseDTO toggle(Long userId, LikeTargetType targetType, Long targetId) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+
+        boolean isLiked;
+
+        if (placeLikesRepository.existsByUserAndTargetTypeAndTargetId(user, targetType, targetId)) {
+            placeLikesRepository.deleteByUserAndTargetTypeAndTargetId(user, targetType, targetId);
+            isLiked = false;
+        } else {
+            placeLikesRepository.save(Likes.builder()
+                    .user(user)
+                    .targetType(targetType)
+                    .targetId(targetId)
+                    .build());
+            isLiked = true;
+        }
+
+        long likeCount = placeLikesRepository.countByTargetTypeAndTargetId(targetType, targetId);
+
+        return PlaceLikiResponseDTO.builder()
+                .targetType(targetType)
+                .targetId(targetId)
+                .liked(isLiked)
+                .likeCount(likeCount)
+                .build();
+
+    }
+
     // 근처 장소 추천 (Haversine 거리 기반)
     @Transactional(readOnly = true)
     public List<NearbyPlaceResponseDTO> getNearbyPlaces(double lat, double lng, double radiusKm) {
         return placeRepository.findAll().stream()
-            .map(p -> {
-                double dist = haversineDistance(lat, lng, p.getLatitude(), p.getLongitude());
-                return new NearbyPlaceResponseDTO(
-                    p.getId(), p.getName(), p.getAddress(),
-                    p.getCity(), p.getDistrict(),
-                    p.getLatitude(), p.getLongitude(),
-                    p.getCapacity(), p.getPricePerHour(),
-                    Math.round(dist * 100.0) / 100.0
-                );
-            })
-            .filter(p -> p.distanceKm() <= radiusKm)
-            .sorted(Comparator.comparingDouble(NearbyPlaceResponseDTO::distanceKm))
-            .limit(10)
-            .toList();
+                .map(p -> {
+                    double dist = haversineDistance(lat, lng, p.getLatitude(), p.getLongitude());
+                    return new NearbyPlaceResponseDTO(
+                            p.getId(), p.getName(), p.getAddress(),
+                            p.getCity(), p.getDistrict(),
+                            p.getLatitude(), p.getLongitude(),
+                            p.getCapacity(), p.getPricePerHour(),
+                            Math.round(dist * 100.0) / 100.0);
+                })
+                .filter(p -> p.distanceKm() <= radiusKm)
+                .sorted(Comparator.comparingDouble(NearbyPlaceResponseDTO::distanceKm))
+                .limit(10)
+                .toList();
     }
 
     private double haversineDistance(double lat1, double lng1, double lat2, double lng2) {
@@ -171,8 +208,8 @@ public class PlaceService {
         double dLat = Math.toRadians(lat2 - lat1);
         double dLng = Math.toRadians(lng2 - lng1);
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                 * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                        * Math.sin(dLng / 2) * Math.sin(dLng / 2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 }
