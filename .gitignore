@@ -237,6 +237,7 @@ $RECYCLE.BIN/
 
 ### Gradle ###
 .gradle
+.gradle-**
 **/.gradle-user-home/
 **/build/   
 !src/**/build/
