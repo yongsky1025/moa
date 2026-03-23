@@ -4,13 +4,11 @@ import type { Notification } from "../../types/notification";
 
 const typeLabel: Record<string, string> = {
   CHAT_MESSAGE: "새 메시지",
-  CIRCLE_JOIN_REQUEST: "가입 신청",
-  CIRCLE_JOIN_APPROVED: "가입 승인",
-  CIRCLE_JOIN_REJECTED: "가입 거절",
-  CIRCLE_KICKED: "강퇴",
+  JOIN_REQUEST: "가입 신청",
+  JOIN_APPROVED: "가입 승인",
+  JOIN_REJECTED: "가입 거절",
+  KICKED: "강퇴",
   CIRCLE_DISBANDED: "모임 해산",
-  COMMENT: "댓글",
-  REPLY_COMMENT: "답글",
 };
 
 export default function NotificationBell() {

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { chatApi } from "../../api/chatApi";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useAuthStore } from "../../store/authStore";
@@ -174,11 +175,43 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     setReadStatus((prev) => ({ ...prev, [event.userId]: event.lastReadAt }));
   }, []);
 
+  const handleNotification = useCallback((noti: Notification) => {
+    setNotifications((prev) => {
+      if (prev.some((n) => n.id === noti.id)) return prev;
+      return [noti, ...prev];
+    });
+  }, []);
+
   const { sendMessage } = useWebSocket({
     roomId: activeRoomId ?? 0,
+    userId: userId ?? undefined,
     onMessage: handleNewMessage,
     onReadEvent: handleReadEvent,
+    onNotification: handleNotification,
   });
+
+  const navigate = useNavigate();
+
+  const handleNotiClick = async (n: Notification) => {
+    if (!n.isRead) {
+      await notificationApi.readOne(n.id);
+      setNotifications((p) => p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
+    }
+    setShowNoti(false);
+    switch (n.type) {
+      case 'CHAT_MESSAGE':
+        // 플로팅 창에서 채팅 목록을 보여줌
+        setActiveRoomId(null);
+        break;
+      case 'JOIN_REQUEST':
+      case 'JOIN_APPROVED':
+      case 'JOIN_REJECTED':
+      case 'KICKED':
+      case 'CIRCLE_DISBANDED':
+        navigate('/circle/my');
+        break;
+    }
+  };
 
   const handleSend = () => {
     const content = input.trim();
@@ -207,7 +240,24 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     const file = e.target.files?.[0];
     if (!file || !activeRoomId) return;
     try {
-      sendMessage(await chatApi.uploadFile(file));
+      const fileUrl = await chatApi.uploadFile(file);
+      const tempMsg: ChatMessage = {
+        messageId: -Date.now(),
+        roomId: activeRoomId,
+        senderId: userId!,
+        senderNickname: user?.nickname ?? '?',
+        content: fileUrl,
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+        isDeleted: false,
+      };
+      setMessages((prev) => [...prev, tempMsg]);
+      setRooms((prev) => prev.map((r) =>
+        r.roomId === activeRoomId
+          ? { ...r, lastMessage: fileUrl, lastMessageAt: tempMsg.createdAt }
+          : r
+      ));
+      sendMessage(fileUrl);
     } catch {
       alert("업로드 실패");
     }
@@ -551,12 +601,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                       <div
                         key={n.id}
                         style={{ ...s.notiItem, background: n.isRead ? "#f9f9f9" : "#eaf4ff" }}
-                        onClick={async () => {
-                          if (!n.isRead) {
-                            await notificationApi.readOne(n.id);
-                            setNotifications((p) => p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
-                          }
-                        }}
+                        onClick={() => handleNotiClick(n)}
                       >
                         <span style={s.notiMsg}>{n.message}</span>
                         <span style={s.notiTime}>{formatTime(n.createdAt)}</span>

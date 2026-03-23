@@ -206,6 +206,17 @@ export default function ChatRoomPage() {
     if (!file) return;
     try {
       const fileUrl = await chatApi.uploadFile(file);
+      const tempMsg: ChatMessage = {
+        messageId: -Date.now(),
+        roomId: rid,
+        senderId: userId!,
+        senderNickname: user?.nickname ?? '?',
+        content: fileUrl,
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+        isDeleted: false,
+      };
+      setMessages((prev) => [...prev, tempMsg]);
       sendMessage(fileUrl);
     } catch {
       alert("파일 업로드 실패");

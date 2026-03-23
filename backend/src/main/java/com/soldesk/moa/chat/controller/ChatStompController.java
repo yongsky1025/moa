@@ -1,11 +1,9 @@
 package com.soldesk.moa.chat.controller;
 
 import com.soldesk.moa.chat.dto.request.SendMessageRequest;
-import com.soldesk.moa.chat.dto.response.ChatMessageResponse;
 import com.soldesk.moa.chat.service.ChatMessageService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
@@ -29,13 +27,12 @@ public class ChatStompController {
     }
 
     @MessageMapping("/chat/{roomId}")
-    @SendTo("/topic/room/{roomId}")
-    public ChatMessageResponse handleMessage(
+    public void handleMessage(
             @DestinationVariable Long roomId,
             SendMessageRequest request,
             Principal principal
     ) {
         Long senderId = Long.parseLong(principal.getName());
-        return messageService.send(roomId, senderId, request.content());
+        messageService.send(roomId, senderId, request.content());
     }
 }

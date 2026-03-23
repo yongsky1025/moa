@@ -1,12 +1,10 @@
 export type NotificationType =
   | "CHAT_MESSAGE"
-  | "CIRCLE_JOIN_REQUEST"
-  | "CIRCLE_JOIN_APPROVED"
-  | "CIRCLE_JOIN_REJECTED"
-  | "CIRCLE_KICKED"
-  | "CIRCLE_DISBANDED"
-  | "COMMENT"
-  | "REPLY_COMMENT";
+  | "JOIN_REQUEST"
+  | "JOIN_APPROVED"
+  | "JOIN_REJECTED"
+  | "KICKED"
+  | "CIRCLE_DISBANDED";
 
 export interface Notification {
   id: number;
@@ -14,4 +12,5 @@ export interface Notification {
   message: string;
   isRead: boolean;
   createdAt: string;
+  referenceId?: number;
 }

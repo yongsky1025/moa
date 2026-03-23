@@ -58,7 +58,7 @@ export const chatApi = {
     form.append("file", file);
     return api
       .post<{ fileUrl: string }>("/api/chat/files", form, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": undefined },
       })
       .then((r) => r.data.fileUrl);
   },

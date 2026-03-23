@@ -24,6 +24,8 @@ import com.soldesk.moa.circle.repository.CircleEnergyProfileRepository;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.chat.service.ChatRoomService;
+import com.soldesk.moa.notification.domain.NotificationType;
+import com.soldesk.moa.notification.service.NotificationService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.common.entity.Image;
@@ -44,6 +46,7 @@ public class CircleService {
         private final UsersRepository usersRepository;
         private final CircleImageService circleImageService;
         private final ChatRoomService chatRoomService;
+        private final NotificationService notificationService;
 
         // 서클 생성 (POST multipart - Tomcat이 POST multipart 정상 처리)
         @Transactional
@@ -134,6 +137,13 @@ public class CircleService {
         public void adminDeleteCircle(Long circleId) {
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                // 활성 멤버들에게 해산 알림 발송 (상태 변경 전에 조회)
+                circleMemberRepository.findByCircleAndStatus(circle, CircleMemberStatus.ACTIVE)
+                                .forEach(m -> notificationService.send(
+                                                m.getUser().getUserId(),
+                                                NotificationType.CIRCLE_DISBANDED,
+                                                "'" + circle.getName() + "' 모임이 해산되었습니다."));
 
                 Circle closed = Circle.builder()
                                 .circleId(circle.getCircleId())

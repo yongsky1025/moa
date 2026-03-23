@@ -155,6 +155,7 @@ export default function ChatPopupPage() {
 
   useEffect(() => {
     if (!activeRoom) return;
+    setRooms((prev) => prev.map((r) => r.roomId === activeRoom.roomId ? { ...r, unreadCount: 0 } : r));
     setLoadingMsg(true);
     chatApi
       .getMessages(activeRoom.roomId)
@@ -271,7 +272,29 @@ export default function ChatPopupPage() {
     setReadStatus((prev) => ({ ...prev, [event.userId]: event.lastReadAt }));
   }, []);
 
-  const { sendMessage } = useWebSocket({ roomId: activeRoom?.roomId ?? 0, onMessage: handleNewMessage, onReadEvent: handleReadEvent });
+  const handleNotification = useCallback((noti: import('../../types/notification').Notification) => {
+    setNotifications((prev) => {
+      if (prev.some((n) => n.id === noti.id)) return prev;
+      return [noti, ...prev];
+    });
+    if (noti.type === 'CHAT_MESSAGE' && noti.referenceId) {
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.roomId === noti.referenceId && r.roomId !== activeRoom?.roomId
+            ? { ...r, unreadCount: r.unreadCount + 1 }
+            : r,
+        ),
+      );
+    }
+  }, [activeRoom]);
+
+  const { sendMessage } = useWebSocket({
+    roomId: activeRoom?.roomId ?? 0,
+    userId: userId ?? undefined,
+    onMessage: handleNewMessage,
+    onReadEvent: handleReadEvent,
+    onNotification: handleNotification,
+  });
 
   const handleSend = () => {
     const content = input.trim();
@@ -301,7 +324,24 @@ export default function ChatPopupPage() {
     const file = e.target.files?.[0];
     if (!file || !activeRoom) return;
     try {
-      sendMessage(await chatApi.uploadFile(file));
+      const fileUrl = await chatApi.uploadFile(file);
+      const tempMsg: ChatMessage = {
+        messageId: -Date.now(),
+        roomId: activeRoom.roomId,
+        senderId: userId!,
+        senderNickname: user?.nickname ?? '?',
+        content: fileUrl,
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+        isDeleted: false,
+      };
+      setMessages((prev) => [...prev, tempMsg]);
+      setRooms((prev) => prev.map((r) =>
+        r.roomId === activeRoom.roomId
+          ? { ...r, lastMessage: fileUrl, lastMessageAt: tempMsg.createdAt }
+          : r
+      ));
+      sendMessage(fileUrl);
     } catch {
       alert("업로드 실패");
     }
@@ -383,12 +423,66 @@ export default function ChatPopupPage() {
     }
   };
 
+  const handleNotiClick = async (n: import('../../types/notification').Notification) => {
+    if (!n.isRead) {
+      await notificationApi.readOne(n.id);
+      setNotifications((p) => p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
+    }
+    setShowNoti(false);
+    switch (n.type) {
+      case 'CHAT_MESSAGE':
+        // 이미 채팅 팝업 안에 있으므로 채팅 목록만 보여주면 됨
+        setActiveRoom(null);
+        break;
+      case 'JOIN_REQUEST':
+      case 'JOIN_APPROVED':
+      case 'JOIN_REJECTED':
+      case 'KICKED':
+      case 'CIRCLE_DISBANDED':
+        // 부모(메인) 창을 내 모임 페이지로 이동
+        if (window.opener) {
+          window.opener.location.href = '/circle/my';
+        } else {
+          window.location.href = '/circle/my';
+        }
+        break;
+    }
+  };
+
   const filteredRooms = rooms.filter((r) => roomLabel(r).includes(search) || (r.lastMessage ?? "").includes(search));
 
   const totalUnread = rooms.reduce((s, r) => s + r.unreadCount, 0);
 
   return (
     <div style={s.root}>
+      <style>{`
+        .bubble-mine {
+          border-radius: 18px 18px 4px 18px !important;
+        }
+        .bubble-mine::after {
+          content: '';
+          position: absolute;
+          bottom: -8px;
+          right: 0;
+          width: 0;
+          height: 0;
+          border-bottom: 9px solid #5F8F7B;
+          border-left: 9px solid transparent;
+        }
+        .bubble-other {
+          border-radius: 18px 18px 18px 4px !important;
+        }
+        .bubble-other::after {
+          content: '';
+          position: absolute;
+          bottom: -8px;
+          left: 0;
+          width: 0;
+          height: 0;
+          border-bottom: 9px solid #ffffff;
+          border-right: 9px solid transparent;
+        }
+      `}</style>
       {/* 에러 토스트 */}
       {errorMsg && (
         <div style={s.errorToast}>
@@ -428,13 +522,8 @@ export default function ChatPopupPage() {
                     notifications.map((n) => (
                       <div
                         key={n.id}
-                        style={{ ...s.notiItem, background: n.isRead ? "#fafafa" : "#EAF4F0" }}
-                        onClick={async () => {
-                          if (!n.isRead) {
-                            await notificationApi.readOne(n.id);
-                            setNotifications((p) => p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
-                          }
-                        }}
+                        style={{ ...s.notiItem, background: n.isRead ? "#fafafa" : "#EAF4F0", cursor: 'pointer' }}
+                        onClick={() => handleNotiClick(n)}
                       >
                         <span style={s.notiMsg}>{n.message}</span>
                         <span style={s.notiTime}>{formatTime(n.createdAt)}</span>
@@ -680,7 +769,7 @@ export default function ChatPopupPage() {
                             {(msg.senderNickname ?? String(msg.senderId)).charAt(0)}
                           </div>
                         )}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '80%', minWidth: 0 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '65%', minWidth: 0 }}>
                           {!mine && <span style={s.senderName}>{msg.senderNickname ?? `사용자 #${msg.senderId}`}</span>}
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, flexDirection: mine ? 'row-reverse' : 'row' }}>
                             {editingMsgId === msg.messageId ? (
@@ -702,13 +791,14 @@ export default function ChatPopupPage() {
                               </div>
                             ) : (
                               <div
+                                className={(!msg.content.startsWith('/api/chat/files/') && !msg.isDeleted) ? (mine ? 'bubble-mine' : 'bubble-other') : undefined}
                                 style={{
                                   ...s.bubble,
                                   position: 'relative',
                                   background: msg.isDeleted ? '#e0e0e0' : !msg.content.startsWith('/api/chat/files/') ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
                                   color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1F2937',
                                   fontStyle: msg.isDeleted ? 'italic' : 'normal',
-                                  borderRadius: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 8 : 18,
+                                  borderRadius: msg.isDeleted ? 18 : msg.content.startsWith('/api/chat/files/') ? 8 : undefined,
                                   padding: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 0 : undefined,
                                   boxShadow: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
                                   border: !msg.content.startsWith('/api/chat/files/') && !mine && !msg.isDeleted ? '1px solid #E5E7EB' : 'none',
@@ -961,14 +1051,14 @@ const s: Record<string, React.CSSProperties> = {
   leaderTag: { fontSize: 10, background: "#EAF4F0", color: "#3D5F52", borderRadius: 6, padding: "1px 5px" },
 
   // 메시지
-  msgArea: { flex: 1, overflowY: 'auto' as const, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 12 },
+  msgArea: { flex: 1, overflowY: 'auto' as const, padding: '20px 16px 28px', display: 'flex', flexDirection: 'column', gap: 16 },
   firstMsg: { textAlign: 'center' as const, color: '#A9C8BB', fontSize: 13, marginTop: 20 },
   msgRow: { display: 'flex', alignItems: 'flex-end', gap: 8 },
   avatar: { width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: 14, flexShrink: 0, alignSelf: 'flex-start' },
-  senderName: { fontSize: 11, color: '#6B7280', marginBottom: 3, marginLeft: 2 },
-  bubble: { padding: '8px 12px', borderRadius: 18, fontSize: 13, lineHeight: 1.45, wordBreak: 'break-word' as const, width: 'fit-content', maxWidth: 220, textAlign: 'left' as const },
-  msgTime: { fontSize: 11, color: '#A9C8BB', flexShrink: 0, marginBottom: 2 },
-  unreadCount: { fontSize: 11, color: '#E9C46A', fontWeight: 'bold', flexShrink: 0, marginBottom: 2, lineHeight: 1 },
+  senderName: { fontSize: 11, color: '#6B7280', marginBottom: 4, marginLeft: 4 },
+  bubble: { padding: '10px 14px', borderRadius: 18, fontSize: 14, lineHeight: 1.55, wordBreak: 'break-word' as const, wordWrap: 'break-word' as const, width: 'fit-content', textAlign: 'left' as const },
+  msgTime: { fontSize: 11, color: '#A9C8BB', flexShrink: 0, marginBottom: 10 },
+  unreadCount: { fontSize: 11, color: '#E9C46A', fontWeight: 'bold', flexShrink: 0, marginBottom: 10, lineHeight: 1 },
 
   // 메시지 수정/삭제 메뉴
   menuBox: { position: 'absolute' as const, right: 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 90, overflow: 'hidden' as const },
