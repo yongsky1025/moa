@@ -64,6 +64,21 @@ export const logout = createAsyncThunk('auth/logout', async () => {
   localStorage.removeItem('accessToken');
 });
 
+export const restoreAuth = createAsyncThunk(
+  'auth/restore',
+  async (_, { rejectWithValue }) => {
+    if (!localStorage.getItem('accessToken')) return rejectWithValue('no token');
+    try {
+      const res = await authApi.refresh();
+      localStorage.setItem('accessToken', res.data.accessToken);
+      return res.data.user;
+    } catch {
+      localStorage.removeItem('accessToken');
+      return rejectWithValue('refresh failed');
+    }
+  },
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -94,6 +109,14 @@ const authSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(logout.fulfilled, (state) => {
+        state.user = null;
+        state.isLoggedIn = false;
+      })
+      .addCase(restoreAuth.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.isLoggedIn = true;
+      })
+      .addCase(restoreAuth.rejected, (state) => {
         state.user = null;
         state.isLoggedIn = false;
       });

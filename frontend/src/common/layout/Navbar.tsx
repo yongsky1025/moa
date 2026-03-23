@@ -1,93 +1,106 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../../users/reducers/authSlice';
-import type { AppDispatch, RootState } from '../../users/reducers/store';
-import { notificationApi } from '../../api/notificationApi';
-import FloatingChatWindow from '../../chat/components/FloatingChatWindow';
+import React, { useState, useEffect, useRef } from "react";
+import { Bell, MessageCircle, LayoutGrid, Users, MessageSquare, Star, HelpCircle, Megaphone, User, Settings, LogOut } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../../users/reducers/authSlice";
+import type { AppDispatch, RootState } from "../../users/reducers/store";
+import { notificationApi } from "../../api/notificationApi";
+import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
 
-const dropdownItems: Record<string, { label: string; href: string }[]> = {
-  '모임 찾기': [
-    { label: '전체 모임', href: '/circle' },
-    { label: '내 모임', href: '/circle/my' },
-  ],
-  커뮤니티: [
-    { label: '자유게시판', href: '#' },
-    { label: '모임 후기', href: '#' },
-    { label: 'Q&A', href: '#' },
-    { label: '공지사항', href: '#' },
-  ],
-  '에너지 테스트': [{ label: '테스트 시작', href: '/users/energy-test' }],
-  '내 에너지': [
-    { label: '내 결과 보기', href: '/users/energy-test/result' },
-    { label: '테스트 다시 하기', href: '/users/energy-test?mode=retest' },
-  ],
-};
 
 export default function Navbar() {
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { isLoggedIn, user } = useSelector((s: RootState) => s.auth);
-  const isAdmin = user?.userRole === 'ADMIN';
+  const isAdmin = user?.userRole === "ADMIN";
+
+  const dropdownItems: Record<string, { label: string; href: string; icon: React.ReactNode }[]> = {
+    "모임 찾기": [
+      { label: "전체 모임", href: "/circle",    icon: <LayoutGrid size={15} /> },
+      { label: "내 모임",   href: "/circle/my", icon: <Users size={15} /> },
+    ],
+    커뮤니티: [
+      { label: "자유게시판", href: "#", icon: <MessageSquare size={15} /> },
+      { label: "모임 후기",  href: "#", icon: <Star size={15} /> },
+      { label: "Q&A",       href: "#", icon: <HelpCircle size={15} /> },
+      { label: "공지사항",   href: "#", icon: <Megaphone size={15} /> },
+    ],
+  };
+
+  const dispatch = useDispatch<AppDispatch>();
 
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!isLoggedIn) { setUnreadChatCount(0); return; }
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    setProfileOpen(false);
+    await dispatch(logout());
+    navigate("/main");
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUnreadChatCount(0);
+      setUnreadNotifCount(0);
+      return;
+    }
     const fetch = () => {
-      notificationApi.getAll().then((list) => {
-        setUnreadChatCount(list.filter((n) => n.type === 'CHAT_MESSAGE' && !n.isRead).length);
-      }).catch(() => {});
+      notificationApi
+        .getAll()
+        .then((list) => {
+          setUnreadChatCount(list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length);
+          setUnreadNotifCount(list.filter((n) => n.type !== "CHAT_MESSAGE" && !n.isRead).length);
+        })
+        .catch(() => {});
     };
     fetch();
     const id = setInterval(fetch, 30000);
     return () => clearInterval(id);
   }, [isLoggedIn]);
 
-  const navItems = [
-    '관리자 페이지',
-    '모임 찾기',
-    '커뮤니티',
-    isLoggedIn ? '내 에너지' : '에너지 테스트',
-    '장소 추천',
-  ];
+  const navItems = ["관리자 페이지", "모임 찾기", "커뮤니티", "에너지 테스트", "장소 추천"];
 
   const navLinks: Record<string, string> = {
-    '모임 찾기': '/circle',
-    커뮤니티: '#',
-    '에너지 테스트': '/users/energy-test',
-    '내 에너지': '/users/energy-test/result',
-    '장소 추천': '#',
-    '관리자 페이지': '/admin',
-  };
-
-  const handleLogout = async () => {
-    await dispatch(logout());
-    navigate('/main');
+    "모임 찾기": "/circle",
+    커뮤니티: "#",
+    "에너지 테스트": isLoggedIn ? "/users/energy-test/result" : "/users/energy-test",
+    "장소 추천": "#",
+    "관리자 페이지": "/admin",
   };
 
   return (
     <>
       <header
         style={{
-          position: 'sticky',
+          position: "sticky",
           top: 0,
           zIndex: 50,
-          backgroundColor: '#fff',
-          borderBottom: '1px solid #e5e5e5',
+          backgroundColor: "#fff",
+          borderBottom: "1px solid #e5e5e5",
         }}
       >
         <div
           style={{
             maxWidth: 1200,
-            margin: '0 auto',
-            padding: '0 20px',
+            margin: "0 auto",
+            padding: "0 20px",
             height: 60,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
           <Link
@@ -96,46 +109,39 @@ export default function Navbar() {
               fontSize: 22,
               fontWeight: 900,
               letterSpacing: -0.5,
-              color: '#111',
-              textDecoration: 'none',
+              color: "#111",
+              textDecoration: "none",
             }}
           >
             moa
           </Link>
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               gap: 24,
-              marginLeft: 'auto',
+              marginLeft: "auto",
               marginRight: 24,
             }}
           >
-            <nav style={{ display: 'flex', gap: 24 }}>
+            <nav style={{ display: "flex", gap: 24 }}>
               {navItems.map((item) => (
-                <div
-                  key={item}
-                  style={{ position: 'relative' }}
-                  onMouseEnter={() => setHoveredItem(item)}
-                  onMouseLeave={() => setHoveredItem(null)}
-                >
+                <div key={item} style={{ position: "relative" }} onMouseEnter={() => setHoveredItem(item)} onMouseLeave={() => setHoveredItem(null)}>
                   <Link
-                    to={navLinks[item] ?? '#'}
+                    to={navLinks[item] ?? "#"}
                     style={{
-                      fontSize: 14,
-                      fontWeight: 400,
-                      color: hoveredItem === item ? '#5F8F7B' : '#555',
-                      textDecoration: 'none',
-                      display: 'inline-block',
-                      textAlign: 'center',
+                      fontSize: 15,
+                      fontWeight: 500,
+                      color: hoveredItem === item ? "#5F8F7B" : "#374151",
+                      textDecoration: "none",
+                      display: "inline-block",
+                      textAlign: "center",
                       width: 76,
-                      whiteSpace: 'nowrap',
-                      lineHeight: '60px',
-                      transition: 'color 0.15s',
-                      visibility:
-                        item === '관리자 페이지' && !isAdmin ? 'hidden' : 'visible',
-                      pointerEvents:
-                        item === '관리자 페이지' && !isAdmin ? 'none' : 'auto',
+                      whiteSpace: "nowrap",
+                      lineHeight: "60px",
+                      transition: "color 0.15s",
+                      visibility: item === "관리자 페이지" && !isAdmin ? "hidden" : "visible",
+                      pointerEvents: item === "관리자 페이지" && !isAdmin ? "none" : "auto",
                     }}
                   >
                     {item}
@@ -144,15 +150,15 @@ export default function Navbar() {
                     <div
                       className="dropdown-menu"
                       style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 1px)',
+                        position: "absolute",
+                        top: 51,
                         left: 0,
-                        backgroundColor: 'white',
-                        border: '1px solid #f0f0f0',
-                        borderRadius: 0,
-                        boxShadow: '0 6px 16px rgba(0,0,0,0.08)',
-                        padding: '4px 0',
-                        minWidth: 96,
+                        backgroundColor: "white",
+                        border: "1px solid #efefef",
+                        borderRadius: 12,
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                        padding: "6px",
+                        minWidth: 160,
                         zIndex: 100,
                       }}
                     >
@@ -161,22 +167,22 @@ export default function Navbar() {
                           key={sub.label}
                           to={sub.href}
                           style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            height: 36,
-                            padding: '0 14px',
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            height: 40,
+                            padding: "0 12px",
+                            borderRadius: 8,
                             fontSize: 13,
-                            color: '#444',
-                            textDecoration: 'none',
-                            whiteSpace: 'nowrap',
+                            color: "#444",
+                            textDecoration: "none",
+                            whiteSpace: "nowrap",
+                            transition: "background 0.12s",
                           }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor = '#f7f7f8')
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor = 'transparent')
-                          }
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                         >
+                          <span style={{ color: "#888", display: "flex" }}>{sub.icon}</span>
                           {sub.label}
                         </Link>
                       ))}
@@ -186,49 +192,119 @@ export default function Navbar() {
               ))}
             </nav>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 68 }}>
-              <button
-                onClick={isLoggedIn ? handleLogout : () => navigate('/users/login')}
-                style={{
-                  padding: '5px 0',
-                  width: '100%',
-                  borderRadius: 6,
-                  border: '1px solid #5F8F7B',
-                  background: 'transparent',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  color: '#5F8F7B',
-                }}
-              >
-                {isLoggedIn ? '로그아웃' : '로그인'}
-              </button>
-            </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, width: 210 }}>
+            {!isLoggedIn && (
+              <div style={{ width: 68 }}>
+                <button
+                  onClick={() => {
+                    const current = window.location.pathname + window.location.search;
+                    const noRedirect = ["/users/login", "/users/signup", "/users/onboarding", "/"];
+                    if (!noRedirect.some((p) => current.startsWith(p))) {
+                      sessionStorage.setItem("postLoginRedirect", current);
+                    }
+                    navigate("/users/login");
+                  }}
+                  style={{
+                    padding: "5px 0",
+                    width: "100%",
+                    borderRadius: 6,
+                    border: "1px solid #E38B6D",
+                    background: "transparent",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    color: "#E38B6D",
+                  }}
+                >
+                  로그인
+                </button>
+              </div>
+            )}
 
             {isLoggedIn && (
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: "relative", marginRight: 16 }}>
+                <button
+                  title="알림"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Bell size={20} color="#374151" strokeWidth={1.8} />
+                </button>
+                {unreadNotifCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -3,
+                      right: -3,
+                      backgroundColor: "#ef4444",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: 16,
+                      height: 16,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {unreadNotifCount > 99 ? "99+" : unreadNotifCount}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {isLoggedIn && (
+              <div style={{ position: "relative", marginRight: 20 }}>
                 <button
                   onClick={() => setChatOpen((v) => !v)}
                   title="채팅"
                   style={{
-                    width: 34, height: 34, borderRadius: '50%', border: 'none',
-                    backgroundColor: '#5F8F7B', color: '#fff', fontSize: 18,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 32,
+                    height: 32,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    flexShrink: 0,
                   }}
                 >
-                  💬
+                  <MessageCircle size={20} color="#374151" strokeWidth={1.8} />
                 </button>
                 {unreadChatCount > 0 && (
-                  <span style={{
-                    position: 'absolute', top: -3, right: -3,
-                    backgroundColor: '#ef4444', color: '#fff',
-                    borderRadius: '50%', width: 16, height: 16,
-                    fontSize: 10, fontWeight: 700,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    pointerEvents: 'none',
-                  }}>
-                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -3,
+                      right: -3,
+                      backgroundColor: "#ef4444",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: 16,
+                      height: 16,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {unreadChatCount > 99 ? "99+" : unreadChatCount}
                   </span>
                 )}
               </div>
@@ -236,32 +312,111 @@ export default function Navbar() {
 
             <div
               style={{
-                width: 72,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
               }}
             >
               {isLoggedIn ? (
-                <div
-                  style={{
-                    width: 34, height: 34, borderRadius: '50%',
-                    backgroundColor: '#5F8F7B', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="8" r="4" />
-                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                  </svg>
+                <div ref={profileRef} style={{ position: "relative", display: "flex", alignItems: "center", gap: 6 }}>
+                  <div
+                    onClick={() => setProfileOpen((v) => !v)}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      backgroundColor: "#6C8197",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: "#fff",
+                      userSelect: "none",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {user?.profileImageUrl ? (
+                      <img src={user.profileImageUrl} alt="프로필" style={{ width: 40, height: 40, objectFit: "cover" }} />
+                    ) : (
+                      user?.nickname?.[0]?.toUpperCase() ?? "U"
+                    )}
+                  </div>
+                  <span
+                    onClick={() => navigate("/users/profile")}
+                    onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                    onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 400,
+                      color: "#374151",
+                      maxWidth: 80,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {user?.nickname}
+                  </span>
+                  {profileOpen && (
+                    <div style={{
+                      position: "absolute",
+                      top: "calc(100% + 4px)",
+                      left: 0,
+                      backgroundColor: "white",
+                      border: "1px solid #efefef",
+                      borderRadius: 12,
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                      padding: "6px",
+                      minWidth: 150,
+                      zIndex: 100,
+                    }}>
+                      {[
+                        { label: "마이 프로필", href: "/users/profile", icon: <User size={15} /> },
+                        { label: "계정",        href: "/users/profile", icon: <Settings size={15} /> },
+                      ].map((item) => (
+                        <Link
+                          key={item.label}
+                          to={item.href}
+                          onClick={() => setProfileOpen(false)}
+                          style={{ display: "flex", alignItems: "center", gap: 10, height: 40, padding: "0 12px", borderRadius: 8, fontSize: 13, color: "#444", textDecoration: "none", whiteSpace: "nowrap" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                        >
+                          <span style={{ color: "#888", display: "flex" }}>{item.icon}</span>
+                          {item.label}
+                        </Link>
+                      ))}
+                      <div style={{ height: 1, backgroundColor: "#f0f0f0", margin: "4px 6px" }} />
+                      <button
+                        onClick={handleLogout}
+                        style={{ display: "flex", alignItems: "center", gap: 10, height: 40, padding: "0 12px", borderRadius: 8, fontSize: 13, color: "#e53e3e", background: "none", border: "none", cursor: "pointer", width: "100%", whiteSpace: "nowrap" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fff5f5")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      >
+                        <span style={{ color: "#e53e3e", display: "flex" }}>
+                          <LogOut size={15} />
+                        </span>
+                        로그아웃
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <button
-                  onClick={() => navigate('/users/signup')}
+                  onClick={() => navigate("/users/signup")}
                   style={{
-                    padding: '5px 0', width: '100%', borderRadius: 6,
-                    border: 'none', background: '#5F8F7B', color: '#fff',
-                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    padding: "5px 0",
+                    width: 72,
+                    borderRadius: 6,
+                    border: "none",
+                    background: "#E38B6D",
+                    color: "#fff",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
                   }}
                 >
                   회원가입

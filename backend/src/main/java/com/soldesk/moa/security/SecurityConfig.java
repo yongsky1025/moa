@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -95,6 +96,11 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers("/api/users/profile/check-nickname").permitAll()
                                                 .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**")
+                                                .permitAll()
+                                                // ----------- 서클 시큐리티 파트 ----------
+
+                                                .requestMatchers(HttpMethod.GET, "/circles", "/circles/categories",
+                                                                "/circles/*")
                                                 .permitAll()
 
                                                 // ----------- 보드 시큐리티 파트 ----------
