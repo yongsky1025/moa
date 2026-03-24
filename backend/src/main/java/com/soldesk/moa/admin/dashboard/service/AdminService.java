@@ -56,8 +56,8 @@ import com.soldesk.moa.admin.dashboard.repository.AdminScheduleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
 import com.soldesk.moa.board.entity.Board;
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.board.entity.Reply;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.circle.entity.Circle;
@@ -610,7 +610,7 @@ public class AdminService {
                 Users admin = adminUsersRepository.findById(adminId)
                                 .orElseThrow(() -> new IllegalArgumentException("해당 관리자를 찾을 수 없습니다."));
 
-                Board noticeBoard = boardRepository.findByBoardTypeAndCircleIdIsNull(BoardType.NOTICE)
+                Board noticeBoard = boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(BoardType.NOTICE)
                                 .orElseThrow(() -> new IllegalArgumentException("공지사항 게시판을 찾을 수 없습니다."));
 
                 Post notice = Post.builder()

@@ -25,8 +25,8 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.board.entity.QBoard;
-import com.soldesk.moa.board.entity.QPost;
-import com.soldesk.moa.board.entity.QReply;
+import com.soldesk.moa.post.entity.QPost;
+import com.soldesk.moa.reply.entity.QReply;
 import com.soldesk.moa.schedule.entity.QSchedule;
 import com.soldesk.moa.users.entity.QUsers;
 

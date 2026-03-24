@@ -13,8 +13,8 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.soldesk.moa.admin.dashboard.dto.postInfo.AdminPostSearchDTO;
 import com.soldesk.moa.board.entity.QBoard;
-import com.soldesk.moa.board.entity.QPost;
-import com.soldesk.moa.board.entity.QReply;
+import com.soldesk.moa.post.entity.QPost;
+import com.soldesk.moa.reply.entity.QReply;
 import com.soldesk.moa.circle.entity.QCircle;
 import com.soldesk.moa.users.entity.QUsers;
 
