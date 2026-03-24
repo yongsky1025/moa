@@ -4,12 +4,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Profile;
 
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.common.entity.constant.ImageDomain;
 import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.common.repository.ImageRepository;
 import com.soldesk.moa.common.storage.FileStorage;
 import com.soldesk.moa.common.storage.dto.CreateUploadUrlRequestDTO;
 import com.soldesk.moa.common.storage.dto.CreateUploadUrlResponseDTO;
-import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -28,14 +28,16 @@ public class ImageUploadService {
         CreateUploadUrlResponseDTO upload = fileStorage.createUploadUrl(request.getDomain(), request.getFileName(),
                 request.getContentType());
 
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        if (!usersRepository.existsById(userId)) {
+            throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
+        }
         imageRepository.save(Image.builder()
                 .name(request.getFileName())
                 .uuid(upload.getKey())
                 .path(normalizeToUploadPath(upload.getFileUrl()))
+                .domain(normalizeDomain(request.getDomain()))
+                .uploadedByUserId(userId)
                 .ord(0L)
-                .user(user)
                 .status(ImageStatus.TEMP)
                 .build());
 
@@ -70,5 +72,9 @@ public class ImageUploadService {
             return fileUrl.substring(idx);
         }
         return fileUrl;
+    }
+
+    private ImageDomain normalizeDomain(String domain) {
+        return ImageDomain.from(domain);
     }
 }

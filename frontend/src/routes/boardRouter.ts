@@ -2,6 +2,7 @@ import { redirect } from "react-router-dom";
 import CirclePostDetailPage from "../board/pages/CirclePostDetailPage";
 import CirclePostFormPage from "../board/pages/CirclePostFormPage";
 import CirclePostListPage from "../board/pages/CirclePostListPage";
+import BoardSkeletonPreviewPage from "../board/pages/BoardSkeletonPreviewPage";
 import PostDetailPage from "../post/pages/PostDetailPage";
 import PostFormPage from "../post/pages/PostFormPage";
 import PostListPage from "../post/pages/PostListPage";
@@ -10,6 +11,7 @@ import { postRoutes } from "../post/routes/postRoutes";
 export const boardRouter = () => {
   return [
     { index: true, loader: () => redirect(postRoutes.freeBase) },
+    { path: "preview/skeleton", Component: BoardSkeletonPreviewPage },
     // 자유
     { path: postRoutes.freeBasePattern, Component: PostListPage },
     { path: postRoutes.freeCreatePattern, Component: PostFormPage },

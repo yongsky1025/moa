@@ -9,6 +9,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.soldesk.moa.chat.exception.ChatErrorCode;
+import com.soldesk.moa.chat.exception.ChatException;
 import com.soldesk.moa.common.dto.ErrorResponseDTO;
 
 import lombok.extern.log4j.Log4j2;
@@ -16,6 +18,16 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ChatException.class)
+    public ResponseEntity<ErrorResponseDTO> handleChatException(ChatException ex) {
+        HttpStatus status = switch (ex.getCode()) {
+            case ROOM_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case NOT_A_MEMBER, FORBIDDEN -> HttpStatus.FORBIDDEN;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return buildResponse(status, ex.getMessage());
+    }
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponseDTO> handleDuplicateResource(DuplicateResourceException ex) {

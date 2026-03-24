@@ -3,12 +3,19 @@ package com.soldesk.moa.admin.dashboard.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleCategoryRequestDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleDetailDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleMemberDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCirclePostDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.PopularCircleDTO;
 import com.soldesk.moa.admin.dashboard.service.AdminService;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
+import com.soldesk.moa.circle.entity.CircleCategory;
+import com.soldesk.moa.circle.repository.CircleCategoryRepository;
 import com.soldesk.moa.circle.service.CircleService;
+import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,10 +25,13 @@ import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,6 +42,15 @@ public class AdminCircleController {
 
     private final AdminService adminService;
     private final CircleService circleService;
+    private final CircleCategoryRepository circleCategoryRepository;
+
+    @GetMapping("/categories")
+    @Operation(summary = "admin circle category name list")
+    public List<String> getCategories() {
+        return circleCategoryRepository.findAll().stream()
+                .map(CircleCategory::getCategoryName)
+                .toList();
+    }
 
     @GetMapping("/list")
     @Operation(summary = "admin circle list data")
@@ -48,6 +67,32 @@ public class AdminCircleController {
         List<PopularCircleDTO> result = adminService.findPopularCircles();
 
         return ResponseEntity.ok(result);
+    }
+
+    // 모임 상세 조회
+    @GetMapping("/{circleId}")
+    @Operation(summary = "admin circle detail data")
+    public ResponseEntity<AdminCircleDetailDTO> getCircleDetail(@PathVariable Long circleId) {
+        log.info("모임 상세 조회 요청: {}", circleId);
+        return ResponseEntity.ok(adminService.getCircleDetail(circleId));
+    }
+
+    // 모임 가입 회원 목록
+    @GetMapping("/{circleId}/members")
+    @Operation(summary = "admin circle members data")
+    public PageResultDTO<AdminCircleMemberDTO> getCircleMembers(
+            @PathVariable Long circleId, PageRequestDTO pageRequestDTO) {
+        log.info("모임 회원 목록 요청: {}", circleId);
+        return adminService.getCircleMembers(circleId, pageRequestDTO);
+    }
+
+    // 모임 최근 게시물
+    @GetMapping("/{circleId}/posts")
+    @Operation(summary = "admin circle posts data")
+    public PageResultDTO<AdminCirclePostDTO> getCirclePosts(
+            @PathVariable Long circleId, PageRequestDTO pageRequestDTO) {
+        log.info("모임 게시물 목록 요청: {}", circleId);
+        return adminService.getCirclePosts(circleId, pageRequestDTO);
     }
 
     // 보류 중인 서클 목록 조회
@@ -77,6 +122,14 @@ public class AdminCircleController {
             @PathVariable Long circleId) {
         circleService.adminDeleteCircle(circleId);
         return ResponseEntity.noContent().build();
+    }
+
+    // 서클 카테고리 추가
+    @PostMapping("/category")
+    @Operation(summary = "admin create circle category_name ")
+    public ResponseEntity<String> postCircleCategory(@RequestBody AdminCircleCategoryRequestDTO dto) {
+        adminService.createCircleCategory(dto);
+        return new ResponseEntity<String>("success", HttpStatus.OK);
     }
 
 }

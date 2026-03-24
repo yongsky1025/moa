@@ -249,7 +249,11 @@ export default function ScheduleFormPage() {
         navigate(`/circle/${cid}/schedules/${sid}`);
       } else {
         const res = await scheduleApi.createSchedule(cid, payload);
-        navigate(`/circle/${cid}/schedules/${res.data.scheduleId}`);
+        if (res.data.chatRoomId) {
+          navigate(`/chat/room/${res.data.chatRoomId}`);
+        } else {
+          navigate(`/circle/${cid}/schedules/${res.data.scheduleId}`);
+        }
       }
     } catch (e) {
       setError(getErrorMessage(e));

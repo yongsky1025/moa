@@ -40,7 +40,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = { "images", "posts", "replies", "energyProfile" })
+@ToString(exclude = { "posts", "replies", "energyProfile" })
 @Table(name = "users")
 @Entity
 public class Users extends BaseEntity {
@@ -99,12 +99,12 @@ public class Users extends BaseEntity {
     private LocalDateTime onboardingCompletedAt;
 
     // 상태 메시지
-    @Column(name = "status_message", length = 100)
+    @Column(name = "status_message", length = 300)
     private String statusMessage;
 
-    // 자기 소개
-    @Column(length = 300)
-    private String bio;
+    // 소셜 로그인 프로필 이미지 URL
+    @Column(name = "profile_image_url", length = 500)
+    private String profileImageUrl;
 
     // 프로필 이미지
     @OneToOne(fetch = FetchType.LAZY)
@@ -114,10 +114,6 @@ public class Users extends BaseEntity {
     // 에너지 프로필 (1:1)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UsersEnergyProfile energyProfile;
-
-    @OneToMany(mappedBy = "user")
-    @Builder.Default
-    private List<Image> images = new ArrayList<>();
 
     @OneToMany(mappedBy = "userId")
     @Builder.Default
@@ -161,6 +157,10 @@ public class Users extends BaseEntity {
         this.providerId = providerId;
     }
 
+    public void changeProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
     // 탈퇴/복구
     public void changeUserStatus(UserStatus userStatus) {
         this.userStatus = userStatus;
@@ -168,10 +168,6 @@ public class Users extends BaseEntity {
 
     public void changeUserProfileImage(Image userProfileImage) {
         this.userProfileImage = userProfileImage;
-    }
-
-    public void changeBio(String bio) {
-        this.bio = bio;
     }
 
     // 탈퇴 시점 DB 삽입

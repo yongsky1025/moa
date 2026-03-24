@@ -40,9 +40,12 @@ export default function OAuthCallbackPage() {
         dispatch(setAuthFromOAuth(res.data.user));
 
         if (!res.data.user?.onboardingCompleted) {
-          navigate("/users/onboarding"); // 온보딩
+          sessionStorage.removeItem("postLoginRedirect");
+          navigate("/users/onboarding");
         } else {
-          navigate("/users/energy-test/result"); // 완료 시
+          const redirect = sessionStorage.getItem("postLoginRedirect") ?? "/main";
+          sessionStorage.removeItem("postLoginRedirect");
+          navigate(redirect);
         }
       })
       .catch((e) => {

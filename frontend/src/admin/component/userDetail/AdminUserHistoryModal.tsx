@@ -1,9 +1,8 @@
 import { createPortal } from 'react-dom';
-import { useMemo } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import MoaPaginate from '../Moapaginate';
 import { useAdminUserDetail } from '../../context/AdminUserDetailContext';
-import type { PageResultDTO, UserInfoCircleDTO, UserInfoPostDTO, UserInfoReplyDTO } from '../../types/adminTypes';
+import type { UserInfoCircleDTO, UserInfoPostDTO, UserInfoReplyDTO } from '../../types/adminTypes';
 
 const formatDateTime = (date: string | null | undefined) => {
   if (!date) return '-';
@@ -29,29 +28,38 @@ function toSafeNumber(val: any, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function actualTotalPage<T>(page: PageResultDTO<T> | null, size: number) {
-  if (!page) return 0;
-  return Math.ceil(toSafeNumber(page.totalCount) / Math.max(1, size));
-}
-
 export default function AdminUserHistoryModal() {
   const navigate = useNavigate();
-  const { history, closeHistory, setHistoryPage, historyLoading, historyError, postHistory, replyHistory, circleHistory } =
-    useAdminUserDetail();
+  const {
+    history, closeHistory, loadMoreHistory,
+    historyLoading, historyError,
+    historyItems, historyHasMore, historyTotalCount,
+  } = useAdminUserDetail();
 
-  const activeData: PageResultDTO<unknown> | null = useMemo(() => {
-    if (history.kind === 'post') return postHistory as PageResultDTO<UserInfoPostDTO> | null;
-    if (history.kind === 'reply') return replyHistory as PageResultDTO<UserInfoReplyDTO> | null;
-    return circleHistory as PageResultDTO<UserInfoCircleDTO> | null;
-  }, [history.kind, postHistory, replyHistory, circleHistory]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 배경 스크롤 방지
+  useEffect(() => {
+    if (!history.open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [history.open]);
+
+  // 무한스크롤 — 바닥 감지
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || historyLoading || !historyHasMore) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80) {
+      loadMoreHistory();
+    }
+  }, [historyLoading, historyHasMore, loadMoreHistory]);
 
   if (!history.open) return null;
 
-  const pageCount = actualTotalPage(activeData, history.size);
-  const list = activeData?.dtoList ?? [];
+  const list = historyItems;
 
   const goDetail = (payload: any) => {
-    // 게시글/모임 상세는 추후 구현 예정이라, 라우트 확정되면 여기만 변경하면 됨
     if (history.kind === 'post') {
       const boardKey = String(payload?.boardName ?? '');
       navigate(`/board/${boardKey}`);
@@ -62,8 +70,7 @@ export default function AdminUserHistoryModal() {
       return;
     }
     if (history.kind === 'circle') {
-      const circleKey = String(payload?.circleName ?? '');
-      navigate(`/circle/${circleKey}`);
+      navigate(`/admin/circles/${payload?.circleId}`);
     }
   };
 
@@ -81,7 +88,7 @@ export default function AdminUserHistoryModal() {
           <div>
             <h3 className="text-moa-text text-base font-extrabold tracking-tight">{getTitle(history.kind)}</h3>
             <p className="text-moa-subtle mt-0.5 text-xs">
-              페이지 {history.page} · {list.length.toLocaleString()}건 표시
+              총 {historyTotalCount.toLocaleString()}건
             </p>
           </div>
           <button
@@ -98,17 +105,12 @@ export default function AdminUserHistoryModal() {
           </div>
         )}
 
-        <div className="max-h-[62vh] overflow-auto px-6 py-5">
-          {historyLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="animate-pulse rounded-xl border border-moa-border bg-moa-light px-4 py-3">
-                  <div className="bg-moa-border h-4 w-2/3 rounded-full" />
-                  <div className="bg-moa-border mt-2 h-3 w-1/3 rounded-full" />
-                </div>
-              ))}
-            </div>
-          ) : list.length === 0 ? (
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="max-h-[62vh] overflow-auto px-6 py-5"
+        >
+          {list.length === 0 && !historyLoading ? (
             <div className="text-moa-subtle flex flex-col items-center gap-3 py-16 text-sm">
               <div className="bg-moa-light flex h-16 w-16 items-center justify-center rounded-2xl">
                 <span className="text-moa-muted text-2xl font-black">0</span>
@@ -176,24 +178,23 @@ export default function AdminUserHistoryModal() {
                     <span className="text-moa-subtle mt-1 shrink-0">›</span>
                   </button>
                 ))}
+
+              {/* 로딩 인디케이터 */}
+              {historyLoading && (
+                <div className="space-y-3 pt-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="animate-pulse rounded-xl border border-moa-border bg-moa-light px-4 py-3">
+                      <div className="bg-moa-border h-4 w-2/3 rounded-full" />
+                      <div className="bg-moa-border mt-2 h-3 w-1/3 rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
-
-        {!historyLoading && pageCount > 1 && (
-          <div className="border-t border-moa-border px-6 py-5">
-            <div className="flex flex-col items-center gap-3">
-              <MoaPaginate pageCount={pageCount} currentPage={history.page} onPageChange={({ selected }) => setHistoryPage(selected)} />
-              <p className="text-moa-subtle text-xs">
-                <span className="text-moa-secondary font-semibold">{history.page}</span> / {pageCount} 페이지
-                &nbsp;·&nbsp;총 <span className="text-moa-primary font-semibold">{toSafeNumber(activeData?.totalCount).toLocaleString()}</span>건
-              </p>
-            </div>
-          </div>
-        )}
       </div>
     </div>,
     document.body,
   );
 }
-

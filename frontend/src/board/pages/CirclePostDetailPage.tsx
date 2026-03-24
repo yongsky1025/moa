@@ -3,8 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import BoardSectionHeader from "../../common/components/BoardSectionHeader";
-import PostMeta from "../../post/components/PostMeta";
-import PostContent from "../../post/components/PostContent";
+import {
+  BoardDetailSkeleton,
+  ReplyListSkeleton,
+} from "../../common/components/BoardLoadingSkeletons";
+import PostDetailArticleCard from "../../post/components/PostDetailArticleCard";
+import PostLikeButton from "../../post/components/PostLikeButton";
+import PostActionMenu from "../../post/components/PostActionMenu";
 import { usePostDetail } from "../../post/hooks/usePostDetail";
 import { parseRouteNumber } from "../utils/boardRouteHelpers";
 import { postRoutes } from "../../post/routes/postRoutes";
@@ -12,6 +17,7 @@ import { useReplies } from "../../reply/hooks/useReplies";
 import ReplyForm from "../../reply/components/ReplyForm";
 import { useReplyForm } from "../../reply/hooks/useReplyForm";
 import ReplyList from "../../reply/components/ReplyList";
+import "../../reply/styles/replySection.css";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../users/reducers/store";
 import { postApi } from "../../post/api/postApi";
@@ -104,6 +110,19 @@ export default function CirclePostDetailPage() {
     }
   };
 
+  const removePost = async () => {
+    if (!data) return;
+    if (circleIdNumber === null || boardIdNumber === null) return;
+    if (!window.confirm("게시글을 삭제하시겠습니까?")) return;
+    try {
+      await postApi.deleteCirclePost(circleIdNumber, boardIdNumber, data.postId);
+      window.alert("게시글이 삭제되었습니다.");
+      navigate(postRoutes.circleBoard(circleIdNumber, boardIdNumber));
+    } catch (e) {
+      window.alert(getErrorMessage(e));
+    }
+  };
+
   if (!hasValidParams) {
     return (
       <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
@@ -125,124 +144,65 @@ export default function CirclePostDetailPage() {
         backLabel="목록으로 이동"
       />
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px" }}>
-        {loading && <p>로딩 중...</p>}
+        {loading && <BoardDetailSkeleton />}
         {error && <p style={{ color: "#dc2626" }}>{error}</p>}
         {data && (
           <>
-            <section
-              style={{
-                backgroundColor: "#fff",
-                border: "1px solid #d6d9dd",
-                borderRadius: 14,
-                boxShadow: "0 1px 3px rgba(15, 23, 42, 0.08)",
-                overflow: "hidden",
-              }}
-            >
-              <div style={{ padding: "28px 28px 24px" }}>
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: 42 / 2,
-                    color: "#111827",
-                    fontWeight: 800,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {data.title}
-                </h2>
-                <div style={{ marginTop: 16 }}>
-                  <PostMeta post={data} />
-                </div>
-              </div>
-
-              <div style={{ borderTop: "1px solid #e5e7eb" }} />
-
-              <div style={{ padding: 28 }}>
-                <PostContent html={data.content} />
-                <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-                  <button
-                    type="button"
-                    onClick={() => void react()}
+            <PostDetailArticleCard
+              post={data}
+              headerAction={
+                <PostActionMenu
+                  canEdit={isOwner}
+                  canDelete={isOwner}
+                  canReport={isLoggedIn && !isOwner}
+                  onEdit={() =>
+                    navigate(
+                      postRoutes.circleEdit(
+                        circleIdNumber,
+                        boardIdNumber,
+                        postIdNumber,
+                      ),
+                    )
+                  }
+                  onDelete={() => void removePost()}
+                  onReport={() => window.alert("신고 기능은 준비 중입니다.")}
+                />
+              }
+              actionSection={
+                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  <PostLikeButton
+                    liked={
+                      (reactionSummary?.myReaction ?? data.myReaction) ===
+                      "LIKE"
+                    }
+                    likeCount={reactionSummary?.likeCount ?? data.likeCount}
                     disabled={!isLoggedIn}
+                    onClick={() => void react()}
+                    error={reactionError}
+                    marginTop={0}
+                  />
+                  <span
                     style={{
-                      border: "1px solid #d1d5db",
-                      backgroundColor:
-                        (reactionSummary?.myReaction ?? data.myReaction) ===
-                        "LIKE"
-                          ? "#ecfdf3"
-                          : "#fff",
-                      borderRadius: 8,
-                      padding: "8px 12px",
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 6,
-                      fontSize: 15,
-                      color:
-                        (reactionSummary?.myReaction ?? data.myReaction) ===
-                        "LIKE"
-                          ? "#047857"
-                          : "#111827",
+                      padding: "8px 14px",
+                      borderRadius: 8,
+                      border: "1px solid #d1d5db",
+                      backgroundColor: "#fff",
+                      color: "#111827",
+                      fontSize: 14,
                       fontWeight: 600,
-                      cursor: !isLoggedIn ? "not-allowed" : "pointer",
-                      opacity: !isLoggedIn ? 0.6 : 1,
                     }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M7 10v10H3V10h4Zm2 10h7.2a2 2 0 0 0 2-1.7l1-6.5A2 2 0 0 0 17.2 9H13l.6-3.2A2.5 2.5 0 0 0 11.2 3L9 7.4V20Z"
-                        fill="none"
-                        stroke={(reactionSummary?.myReaction ?? data.myReaction) === "LIKE" ? "#047857" : "#6b7280"}
-                        strokeWidth="1.6"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <span>{reactionSummary?.likeCount ?? data.likeCount}</span>
-                  </button>
-                  {isOwner && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        navigate(
-                          postRoutes.circleEdit(
-                            circleIdNumber,
-                            boardIdNumber,
-                            postIdNumber,
-                          ),
-                        )
-                      }
-                      style={{
-                        border: "1px solid #d1d5db",
-                        backgroundColor: "#fff",
-                        borderRadius: 8,
-                        padding: "8px 12px",
-                        fontSize: 15,
-                        color: "#111827",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      수정
-                    </button>
-                  )}
+                    💬 댓글 {totalReplyCount}
+                  </span>
                 </div>
-                {reactionError && (
-                  <p style={{ margin: "10px 0 0", color: "#dc2626" }}>
-                    {reactionError}
-                  </p>
-                )}
-              </div>
-            </section>
+              }
+            />
 
-            <section style={{ marginTop: 28 }}>
+            <section className="reply-section">
               <h3
-                style={{
-                  margin: "0 0 14px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: 32 / 2,
-                }}
+                className="reply-section-title"
               >
                 <svg
                   width="20"
@@ -261,74 +221,24 @@ export default function CirclePostDetailPage() {
                 </svg>
                 댓글 {totalReplyCount}개
               </h3>
+              <p className="reply-section-subtitle">의견을 남기고 대화를 이어가 보세요.</p>
               {!isLoggedIn ? (
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 8,
-                    backgroundColor: "#fff",
-                    border: "1px solid #d6d9dd",
-                    borderRadius: 14,
-                    boxShadow: "0 1px 3px rgba(15, 23, 42, 0.08)",
-                    padding: 24,
-                  }}
-                >
-                  <p style={{ margin: 0, color: "#6b7280" }}>
-                    댓글을 작성하려면 로그인이 필요합니다.
-                  </p>
-                  <div
-                    style={{ display: "flex", gap: 12, alignItems: "flex-end" }}
+                <div className="reply-login-cta">
+                  <p className="reply-login-title">댓글을 작성하려면 로그인이 필요합니다.</p>
+                  <p className="reply-login-desc">로그인 후 의견을 남기고 대화에 참여해 보세요.</p>
+                  <button
+                    type="button"
+                    className="reply-login-btn"
+                    onClick={() => navigate("/users/login")}
                   >
-                    <textarea
-                      rows={3}
-                      disabled
-                      placeholder="로그인 후 댓글을 작성할 수 있습니다"
-                      style={{
-                        flex: 1,
-                        padding: 14,
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 10,
-                        backgroundColor: "#f9fafb",
-                        resize: "none",
-                        color: "#9ca3af",
-                      }}
-                    />
-                    <button
-                      type="button"
-                      disabled
-                      style={{
-                        width: 46,
-                        height: 46,
-                        borderRadius: 8,
-                        border: "1px solid #d1d5db",
-                        backgroundColor: "#9ca3af",
-                        color: "#fff",
-                        cursor: "not-allowed",
-                      }}
-                      aria-label="댓글 전송"
-                    >
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M3 11.5 20.5 4l-7.3 16-2.2-6.3L3 11.5Z"
-                          fill="none"
-                          stroke="#ffffff"
-                          strokeWidth="1.7"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                    로그인하고 댓글 쓰기
+                  </button>
                 </div>
               ) : (
                 <ReplyForm
                   postId={postIdNumber}
                   variant="panel"
+                  currentUserName={user?.nickname}
                   onSubmitReply={async (content) => {
                     await create({ postId: postIdNumber, content });
                   }}
@@ -338,7 +248,7 @@ export default function CirclePostDetailPage() {
               {replySubmitError && (
                 <p style={{ color: "#dc2626" }}>{replySubmitError}</p>
               )}
-              {replyLoading && <p>댓글 불러오는 중...</p>}
+              {replyLoading && <ReplyListSkeleton count={4} />}
               {replyError && <p style={{ color: "#dc2626" }}>{replyError}</p>}
               {!replyLoading && !replyError && (
                 <ReplyList

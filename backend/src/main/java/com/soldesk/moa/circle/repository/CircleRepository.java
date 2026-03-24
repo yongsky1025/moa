@@ -30,4 +30,5 @@ public interface CircleRepository extends JpaRepository<Circle, Long>, CircleRep
     @Transactional
     @Query("UPDATE Circle c SET c.coverImage = null WHERE c.coverImage IS NOT NULL")
     void clearAllCoverImages();
+
 }

@@ -6,12 +6,10 @@ import com.soldesk.moa.chat.dto.response.UnreadCountResponse;
 import com.soldesk.moa.chat.exception.ChatErrorCode;
 import com.soldesk.moa.chat.exception.ChatException;
 import com.soldesk.moa.chat.repository.ChatMessageRepository;
-import com.soldesk.moa.chat.repository.ChatRoomMemberRepository;
-import com.soldesk.moa.notification.domain.NotificationType;
-import com.soldesk.moa.notification.service.NotificationService;
 import com.soldesk.moa.users.repository.UsersRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,18 +18,19 @@ public class ChatMessageService {
 
     private final ChatRoomService roomService;
     private final ChatMessageRepository messageRepo;
-    private final ChatRoomMemberRepository memberRepo;
-    private final NotificationService notificationService;
     private final UsersRepository usersRepository;
+    private final ChatNotificationDispatcher notificationDispatcher;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ChatMessageService(ChatRoomService roomService, ChatMessageRepository messageRepo,
-                              ChatRoomMemberRepository memberRepo, NotificationService notificationService,
-                              UsersRepository usersRepository) {
+                              UsersRepository usersRepository,
+                              ChatNotificationDispatcher notificationDispatcher,
+                              SimpMessagingTemplate messagingTemplate) {
         this.roomService = roomService;
         this.messageRepo = messageRepo;
-        this.memberRepo = memberRepo;
-        this.notificationService = notificationService;
         this.usersRepository = usersRepository;
+        this.notificationDispatcher = notificationDispatcher;
+        this.messagingTemplate = messagingTemplate;
     }
 
     /** 메시지 저장 후 응답 반환 (WebSocket / REST 공통) */
@@ -44,17 +43,15 @@ public class ChatMessageService {
         roomService.assertMember(roomId, senderId);
 
         ChatMessage saved = messageRepo.save(ChatMessage.of(roomId, senderId, content));
+        ChatMessageResponse response = toResponse(saved);
 
-        // 발신자 제외 채팅방 멤버들에게 알림 전송
-        memberRepo.findByRoomId(roomId).stream()
-                .filter(m -> !m.getUserId().equals(senderId))
-                .forEach(m -> notificationService.send(
-                        m.getUserId(),
-                        NotificationType.CHAT_MESSAGE,
-                        "새 메시지가 도착했습니다: " + content
-                ));
+        // 트랜잭션 커밋 전에 브로드캐스트 → 수신자에게 즉시 전달 (@SendTo 대체)
+        messagingTemplate.convertAndSend("/topic/room/" + roomId, response);
 
-        return toResponse(saved);
+        // 발신자 제외 채팅방 멤버들에게 알림 전송 (비동기 — 메시지 응답 속도에 영향 없도록)
+        notificationDispatcher.dispatch(roomId, senderId, content);
+
+        return response;
     }
 
     /** 채팅 내역 페이징 조회 (최신순) */

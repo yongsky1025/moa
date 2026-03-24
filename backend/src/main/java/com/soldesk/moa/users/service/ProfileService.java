@@ -27,12 +27,14 @@ public class ProfileService {
 
         return UserProfileResponseDTO.builder()
                 .name(user.getName())
+                .publicId(user.getPublicId())
                 .nickname(user.getNickname())
                 .email(user.getEmail())
                 .userGender(user.getUserGender())
                 .birthDate(user.getBirthDate())
                 .age(user.getAge())
                 .statusMessage(user.getStatusMessage())
+                .profileImageUrl(user.getProfileImageUrl())
                 .build();
     }
 

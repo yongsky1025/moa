@@ -29,4 +29,11 @@ public interface SearchCircleRepository {
     List<Object[]> findCircleCreateActivity(LocalDateTime since);
 
     // 모임 상세 조회
+    Object[] getCircleDetail(Long circleId);
+
+    // 모임 가입 회원 목록
+    Page<Object[]> getCircleMembers(Long circleId, Pageable pageable);
+
+    // 모임 최근 게시물
+    Page<Object[]> getCirclePosts(Long circleId, Pageable pageable);
 }

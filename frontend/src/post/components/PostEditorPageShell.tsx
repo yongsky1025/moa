@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import PostForm from "./PostForm";
 import type { PostFormValues } from "../types/postTypes";
+import { PostEditorSkeleton } from "../../common/components/BoardLoadingSkeletons";
+import "../styles/postEditor.css";
 
 interface PostEditorPageShellProps {
   title: string;
@@ -35,29 +37,33 @@ export default function PostEditorPageShell({
   preFormSlot,
 }: PostEditorPageShellProps) {
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px" }}>
-      <h2>{title}</h2>
-      <p>
-        <Link to={listPath}>목록으로</Link>
-      </p>
+    <main className="post-editor-page">
+      <section className="post-editor-card">
+        <div className="post-editor-card-header">
+          <h2 className="post-editor-card-title">{title}</h2>
+          <Link className="post-editor-list-link" to={listPath}>
+            목록으로
+          </Link>
+        </div>
+        <div className="post-editor-divider" />
+        {preFormSlot}
+        {mode === "edit" && detailLoading && <PostEditorSkeleton />}
+        {mode === "edit" && detailError && (
+          <p className="post-editor-message-error">{detailError}</p>
+        )}
+        {submitError && <p className="post-editor-message-error">{submitError}</p>}
 
-      {preFormSlot}
-      {mode === "edit" && detailLoading && <p>기존 글을 불러오는 중...</p>}
-      {mode === "edit" && detailError && (
-        <p style={{ color: "#dc2626" }}>{detailError}</p>
-      )}
-      {submitError && <p style={{ color: "#dc2626" }}>{submitError}</p>}
-
-      {showForm && (
-        <PostForm
-          mode={mode}
-          initialValue={initialValue}
-          submitting={submitting}
-          deleting={deleting}
-          onSubmit={onSubmit}
-          onDelete={onDelete}
-        />
-      )}
+        {showForm && (
+          <PostForm
+            mode={mode}
+            initialValue={initialValue}
+            submitting={submitting}
+            deleting={deleting}
+            onSubmit={onSubmit}
+            onDelete={onDelete}
+          />
+        )}
+      </section>
     </main>
   );
 }

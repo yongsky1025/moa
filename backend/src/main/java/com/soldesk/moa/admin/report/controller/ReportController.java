@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.soldesk.moa.admin.report.dto.ReportFilterDTO;
 import com.soldesk.moa.admin.report.dto.ReportRequestDTO;
 import com.soldesk.moa.admin.report.dto.ReportResponseDTO;
-import com.soldesk.moa.admin.report.entity.Report;
 import com.soldesk.moa.admin.report.entity.constant.ReportStatus;
 import com.soldesk.moa.admin.report.service.ReportService;
 import com.soldesk.moa.common.dto.PageResultDTO;
@@ -63,7 +62,7 @@ public class ReportController {
     public ResponseEntity<Void> updateStatus(
             @PathVariable Long reportId,
             @RequestParam ReportStatus status,
-            @RequestParam(required = false) String adminNote) {
+            @RequestParam String adminNote) {
         reportService.updateReportStatus(reportId, status, adminNote);
         return ResponseEntity.ok().build();
     }

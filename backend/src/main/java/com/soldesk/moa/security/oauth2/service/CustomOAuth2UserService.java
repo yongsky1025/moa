@@ -93,6 +93,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             user.changeProvider(provider);
             user.changeProviderId(userInfo.getId());
         }
+        // 프로필 이미지 URL 업데이트
+        if (userInfo.getImageUrl() != null) {
+            user.changeProfileImageUrl(userInfo.getImageUrl());
+        }
         return user;
     }
 
@@ -112,6 +116,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .nickname(nickname)
                 .provider(provider)
                 .providerId(userInfo.getId())
+                .profileImageUrl(userInfo.getImageUrl())
                 .userRole(UserRole.USER)
                 .userGender(UserGender.UNSPECIFIED)
                 .build();

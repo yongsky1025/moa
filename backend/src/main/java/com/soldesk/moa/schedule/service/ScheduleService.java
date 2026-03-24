@@ -26,6 +26,7 @@ import com.soldesk.moa.schedule.entity.ScheduleTag;
 import com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus;
 import com.soldesk.moa.schedule.repository.ScheduleMemberRepository;
 import com.soldesk.moa.schedule.repository.ScheduleRepository;
+import com.soldesk.moa.chat.service.ChatRoomService;
 import com.soldesk.moa.schedule.repository.ScheduleTagRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
@@ -44,6 +45,7 @@ public class ScheduleService {
         private final CircleMemberRepository circleMemberRepository;
         private final UsersRepository usersRepository;
         private final TagRepository tagRepository;
+        private final ChatRoomService chatRoomService;
 
         // 일정 생성
         public ScheduleResponseDTO createSchedule(
@@ -97,7 +99,10 @@ public class ScheduleService {
                 saved.increaseCurrentMember();
 
                 List<String> savedTags = saveTags(saved, request.getTags());
-                return new ScheduleResponseDTO(saved, false, savedTags);
+                Long chatRoomId = chatRoomService
+                                .getOrCreateScheduleRoom(saved.getScheduleId(), saved.getTitle(), userId)
+                                .getId();
+                return new ScheduleResponseDTO(saved, false, savedTags, chatRoomId);
         }
 
         // 일정 참여

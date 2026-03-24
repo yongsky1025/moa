@@ -10,6 +10,8 @@ public record PlaceResponseDTO(
         String city,
         String district,
         int capacity,
-        int pricePerHour) {
+        int pricePerHour,
+        double avgRating,
+        int reviewCount) {
 
 }

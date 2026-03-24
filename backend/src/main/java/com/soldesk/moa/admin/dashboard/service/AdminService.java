@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -19,6 +20,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.Tuple;
+import com.soldesk.moa.admin.dashboard.dto.postInfo.AdminPostDetailDTO;
+import com.soldesk.moa.admin.dashboard.dto.postInfo.AdminPostDetailDTO.AdminReplyDTO;
+import com.soldesk.moa.admin.dashboard.dto.postInfo.AdminPostResponseDTO;
+import com.soldesk.moa.admin.dashboard.dto.postInfo.AdminPostSearchDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleCategoryRequestDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleDetailDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleMemberDTO;
+import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCirclePostDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.PopularCircleDTO;
@@ -38,6 +47,7 @@ import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoDTO;
 import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoPostDTO;
 import com.soldesk.moa.admin.dashboard.dto.userInfo.UserInfoReplyDTO;
 import com.soldesk.moa.admin.dashboard.repository.AdminBoardRepository;
+import com.soldesk.moa.admin.dashboard.repository.AdminCircleCategoryRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminPostRepository;
@@ -45,12 +55,36 @@ import com.soldesk.moa.admin.dashboard.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminScheduleMemberRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
-import com.soldesk.moa.circle.entity.Circle;
-import com.soldesk.moa.circle.entity.CircleMember;
-import com.soldesk.moa.common.dto.PageRequestDTO;
-import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.post.entity.Post;
 import com.soldesk.moa.reply.entity.Reply;
+import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.repository.BoardRepository;
+import com.soldesk.moa.circle.entity.Circle;
+import com.soldesk.moa.circle.entity.CircleCategory;
+import com.soldesk.moa.circle.entity.CircleMember;
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
+import com.soldesk.moa.admin.report.entity.Sanction;
+import com.soldesk.moa.admin.report.entity.constant.ReportTargetType;
+import com.soldesk.moa.admin.report.entity.constant.SanctionState;
+import com.soldesk.moa.admin.report.repository.SanctionRepository;
+import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceDetailDTO;
+import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceResponseDTO;
+import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceSearchDTO;
+import com.soldesk.moa.common.dto.PageRequestDTO;
+import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.place.dto.PlaceCreateDTO;
+import com.soldesk.moa.place.entity.Place;
+import com.soldesk.moa.place.entity.PlaceClosedDay;
+import com.soldesk.moa.place.entity.PlaceTag;
+import com.soldesk.moa.place.entity.Tag;
+import com.soldesk.moa.place.entity.constant.ClosedType;
+import com.soldesk.moa.place.entity.constant.PlaceStatus;
+import com.soldesk.moa.place.repository.PlaceClosedDayRepository;
+import com.soldesk.moa.place.repository.PlaceRepository;
+import com.soldesk.moa.place.repository.PlaceTagRepository;
+import com.soldesk.moa.place.repository.TagRepository;
 import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;
@@ -68,6 +102,13 @@ public class AdminService {
         private final AdminScheduleRepository adminScheduleRepository;
         private final AdminScheduleMemberRepository adminScheduleMemberRepository;
         private final AdminPostRepository adminPostRepository;
+        private final AdminCircleCategoryRepository adminCircleCategoryRepository;
+        private final BoardRepository boardRepository;
+        private final SanctionRepository sanctionRepository;
+        private final PlaceRepository placeRepository;
+        private final TagRepository tagRepository;
+        private final PlaceTagRepository placeTagRepository;
+        private final PlaceClosedDayRepository placeClosedDayRepository;
 
         // admin main page
         @Transactional(readOnly = true)
@@ -267,7 +308,7 @@ public class AdminService {
         // 모임 리스트 일람
         @Transactional(readOnly = true)
         public PageResultDTO<AdminCircleResponseDTO> getAllCircleInfo(AdminCircleSearchDTO adminCircleSearchDTO) {
-                Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, 10);
+                Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, adminCircleSearchDTO.getSize());
                 Page<Object[]> result = adminCircleRepository.getCircleInfo(pageable, adminCircleSearchDTO);
 
                 long totalCount = result.getTotalElements();
@@ -292,6 +333,87 @@ public class AdminService {
                 return pageResultDTO;
         }
 
+        // 모임 상세 조회
+        @Transactional(readOnly = true)
+        public AdminCircleDetailDTO getCircleDetail(Long circleId) {
+                Object[] result = adminCircleRepository.getCircleDetail(circleId);
+                if (result == null) {
+                        throw new IllegalArgumentException("존재하지 않는 모임입니다. id=" + circleId);
+                }
+
+                Circle circle = (Circle) result[0];
+                String categoryName = (String) result[1];
+                String leaderName = (String) result[2];
+                Long leaderId = (Long) result[3];
+                Long postCount = (Long) result[4];
+
+                Image coverImage = circle.getCoverImage();
+                String coverImageUrl = coverImage != null
+                                ? coverImage.getPath() + "/" + coverImage.getUuid() + "_" + coverImage.getName()
+                                : null;
+
+                return AdminCircleDetailDTO.builder()
+                                .circleId(circle.getCircleId())
+                                .circleName(circle.getName())
+                                .description(circle.getDescription())
+                                .categoryName(categoryName)
+                                .leaderName(leaderName)
+                                .leaderId(leaderId)
+                                .currentMember(circle.getCurrentMember())
+                                .maxMember(circle.getMaxMember())
+                                .status(circle.getStatus().toString())
+                                .coverImageUrl(coverImageUrl)
+                                .createDate(circle.getCreateDate())
+                                .totalPosts(postCount != null ? postCount.intValue() : 0)
+                                .build();
+        }
+
+        // 모임 가입 회원 목록
+        @Transactional(readOnly = true)
+        public PageResultDTO<AdminCircleMemberDTO> getCircleMembers(Long circleId, PageRequestDTO pageRequestDTO) {
+                Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, pageRequestDTO.getSize());
+                Page<Object[]> result = adminCircleRepository.getCircleMembers(circleId, pageable);
+
+                long totalCount = result.getTotalElements();
+                List<AdminCircleMemberDTO> dtoList = result.stream().map(obj -> AdminCircleMemberDTO.builder()
+                                .userId((Long) obj[0])
+                                .userName((String) obj[1])
+                                .gender(obj[2] != null ? obj[2].toString() : "UNSPECIFIED")
+                                .role(obj[3].toString())
+                                .status(obj[4].toString())
+                                .joinDate((LocalDateTime) obj[5])
+                                .build()).collect(Collectors.toList());
+
+                return PageResultDTO.<AdminCircleMemberDTO>withAll()
+                                .dtoList(dtoList)
+                                .totalCount(totalCount)
+                                .pageRequestDTO(pageRequestDTO)
+                                .build();
+        }
+
+        // 모임 최근 게시물
+        @Transactional(readOnly = true)
+        public PageResultDTO<AdminCirclePostDTO> getCirclePosts(Long circleId, PageRequestDTO pageRequestDTO) {
+                Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, pageRequestDTO.getSize());
+                Page<Object[]> result = adminCircleRepository.getCirclePosts(circleId, pageable);
+
+                long totalCount = result.getTotalElements();
+                List<AdminCirclePostDTO> dtoList = result.stream().map(obj -> AdminCirclePostDTO.builder()
+                                .postId((Long) obj[0])
+                                .title((String) obj[1])
+                                .authorName((String) obj[2])
+                                .viewCount((Integer) obj[3])
+                                .replyCount(((Long) obj[4]).intValue())
+                                .createDate((LocalDateTime) obj[5])
+                                .build()).collect(Collectors.toList());
+
+                return PageResultDTO.<AdminCirclePostDTO>withAll()
+                                .dtoList(dtoList)
+                                .totalCount(totalCount)
+                                .pageRequestDTO(pageRequestDTO)
+                                .build();
+        }
+
         // 인기모임 top5
         @Transactional(readOnly = true)
         public List<PopularCircleDTO> findPopularCircles() {
@@ -306,6 +428,16 @@ public class AdminService {
                                 .score((Double) c[4])
                                 .build()).collect(Collectors.toList());
 
+        }
+
+        // 관리자 서클 카테고리 추가
+        @Transactional
+        public void createCircleCategory(AdminCircleCategoryRequestDTO dto) {
+                CircleCategory category = CircleCategory.builder()
+                                .categoryName(dto.getCategoryName())
+                                .build();
+
+                adminCircleCategoryRepository.save(category);
         }
 
         // 게시글 활동
@@ -369,6 +501,373 @@ public class AdminService {
                                 })
                                 .collect(Collectors.toList());
         }
+
+        // ===== 게시글 관리 =====
+
+        // 게시글 목록 조회 (필터/검색/정렬)
+        @Transactional(readOnly = true)
+        public PageResultDTO<AdminPostResponseDTO> getAdminPosts(AdminPostSearchDTO searchDTO) {
+                Pageable pageable = PageRequest.of(searchDTO.getPage() - 1, searchDTO.getSize());
+                Page<Tuple> page = adminPostRepository.searchAdminPosts(searchDTO, pageable);
+
+                List<AdminPostResponseDTO> dtoList = page.getContent().stream()
+                                .map(tuple -> {
+                                        Post post = tuple.get(0, Post.class);
+                                        String boardName = tuple.get(1, String.class);
+                                        Long replyCount = tuple.get(2, Long.class);
+                                        String circleName = tuple.get(3, String.class);
+
+                                        Board board = post.getBoardId();
+                                        return AdminPostResponseDTO.builder()
+                                                        .postId(post.getPostId())
+                                                        .title(post.getTitle())
+                                                        .authorName(post.getUserId().getName())
+                                                        .authorId(post.getUserId().getUserId())
+                                                        .boardName(boardName)
+                                                        .boardType(board.getBoardType())
+                                                        .circleName(circleName)
+                                                        .circleId(board.getCircleId() != null
+                                                                        ? board.getCircleId().getCircleId()
+                                                                        : null)
+                                                        .viewCount(post.getViewCount())
+                                                        .replyCount(replyCount != null ? replyCount : 0L)
+                                                        .deleted(post.isDeleted())
+                                                        .createDate(post.getCreateDate())
+                                                        .build();
+                                })
+                                .toList();
+
+                return PageResultDTO.<AdminPostResponseDTO>withAll()
+                                .dtoList(dtoList)
+                                .pageRequestDTO(searchDTO)
+                                .totalCount(page.getTotalElements())
+                                .build();
+        }
+
+        // 게시글 상세 조회 (댓글 포함)
+        @Transactional(readOnly = true)
+        public AdminPostDetailDTO getPostDetail(Long postId) {
+                Post post = adminPostRepository.findById(postId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+                Board board = post.getBoardId();
+                Users author = post.getUserId();
+
+                // 댓글 목록 조회 (admin용 repository 사용)
+                List<Reply> replies = adminReplyRepository.findByPostId_PostIdOrderByCreateDateAsc(postId);
+
+                List<AdminReplyDTO> replyDTOs = replies.stream()
+                                .sorted(Comparator.comparing(Reply::getCreateDate))
+                                .map(reply -> AdminReplyDTO.builder()
+                                                .replyId(reply.getReplyId())
+                                                .content(reply.isDeleted() ? "삭제된 댓글입니다." : reply.getContent())
+                                                .authorName(reply.getUserId().getName())
+                                                .authorId(reply.getUserId().getUserId())
+                                                .parentId(reply.getParentId() != null
+                                                                ? reply.getParentId().getReplyId()
+                                                                : null)
+                                                .depth(reply.getDepth())
+                                                .deleted(reply.isDeleted())
+                                                .createDate(reply.getCreateDate())
+                                                .build())
+                                .toList();
+
+                // 삭제된 게시글인 경우 CONTENT_DELETE 활성 제재 ID 조회
+                Long sanctionId = null;
+                if (post.isDeleted()) {
+                        sanctionId = sanctionRepository
+                                        .findFirstByTargetTypeAndTargetIdAndSanctionStateOrderByCreateDateDesc(
+                                                        ReportTargetType.POST, postId, SanctionState.ACTIVE)
+                                        .map(Sanction::getId)
+                                        .orElse(null);
+                }
+
+                return AdminPostDetailDTO.builder()
+                                .postId(post.getPostId())
+                                .title(post.getTitle())
+                                .content(post.getContent())
+                                .authorName(author.getName())
+                                .authorId(author.getUserId())
+                                .boardName(board.getName())
+                                .boardType(board.getBoardType())
+                                .circleName(board.getCircleId() != null ? board.getCircleId().getName() : null)
+                                .circleId(board.getCircleId() != null ? board.getCircleId().getCircleId() : null)
+                                .boardId(board.getBoardId())
+                                .viewCount(post.getViewCount())
+                                .deleted(post.isDeleted())
+                                .sanctionId(sanctionId)
+                                .createDate(post.getCreateDate())
+                                .updateDate(post.getUpdateDate())
+                                .replies(replyDTOs)
+                                .build();
+        }
+
+        // ===== 공지사항 관리 =====
+
+        // 공지사항 작성
+        @Transactional
+        public Long createNotice(Long adminId, String title, String content) {
+                Users admin = adminUsersRepository.findById(adminId)
+                                .orElseThrow(() -> new IllegalArgumentException("해당 관리자를 찾을 수 없습니다."));
+
+                Board noticeBoard = boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(BoardType.NOTICE)
+                                .orElseThrow(() -> new IllegalArgumentException("공지사항 게시판을 찾을 수 없습니다."));
+
+                Post notice = Post.builder()
+                                .title(title)
+                                .content(content)
+                                .userId(admin)
+                                .boardId(noticeBoard)
+                                .build();
+
+                return adminPostRepository.save(notice).getPostId();
+        }
+
+        // 공지사항 수정
+        @Transactional
+        public void updateNotice(Long postId, String title, String content) {
+                Post post = adminPostRepository.findById(postId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+                if (post.getBoardId().getBoardType() != BoardType.NOTICE) {
+                        throw new IllegalArgumentException("공지사항이 아닙니다.");
+                }
+
+                post.changeTitle(title);
+                post.changeContent(content);
+        }
+
+        // 공지사항 삭제 (soft delete - 제재 시스템 미사용)
+        @Transactional
+        public void deleteNotice(Long postId) {
+                Post post = adminPostRepository.findById(postId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+                if (post.getBoardId().getBoardType() != BoardType.NOTICE) {
+                        throw new IllegalArgumentException("공지사항이 아닙니다.");
+                }
+
+                post.markDeleted();
+        }
+
+        // 공지사항 복원
+        @Transactional
+        public void restoreNotice(Long postId) {
+                Post post = adminPostRepository.findById(postId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+                if (post.getBoardId().getBoardType() != BoardType.NOTICE) {
+                        throw new IllegalArgumentException("공지사항이 아닙니다.");
+                }
+
+                if (!post.isDeleted()) {
+                        throw new IllegalStateException("삭제되지 않은 게시글은 복원할 수 없습니다.");
+                }
+
+                post.restore();
+        }
+
+        // ── 장소 관리 ──────────────────────────────────────────────────────
+
+        // 장소 생성
+        public Long createPlace(PlaceCreateDTO dto) {
+                LocalTime openTime = LocalTime.of(dto.openTimeHour(), dto.openTimeMinute());
+                LocalTime closeTime = LocalTime.of(dto.closeTimeHour(), dto.closeTimeMinute());
+
+                if (openTime.isAfter(closeTime)) {
+                        throw new IllegalArgumentException("운영시간이 올바르지 않음");
+                }
+
+                Place place = Place.builder()
+                                .name(dto.name())
+                                .address(dto.address())
+                                .city(dto.city())
+                                .district(dto.district())
+                                .latitude(dto.latitude())
+                                .longitude(dto.longitude())
+                                .capacity(dto.capacity())
+                                .pricePerHour(dto.pricePerHour())
+                                .description(dto.description())
+                                .openTime(openTime)
+                                .closeTime(closeTime)
+                                .minReservationMinutes(dto.minReservationMinutes())
+                                .maxReservationMinutes(dto.maxReservationMinutes())
+                                .build();
+
+                placeRepository.save(place);
+
+                List<Tag> tags = tagRepository.findAllById(dto.tagIds());
+                List<PlaceTag> placeTags = tags.stream()
+                                .map(tag -> PlaceTag.builder().place(place).tag(tag).build())
+                                .toList();
+                placeTagRepository.saveAll(placeTags);
+
+                List<PlaceClosedDay> closedDays = dto.placeClosedDays().stream()
+                                .map(day -> PlaceClosedDay.builder()
+                                                .place(place)
+                                                .dayOfWeek(day.dayOfWeek())
+                                                .date(day.date())
+                                                .reason(day.reason())
+                                                .closedType(ClosedType.valueOf(day.closedType()))
+                                                .build())
+                                .toList();
+                placeClosedDayRepository.saveAll(closedDays);
+
+                return place.getId();
+        }
+
+        // 장소 수정
+        public Long updatePlace(Long id, PlaceCreateDTO dto) {
+                Place place = placeRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("place not found"));
+
+                place.setAddress(dto.address());
+                place.setCapacity(dto.capacity());
+                place.setCity(dto.city());
+                place.setDescription(dto.description());
+                place.setDistrict(dto.district());
+                place.setMinReservationMinutes(dto.minReservationMinutes());
+                place.setMaxReservationMinutes(dto.maxReservationMinutes());
+                place.setName(dto.name());
+                place.setPricePerHour(dto.pricePerHour());
+
+                return place.getId();
+        }
+
+        // 장소 소프트 삭제
+        public void deletePlace(Long id) {
+                Place place = placeRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("place not found"));
+                place.setStatus(PlaceStatus.INACTIVE);
+        }
+
+        // 장소 목록 조회 (검색/필터/정렬)
+        @Transactional(readOnly = true)
+        public PageResultDTO<AdminPlaceResponseDTO> getAdminPlaces(AdminPlaceSearchDTO searchDTO) {
+                Pageable pageable = PageRequest.of(searchDTO.getPage() - 1, searchDTO.getSize());
+                Page<Place> page = placeRepository.searchAdminPlaces(searchDTO, pageable);
+
+                List<AdminPlaceResponseDTO> dtoList = page.getContent().stream()
+                                .map(place -> AdminPlaceResponseDTO.builder()
+                                                .id(place.getId())
+                                                .name(place.getName())
+                                                .address(place.getAddress())
+                                                .city(place.getCity())
+                                                .district(place.getDistrict())
+                                                .capacity(place.getCapacity())
+                                                .pricePerHour(place.getPricePerHour())
+                                                .avgRating(place.getAverageRating() != null ? place.getAverageRating()
+                                                                : 0.0)
+                                                .reviewCount(place.getReviewCount() != null ? place.getReviewCount()
+                                                                : 0)
+                                                .status(place.getStatus().name())
+                                                .build())
+                                .toList();
+
+                return PageResultDTO.<AdminPlaceResponseDTO>withAll()
+                                .dtoList(dtoList)
+                                .pageRequestDTO(searchDTO)
+                                .totalCount(page.getTotalElements())
+                                .build();
+        }
+
+        // 장소 단건 조회 (수정 페이지용)
+        @Transactional(readOnly = true)
+        public AdminPlaceDetailDTO getAdminPlace(Long id) {
+                Place place = placeRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("place not found"));
+
+                List<Long> tagIds = place.getTags().stream()
+                                .map(pt -> pt.getTag().getId())
+                                .toList();
+
+                List<AdminPlaceDetailDTO.ClosedDayDTO> closedDays = place.getPlaceClosedDays().stream()
+                                .map(cd -> AdminPlaceDetailDTO.ClosedDayDTO.builder()
+                                                .id(cd.getId())
+                                                .dayOfWeek(cd.getDayOfWeek() != null ? cd.getDayOfWeek().name() : null)
+                                                .date(cd.getDate() != null ? cd.getDate().toString() : null)
+                                                .reason(cd.getReason())
+                                                .closedType(cd.getClosedType().name())
+                                                .build())
+                                .toList();
+
+                return AdminPlaceDetailDTO.builder()
+                                .id(place.getId())
+                                .name(place.getName())
+                                .address(place.getAddress())
+                                .city(place.getCity())
+                                .district(place.getDistrict())
+                                .latitude(place.getLatitude())
+                                .longitude(place.getLongitude())
+                                .capacity(place.getCapacity())
+                                .pricePerHour(place.getPricePerHour())
+                                .description(place.getDescription())
+                                .openTimeHour(place.getOpenTime().getHour())
+                                .openTimeMinute(place.getOpenTime().getMinute())
+                                .closeTimeHour(place.getCloseTime().getHour())
+                                .closeTimeMinute(place.getCloseTime().getMinute())
+                                .minReservationMinutes(place.getMinReservationMinutes())
+                                .maxReservationMinutes(place.getMaxReservationMinutes())
+                                .status(place.getStatus().name())
+                                .avgRating(place.getAverageRating() != null ? place.getAverageRating() : 0.0)
+                                .reviewCount(place.getReviewCount() != null ? place.getReviewCount() : 0)
+                                .tagIds(tagIds)
+                                .closedDays(closedDays)
+                                .build();
+        }
+
+        // 특정 휴무일 목록 조회
+        @Transactional(readOnly = true)
+        public List<AdminPlaceDetailDTO.ClosedDayDTO> getPlaceClosedDays(Long placeId) {
+                Place place = placeRepository.findById(placeId)
+                                .orElseThrow(() -> new RuntimeException("place not found"));
+
+                return place.getPlaceClosedDays().stream()
+                                .filter(cd -> cd.getClosedType() == ClosedType.HOLIDAY)
+                                .map(cd -> AdminPlaceDetailDTO.ClosedDayDTO.builder()
+                                                .id(cd.getId())
+                                                .date(cd.getDate() != null ? cd.getDate().toString() : null)
+                                                .reason(cd.getReason())
+                                                .closedType(cd.getClosedType().name())
+                                                .build())
+                                .toList();
+        }
+
+        // 특정 휴무일 추가
+        public AdminPlaceDetailDTO.ClosedDayDTO addPlaceClosedDay(Long placeId, String date, String reason) {
+                Place place = placeRepository.findById(placeId)
+                                .orElseThrow(() -> new RuntimeException("place not found"));
+
+                PlaceClosedDay closedDay = PlaceClosedDay.builder()
+                                .place(place)
+                                .date(LocalDate.parse(date))
+                                .reason(reason)
+                                .closedType(ClosedType.HOLIDAY)
+                                .build();
+
+                placeClosedDayRepository.save(closedDay);
+
+                return AdminPlaceDetailDTO.ClosedDayDTO.builder()
+                                .id(closedDay.getId())
+                                .date(closedDay.getDate().toString())
+                                .reason(closedDay.getReason())
+                                .closedType(closedDay.getClosedType().name())
+                                .build();
+        }
+
+        // 특정 휴무일 삭제
+        public void removePlaceClosedDay(Long placeId, Long closedDayId) {
+                PlaceClosedDay closedDay = placeClosedDayRepository.findById(closedDayId)
+                                .orElseThrow(() -> new RuntimeException("closed day not found"));
+
+                if (!closedDay.getPlace().getId().equals(placeId)) {
+                        throw new IllegalArgumentException("해당 장소의 휴무일이 아닙니다.");
+                }
+
+                placeClosedDayRepository.delete(closedDay);
+        }
+
+        // 변환 전용 메소드
 
         // UserCountDTO
         private UserCountDTO entityToUserCountDTO(long countTotalUser,
@@ -511,6 +1010,7 @@ public class AdminService {
         private UserInfoCircleDTO entityToUserInfoCircleDTO(Circle circle, String userName,
                         String categoryName, CircleMember circleMember) {
                 UserInfoCircleDTO dto = UserInfoCircleDTO.builder()
+                                .circleId(circle.getCircleId())
                                 .userName(userName)
                                 .circleName(circle.getName())
                                 .currentMember(circle.getCurrentMember())
@@ -520,4 +1020,5 @@ public class AdminService {
                                 .build();
                 return dto;
         }
+
 }

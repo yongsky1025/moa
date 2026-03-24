@@ -14,6 +14,7 @@ export interface ScheduleResponse {
   longitude?: number;
   joined?: boolean;
   tags?: string[];
+  chatRoomId?: number;
 }
 
 export interface ScheduleCreateRequest {

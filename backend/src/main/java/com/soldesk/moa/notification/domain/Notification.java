@@ -27,6 +27,9 @@ public class Notification {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "reference_id")
+    private Long referenceId;
+
     protected Notification() {}
 
     public static Notification of(Long userId, NotificationType type, String message) {
@@ -39,6 +42,12 @@ public class Notification {
         return n;
     }
 
+    public static Notification of(Long userId, NotificationType type, String message, Long referenceId) {
+        Notification n = of(userId, type, message);
+        n.referenceId = referenceId;
+        return n;
+    }
+
     public void markRead() { this.isRead = true; }
 
     public Long getId() { return id; }
@@ -47,4 +56,5 @@ public class Notification {
     public String getMessage() { return message; }
     public boolean isRead() { return isRead; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public Long getReferenceId() { return referenceId; }
 }

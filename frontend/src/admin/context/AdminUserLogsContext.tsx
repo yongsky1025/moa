@@ -3,26 +3,25 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
-import type { AdminActionLog, LogSearchDTO, PageResultDTO } from '../types/adminTypes';
+import type { AdminActionLog } from '../types/adminTypes';
 import { fetchUserLogs } from '../api/adminLogApi';
 
-const initialParams: LogSearchDTO = { page: 1, size: 30 };
+const PAGE_SIZE = 30;
 
 interface UserLogsContextType {
   logs: AdminActionLog[];
   totalCount: number;
-  actualTotalPage: number;
-  current: number;
   loading: boolean;
   error: string | null;
-  params: LogSearchDTO;
+  hasMore: boolean;
   userId: number | null;
   setUserId: (id: number) => void;
   clearUserId: () => void;
-  handlePageChange: (e: { selected: number }) => void;
+  loadMore: () => void;
   refresh: () => void;
 }
 
@@ -30,16 +29,24 @@ const AdminUserLogsContext = createContext<UserLogsContextType | null>(null);
 
 export function AdminUserLogsProvider({ children }: { children: ReactNode }) {
   const [userId, setUserIdState] = useState<number | null>(null);
-  const [params, setParams] = useState<LogSearchDTO>(initialParams);
-  const [data, setData] = useState<PageResultDTO<AdminActionLog> | null>(null);
+  const [logs, setLogs] = useState<AdminActionLog[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const pageRef = useRef(1);
 
-  const load = useCallback(async (uid: number, dto: LogSearchDTO) => {
+  const load = useCallback(async (uid: number, page: number, append: boolean) => {
     setLoading(true);
     setError(null);
     try {
-      setData(await fetchUserLogs(uid, dto));
+      const data = await fetchUserLogs(uid, { page, size: PAGE_SIZE });
+      const newItems = data.dtoList ?? [];
+      setLogs(prev => append ? [...prev, ...newItems] : newItems);
+      setTotalCount(data.totalCount ?? 0);
+
+      const totalPages = Math.ceil((data.totalCount ?? 0) / PAGE_SIZE);
+      setHasMore(page < totalPages);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? '로그를 불러오지 못했습니다.');
     } finally {
@@ -47,48 +54,47 @@ export function AdminUserLogsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // userId 변경 시 첫 페이지 로드
   useEffect(() => {
-    if (userId !== null) load(userId, params);
-  }, [userId, params, load]);
+    if (userId === null) return;
+    pageRef.current = 1;
+    setLogs([]);
+    setHasMore(false);
+    load(userId, 1, false);
+  }, [userId, load]);
 
   const setUserId = useCallback((id: number) => {
     setUserIdState(id);
-    setParams(initialParams);
-    setData(null);
   }, []);
 
   const clearUserId = useCallback(() => {
     setUserIdState(null);
-    setParams(initialParams);
-    setData(null);
+    setLogs([]);
+    setTotalCount(0);
     setError(null);
+    setHasMore(false);
   }, []);
 
-  const handlePageChange = useCallback(({ selected }: { selected: number }) => {
-    setParams((prev) => ({ ...prev, page: selected + 1 }));
-  }, []);
+  const loadMore = useCallback(() => {
+    if (loading || !hasMore || userId === null) return;
+    const next = pageRef.current + 1;
+    pageRef.current = next;
+    load(userId, next, true);
+  }, [loading, hasMore, userId, load]);
 
   const refresh = useCallback(() => {
-    if (userId !== null) load(userId, params);
-  }, [load, userId, params]);
-
-  const actualTotalPage = data ? Math.ceil(data.totalCount / params.size) : 0;
+    if (userId === null) return;
+    pageRef.current = 1;
+    setLogs([]);
+    setHasMore(true);
+    load(userId, 1, false);
+  }, [userId, load]);
 
   return (
     <AdminUserLogsContext.Provider
       value={{
-        logs: data?.dtoList ?? [],
-        totalCount: data?.totalCount ?? 0,
-        actualTotalPage,
-        current: data?.current ?? 1,
-        loading,
-        error,
-        params,
-        userId,
-        setUserId,
-        clearUserId,
-        handlePageChange,
-        refresh,
+        logs, totalCount, loading, error, hasMore,
+        userId, setUserId, clearUserId, loadMore, refresh,
       }}
     >
       {children}

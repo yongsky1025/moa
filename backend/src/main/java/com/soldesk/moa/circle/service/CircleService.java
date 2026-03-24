@@ -24,6 +24,8 @@ import com.soldesk.moa.circle.repository.CircleEnergyProfileRepository;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.chat.service.ChatRoomService;
+import com.soldesk.moa.notification.domain.NotificationType;
+import com.soldesk.moa.notification.service.NotificationService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.common.entity.Image;
@@ -36,7 +38,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class CircleService {
-
         private final CircleRepository circleRepository;
         private final CircleCategoryRepository categoryRepository;
         private final CircleMemberRepository circleMemberRepository;
@@ -44,6 +45,7 @@ public class CircleService {
         private final UsersRepository usersRepository;
         private final CircleImageService circleImageService;
         private final ChatRoomService chatRoomService;
+        private final NotificationService notificationService;
 
         // 서클 생성 (POST multipart - Tomcat이 POST multipart 정상 처리)
         @Transactional
@@ -55,15 +57,6 @@ public class CircleService {
                 CircleCategory circleCategory = categoryRepository.findById(request.getCategoryId())
                                 .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
 
-                Image coverImage = null;
-                if (imageFile != null && !imageFile.isEmpty()) {
-                        try {
-                                coverImage = circleImageService.saveCoverImage(imageFile, userId);
-                        } catch (IOException e) {
-                                throw new IllegalStateException("이미지 업로드에 실패했습니다: " + e.getMessage());
-                        }
-                }
-
                 Circle circle = Circle.builder()
                                 .name(request.getName())
                                 .description(request.getDescription())
@@ -71,10 +64,19 @@ public class CircleService {
                                 .currentMember(1)
                                 .status(CircleStatus.PENDING)
                                 .category(circleCategory)
-                                .coverImage(coverImage)
                                 .build();
 
                 Circle savedCircle = circleRepository.save(circle);
+
+                if (imageFile != null && !imageFile.isEmpty()) {
+                        try {
+                                Image coverImage = circleImageService.saveCoverImage(imageFile, userId,
+                                                savedCircle.getCircleId());
+                                savedCircle.changeCoverImage(coverImage);
+                        } catch (IOException e) {
+                                throw new IllegalStateException("이미지 업로드에 실패했습니다: " + e.getMessage());
+                        }
+                }
 
                 CircleEnergyProfile energyProfile = CircleEnergyProfile.builder()
                                 .circle(savedCircle)
@@ -99,7 +101,7 @@ public class CircleService {
                 // 모임 생성 시 그룹 채팅방 자동 생성 + 모임장 입장
                 chatRoomService.getOrCreateGroupRoom(savedCircle.getCircleId(), userId);
 
-                return new CircleResponseDTO(savedCircle);
+                return CircleResponseDTO.from(savedCircle);
         }
 
         // 서클 삭제 (리더만 가능)
@@ -134,6 +136,13 @@ public class CircleService {
         public void adminDeleteCircle(Long circleId) {
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                // 활성 멤버들에게 해산 알림 발송 (상태 변경 전에 조회)
+                circleMemberRepository.findByCircleAndStatus(circle, CircleMemberStatus.ACTIVE)
+                                .forEach(m -> notificationService.send(
+                                                m.getUser().getUserId(),
+                                                NotificationType.CIRCLE_DISBANDED,
+                                                "'" + circle.getName() + "' 모임이 해산되었습니다."));
 
                 Circle closed = Circle.builder()
                                 .circleId(circle.getCircleId())
@@ -174,9 +183,9 @@ public class CircleService {
                 }
 
                 // 이미지는 변경하지 않음 (null 전달 → update() 내부에서 기존 이미지 유지)
-                circle.update(request.getName(), request.getDescription(), newMaxMember, null);
+                circle.update(request.getName(), request.getDescription(), newMaxMember);
 
-                return new CircleResponseDTO(circle);
+                return CircleResponseDTO.from(circle);
         }
 
         // 서클 대표 이미지 업로드/교체 legacy 경로 (리더만 가능, POST multipart)
@@ -196,13 +205,13 @@ public class CircleService {
                                 .orElseThrow(() -> new AccessDeniedException("리더만 이미지를 변경할 수 있습니다."));
 
                 try {
-                        Image newImage = circleImageService.saveCoverImage(imageFile, userId);
-                        circle.update(circle.getName(), circle.getDescription(), circle.getMaxMember(), newImage);
+                        Image coverImage = circleImageService.saveCoverImage(imageFile, userId, circleId);
+                        circle.changeCoverImage(coverImage);
                 } catch (IOException e) {
                         throw new IllegalStateException("이미지 업로드에 실패했습니다: " + e.getMessage());
                 }
 
-                return new CircleResponseDTO(circle);
+                return CircleResponseDTO.from(circle);
         }
 
         @Transactional
@@ -218,10 +227,10 @@ public class CircleService {
                                 .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
                                 .orElseThrow(() -> new AccessDeniedException("리더만 이미지를 변경할 수 있습니다."));
 
-                Image newImage = circleImageService.saveCoverImageByUrl(fileUrl, userId);
-                circle.update(circle.getName(), circle.getDescription(), circle.getMaxMember(), newImage);
+                Image coverImage = circleImageService.saveCoverImageByUrl(fileUrl, userId, circleId);
+                circle.changeCoverImage(coverImage);
 
-                return new CircleResponseDTO(circle);
+                return CircleResponseDTO.from(circle);
         }
 
         // 서클 상세 정보
@@ -238,7 +247,7 @@ public class CircleService {
         public List<CircleResponseDTO> getMyCircles(Long userId) {
                 return circleMemberRepository.findByUser_UserIdAndStatus(userId, CircleMemberStatus.ACTIVE)
                                 .stream()
-                                .map(cm -> new CircleResponseDTO(cm.getCircle()))
+                                .map(cm -> CircleResponseDTO.from(cm.getCircle()))
                                 .toList();
         }
 
@@ -247,7 +256,7 @@ public class CircleService {
         public List<CircleResponseDTO> getPendingCircles() {
                 return circleRepository.findByStatus(CircleStatus.PENDING)
                                 .stream()
-                                .map(CircleResponseDTO::new)
+                                .map(CircleResponseDTO::from)
                                 .toList();
         }
 
@@ -272,7 +281,7 @@ public class CircleService {
                                 .coverImage(circle.getCoverImage())
                                 .build();
 
-                return new CircleResponseDTO(circleRepository.save(approved));
+                return CircleResponseDTO.from(circleRepository.save(approved));
         }
 
         // [Admin] 서클 거절
@@ -318,7 +327,7 @@ public class CircleService {
                                 profile.getActivityIntensity(),
                                 profile.getCommitmentLevel())
                                 .stream()
-                                .map(CircleResponseDTO::new)
+                                .map(CircleResponseDTO::from)
                                 .toList();
         }
 
@@ -345,7 +354,7 @@ public class CircleService {
                                 .dtoList(
                                                 result.getDtoList()
                                                                 .stream()
-                                                                .map(CircleResponseDTO::new)
+                                                                .map(CircleResponseDTO::from)
                                                                 .toList())
                                 .pageRequestDTO(pageRequestDTO)
                                 .totalCount(result.getTotalCount())

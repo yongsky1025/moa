@@ -15,8 +15,10 @@ public record ReportResponseDTO(
                 ReportTargetType targetType,
                 long targetId,
                 ReportCategory category,
+                String description,
                 ReportStatus status,
                 String adminNote,
-                LocalDateTime createdAt) {
+                LocalDateTime createdAt,
+                ReportTargetContentDTO targetContent) {
 
 }

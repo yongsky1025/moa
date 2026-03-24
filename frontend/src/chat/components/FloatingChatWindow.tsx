@@ -1,11 +1,37 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { chatApi } from "../../api/chatApi";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
+import { reportApi, CATEGORY_LABELS } from "../../api/reportApi";
+import type { ReportCategory } from "../../api/reportApi";
 import EmojiPicker from "./EmojiPicker";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
+
+const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
+function renderMsgContent(content: string, mine: boolean) {
+  if (content.startsWith('/api/chat/files/')) {
+    if (IMAGE_EXTS.test(content)) {
+      return (
+        <img
+          src={content}
+          alt="이미지"
+          style={{ maxWidth: 180, maxHeight: 180, borderRadius: 12, display: 'block', cursor: 'pointer', objectFit: 'cover' }}
+          onClick={() => window.open(content, '_blank')}
+        />
+      );
+    }
+    const fileName = content.split('/').pop() ?? '파일';
+    return (
+      <a href={content} download style={{ color: mine ? '#fff' : '#5F8F7B', textDecoration: 'underline', fontSize: 12 }}>
+        📎 {fileName}
+      </a>
+    );
+  }
+  return content;
+}
 
 const MIN_W = 520;
 const MIN_H = 400;
@@ -18,7 +44,7 @@ interface Props {
 }
 
 export default function FloatingChatWindow({ open, onClose }: Props) {
-  const { userId } = useAuthStore();
+  const { userId, user } = useAuthStore();
 
   const [pos, setPos] = useState({ x: window.innerWidth - INIT_W - 40, y: window.innerHeight - INIT_H - 60 });
   const [size, setSize] = useState({ w: INIT_W, h: INIT_H });
@@ -31,7 +57,8 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNoti, setShowNoti] = useState(false);
-  const unreadNoti = notifications.filter((n) => !n.isRead).length;
+  const chatNotifications = notifications.filter((n) => n.type === 'CHAT_MESSAGE');
+  const unreadNoti = chatNotifications.filter((n) => !n.isRead).length;
 
   // 드래그 상태
   const dragging = useRef(false);
@@ -46,9 +73,13 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [showEmoji, setShowEmoji] = useState(false);
   const [roomCtxMenu, setRoomCtxMenu] = useState<{ x: number; y: number; room: ChatRoomSummary } | null>(null);
   const [renaming, setRenaming] = useState<{ roomId: number; value: string } | null>(null);
+  const [readStatus, setReadStatus] = useState<Record<number, string>>({});
   const [menuId, setMenuId] = useState<number | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
   const [editMsgContent, setEditMsgContent] = useState("");
+  const [reportModal, setReportModal] = useState<{ messageId: number } | null>(null);
+  const [reportCategory, setReportCategory] = useState<ReportCategory>('ABUSE');
+  const [reportDesc, setReportDesc] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
@@ -106,6 +137,13 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
         chatApi.markAsRead(activeRoomId).catch(() => {});
       })
       .finally(() => setLoadingMsg(false));
+    chatApi.getReadStatus(activeRoomId)
+      .then((list) => {
+        const map: Record<number, string> = {};
+        list.forEach((r) => { map[r.userId] = r.lastReadAt; });
+        setReadStatus(map);
+      })
+      .catch(() => {});
   }, [activeRoomId]);
 
   useEffect(() => {
@@ -115,7 +153,17 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const handleNewMessage = useCallback(
     (msg: ChatMessage) => {
       if (msg.roomId === activeRoomId) {
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          const tempIdx = prev.findIndex(
+            (m) => m.messageId < 0 && m.senderId === msg.senderId && m.content === msg.content
+          );
+          if (tempIdx !== -1) {
+            const next = [...prev];
+            next[tempIdx] = msg;
+            return next;
+          }
+          return [...prev, msg];
+        });
         chatApi.markAsRead(msg.roomId).catch(() => {});
       }
       setRooms((prev) =>
@@ -129,22 +177,92 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     [activeRoomId],
   );
 
+  const handleReadEvent = useCallback((event: { userId: number; lastReadAt: string }) => {
+    setReadStatus((prev) => ({ ...prev, [event.userId]: event.lastReadAt }));
+  }, []);
+
+  const handleNotification = useCallback((noti: Notification) => {
+    setNotifications((prev) => {
+      if (prev.some((n) => n.id === noti.id)) return prev;
+      return [noti, ...prev];
+    });
+  }, []);
+
   const { sendMessage } = useWebSocket({
     roomId: activeRoomId ?? 0,
+    userId: userId ?? undefined,
     onMessage: handleNewMessage,
+    onReadEvent: handleReadEvent,
+    onNotification: handleNotification,
   });
 
+  const navigate = useNavigate();
+
+  const handleNotiClick = async (n: Notification) => {
+    if (!n.isRead) {
+      await notificationApi.readOne(n.id);
+      setNotifications((p) => p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
+    }
+    setShowNoti(false);
+    switch (n.type) {
+      case 'CHAT_MESSAGE':
+        setActiveRoomId(n.referenceId ?? null);
+        break;
+      case 'JOIN_REQUEST':
+      case 'JOIN_APPROVED':
+      case 'JOIN_REJECTED':
+      case 'KICKED':
+      case 'CIRCLE_DISBANDED':
+        navigate('/circle/my');
+        break;
+    }
+  };
+
   const handleSend = () => {
-    if (!input.trim() || !activeRoomId) return;
-    sendMessage(input.trim());
+    const content = input.trim();
+    if (!content || !activeRoomId) return;
+    const tempMsg: ChatMessage = {
+      messageId: -Date.now(),
+      roomId: activeRoomId,
+      senderId: userId!,
+      senderNickname: user?.nickname ?? '?',
+      content,
+      createdAt: new Date().toISOString(),
+      updatedAt: null,
+      isDeleted: false,
+    };
+    setMessages((prev) => [...prev, tempMsg]);
+    setRooms((prev) => prev.map((r) =>
+      r.roomId === activeRoomId
+        ? { ...r, lastMessage: content, lastMessageAt: tempMsg.createdAt }
+        : r
+    ));
     setInput("");
+    sendMessage(content);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activeRoomId) return;
     try {
-      sendMessage(await chatApi.uploadFile(file));
+      const fileUrl = await chatApi.uploadFile(file);
+      const tempMsg: ChatMessage = {
+        messageId: -Date.now(),
+        roomId: activeRoomId,
+        senderId: userId!,
+        senderNickname: user?.nickname ?? '?',
+        content: fileUrl,
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+        isDeleted: false,
+      };
+      setMessages((prev) => [...prev, tempMsg]);
+      setRooms((prev) => prev.map((r) =>
+        r.roomId === activeRoomId
+          ? { ...r, lastMessage: fileUrl, lastMessageAt: tempMsg.createdAt }
+          : r
+      ));
+      sendMessage(fileUrl);
     } catch {
       alert("업로드 실패");
     }
@@ -234,8 +352,11 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
   };
 
-  const roomLabel = (r: ChatRoomSummary) =>
-    r.roomType === "GROUP" ? (r.name ?? `모임 #${r.circleId}`) : (r.otherUserNickname ?? `1:1 채팅 #${r.roomId}`);
+  const roomLabel = (r: ChatRoomSummary) => {
+    if (r.roomType === 'GROUP') return r.name ?? `모임 #${r.circleId}`;
+    if (r.roomType === 'SCHEDULE') return r.name ?? `일정 채팅 #${r.scheduleId}`;
+    return r.otherUserNickname ?? `1:1 채팅 #${r.roomId}`;
+  };
 
   const handleRoomContextMenu = (e: React.MouseEvent, room: ChatRoomSummary) => {
     e.preventDefault();
@@ -264,6 +385,17 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
       alert("삭제 실패");
     }
     setMenuId(null);
+  };
+
+  const handleReportSubmit = async () => {
+    if (!reportModal) return;
+    try {
+      await reportApi.submit({ targetType: 'CHAT_MESSAGE', targetId: reportModal.messageId, category: reportCategory, description: reportDesc });
+      setReportModal(null);
+      setReportDesc("");
+    } catch (e: any) {
+      alert(e?.response?.data?.message ?? '신고 접수 실패');
+    }
   };
 
   const startEditMsg = (msg: { messageId: number; content: string }) => {
@@ -319,7 +451,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
             zIndex: 10002,
             minWidth: 140,
-            border: "1px solid #f2e8e0",
+            border: "1px solid #E5E7EB",
             overflow: "hidden",
           }}
           onClick={(e) => e.stopPropagation()}
@@ -387,7 +519,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
               style={{
                 width: "100%",
                 padding: "9px 12px",
-                border: "1px solid #d07856",
+                border: "1px solid #5F8F7B",
                 borderRadius: 8,
                 fontSize: 13,
                 outline: "none",
@@ -406,7 +538,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
               <button
                 style={{
                   padding: "7px 14px",
-                  background: "#f2e8e0",
+                  background: "#EAF4F0",
                   color: "#262626",
                   border: "none",
                   borderRadius: 7,
@@ -420,7 +552,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
               <button
                 style={{
                   padding: "7px 14px",
-                  background: "#d07856",
+                  background: "#5F8F7B",
                   color: "#fff",
                   border: "none",
                   borderRadius: 7,
@@ -478,19 +610,14 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                       전체 읽음
                     </button>
                   </div>
-                  {notifications.length === 0 ? (
+                  {chatNotifications.length === 0 ? (
                     <div style={s.notiEmpty}>알림 없음</div>
                   ) : (
-                    notifications.map((n) => (
+                    chatNotifications.map((n) => (
                       <div
                         key={n.id}
                         style={{ ...s.notiItem, background: n.isRead ? "#f9f9f9" : "#eaf4ff" }}
-                        onClick={async () => {
-                          if (!n.isRead) {
-                            await notificationApi.readOne(n.id);
-                            setNotifications((p) => p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
-                          }
-                        }}
+                        onClick={() => handleNotiClick(n)}
                       >
                         <span style={s.notiMsg}>{n.message}</span>
                         <span style={s.notiTime}>{formatTime(n.createdAt)}</span>
@@ -525,180 +652,110 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
         </div>
 
         <div style={s.body}>
-          {/* 왼쪽: 채팅 목록 */}
-          <div style={s.sidebar}>
-            <div style={s.sidebarTitle}>채팅</div>
-            {rooms.length === 0 ? (
-              <div style={s.sideEmpty}>채팅방 없음</div>
-            ) : (
-              rooms.map((r) => (
-                <div
-                  key={r.roomId}
-                  style={{ ...s.roomItem, background: r.roomId === activeRoomId ? "#e3f2fd" : "transparent" }}
-                  onClick={() => setActiveRoomId(r.roomId)}
-                  onContextMenu={(e) => handleRoomContextMenu(e, r)}
-                >
-                  <div style={s.roomAvatar}>{r.roomType === "GROUP" ? "👥" : "👤"}</div>
-                  <div style={s.roomInfo}>
-                    <div style={s.roomRow}>
-                      <span style={s.roomName}>{roomLabel(r)}</span>
-                      <span style={s.roomTime}>{formatTime(r.lastMessageAt)}</span>
-                    </div>
-                    <div style={s.roomRow}>
-                      <span style={s.roomLast}>{r.lastMessage ?? ""}</span>
-                      {r.unreadCount > 0 && <span style={s.unreadBadge}>{r.unreadCount}</span>}
+            {/* 왼쪽: 채팅 목록 */}
+            <div style={s.sidebar}>
+              <div style={s.sidebarTitle}>채팅</div>
+              {rooms.length === 0
+                ? <div style={s.sideEmpty}>채팅방 없음</div>
+                : rooms.map((r) => (
+                  <div key={r.roomId}
+                    style={{ ...s.roomItem, background: r.roomId === activeRoomId ? '#e3f2fd' : 'transparent' }}
+                    onClick={() => setActiveRoomId(r.roomId)}
+                    onContextMenu={(e) => handleRoomContextMenu(e, r)}>
+                    <div style={s.roomAvatar}>{r.roomType === 'GROUP' ? '👥' : r.roomType === 'SCHEDULE' ? '📅' : '👤'}</div>
+                    <div style={s.roomInfo}>
+                      <div style={s.roomRow}>
+                        <span style={s.roomName}>{roomLabel(r)}</span>
+                        <span style={s.roomTime}>{formatTime(r.lastMessageAt)}</span>
+                      </div>
+                      <div style={s.roomRow}>
+                        <span style={s.roomLast}>{r.lastMessage ?? ''}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
               ))
-            )}
+            }
           </div>
 
-          {/* 오른쪽: 채팅방 */}
-          <div style={s.chatArea}>
-            {!activeRoomId ? (
-              <div style={s.noRoom}>채팅방을 선택하세요</div>
-            ) : loadingMsg ? (
-              <div style={s.noRoom}>불러오는 중...</div>
-            ) : (
-              <>
-                <div style={s.msgArea}>
-                  {messages.map((msg) => {
-                    const mine = msg.senderId === userId;
-                    const initial = (msg.senderNickname ?? "?")[0].toUpperCase();
-                    const avatarColor = `hsl(${(msg.senderId * 47) % 360}, 55%, 55%)`;
-                    return (
-                      <div key={msg.messageId} style={{ ...s.msgRow, justifyContent: mine ? "flex-end" : "flex-start", alignItems: "flex-start" }}>
-                        {/* 상대방 아바타 */}
-                        {!mine && <div style={{ ...s.avatar, background: avatarColor, flexShrink: 0 }}>{initial}</div>}
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start", maxWidth: "65%" }}>
-                          {!mine && <span style={s.nick}>{msg.senderNickname}</span>}
-                          <div style={{ display: "flex", alignItems: "flex-end", gap: 4, flexDirection: mine ? "row-reverse" : "row" }}>
-                            {editingMsgId === msg.messageId ? (
-                              <div style={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: 200 }}>
-                                <input
-                                  style={{ padding: "6px 10px", border: "1px solid #d07856", borderRadius: 8, fontSize: 12, outline: "none" }}
-                                  value={editMsgContent}
-                                  onChange={(e) => setEditMsgContent(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") confirmEditMsg(msg.messageId);
-                                    if (e.key === "Escape") setEditingMsgId(null);
-                                  }}
-                                  autoFocus
-                                />
-                                <div style={{ display: "flex", gap: 4 }}>
-                                  <button
-                                    style={{
-                                      flex: 1,
-                                      padding: "3px",
-                                      background: "#d07856",
-                                      color: "#fff",
-                                      border: "none",
-                                      borderRadius: 5,
-                                      cursor: "pointer",
-                                      fontSize: 11,
-                                    }}
-                                    onClick={() => confirmEditMsg(msg.messageId)}
-                                  >
-                                    확인
-                                  </button>
-                                  <button
-                                    style={{
-                                      flex: 1,
-                                      padding: "3px",
-                                      background: "#f2e8e0",
-                                      color: "#262626",
-                                      border: "none",
-                                      borderRadius: 5,
-                                      cursor: "pointer",
-                                      fontSize: 11,
-                                    }}
-                                    onClick={() => setEditingMsgId(null)}
-                                  >
-                                    취소
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div
-                                style={{
-                                  ...s.bubble,
-                                  position: "relative",
-                                  background: msg.isDeleted ? "#e0e0e0" : mine ? "#d07856" : "#fff",
-                                  color: msg.isDeleted ? "#999" : mine ? "#fff" : "#262626",
-                                  fontStyle: msg.isDeleted ? "italic" : "normal",
-                                }}
-                                onContextMenu={
-                                  mine && !msg.isDeleted
-                                    ? (e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setMenuId(menuId === msg.messageId ? null : msg.messageId);
-                                      }
-                                    : undefined
-                                }
-                              >
-                                {msg.isDeleted ? "삭제된 메시지" : msg.content}
-                                {msg.updatedAt && !msg.isDeleted && <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 4 }}>(수정됨)</span>}
-                                {menuId === msg.messageId && (
-                                  <div
-                                    style={{
-                                      position: "absolute",
-                                      right: 0,
-                                      bottom: 24,
-                                      background: "#fff",
-                                      borderRadius: 7,
-                                      boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
-                                      zIndex: 100,
-                                      minWidth: 72,
-                                    }}
-                                  >
-                                    <button
-                                      style={{
-                                        display: "block",
-                                        width: "100%",
-                                        padding: "8px 12px",
-                                        background: "none",
-                                        border: "none",
-                                        textAlign: "left",
-                                        cursor: "pointer",
-                                        fontSize: 12,
-                                        color: "#262626",
-                                      }}
-                                      onClick={() => {
-                                        setMenuId(null);
-                                        startEditMsg(msg);
-                                      }}
-                                    >
-                                      수정
-                                    </button>
-                                    <button
-                                      style={{
-                                        display: "block",
-                                        width: "100%",
-                                        padding: "8px 12px",
-                                        background: "none",
-                                        border: "none",
-                                        textAlign: "left",
-                                        cursor: "pointer",
-                                        fontSize: 12,
-                                        color: "#e53935",
-                                      }}
-                                      onClick={() => {
-                                        setMenuId(null);
-                                        handleDeleteMsg(msg.messageId);
-                                      }}
-                                    >
-                                      삭제
-                                    </button>
+            {/* 오른쪽: 채팅방 */}
+            <div style={s.chatArea}>
+              {!activeRoomId ? (
+                <div style={s.noRoom}>채팅방을 선택하세요</div>
+              ) : loadingMsg ? (
+                <div style={s.noRoom}>불러오는 중...</div>
+              ) : (
+                <>
+                  <div style={s.msgArea}>
+                    {messages.map((msg) => {
+                      const mine = msg.senderId === userId;
+                      const initial = (msg.senderNickname ?? '?')[0].toUpperCase();
+                      const avatarColor = `hsl(${(msg.senderId * 47) % 360}, 55%, 55%)`;
+                      return (
+                        <div key={msg.messageId} style={{ ...s.msgRow, justifyContent: mine ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
+                          {/* 상대방 아바타 */}
+                          {!mine && (
+                            <div style={{ ...s.avatar, background: avatarColor, flexShrink: 0 }}>
+                              {initial}
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                            {!mine && <span style={s.nick}>{msg.senderNickname}</span>}
+                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, flexDirection: mine ? 'row-reverse' : 'row' }}>
+                              {editingMsgId === msg.messageId ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 200 }}>
+                                  <input
+                                    style={{ padding: '6px 10px', border: '1px solid #5F8F7B', borderRadius: 8, fontSize: 12, outline: 'none' }}
+                                    value={editMsgContent}
+                                    onChange={(e) => setEditMsgContent(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') confirmEditMsg(msg.messageId); if (e.key === 'Escape') setEditingMsgId(null); }}
+                                    autoFocus
+                                  />
+                                  <div style={{ display: 'flex', gap: 4 }}>
+                                    <button style={{ flex: 1, padding: '3px', background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => confirmEditMsg(msg.messageId)}>확인</button>
+                                    <button style={{ flex: 1, padding: '3px', background: '#EAF4F0', color: '#262626', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => setEditingMsgId(null)}>취소</button>
                                   </div>
-                                )}
-                              </div>
-                            )}
-                            <span style={s.msgTime}>{formatTime(msg.createdAt)}</span>
+                                </div>
+                              ) : (
+                                <div
+                                  style={{
+                                    ...s.bubble,
+                                    position: 'relative',
+                                    background: msg.isDeleted ? '#e0e0e0' : !msg.content.startsWith('/api/chat/files/') ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
+                                    color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1a1a1a',
+                                    fontStyle: msg.isDeleted ? 'italic' : 'normal',
+                                    borderRadius: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 8 : 18,
+                                    padding: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 0 : undefined,
+                                    boxShadow: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
+                                    border: !msg.content.startsWith('/api/chat/files/') && !mine && !msg.isDeleted ? '1px solid #E5E7EB' : 'none',
+                                  }}
+                                  onContextMenu={!msg.isDeleted ? (e) => { e.preventDefault(); e.stopPropagation(); setMenuId(menuId === msg.messageId ? null : msg.messageId); } : undefined}
+                                >
+                                  {msg.isDeleted ? '삭제된 메시지' : renderMsgContent(msg.content, mine)}
+                                  {msg.updatedAt && !msg.isDeleted && <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 4 }}>(수정됨)</span>}
+                                  {menuId === msg.messageId && (
+                                    <div style={{ position: 'absolute', right: mine ? 0 : undefined, left: mine ? undefined : 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 90, overflow: 'hidden' }}>
+                                      {mine ? (
+                                        <>
+                                          <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { setMenuId(null); startEditMsg(msg); }}>수정</button>
+                                          <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); handleDeleteMsg(msg.messageId); }}>삭제</button>
+                                        </>
+                                      ) : (
+                                        <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); setReportCategory('ABUSE'); setReportDesc(''); setReportModal({ messageId: msg.messageId }); }}>신고</button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {mine && !msg.isDeleted && (() => {
+                                const unread = Object.entries(readStatus).filter(
+                                  ([uid, time]) => Number(uid) !== msg.senderId && new Date(time) < new Date(msg.createdAt)
+                                ).length;
+                                return unread > 0 ? <span style={s.unreadCount}>{unread}</span> : null;
+                              })()}
+                              <span style={s.msgTime}>{formatTime(msg.createdAt)}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
                     );
                   })}
                   <div ref={bottomRef} />
@@ -730,6 +787,42 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
           </div>
         </div>
       </div>
+
+      {/* 신고 모달 */}
+      {reportModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }} onClick={() => setReportModal(null)}>
+          <div style={{ background: '#fff', borderRadius: 14, padding: '24px', width: 320, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: '#1F2937', marginBottom: 16 }}>메시지 신고</div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>신고 유형</div>
+              <select
+                value={reportCategory}
+                onChange={(e) => setReportCategory(e.target.value as ReportCategory)}
+                style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none' }}
+              >
+                {(Object.entries(CATEGORY_LABELS) as [ReportCategory, string][]).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>상세 내용 (선택)</div>
+              <textarea
+                value={reportDesc}
+                onChange={(e) => setReportDesc(e.target.value)}
+                placeholder="신고 내용을 입력하세요"
+                maxLength={500}
+                rows={3}
+                style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setReportModal(null)} style={{ padding: '8px 16px', background: '#EAF4F0', color: '#1F2937', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>취소</button>
+              <button onClick={handleReportSubmit} style={{ padding: '8px 16px', background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>신고하기</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -753,7 +846,7 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: "center",
     padding: "0 12px",
     height: 44,
-    background: "#d07856",
+    background: "#5F8F7B",
     cursor: "grab",
     flexShrink: 0,
   },
@@ -801,7 +894,7 @@ const s: Record<string, React.CSSProperties> = {
     fontWeight: "bold",
     fontSize: 13,
   },
-  notiReadAll: { background: "none", border: "none", color: "#d07856", cursor: "pointer", fontSize: 11 },
+  notiReadAll: { background: "none", border: "none", color: "#5F8F7B", cursor: "pointer", fontSize: 11 },
   notiEmpty: { padding: 16, textAlign: "center", color: "#aaa", fontSize: 13 },
   notiItem: { padding: "8px 14px", borderBottom: "1px solid #f0f0f0", cursor: "pointer", display: "flex", flexDirection: "column", gap: 2 },
   notiMsg: { fontSize: 12, color: "#333" },
@@ -812,7 +905,7 @@ const s: Record<string, React.CSSProperties> = {
   sidebar: { width: 200, borderRight: "1px solid #eee", display: "flex", flexDirection: "column", overflowY: "auto", flexShrink: 0 },
   sidebarTitle: { padding: "12px 14px", fontWeight: "bold", fontSize: 13, color: "#555", borderBottom: "1px solid #eee" },
   sideEmpty: { padding: 16, textAlign: "center", color: "#aaa", fontSize: 12 },
-  roomItem: { display: "flex", alignItems: "center", padding: "10px 12px", cursor: "pointer", gap: 10, borderBottom: "1px solid #f2e8e0" },
+  roomItem: { display: "flex", alignItems: "center", padding: "10px 12px", cursor: "pointer", gap: 10, borderBottom: "1px solid #EAF4F0" },
   roomAvatar: { fontSize: 22, flexShrink: 0 },
   roomInfo: { flex: 1, minWidth: 0 },
   roomRow: { display: "flex", justifyContent: "space-between", alignItems: "center" },
@@ -821,38 +914,19 @@ const s: Record<string, React.CSSProperties> = {
   roomLast: { fontSize: 11, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   unreadBadge: { background: "#e53935", color: "#fff", borderRadius: 12, fontSize: 10, padding: "1px 5px", fontWeight: "bold", flexShrink: 0 },
 
-  chatArea: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
-  noRoom: { flex: 1, display: "flex", justifyContent: "center", alignItems: "center", color: "#bbb", fontSize: 14 },
-  msgArea: { flex: 1, overflowY: "auto", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, background: "#fdf0e8" },
-  msgRow: { display: "flex", alignItems: "flex-start", gap: 8 },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
-    marginTop: 2,
-  },
-  nick: { fontSize: 11, color: "#555", fontWeight: 600, marginBottom: 3 },
-  bubble: { padding: "7px 11px", borderRadius: 14, fontSize: 13, lineHeight: 1.5, wordBreak: "break-word", maxWidth: 200 },
-  msgTime: { fontSize: 10, color: "#aaa", flexShrink: 0 },
-  inputArea: { display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderTop: "1px solid #eee", background: "#fff", flexShrink: 0 },
-  iconBtn: { background: "none", border: "none", fontSize: 18, cursor: "pointer", padding: "0 2px" },
-  textInput: { flex: 1, padding: "8px 12px", border: "1px solid #ddd", borderRadius: 20, fontSize: 13, outline: "none" },
-  sendBtn: {
-    background: "#d07856",
-    color: "#fff",
-    border: "none",
-    borderRadius: 16,
-    padding: "8px 14px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    fontSize: 12,
-  },
+  chatArea: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  noRoom: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#bbb', fontSize: 14 },
+  msgArea: { flex: 1, overflowY: 'auto', padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 10, background: '#EAF4F0' },
+  msgRow: { display: 'flex', alignItems: 'flex-end', gap: 6 },
+  avatar: { width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 'bold', flexShrink: 0, alignSelf: 'flex-start' },
+  nick: { fontSize: 11, color: '#666', fontWeight: 600, marginBottom: 4 },
+  bubble: { padding: '8px 12px', borderRadius: 18, fontSize: 13, lineHeight: 1.45, wordBreak: 'break-word', width: 'fit-content', maxWidth: 240, textAlign: 'left' as const },
+  msgTime: { fontSize: 10, color: '#bbb', flexShrink: 0, marginBottom: 2 },
+  unreadCount: { fontSize: 11, color: '#E9C46A', fontWeight: 'bold', flexShrink: 0, marginBottom: 2, lineHeight: 1 },
+  inputArea: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderTop: '1px solid #eee', background: '#fff', flexShrink: 0 },
+  iconBtn: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '0 2px' },
+  textInput: { flex: 1, padding: '8px 12px', border: '1px solid #ddd', borderRadius: 20, fontSize: 13, outline: 'none' },
+  sendBtn: { background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 16, padding: '8px 14px', fontWeight: 'bold', cursor: 'pointer', fontSize: 12 },
 
   rHandle: { position: "absolute", zIndex: 10001 },
   rN: { top: 0, left: 8, right: 8, height: 5, cursor: "n-resize" },

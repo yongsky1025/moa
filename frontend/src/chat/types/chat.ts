@@ -1,9 +1,10 @@
-export type RoomType = "DIRECT" | "GROUP";
+export type RoomType = 'DIRECT' | 'GROUP' | 'SCHEDULE';
 
 export interface ChatRoomSummary {
   roomId: number;
   roomType: RoomType;
   circleId: number | null;
+  scheduleId: number | null;
   lastMessage: string | null;
   lastMessageAt: string | null;
   unreadCount: number;

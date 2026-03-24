@@ -8,6 +8,7 @@ import CircleBoardSideMenu from "../../board/components/CircleBoardSideMenu";
 import CircleBoardPostPreviewSection from "../../board/components/CircleBoardPostPreviewSection";
 import { circleApi } from "../../api/circleApi";
 import { chatApi } from "../../api/chatApi";
+import { useDirectChat } from "../../chat/hooks/useDirectChat";
 import { scheduleApi } from "../../api/scheduleApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import type { CircleResponse, CircleMember } from "../types/circle";
@@ -206,19 +207,7 @@ export default function CircleDetailPage() {
     action(() => circleApi.leaveCircle(cid), "탈퇴했습니다.");
   };
 
-  const handleDirectChat = (targetUserId: number) => {
-    const popup = window.open(
-      `/chat/popup#direct-${targetUserId}`,
-      "moa-chat",
-      "width=760,height=600,resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no",
-    );
-    if (popup && !popup.closed) {
-      setTimeout(() => {
-        popup.location.hash = `direct-${targetUserId}`;
-      }, 300);
-    }
-    setSelectedMember(null);
-  };
+  const { startDirectChat, directChatError, clearDirectChatError } = useDirectChat();
 
   if (loading)
     return (
@@ -267,16 +256,8 @@ export default function CircleDetailPage() {
       {/* 카카오 스타일 프로필 모달 */}
       {profileModal && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-          onClick={() => setProfileModal(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+          onClick={() => { setProfileModal(null); clearDirectChatError(); }}
         >
           <div
             style={{
@@ -339,25 +320,15 @@ export default function CircleDetailPage() {
                 </span>
               )}
             </div>
-            <div
-              style={{ borderTop: "1px solid #f0f0f0", padding: "14px 24px" }}
-            >
+            {directChatError && (
+              <div style={{ margin: '0 24px 12px', padding: '10px 14px', background: '#fff3f3', border: '1px solid #f5c6c6', borderRadius: 8, fontSize: 13, color: '#c62828', textAlign: 'center' }}>
+                {directChatError}
+              </div>
+            )}
+            <div style={{ borderTop: "1px solid #f0f0f0", padding: "14px 24px" }}>
               <button
-                style={{
-                  width: "100%",
-                  padding: "12px 0",
-                  background: "#111",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 10,
-                  fontWeight: 700,
-                  fontSize: 15,
-                  cursor: "pointer",
-                }}
-                onClick={() => {
-                  setProfileModal(null);
-                  handleDirectChat(profileModal.userId);
-                }}
+                style={{ width: '100%', padding: '12px 0', background: '#111', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+                onClick={() => startDirectChat(profileModal.userId)}
               >
                 💬 1:1 채팅하기
               </button>
