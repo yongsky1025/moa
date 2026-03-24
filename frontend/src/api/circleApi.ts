@@ -15,9 +15,20 @@ export const circleApi = {
   getCategories: () =>
     api.get<{ categoryId: number; categoryName: string }[]>('/api/circles/categories'),
 
-  // 서클 목록 (categoryId 없으면 전체)
-  getCircles: (params?: { categoryId?: number; page?: number; size?: number; keyword?: string; type?: string }) =>
-    api.get<PageResult<CircleResponse>>('/api/circles', { params }),
+  // 서클 목록 (categoryIds 없으면 전체)
+  getCircles: (params?: { categoryIds?: number[]; page?: number; size?: number; keyword?: string; type?: string }) =>
+    api.get<PageResult<CircleResponse>>('/api/circles', {
+      params,
+      paramsSerializer: (p: typeof params) => {
+        const sp = new URLSearchParams();
+        p?.categoryIds?.forEach((id) => sp.append('categoryIds', String(id)));
+        if (p?.page != null) sp.append('page', String(p.page));
+        if (p?.size != null) sp.append('size', String(p.size));
+        if (p?.keyword) sp.append('keyword', p.keyword);
+        if (p?.type) sp.append('type', p.type);
+        return sp.toString();
+      },
+    }),
 
   // 내가 가입한 서클
   getMyCircles: () =>
@@ -89,6 +100,14 @@ export const circleApi = {
   // 리더 권한 위임
   delegateLeader: (circleId: number, memberId: number) =>
     api.post<void>(`/api/circles/${circleId}/members/${memberId}/delegate`),
+
+  // 좋아요 토글
+  toggleCircleLike: (circleId: number) =>
+    api.post<{ circleId: number; liked: boolean; likeCount: number }>(`/api/circles/${circleId}/like`),
+
+  // 좋아요 상태 조회
+  getCircleLikeStatus: (circleId: number) =>
+    api.get<{ circleId: number; liked: boolean; likeCount: number }>(`/api/circles/${circleId}/like`),
 };
 
 

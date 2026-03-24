@@ -74,10 +74,10 @@ public class CircleController {
     // 서클 목록 조회
     @GetMapping
     public ResponseEntity<PageResultDTO<CircleResponseDTO>> getCircles(
-            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(required = false) List<Long> categoryIds,
             @ModelAttribute PageRequestDTO pageRequestDTO) {
         return ResponseEntity.ok(
-                circleService.getCircles(categoryId, pageRequestDTO));
+                circleService.getCircles(categoryIds, pageRequestDTO));
     }
 
     // 서클 삭제

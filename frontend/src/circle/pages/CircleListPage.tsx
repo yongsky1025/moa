@@ -37,9 +37,8 @@ export default function CircleListPage() {
   const [circles, setCircles] = useState<CircleResponse[]>([]);
   const [categories, setCategories] = useState<{ categoryId: number; categoryName: string }[]>([]);
   const [recommendBundle, setRecommendBundle] = useState<RecommendationBundle | null>(null);
-  const [recommendTab, setRecommendTab] = useState<'overall' | 'social' | 'activity'>('overall');
-  const [noEnergyProfile, setNoEnergyProfile] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [recommendFilter, setRecommendFilter] = useState<'overall' | 'social' | 'activity' | null>(null);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [keyword, setKeyword] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [page, setPage] = useState(1);
@@ -60,15 +59,16 @@ export default function CircleListPage() {
     if (!isLoggedIn) return;
     circleApi.getRecommendationBundle()
       .then((res) => setRecommendBundle(res.data))
-      .catch(() => { setNoEnergyProfile(true); });
+      .catch(() => {});
   }, [isLoggedIn]);
 
   useEffect(() => {
+    if (recommendFilter !== null) return; // 추천 필터 중엔 페이지네이션 스킵
     const fetchCircles = async () => {
       setLoading(true);
       try {
         const res = await circleApi.getCircles({
-          ...(selectedCategoryId ? { categoryId: selectedCategoryId } : {}),
+          ...(selectedCategoryIds.length > 0 ? { categoryIds: selectedCategoryIds } : {}),
           ...(keyword ? { keyword } : {}),
           ...(onlyOpen ? { type: 'OPEN' } : {}),
           page,
@@ -87,10 +87,16 @@ export default function CircleListPage() {
       }
     };
     fetchCircles();
-  }, [selectedCategoryId, keyword, page, onlyOpen]);
+  }, [selectedCategoryIds, keyword, page, onlyOpen, recommendFilter]);
 
   const handleCategoryClick = (categoryId: number | null) => {
-    setSelectedCategoryId(categoryId);
+    if (categoryId === null) {
+      setSelectedCategoryIds([]);
+    } else {
+      setSelectedCategoryIds(prev =>
+        prev.includes(categoryId) ? prev.filter(id => id !== categoryId) : [...prev, categoryId]
+      );
+    }
     setPage(1);
   };
 
@@ -100,6 +106,15 @@ export default function CircleListPage() {
     setPage(1);
   };
 
+
+  const isRecFiltered = recommendFilter !== null && !!recommendBundle;
+  const selectedCategoryNames = new Set(
+    categories.filter(c => selectedCategoryIds.includes(c.categoryId)).map(c => c.categoryName)
+  );
+  const recItems: RecommendationItem[] = isRecFiltered
+    ? (recommendBundle![recommendFilter as 'overall' | 'social' | 'activity'] as RecommendationItem[])
+        .filter(c => selectedCategoryNames.size === 0 || selectedCategoryNames.has(c.categoryName))
+    : [];
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8', color: '#111' }}>
@@ -125,134 +140,9 @@ export default function CircleListPage() {
         </div>
       </div>
 
-      {/* 본문: 사이드바 + 메인 */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 20px 60px', display: 'flex', gap: 28, alignItems: 'flex-start' }}>
-
-        {/* 사이드바 */}
-        <aside style={{ width: 200, flexShrink: 0 }}>
-
-          {/* 에너지 프로필 없을 때 안내 */}
-          {(!isLoggedIn || noEnergyProfile) && (
-            <div style={{ backgroundColor: 'white', borderRadius: 12, border: '1px solid #f0f0f0', padding: '16px', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <Sparkles style={{ width: 14, height: 14, color: '#f59e0b' }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>나의 추천 모임</span>
-              </div>
-              <p style={{ fontSize: 12, color: '#888', lineHeight: 1.6, marginBottom: 12 }}>
-                에너지 프로필을 설정하면 나와 잘 맞는 모임을 추천해드려요.
-              </p>
-              <button
-                style={{
-                  width: '100%', padding: '9px 0', borderRadius: 8,
-                  border: '1px solid #e5e5e5', backgroundColor: '#f5f5f5',
-                  fontSize: 12, fontWeight: 600, color: '#555', cursor: 'not-allowed',
-                }}
-              >
-                에너지 프로필 측정하기
-              </button>
-            </div>
-          )}
-
-          {/* 추천 모임 — 3기준 탭 */}
-          {isLoggedIn && recommendBundle && (
-            <div style={{ backgroundColor: 'white', borderRadius: 12, border: '1px solid #f0f0f0', padding: '16px', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <Sparkles style={{ width: 14, height: 14, color: '#f59e0b' }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>나의 추천 모임</span>
-              </div>
-
-              {/* 탭 */}
-              <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
-                {(
-                  [
-                    { key: 'overall',  label: '전체' },
-                    { key: 'social',   label: '사교' },
-                    { key: 'activity', label: '활동' },
-                  ] as { key: 'overall' | 'social' | 'activity'; label: string }[]
-                ).map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => setRecommendTab(key)}
-                    style={{
-                      flex: 1, padding: '4px 0', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600,
-                      backgroundColor: recommendTab === key ? '#111' : '#f5f5f5',
-                      color: recommendTab === key ? 'white' : '#888',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {/* 탭별 설명 */}
-              <p style={{ fontSize: 11, color: '#aaa', marginBottom: 8, lineHeight: 1.4 }}>
-                {recommendTab === 'overall'  && '에너지 프로필 전체 기준'}
-                {recommendTab === 'social'   && '사교 성향 · 교류 방식 기준'}
-                {recommendTab === 'activity' && '활동 강도 · 몰입 · 구조 기준'}
-              </p>
-
-              {/* 목록 */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {(recommendBundle[recommendTab] as RecommendationItem[]).map((c, idx, arr) => (
-                  <div
-                    key={c.circleId}
-                    onClick={() => navigate(`/circle/${c.circleId}`)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-                      padding: '7px 0',
-                      borderBottom: idx < arr.length - 1 ? '1px solid #f5f5f5' : 'none',
-                    }}
-                  >
-                    <div style={{
-                      width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-                      background: CATEGORY_COLORS[c.categoryName] ?? DEFAULT_GRADIENT,
-                    }} />
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {c.name}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{c.categoryName}</div>
-                    </div>
-                    <div style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }}>
-                      {Math.round(c.similarity * 100)}%
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 카테고리 */}
-          <div style={{ backgroundColor: 'white', borderRadius: 12, border: '1px solid #f0f0f0', padding: '16px' }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 10 }}>카테고리</p>
-            {[{ categoryId: null as null, categoryName: '전체' }, ...categories].map((cat) => {
-              const isSelected = cat.categoryId === null ? selectedCategoryId === null : selectedCategoryId === cat.categoryId;
-              return (
-                <label
-                  key={cat.categoryId ?? 'all'}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', cursor: 'pointer', borderRadius: 8, transition: 'background 0.15s' }}
-                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = '#f5f5f5'; }}
-                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                >
-                  <input
-                    type="radio"
-                    name="category"
-                    checked={isSelected}
-                    onChange={() => handleCategoryClick(cat.categoryId)}
-                    style={{ accentColor: '#111', width: 15, height: 15, cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: 14, color: isSelected ? '#111' : '#555', fontWeight: isSelected ? 700 : 400 }}>
-                    {cat.categoryName}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </aside>
-
-        {/* 메인 */}
-        <main style={{ flex: 1, minWidth: 0 }}>
+      {/* 본문 */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 20px 60px' }}>
+        <main>
           <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', marginBottom: 20, border: '1px solid #e5e5e5', borderRadius: 999, backgroundColor: 'white', overflow: 'hidden' }}>
             {/* 모집중 토글 */}
             <button
@@ -298,7 +188,119 @@ export default function CircleListPage() {
             </button>
           </form>
 
-          {loading ? (
+          {/* 필터 섹션 */}
+          <div style={{ backgroundColor: 'white', borderRadius: 12, border: '1px solid #f0f0f0', padding: '14px 20px', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* 추천 행 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 700, color: '#111', minWidth: 64, flexShrink: 0 }}>
+                <Sparkles style={{ width: 13, height: 13, color: '#f59e0b' }} />
+                추천
+              </span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'center' }}>
+                {([
+                  { key: 'overall', label: '전체' },
+                  { key: 'social',  label: '사교' },
+                  { key: 'activity', label: '활동' },
+                ] as { key: 'overall' | 'social' | 'activity'; label: string }[]).map(({ key, label }) => {
+                  const active = recommendFilter === key;
+                  const disabled = !isLoggedIn || !recommendBundle;
+                  return (
+                    <button
+                      key={key}
+                      disabled={disabled}
+                      onClick={() => { setRecommendFilter(active ? null : key); setPage(1); }}
+                      title={disabled ? (isLoggedIn ? '에너지 프로필이 필요합니다' : '로그인이 필요합니다') : undefined}
+                      style={{
+                        padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600,
+                        cursor: disabled ? 'not-allowed' : 'pointer',
+                        border: `1px solid ${active ? '#5f8f7b' : '#e5e5e5'}`,
+                        backgroundColor: active ? '#5f8f7b' : 'white',
+                        color: active ? 'white' : disabled ? '#ccc' : '#555',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 구분선 */}
+            <div style={{ borderTop: '1px solid #f0f0f0' }} />
+
+            {/* 카테고리 행 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#111', minWidth: 64, flexShrink: 0 }}>카테고리</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                {[{ categoryId: null as null, categoryName: '전체' }, ...categories].map((cat) => {
+                  const active = cat.categoryId === null ? selectedCategoryIds.length === 0 : selectedCategoryIds.includes(cat.categoryId);
+                  return (
+                    <button
+                      key={cat.categoryId ?? 'all'}
+                      onClick={() => handleCategoryClick(cat.categoryId)}
+                      style={{
+                        padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                        border: `1px solid ${active ? '#5f8f7b' : '#e5e5e5'}`,
+                        backgroundColor: active ? '#5f8f7b' : 'white',
+                        color: active ? 'white' : '#555',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {cat.categoryName}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {isRecFiltered ? (
+            /* 추천 필터 활성 */
+            <>
+              <p style={{ fontSize: 14, color: '#888', marginBottom: 20 }}>
+                <strong style={{ color: '#5f8f7b' }}>
+                  {recommendFilter === 'overall' ? '5축 전체' : recommendFilter === 'social' ? '사교 성향' : '활동 스타일'}
+                </strong> 기반 추천 모임 {recItems.length > 0 && <strong style={{ color: '#111' }}>{recItems.length}개</strong>}
+              </p>
+              {recItems.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#aaa', padding: '60px 0' }}>추천 모임이 없습니다.</p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+                  {recItems.map((c) => {
+                    const statusInfo = STATUS_LABEL[c.status] ?? { text: String(c.status), color: '#888' };
+                    const bgGradient = CATEGORY_COLORS[c.categoryName] ?? DEFAULT_GRADIENT;
+                    return (
+                      <div
+                        key={c.circleId}
+                        onClick={() => navigate(`/circle/${c.circleId}`)}
+                        style={{ backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', cursor: 'pointer', transition: 'box-shadow 0.2s, transform 0.2s' }}
+                        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                      >
+                        <div style={{ position: 'relative', height: 160, background: c.coverImageUrl ? 'none' : bgGradient, flexShrink: 0 }}>
+                          {c.coverImageUrl && <img src={c.coverImageUrl} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                          <div style={{ position: 'absolute', top: 10, left: 10, padding: '3px 8px', borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.55)', fontSize: 11, fontWeight: 700, color: 'white' }}>{c.categoryName}</div>
+                          <div style={{ position: 'absolute', top: 10, right: 10, padding: '3px 8px', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.92)', fontSize: 11, fontWeight: 700, color: statusInfo.color }}>{statusInfo.text}</div>
+                          <div style={{ position: 'absolute', bottom: 8, right: 10, padding: '2px 7px', borderRadius: 999, backgroundColor: 'rgba(95,143,123,0.9)', fontSize: 11, fontWeight: 700, color: 'white' }}>
+                            {Math.round(c.similarity * 100)}% 일치
+                          </div>
+                        </div>
+                        <div style={{ padding: '12px 14px 16px' }}>
+                          <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 800, lineHeight: 1.4, color: '#1f2937', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.name}</h3>
+                          <p style={{ margin: '0 0 10px', fontSize: 12, color: '#6b7280', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.description || '소개글이 없습니다.'}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}>
+                            <Users style={{ width: 12, height: 12 }} />
+                            {c.currentMember}/{c.maxMember}명
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          ) : loading ? (
             <p style={{ textAlign: 'center', color: '#888', padding: '60px 0' }}>로딩 중...</p>
           ) : (
             <>
@@ -360,9 +362,19 @@ export default function CircleListPage() {
                           }}>
                             {circle.description || '소개글이 없습니다.'}
                           </p>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}>
-                            <Users style={{ width: 12, height: 12 }} />
-                            {circle.currentMember}/{circle.maxMember}명
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}>
+                              <Users style={{ width: 12, height: 12 }} />
+                              {circle.currentMember}/{circle.maxMember}명
+                            </div>
+                            {(circle.likeCount ?? 0) > 0 && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, color: '#e3886d' }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="#e3886d" stroke="#e3886d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                </svg>
+                                {circle.likeCount}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

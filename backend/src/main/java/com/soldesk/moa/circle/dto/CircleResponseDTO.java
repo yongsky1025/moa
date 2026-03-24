@@ -18,9 +18,16 @@ public class CircleResponseDTO {
     private String categoryName;
     private String coverImageUrl;
     private CircleRole myRole;
+    private long likeCount;
 
     public static CircleResponseDTO from(Circle circle) {
         return new CircleResponseDTO(circle);
+    }
+
+    public static CircleResponseDTO from(Circle circle, long likeCount) {
+        CircleResponseDTO dto = new CircleResponseDTO(circle);
+        dto.likeCount = likeCount;
+        return dto;
     }
 
     public CircleResponseDTO(Circle circle) {

@@ -13,6 +13,7 @@ export interface CircleResponse {
   categoryName: string;
   coverImageUrl?: string;
   myRole?: CircleRole;
+  likeCount?: number;
 }
 
 export interface CircleCreateRequest {
@@ -48,6 +49,10 @@ export interface RecommendationItem {
   description: string;
   categoryName: string;
   similarity: number;
+  status: CircleStatus;
+  maxMember: number;
+  currentMember: number;
+  coverImageUrl?: string;
 }
 
 export interface RecommendationBundle {

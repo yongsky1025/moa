@@ -24,8 +24,8 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
     }
 
     @Override
-    public PageResultDTO<Circle> findByCategory_CategoryId(
-            Long categoryId,
+    public PageResultDTO<Circle> findByCategories(
+            List<Long> categoryIds,
             PageRequestDTO pageRequestDTO) {
 
         QCircle circle = QCircle.circle;
@@ -40,7 +40,7 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
                 .selectFrom(circle)
                 .join(circle.category, category).fetchJoin()
                 .where(
-                        categoryEq(categoryId),
+                        categoryIn(categoryIds),
                         keywordContains(pageRequestDTO.getKeyword()),
                         statusFilter(pageRequestDTO.getType()))
                 .offset((long) page * size)
@@ -53,7 +53,7 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
                 .select(circle.count())
                 .from(circle)
                 .where(
-                        categoryEq(categoryId),
+                        categoryIn(categoryIds),
                         keywordContains(pageRequestDTO.getKeyword()),
                         statusFilter(pageRequestDTO.getType()))
                 .fetchOne();
@@ -103,9 +103,9 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
 
     //
     // 조건 메서드들
-    private BooleanExpression categoryEq(Long categoryId) {
-        return categoryId == null ? null
-                : QCircle.circle.category.categoryId.eq(categoryId);
+    private BooleanExpression categoryIn(List<Long> categoryIds) {
+        return (categoryIds == null || categoryIds.isEmpty()) ? null
+                : QCircleCategory.circleCategory.categoryId.in(categoryIds);
     }
 
     private BooleanExpression keywordContains(String keyword) {
