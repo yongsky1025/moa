@@ -63,7 +63,7 @@ public class ReportController {
     public ResponseEntity<Void> updateStatus(
             @PathVariable Long reportId,
             @RequestParam ReportStatus status,
-            @RequestParam(required = false) String adminNote) {
+            @RequestParam String adminNote) {
         reportService.updateReportStatus(reportId, status, adminNote);
         return ResponseEntity.ok().build();
     }

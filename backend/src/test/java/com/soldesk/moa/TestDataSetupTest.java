@@ -4,7 +4,12 @@ import com.soldesk.moa.circle.entity.*;
 import com.soldesk.moa.circle.entity.constant.*;
 import com.soldesk.moa.circle.repository.*;
 import com.soldesk.moa.place.entity.Place;
+import com.soldesk.moa.place.entity.Tag;
+import com.soldesk.moa.place.entity.TagCategory;
 import com.soldesk.moa.place.repository.PlaceRepository;
+import com.soldesk.moa.place.repository.TagCategoryRepository;
+import com.soldesk.moa.place.repository.PlaceTagRepository;
+import com.soldesk.moa.place.repository.TagRepository;
 import com.soldesk.moa.users.entity.*;
 import com.soldesk.moa.users.entity.constant.*;
 import com.soldesk.moa.users.repository.*;
@@ -31,6 +36,9 @@ import java.util.stream.Collectors;
 public class TestDataSetupTest {
 
     @Autowired private PlaceRepository placeRepository;
+    @Autowired private TagCategoryRepository tagCategoryRepository;
+    @Autowired private TagRepository tagRepository;
+    @Autowired private PlaceTagRepository placeTagRepository;
     @Autowired private UsersRepository usersRepository;
     @Autowired private UsersEnergyProfileRepository usersEnergyProfileRepository;
     @Autowired private CircleCategoryRepository categoryRepository;
@@ -67,6 +75,114 @@ public class TestDataSetupTest {
             .build());
 
         System.out.println("✅ userId=1 에너지 프로필 생성 완료");
+    }
+
+    @Commit
+    @Test
+    void resetAndSeedTags() {
+        // 기존 태그 관련 데이터 전부 삭제 (순서 중요: FK 참조 먼저)
+        placeTagRepository.deleteAll();
+        tagRepository.deleteAll();
+        tagCategoryRepository.deleteAll();
+        System.out.println("🗑️ 기존 태그 데이터 삭제 완료");
+
+        // 카테고리 생성
+        Object[][] categoryData = {
+            {"공간 유형", 1},
+            {"시설/장비", 2},
+            {"분위기", 3},
+            {"활동 목적", 4},
+            {"모임 규모", 5},
+            {"접근성", 6},
+            {"주변 환경", 7},
+            {"음식/음료", 8},
+        };
+
+        Map<String, TagCategory> tagCatMap = new HashMap<>();
+        for (Object[] c : categoryData) {
+            TagCategory saved = tagCategoryRepository.save(TagCategory.builder()
+                .name((String) c[0])
+                .sortOrder((Integer) c[1])
+                .build());
+            tagCatMap.put(saved.getName(), saved);
+        }
+
+        // 태그 생성
+        String[][] tagData = {
+            // ── 공간 유형 (22개)
+            {"공간 유형", "카페"}, {"공간 유형", "스튜디오"}, {"공간 유형", "세미나실"},
+            {"공간 유형", "파티룸"}, {"공간 유형", "연습실"}, {"공간 유형", "공유오피스"},
+            {"공간 유형", "야외공간"}, {"공간 유형", "운동시설"}, {"공간 유형", "한옥"},
+            {"공간 유형", "갤러리"}, {"공간 유형", "공연장"}, {"공간 유형", "루프탑"},
+            {"공간 유형", "공유주방"}, {"공간 유형", "캠핑장"}, {"공간 유형", "볼링장"},
+            {"공간 유형", "풋살장"}, {"공간 유형", "클라이밍짐"}, {"공간 유형", "요가/필라테스"},
+            {"공간 유형", "바베큐장"}, {"공간 유형", "보드게임카페"}, {"공간 유형", "독립서점"},
+            {"공간 유형", "복합문화공간"},
+
+            // ── 시설/장비 (22개)
+            {"시설/장비", "빔프로젝터"}, {"시설/장비", "화이트보드"}, {"시설/장비", "주차장"},
+            {"시설/장비", "음향장비"}, {"시설/장비", "주방시설"}, {"시설/장비", "와이파이"},
+            {"시설/장비", "에어컨"}, {"시설/장비", "샤워시설"}, {"시설/장비", "거울벽"},
+            {"시설/장비", "TV/모니터"}, {"시설/장비", "마이크"}, {"시설/장비", "조명장비"},
+            {"시설/장비", "그릴/바베큐"}, {"시설/장비", "냉장고"}, {"시설/장비", "전자레인지"},
+            {"시설/장비", "정수기"}, {"시설/장비", "탈의실"}, {"시설/장비", "락커"},
+            {"시설/장비", "콘센트다수"}, {"시설/장비", "블루투스스피커"}, {"시설/장비", "보드게임구비"},
+            {"시설/장비", "포토존"},
+
+            // ── 분위기 (16개)
+            {"분위기", "모던"}, {"분위기", "아늑함"}, {"분위기", "넓은공간"},
+            {"분위기", "야외"}, {"분위기", "조용함"}, {"분위기", "빈티지"},
+            {"분위기", "자연친화"}, {"분위기", "고급스러움"}, {"분위기", "캐주얼"},
+            {"분위기", "화려함"}, {"분위기", "심플"}, {"분위기", "따뜻한조명"},
+            {"분위기", "인더스트리얼"}, {"분위기", "한옥느낌"}, {"분위기", "감성적"},
+            {"분위기", "깔끔함"},
+
+            // ── 활동 목적 (28개)
+            {"활동 목적", "회의"}, {"활동 목적", "촬영"}, {"활동 목적", "파티"},
+            {"활동 목적", "스터디"}, {"활동 목적", "공연"}, {"활동 목적", "워크숍"},
+            {"활동 목적", "운동"}, {"활동 목적", "요리"}, {"활동 목적", "보드게임"},
+            {"활동 목적", "독서모임"}, {"활동 목적", "생일파티"}, {"활동 목적", "동창회"},
+            {"활동 목적", "팀빌딩"}, {"활동 목적", "세미나"}, {"활동 목적", "강연"},
+            {"활동 목적", "전시"}, {"활동 목적", "플리마켓"}, {"활동 목적", "버스킹"},
+            {"활동 목적", "댄스"}, {"활동 목적", "요가/명상"}, {"활동 목적", "영화감상"},
+            {"활동 목적", "음악연습"}, {"활동 목적", "수공예"}, {"활동 목적", "그림/드로잉"},
+            {"활동 목적", "피크닉"}, {"활동 목적", "네트워킹"}, {"활동 목적", "번개모임"},
+            {"활동 목적", "정기모임"},
+
+            // ── 모임 규모 (5개)
+            {"모임 규모", "소규모(~10명)"}, {"모임 규모", "중규모(11~30명)"},
+            {"모임 규모", "대규모(31~50명)"}, {"모임 규모", "대형(51~100명)"},
+            {"모임 규모", "초대형(100명+)"},
+
+            // ── 접근성 (6개)
+            {"접근성", "역세권"}, {"접근성", "주차편리"}, {"접근성", "대중교통편리"},
+            {"접근성", "엘리베이터"}, {"접근성", "장애인편의시설"}, {"접근성", "1층위치"},
+
+            // ── 주변 환경 (9개)
+            {"주변 환경", "한강뷰"}, {"주변 환경", "산뷰"}, {"주변 환경", "도심뷰"},
+            {"주변 환경", "공원인접"}, {"주변 환경", "맛집밀집"}, {"주변 환경", "카페거리"},
+            {"주변 환경", "쇼핑가인접"}, {"주변 환경", "자연속"}, {"주변 환경", "조용한주택가"},
+
+            // ── 음식/음료 (7개)
+            {"음식/음료", "음식반입가능"}, {"음식/음료", "음주가능"}, {"음식/음료", "케이터링가능"},
+            {"음식/음료", "커피머신"}, {"음식/음료", "취사가능"}, {"음식/음료", "배달수령가능"},
+            {"음식/음료", "음료제공"},
+        };
+
+        int tagCount = 0;
+        for (String[] t : tagData) {
+            TagCategory category = tagCatMap.get(t[0]);
+            if (category == null) continue;
+            tagRepository.save(Tag.builder()
+                .name(t[1])
+                .tagCategory(category)
+                .build());
+            tagCount++;
+        }
+
+        System.out.println("✅ 태그 시드 데이터 생성 완료!");
+        System.out.println("   - 카테고리: " + tagCatMap.size() + "개");
+        System.out.println("   - 태그: " + tagCount + "개");
     }
 
     private int rand(int min, int max) {
@@ -337,13 +453,189 @@ public class TestDataSetupTest {
                 .description((String) p[8])
                 .openTime(LocalTime.of((Integer) p[9], (Integer) p[10]))
                 .closeTime(LocalTime.of((Integer) p[11], (Integer) p[12]))
-                .minReservationHour((Integer) p[13])
-                .maxReservationHour((Integer) p[14])
+                .minReservationMinutes((Integer) p[13])
+                .maxReservationMinutes((Integer) p[14])
                 .build());
             placeCount++;
         }
 
-        // ── 6. currentMember 및 FULL 상태 동기화 ─────────────────
+        // ── 6. 태그 카테고리 + 태그 시드 데이터 ─────────────────
+
+        // 카테고리 정의: {이름, 정렬순서}
+        Object[][] categoryData = {
+            {"공간 유형", 1},
+            {"시설/장비", 2},
+            {"분위기", 3},
+            {"활동 목적", 4},
+            {"모임 규모", 5},
+            {"접근성", 6},
+            {"주변 환경", 7},
+            {"음식/음료", 8},
+        };
+
+        Map<String, TagCategory> tagCatMap = tagCategoryRepository.findAll().stream()
+            .collect(Collectors.toMap(TagCategory::getName, c -> c));
+
+        for (Object[] c : categoryData) {
+            if (!tagCatMap.containsKey((String) c[0])) {
+                TagCategory saved = tagCategoryRepository.save(TagCategory.builder()
+                    .name((String) c[0])
+                    .sortOrder((Integer) c[1])
+                    .build());
+                tagCatMap.put(saved.getName(), saved);
+            }
+        }
+
+        // 태그 정의: {카테고리이름, 태그이름}
+        String[][] tagData = {
+            // ── 공간 유형 (22개)
+            {"공간 유형", "카페"},
+            {"공간 유형", "스튜디오"},
+            {"공간 유형", "세미나실"},
+            {"공간 유형", "파티룸"},
+            {"공간 유형", "연습실"},
+            {"공간 유형", "공유오피스"},
+            {"공간 유형", "야외공간"},
+            {"공간 유형", "운동시설"},
+            {"공간 유형", "한옥"},
+            {"공간 유형", "갤러리"},
+            {"공간 유형", "공연장"},
+            {"공간 유형", "루프탑"},
+            {"공간 유형", "공유주방"},
+            {"공간 유형", "캠핑장"},
+            {"공간 유형", "볼링장"},
+            {"공간 유형", "풋살장"},
+            {"공간 유형", "클라이밍짐"},
+            {"공간 유형", "요가/필라테스"},
+            {"공간 유형", "바베큐장"},
+            {"공간 유형", "보드게임카페"},
+            {"공간 유형", "독립서점"},
+            {"공간 유형", "복합문화공간"},
+
+            // ── 시설/장비 (22개)
+            {"시설/장비", "빔프로젝터"},
+            {"시설/장비", "화이트보드"},
+            {"시설/장비", "주차장"},
+            {"시설/장비", "음향장비"},
+            {"시설/장비", "주방시설"},
+            {"시설/장비", "와이파이"},
+            {"시설/장비", "에어컨"},
+            {"시설/장비", "샤워시설"},
+            {"시설/장비", "거울벽"},
+            {"시설/장비", "TV/모니터"},
+            {"시설/장비", "마이크"},
+            {"시설/장비", "조명장비"},
+            {"시설/장비", "그릴/바베큐"},
+            {"시설/장비", "냉장고"},
+            {"시설/장비", "전자레인지"},
+            {"시설/장비", "정수기"},
+            {"시설/장비", "탈의실"},
+            {"시설/장비", "락커"},
+            {"시설/장비", "콘센트다수"},
+            {"시설/장비", "블루투스스피커"},
+            {"시설/장비", "보드게임구비"},
+            {"시설/장비", "포토존"},
+
+            // ── 분위기 (16개)
+            {"분위기", "모던"},
+            {"분위기", "아늑함"},
+            {"분위기", "넓은공간"},
+            {"분위기", "야외"},
+            {"분위기", "조용함"},
+            {"분위기", "빈티지"},
+            {"분위기", "자연친화"},
+            {"분위기", "고급스러움"},
+            {"분위기", "캐주얼"},
+            {"분위기", "화려함"},
+            {"분위기", "심플"},
+            {"분위기", "따뜻한조명"},
+            {"분위기", "인더스트리얼"},
+            {"분위기", "한옥느낌"},
+            {"분위기", "감성적"},
+            {"분위기", "깔끔함"},
+
+            // ── 활동 목적 (28개)
+            {"활동 목적", "회의"},
+            {"활동 목적", "촬영"},
+            {"활동 목적", "파티"},
+            {"활동 목적", "스터디"},
+            {"활동 목적", "공연"},
+            {"활동 목적", "워크숍"},
+            {"활동 목적", "운동"},
+            {"활동 목적", "요리"},
+            {"활동 목적", "보드게임"},
+            {"활동 목적", "독서모임"},
+            {"활동 목적", "생일파티"},
+            {"활동 목적", "동창회"},
+            {"활동 목적", "팀빌딩"},
+            {"활동 목적", "세미나"},
+            {"활동 목적", "강연"},
+            {"활동 목적", "전시"},
+            {"활동 목적", "플리마켓"},
+            {"활동 목적", "버스킹"},
+            {"활동 목적", "댄스"},
+            {"활동 목적", "요가/명상"},
+            {"활동 목적", "영화감상"},
+            {"활동 목적", "음악연습"},
+            {"활동 목적", "수공예"},
+            {"활동 목적", "그림/드로잉"},
+            {"활동 목적", "피크닉"},
+            {"활동 목적", "네트워킹"},
+            {"활동 목적", "번개모임"},
+            {"활동 목적", "정기모임"},
+
+            // ── 모임 규모 (5개)
+            {"모임 규모", "소규모(~10명)"},
+            {"모임 규모", "중규모(11~30명)"},
+            {"모임 규모", "대규모(31~50명)"},
+            {"모임 규모", "대형(51~100명)"},
+            {"모임 규모", "초대형(100명+)"},
+
+            // ── 접근성 (6개)
+            {"접근성", "역세권"},
+            {"접근성", "주차편리"},
+            {"접근성", "대중교통편리"},
+            {"접근성", "엘리베이터"},
+            {"접근성", "장애인편의시설"},
+            {"접근성", "1층위치"},
+
+            // ── 주변 환경 (9개)
+            {"주변 환경", "한강뷰"},
+            {"주변 환경", "산뷰"},
+            {"주변 환경", "도심뷰"},
+            {"주변 환경", "공원인접"},
+            {"주변 환경", "맛집밀집"},
+            {"주변 환경", "카페거리"},
+            {"주변 환경", "쇼핑가인접"},
+            {"주변 환경", "자연속"},
+            {"주변 환경", "조용한주택가"},
+
+            // ── 음식/음료 (7개)
+            {"음식/음료", "음식반입가능"},
+            {"음식/음료", "음주가능"},
+            {"음식/음료", "케이터링가능"},
+            {"음식/음료", "커피머신"},
+            {"음식/음료", "취사가능"},
+            {"음식/음료", "배달수령가능"},
+            {"음식/음료", "음료제공"},
+        };
+
+        Set<String> existingTagNames = tagRepository.findAll().stream()
+            .map(Tag::getName).collect(Collectors.toSet());
+
+        int tagCount = 0;
+        for (String[] t : tagData) {
+            if (existingTagNames.contains(t[1])) continue;
+            TagCategory category = tagCatMap.get(t[0]);
+            if (category == null) continue;
+            tagRepository.save(Tag.builder()
+                .name(t[1])
+                .tagCategory(category)
+                .build());
+            tagCount++;
+        }
+
+        // ── 7. currentMember 및 FULL 상태 동기화 ─────────────────
         circleRepository.syncAllCurrentMembers();
         circleRepository.syncFullStatus();
 
@@ -352,5 +644,7 @@ public class TestDataSetupTest {
         System.out.println("   - 유저: " + userList.size() + "명 (비밀번호: 1234)");
         System.out.println("   - 서클: " + circleList.size() + "개");
         System.out.println("   - 장소: " + placeCount + "개 추가됨");
+        System.out.println("   - 태그 카테고리: " + tagCatMap.size() + "개");
+        System.out.println("   - 태그: " + tagCount + "개 추가됨");
     }
 }

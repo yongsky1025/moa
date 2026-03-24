@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, MessageCircle, LayoutGrid, Users, MessageSquare, Star, HelpCircle, Megaphone, User, Settings, LogOut } from "lucide-react";
+import {
+  Bell,
+  MessageCircle,
+  LayoutGrid,
+  Users,
+  MessageSquare,
+  Star,
+  HelpCircle,
+  Megaphone,
+  User,
+  Settings,
+  LogOut,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../../users/reducers/authSlice";
@@ -12,7 +24,10 @@ export default function Navbar() {
   const { isLoggedIn, user } = useSelector((s: RootState) => s.auth);
   const isAdmin = user?.userRole === "ADMIN";
 
-  const dropdownItems: Record<string, { label: string; href: string; icon: React.ReactNode }[]> = {
+  const dropdownItems: Record<
+    string,
+    { label: string; href: string; icon: React.ReactNode }[]
+  > = {
     "모임 찾기": [
       { label: "전체 모임", href: "/circle", icon: <LayoutGrid size={15} /> },
       { label: "내 모임", href: "/circle/my", icon: <Users size={15} /> },
@@ -36,7 +51,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
+      ) {
         setProfileOpen(false);
       }
     };
@@ -60,8 +78,12 @@ export default function Navbar() {
       notificationApi
         .getAll()
         .then((list) => {
-          setUnreadChatCount(list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length);
-          setUnreadNotifCount(list.filter((n) => n.type !== "CHAT_MESSAGE" && !n.isRead).length);
+          setUnreadChatCount(
+            list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length,
+          );
+          setUnreadNotifCount(
+            list.filter((n) => n.type !== "CHAT_MESSAGE" && !n.isRead).length,
+          );
         })
         .catch(() => {});
     };
@@ -70,14 +92,22 @@ export default function Navbar() {
     return () => clearInterval(id);
   }, [isLoggedIn]);
 
-  const navItems = ["관리자 페이지", "모임 찾기", "커뮤니티", "에너지 테스트", "장소 추천"];
+  const navItems = [
+    "관리자 페이지",
+    "모임 찾기",
+    "커뮤니티",
+    "에너지 테스트",
+    "장소 추천",
+  ];
 
   const navLinks: Record<string, string> = {
     "모임 찾기": "/circle",
     커뮤니티: "#",
-    "에너지 테스트": isLoggedIn ? "/users/energy-test/result" : "/users/energy-test",
+    "에너지 테스트": isLoggedIn
+      ? "/users/energy-test/result"
+      : "/users/energy-test",
     "장소 추천": "#",
-    "관리자 페이지": "/admin",
+    "관리자 페이지": "/admin/maindashboard",
   };
 
   return (
@@ -125,7 +155,12 @@ export default function Navbar() {
           >
             <nav style={{ display: "flex", gap: 24 }}>
               {navItems.map((item) => (
-                <div key={item} style={{ position: "relative" }} onMouseEnter={() => setHoveredItem(item)} onMouseLeave={() => setHoveredItem(null)}>
+                <div
+                  key={item}
+                  style={{ position: "relative" }}
+                  onMouseEnter={() => setHoveredItem(item)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
                   <Link
                     to={navLinks[item] ?? "#"}
                     style={{
@@ -139,8 +174,12 @@ export default function Navbar() {
                       whiteSpace: "nowrap",
                       lineHeight: "60px",
                       transition: "color 0.15s",
-                      visibility: item === "관리자 페이지" && !isAdmin ? "hidden" : "visible",
-                      pointerEvents: item === "관리자 페이지" && !isAdmin ? "none" : "auto",
+                      visibility:
+                        item === "관리자 페이지" && !isAdmin
+                          ? "hidden"
+                          : "visible",
+                      pointerEvents:
+                        item === "관리자 페이지" && !isAdmin ? "none" : "auto",
                     }}
                   >
                     {item}
@@ -178,10 +217,17 @@ export default function Navbar() {
                             whiteSpace: "nowrap",
                             transition: "background 0.12s",
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f5f5f5")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
                         >
-                          <span style={{ color: "#888", display: "flex" }}>{sub.icon}</span>
+                          <span style={{ color: "#888", display: "flex" }}>
+                            {sub.icon}
+                          </span>
                           {sub.label}
                         </Link>
                       ))}
@@ -196,8 +242,14 @@ export default function Navbar() {
               <div style={{ width: 68 }}>
                 <button
                   onClick={() => {
-                    const current = window.location.pathname + window.location.search;
-                    const noRedirect = ["/users/login", "/users/signup", "/users/onboarding", "/"];
+                    const current =
+                      window.location.pathname + window.location.search;
+                    const noRedirect = [
+                      "/users/login",
+                      "/users/signup",
+                      "/users/onboarding",
+                      "/",
+                    ];
                     if (!noRedirect.some((p) => current.startsWith(p))) {
                       sessionStorage.setItem("postLoginRedirect", current);
                     }
@@ -317,7 +369,15 @@ export default function Navbar() {
               }}
             >
               {isLoggedIn ? (
-                <div ref={profileRef} style={{ position: "relative", display: "flex", alignItems: "center", gap: 6 }}>
+                <div
+                  ref={profileRef}
+                  style={{
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
                   <div
                     onClick={() => setProfileOpen((v) => !v)}
                     style={{
@@ -337,15 +397,23 @@ export default function Navbar() {
                     }}
                   >
                     {user?.profileImageUrl ? (
-                      <img src={user.profileImageUrl} alt="프로필" style={{ width: 40, height: 40, objectFit: "cover" }} />
+                      <img
+                        src={user.profileImageUrl}
+                        alt="프로필"
+                        style={{ width: 40, height: 40, objectFit: "cover" }}
+                      />
                     ) : (
                       (user?.nickname?.[0]?.toUpperCase() ?? "U")
                     )}
                   </div>
                   <span
                     onClick={() => navigate("/users/profile")}
-                    onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-                    onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.textDecoration = "underline")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.textDecoration = "none")
+                    }
                     style={{
                       fontSize: 15,
                       fontWeight: 400,
@@ -375,8 +443,16 @@ export default function Navbar() {
                       }}
                     >
                       {[
-                        { label: "마이 프로필", href: "/users/profile", icon: <User size={15} /> },
-                        { label: "계정", href: "/users/profile", icon: <Settings size={15} /> },
+                        {
+                          label: "마이 프로필",
+                          href: "/users/profile",
+                          icon: <User size={15} />,
+                        },
+                        {
+                          label: "계정",
+                          href: "/users/profile",
+                          icon: <Settings size={15} />,
+                        },
                       ].map((item) => (
                         <Link
                           key={item.label}
@@ -394,14 +470,27 @@ export default function Navbar() {
                             textDecoration: "none",
                             whiteSpace: "nowrap",
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f5f5f5")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
                         >
-                          <span style={{ color: "#888", display: "flex" }}>{item.icon}</span>
+                          <span style={{ color: "#888", display: "flex" }}>
+                            {item.icon}
+                          </span>
                           {item.label}
                         </Link>
                       ))}
-                      <div style={{ height: 1, backgroundColor: "#f0f0f0", margin: "4px 6px" }} />
+                      <div
+                        style={{
+                          height: 1,
+                          backgroundColor: "#f0f0f0",
+                          margin: "4px 6px",
+                        }}
+                      />
                       <button
                         onClick={handleLogout}
                         style={{
@@ -419,8 +508,13 @@ export default function Navbar() {
                           width: "100%",
                           whiteSpace: "nowrap",
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fff5f5")}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#fff5f5")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
                       >
                         <span style={{ color: "#e53e3e", display: "flex" }}>
                           <LogOut size={15} />
@@ -452,7 +546,12 @@ export default function Navbar() {
           </div>
         </div>
       </header>
-      {isLoggedIn && <FloatingChatWindow open={chatOpen} onClose={() => setChatOpen(false)} />}
+      {isLoggedIn && (
+        <FloatingChatWindow
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
     </>
   );
 }
