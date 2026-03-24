@@ -3,24 +3,27 @@ package com.soldesk.moa.admin.dashboard.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceDetailDTO;
 import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceSearchDTO;
+import com.soldesk.moa.admin.dashboard.service.AdminImageService;
 import com.soldesk.moa.admin.dashboard.service.AdminService;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.place.dto.PlaceCreateDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -50,14 +53,17 @@ public class AdminPlaceController {
 
     @PostMapping("/register")
     @Operation(summary = "장소 등록(관리자)")
-    public Long postRegister(@RequestBody PlaceCreateDTO dto) {
-        return adminService.createPlace(dto);
+    public Long postRegister(@RequestBody PlaceCreateDTO dto, @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+        Long userId = authUserDTO != null ? authUserDTO.getUserId() : AdminImageService.ADMIN_UPLOADER_ID;
+        return adminService.createPlace(dto, userId);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "장소 정보 수정(관리자)")
-    public Long putPlaceInfo(@PathVariable Long id, @RequestBody PlaceCreateDTO dto) {
-        return adminService.updatePlace(id, dto);
+    public Long putPlaceInfo(@PathVariable Long id, @RequestBody PlaceCreateDTO dto,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+        Long userId = authUserDTO != null ? authUserDTO.getUserId() : AdminImageService.ADMIN_UPLOADER_ID;
+        return adminService.updatePlace(id, dto, userId);
     }
 
     @DeleteMapping("/{id}")
@@ -88,6 +94,7 @@ public class AdminPlaceController {
         adminService.removePlaceClosedDay(id, closedDayId);
     }
 
-    public record ClosedDayRequest(String date, String reason) {}
+    public record ClosedDayRequest(String date, String reason) {
+    }
 
 }

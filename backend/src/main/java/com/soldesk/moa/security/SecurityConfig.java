@@ -123,9 +123,11 @@ public class SecurityConfig {
                                                 .requestMatchers("/chat/**").authenticated()
                                                 .requestMatchers("/api/chat/**").authenticated()
 
-                                                // ---------- 관리자, 장소 ----------
+                                                // ---------- 관리자, 장소, 이미지 ----------
                                                 .requestMatchers("/api/admin/**").permitAll() // 임시로 다 열어둠
-                                                .requestMatchers("/api/place/**").permitAll()
+                                                .requestMatchers("/api/places/**").permitAll()
+                                                .requestMatchers("/api/images/**").permitAll() // 이미지 업로드 (개발 임시)
+                                                .requestMatchers("/api/local-files/**").permitAll() // 로컬 파일 업로드 (개발 임시)
                                                 // ----------------------------------
                                                 // swagger 임시 허용(개발중)
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",

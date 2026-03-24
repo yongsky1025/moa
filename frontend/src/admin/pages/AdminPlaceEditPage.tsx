@@ -10,6 +10,7 @@ import PlaceOperationForm, {
 } from "../component/place/PlaceOperationForm";
 import PlaceTagSelector from "../component/place/PlaceTagSelector";
 import PlaceClosedDayManager from "../component/place/PlaceClosedDayManager";
+import PlaceImageUploader from "../component/place/PlaceImageUploader";
 import { fetchAdminPlace, updatePlace } from "../api/adminPlaceApi";
 import type { PlaceClosedDayRequest } from "../types/adminTypes";
 import AdminConfirmModal from "../component/AdminConfirmModal";
@@ -36,6 +37,7 @@ export default function AdminPlaceEditPage() {
     closedDays: [],
   });
 
+  const [imagePaths, setImagePaths] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -70,6 +72,7 @@ export default function AdminPlaceEditPage() {
             .filter((d) => d.closedType === "WEEKLY" && d.dayOfWeek)
             .map((d) => d.dayOfWeek!),
         });
+        setImagePaths(data.imagePaths ?? []);
       })
       .catch(() => setError("장소 정보를 불러오지 못했습니다."))
       .finally(() => setLoading(false));
@@ -125,6 +128,7 @@ export default function AdminPlaceEditPage() {
         maxReservationMinutes: operation.maxReservationMinutes,
         tagIds: Array.from(selectedTagIds),
         placeClosedDays,
+        imagePaths,
       });
       setResultMsg("장소 정보가 수정되었습니다.");
     } catch (e: any) {
@@ -180,13 +184,14 @@ export default function AdminPlaceEditPage() {
           />
         </div>
 
-        {/* 우측: 운영 정보 + 태그 + 특정 휴무일 */}
+        {/* 우측: 운영 정보 + 태그 + 이미지 + 특정 휴무일 */}
         <div className="flex flex-col gap-6">
           <PlaceOperationForm value={operation} onChange={setOperation} />
           <PlaceTagSelector
             selectedTagIds={selectedTagIds}
             onToggle={handleTagToggle}
           />
+          <PlaceImageUploader value={imagePaths} onChange={setImagePaths} />
           <PlaceClosedDayManager placeId={Number(id)} />
         </div>
       </div>

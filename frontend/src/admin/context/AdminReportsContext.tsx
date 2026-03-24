@@ -2,13 +2,12 @@ import type { ReportFilterDTO, ReportResponseDTO, PageResultDTO, ReportStatus, R
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchReportList } from '../api/adminReportAndSanctionApi';
+import { usePageSize } from '../hooks/usePageSize';
 
-const DEFAULT_SIZE = 20;
-
-function paramsToDTO(sp: URLSearchParams): ReportFilterDTO {
+function paramsToDTO(sp: URLSearchParams, pageSize: number): ReportFilterDTO {
   return {
     page: Number(sp.get('page')) || 1,
-    size: Number(sp.get('size')) || DEFAULT_SIZE,
+    size: pageSize,
     type: sp.get('type') || undefined,
     keyword: sp.get('keyword') || undefined,
     status: (sp.get('status') ?? undefined) as ReportStatus | undefined,
@@ -20,7 +19,6 @@ function paramsToDTO(sp: URLSearchParams): ReportFilterDTO {
 function dtoToParams(dto: ReportFilterDTO): Record<string, string> {
   const r: Record<string, string> = {};
   if (dto.page > 1) r.page = String(dto.page);
-  if (dto.size && dto.size !== DEFAULT_SIZE) r.size = String(dto.size);
   if (dto.type) r.type = dto.type;
   if (dto.keyword) r.keyword = dto.keyword;
   if (dto.status) r.status = dto.status;
@@ -47,8 +45,9 @@ export function AdminReportsProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PageResultDTO<ReportResponseDTO> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pageSize = usePageSize();
 
-  const params = paramsToDTO(searchParams);
+  const params = paramsToDTO(searchParams, pageSize);
 
   const load = useCallback(async (dto: ReportFilterDTO) => {
     setLoading(true);
@@ -62,7 +61,7 @@ export function AdminReportsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { load(paramsToDTO(searchParams)); }, [searchParams, load]);
+  useEffect(() => { load(paramsToDTO(searchParams, pageSize)); }, [searchParams, pageSize, load]);
 
   const applyFilter = useCallback((partial: Partial<ReportFilterDTO>) => {
     const next = { ...params, ...partial, page: 1 };
@@ -76,7 +75,7 @@ export function AdminReportsProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(() => load(params), [load, params]);
 
-  const actualTotalPage = data ? Math.ceil((data.totalCount ?? 0) / (params.size ?? DEFAULT_SIZE)) : 0;
+  const actualTotalPage = data ? Math.ceil((data.totalCount ?? 0) / (params.size ?? pageSize)) : 0;
 
   return (
     <AdminReportsContext.Provider

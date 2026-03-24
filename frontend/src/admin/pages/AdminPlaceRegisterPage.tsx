@@ -9,6 +9,7 @@ import PlaceOperationForm, {
   type OperationData,
 } from "../component/place/PlaceOperationForm";
 import PlaceTagSelector from "../component/place/PlaceTagSelector";
+import PlaceImageUploader from "../component/place/PlaceImageUploader";
 import { registerPlace } from "../api/adminPlaceApi";
 import type { PlaceClosedDayRequest } from "../types/adminTypes";
 import { useAdminToast } from "../hooks/useAdminToast";
@@ -25,6 +26,7 @@ export default function AdminPlaceRegisterPage() {
   const [selectedAddress, setSelectedAddress] =
     useState<SelectedAddress | null>(null);
   const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
+  const [imagePaths, setImagePaths] = useState<string[]>([]);
   const [operation, setOperation] = useState<OperationData>({
     openTimeHour: 9,
     openTimeMinute: 0,
@@ -100,9 +102,10 @@ export default function AdminPlaceRegisterPage() {
         maxReservationMinutes: operation.maxReservationMinutes,
         tagIds: Array.from(selectedTagIds),
         placeClosedDays,
+        imagePaths,
       });
-      alert(`장소가 등록되었습니다. (ID: ${id})`);
-      navigate("/admin/places");
+      showToast(`장소가 등록되었습니다. (ID: ${id})`, { type: "success" });
+      setTimeout(() => navigate("/admin/places"), 1200);
     } catch (e: any) {
       setError(e.response?.data?.message || "장소 등록에 실패했습니다.");
     } finally {
@@ -151,13 +154,14 @@ export default function AdminPlaceRegisterPage() {
           />
         </div>
 
-        {/* 우측: 운영 정보 + 태그 */}
+        {/* 우측: 운영 정보 + 태그 + 이미지 */}
         <div className="flex flex-col gap-6">
           <PlaceOperationForm value={operation} onChange={setOperation} />
           <PlaceTagSelector
             selectedTagIds={selectedTagIds}
             onToggle={handleTagToggle}
           />
+          <PlaceImageUploader value={imagePaths} onChange={setImagePaths} />
         </div>
       </div>
 

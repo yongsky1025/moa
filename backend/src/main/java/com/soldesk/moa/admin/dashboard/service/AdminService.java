@@ -74,6 +74,8 @@ import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceSearchDTO;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.common.entity.constant.ImageDomain;
+import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.place.dto.PlaceCreateDTO;
 import com.soldesk.moa.place.entity.Place;
 import com.soldesk.moa.place.entity.PlaceClosedDay;
@@ -82,6 +84,7 @@ import com.soldesk.moa.place.entity.Tag;
 import com.soldesk.moa.place.entity.constant.ClosedType;
 import com.soldesk.moa.place.entity.constant.PlaceStatus;
 import com.soldesk.moa.place.repository.PlaceClosedDayRepository;
+import com.soldesk.moa.place.repository.PlaceImageRepository;
 import com.soldesk.moa.place.repository.PlaceRepository;
 import com.soldesk.moa.place.repository.PlaceTagRepository;
 import com.soldesk.moa.place.repository.TagRepository;
@@ -109,6 +112,7 @@ public class AdminService {
         private final TagRepository tagRepository;
         private final PlaceTagRepository placeTagRepository;
         private final PlaceClosedDayRepository placeClosedDayRepository;
+        private final PlaceImageRepository placeImageRepository;
 
         // admin main page
         @Transactional(readOnly = true)
@@ -670,12 +674,16 @@ public class AdminService {
         // ── 장소 관리 ──────────────────────────────────────────────────────
 
         // 장소 생성
-        public Long createPlace(PlaceCreateDTO dto) {
+        @Transactional
+        public Long createPlace(PlaceCreateDTO dto, Long userId) {
+                // 24:00 → 23:59 컨벤션 (LocalTime은 24:00 불가)
                 LocalTime openTime = LocalTime.of(dto.openTimeHour(), dto.openTimeMinute());
-                LocalTime closeTime = LocalTime.of(dto.closeTimeHour(), dto.closeTimeMinute());
+                LocalTime closeTime = (dto.closeTimeHour() == 24)
+                                ? LocalTime.of(23, 59)
+                                : LocalTime.of(dto.closeTimeHour(), dto.closeTimeMinute());
 
-                if (openTime.isAfter(closeTime)) {
-                        throw new IllegalArgumentException("운영시간이 올바르지 않음");
+                if (!closeTime.isAfter(openTime) && closeTime != LocalTime.of(23, 59)) {
+                        throw new IllegalArgumentException("운영시간이 올바르지 않습니다. (오픈 < 마감)");
                 }
 
                 Place place = Place.builder()
@@ -713,31 +721,102 @@ public class AdminService {
                                 .toList();
                 placeClosedDayRepository.saveAll(closedDays);
 
+                // 이미지 연결 (ord = 리스트 인덱스, 0번이 대표이미지)
+                if (dto.imagePaths() != null && !dto.imagePaths().isEmpty()) {
+                        List<String> paths = dto.imagePaths();
+                        for (int i = 0; i < paths.size(); i++) {
+                                placeImageRepository.linkImageWithOrd(userId, paths.get(i),
+                                                ImageStatus.TEMP, ImageStatus.USED, ImageDomain.PLACE, place.getId(),
+                                                (long) i);
+                        }
+                }
+
                 return place.getId();
         }
 
         // 장소 수정
-        public Long updatePlace(Long id, PlaceCreateDTO dto) {
+        @Transactional
+        public Long updatePlace(Long id, PlaceCreateDTO dto, Long userId) {
                 Place place = placeRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("place not found"));
 
+                // 24:00 → 23:59 컨벤션
+                LocalTime openTime = LocalTime.of(dto.openTimeHour(), dto.openTimeMinute());
+                LocalTime closeTime = (dto.closeTimeHour() == 24)
+                                ? LocalTime.of(23, 59)
+                                : LocalTime.of(dto.closeTimeHour(), dto.closeTimeMinute());
+
+                if (!closeTime.isAfter(openTime) && closeTime != LocalTime.of(23, 59)) {
+                        throw new IllegalArgumentException("운영시간이 올바르지 않습니다. (오픈 < 마감)");
+                }
+
+                place.setName(dto.name());
                 place.setAddress(dto.address());
-                place.setCapacity(dto.capacity());
                 place.setCity(dto.city());
-                place.setDescription(dto.description());
                 place.setDistrict(dto.district());
+                place.setLatitude(dto.latitude());
+                place.setLongitude(dto.longitude());
+                place.setCapacity(dto.capacity());
+                place.setPricePerHour(dto.pricePerHour());
+                place.setDescription(dto.description());
+                place.setOpenTime(openTime);
+                place.setCloseTime(closeTime);
                 place.setMinReservationMinutes(dto.minReservationMinutes());
                 place.setMaxReservationMinutes(dto.maxReservationMinutes());
-                place.setName(dto.name());
-                place.setPricePerHour(dto.pricePerHour());
+
+                // 태그 업데이트
+                placeTagRepository.deleteAllByPlace(place);
+                List<Tag> tags = tagRepository.findAllById(dto.tagIds());
+                List<PlaceTag> placeTags = tags.stream()
+                                .map(tag -> PlaceTag.builder().place(place).tag(tag).build())
+                                .toList();
+                placeTagRepository.saveAll(placeTags);
+
+                // 이미지 차등 업데이트
+                if (dto.imagePaths() != null) {
+                        List<String> newPaths = dto.imagePaths();
+
+                        if (newPaths.isEmpty()) {
+                                // 새 목록이 비어있으면 기존 이미지 전부 soft delete
+                                placeImageRepository.softDeleteExcludingPaths(ImageDomain.PLACE, id,
+                                                List.of("__NO_MATCH__"));
+                        } else {
+                                // 새 목록에 없는 기존 이미지 soft delete
+                                placeImageRepository.softDeleteExcludingPaths(ImageDomain.PLACE, id, newPaths);
+
+                                // 현재 USED 이미지 경로 목록
+                                List<String> currentPaths = placeImageRepository
+                                                .findByDomainAndOwnerIdAndDeletedFalse(ImageDomain.PLACE, id)
+                                                .stream().map(Image::getPath).toList();
+
+                                for (int i = 0; i < newPaths.size(); i++) {
+                                        String path = newPaths.get(i);
+                                        if (currentPaths.contains(path)) {
+                                                // 기존 이미지: ord만 업데이트
+                                                placeImageRepository.updateOrd(ImageDomain.PLACE, id, path, (long) i);
+                                        } else {
+                                                // 신규 이미지: TEMP → USED + ord 설정
+                                                placeImageRepository.linkImageWithOrd(userId, path,
+                                                                ImageStatus.TEMP, ImageStatus.USED, ImageDomain.PLACE,
+                                                                id, (long) i);
+                                        }
+                                }
+                        }
+                }
 
                 return place.getId();
         }
 
         // 장소 소프트 삭제
+        @Transactional
         public void deletePlace(Long id) {
                 Place place = placeRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("place not found"));
+
+                if (place.getStatus() == PlaceStatus.INACTIVE) {
+                        throw new IllegalStateException("이미 비활성화된 장소입니다.");
+                }
+
                 place.setStatus(PlaceStatus.INACTIVE);
         }
 
@@ -804,8 +883,10 @@ public class AdminService {
                                 .description(place.getDescription())
                                 .openTimeHour(place.getOpenTime().getHour())
                                 .openTimeMinute(place.getOpenTime().getMinute())
-                                .closeTimeHour(place.getCloseTime().getHour())
-                                .closeTimeMinute(place.getCloseTime().getMinute())
+                                .closeTimeHour(place.getCloseTime().equals(LocalTime.of(23, 59)) ? 24
+                                                : place.getCloseTime().getHour())
+                                .closeTimeMinute(place.getCloseTime().equals(LocalTime.of(23, 59)) ? 0
+                                                : place.getCloseTime().getMinute())
                                 .minReservationMinutes(place.getMinReservationMinutes())
                                 .maxReservationMinutes(place.getMaxReservationMinutes())
                                 .status(place.getStatus().name())
@@ -813,6 +894,12 @@ public class AdminService {
                                 .reviewCount(place.getReviewCount() != null ? place.getReviewCount() : 0)
                                 .tagIds(tagIds)
                                 .closedDays(closedDays)
+                                .imagePaths(placeImageRepository
+                                                .findByDomainAndOwnerIdAndDeletedFalse(ImageDomain.PLACE, id)
+                                                .stream()
+                                                .sorted(Comparator.comparingLong(Image::getOrd))
+                                                .map(Image::getPath)
+                                                .toList())
                                 .build();
         }
 
@@ -1020,5 +1107,4 @@ public class AdminService {
                                 .build();
                 return dto;
         }
-
 }

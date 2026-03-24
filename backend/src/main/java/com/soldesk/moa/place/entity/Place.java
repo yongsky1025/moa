@@ -73,7 +73,7 @@ public class Place extends BaseEntity {
     private LocalTime openTime; // 장소 오픈 시간
 
     @Column(nullable = false)
-    private LocalTime closeTime; // 장소 클로즈 시간
+    private LocalTime closeTime; // 장소 마감 시간 (24:00은 23:59로 저장)
 
     @Builder.Default
     private Double averageRating = 0.0; // 평균 평점 (리뷰 작성/삭제 시 갱신)
@@ -101,10 +101,6 @@ public class Place extends BaseEntity {
     @OneToMany(mappedBy = "place", cascade = CascadeType.REMOVE)
     @Builder.Default
     private List<PlaceClosedDay> placeClosedDays = new ArrayList<>();
-
-    // @OneToMany(mappedBy = "place")
-    // @Builder.Default
-    // private List<Image> images = new ArrayList<>();
 
     public void setName(String name) {
         this.name = name;
@@ -148,6 +144,14 @@ public class Place extends BaseEntity {
 
     public void setCloseTime(LocalTime closeTime) {
         this.closeTime = closeTime;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 
     public void setTags(List<PlaceTag> tags) {

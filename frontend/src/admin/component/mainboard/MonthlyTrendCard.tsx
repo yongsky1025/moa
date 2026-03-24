@@ -6,7 +6,7 @@ interface Props {
   loading: boolean;
 }
 
-const C_SIGNUP = '#5F8F7B';
+const C_SIGNUP = '#E3886D';   // moa-accent (주황)
 const C_WITHDRAWN = '#94A3B8';
 
 const W = 580,
@@ -50,7 +50,7 @@ export default function MonthlyTrendCard({ data, loading }: Props) {
         <h3 className="admin-card-title mb-0!">사용자 증감 추이</h3>
         <div className="flex items-center gap-4">
           {[
-            { color: C_SIGNUP, label: '신규 가입', dotClass: 'bg-moa-primary' },
+            { color: C_SIGNUP, label: '신규 가입', dotClass: 'bg-[#E3886D]' },
             { color: C_WITHDRAWN, label: '탈퇴', dotClass: 'bg-[#94A3B8]' },
           ].map((l) => (
             <div key={l.label} className="flex items-center gap-1.5">

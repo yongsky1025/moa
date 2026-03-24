@@ -307,23 +307,23 @@ export default function AdminNoticesPage() {
       </div>
 
       {/* 확인 모달 */}
-      {confirmTarget && (
-        <AdminConfirmModal
-          title={
-            confirmTarget.action === "delete"
-              ? "공지사항 삭제"
-              : "공지사항 복원"
-          }
-          message={
-            confirmTarget.action === "delete"
-              ? "이 공지사항을 삭제하시겠습니까?"
-              : "이 공지사항을 복원하시겠습니까?"
-          }
-          confirmLabel={confirmTarget.action === "delete" ? "삭제" : "복원"}
-          onConfirm={handleAction}
-          onCancel={() => setConfirmTarget(null)}
-        />
-      )}
+      <AdminConfirmModal
+        open={!!confirmTarget}
+        title={
+          confirmTarget?.action === "delete"
+            ? "공지사항 삭제"
+            : "공지사항 복원"
+        }
+        message={
+          confirmTarget?.action === "delete"
+            ? "이 공지사항을 삭제하시겠습니까?"
+            : "이 공지사항을 복원하시겠습니까?"
+        }
+        confirmLabel={confirmTarget?.action === "delete" ? "삭제" : "복원"}
+        confirmColor={confirmTarget?.action === "delete" ? "red" : "green"}
+        onConfirm={handleAction}
+        onCancel={() => setConfirmTarget(null)}
+      />
 
       <AdminToast toast={toast} />
     </div>

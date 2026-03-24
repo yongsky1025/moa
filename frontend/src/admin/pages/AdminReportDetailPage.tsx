@@ -14,6 +14,7 @@ import AdminReportStatusBadge from "../component/report/AdminReportStatusBadge";
 import AdminConfirmModal from "../component/AdminConfirmModal";
 import { useAdminToast } from "../hooks/useAdminToast";
 import AdminToast from "../component/AdminToast";
+import ReportEvidenceImages from "../component/report/ReportEvidenceImages";
 
 const formatDateTime = (date: string | null | undefined) => {
   if (!date) return "-";
@@ -400,6 +401,7 @@ export default function AdminReportDetailPage() {
                     </p>
                   </div>
                 )}
+                <ReportEvidenceImages imagePaths={data.imagePaths} />
               </>
             ) : (
               <div className="text-moa-subtle text-sm">데이터가 없습니다.</div>

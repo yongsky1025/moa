@@ -317,6 +317,7 @@ export interface ReportRequestDTO {
   targetId: number;
   category: ReportCategory;
   description: string;
+  imagePaths?: string[];
 }
 
 export interface UserRecentActivityDTO {
@@ -370,6 +371,7 @@ export interface ReportResponseDTO {
   adminNote?: string | null;
   createdAt: string;
   targetContent?: ReportTargetContentDTO | null;
+  imagePaths?: string[] | null;
 }
 
 export interface ReportStatusUpdateRequest {
@@ -525,6 +527,7 @@ export interface AdminPlaceDetailDTO {
   reviewCount: number;
   tagIds: number[];
   closedDays: ClosedDayDTO[];
+  imagePaths: string[] | null;
 }
 
 export interface ClosedDayDTO {
@@ -575,6 +578,7 @@ export interface PlaceCreateRequest {
   maxReservationMinutes: number;
   tagIds: number[];
   placeClosedDays: PlaceClosedDayRequest[];
+  imagePaths?: string[];
 }
 
 // ── 장소 목록 ──────────────────────────────
