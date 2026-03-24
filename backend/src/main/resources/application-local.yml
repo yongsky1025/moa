@@ -1,0 +1,43 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:mysql://localhost:3306/moa
+    username: team_moa
+    password: 12345
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+file:
+  upload-dir: ${user.dir}/uploads
+
+jwt:
+  secret: 238ef5a0a77a9d3335b778313550888ce82f391d84b5cc4f9de6d4bb74335f883515c43a547e306f608572196b0c04fff6be43336909bcc13bcd404cc7a2d2bf
+
+app:
+  frontend-url: http://localhost:5173
+  local-upload-dir: ${user.home}/upload
+  local-image-upload-dir: ${app.local-upload-dir}/images
+  local-file-upload-dir: ${app.local-upload-dir}/files
+  local-base-url: http://localhost:8080
+  cookie:
+    secure: false
+    same-site: Lax
+
+upload:
+  path: ${user.home}/upload
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: debug
+        orm:
+          jdbc:
+            bind: trace

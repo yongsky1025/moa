@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 public class CircleImageService {
     private static final ImageDomain CIRCLE_IMAGE_DOMAIN = ImageDomain.CIRCLE;
 
-    @Value("${app.local-upload-dir}")
+    @Value("${app.local-image-upload-dir}")
     private String localUploadDir;
 
     @Value("${app.local-base-url:http://localhost:8080}")

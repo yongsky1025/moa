@@ -18,7 +18,7 @@ public class LocalGeneralFileStorage extends AbstractLocalFileStorage implements
             "hwp", "hwpx", "zip", "7z", "csv", "json", "xml", "md");
 
     public LocalGeneralFileStorage(
-            @Value("${app.local-upload-dir}") String localUploadDir,
+            @Value("${app.local-file-upload-dir}") String localUploadDir,
             @Value("${app.local-base-url}") String localBaseUrl) {
         super(localUploadDir, localBaseUrl);
     }

@@ -23,7 +23,7 @@ public class LocalImageFileStorage extends AbstractLocalFileStorage implements F
             "image/svg+xml");
 
     public LocalImageFileStorage(
-            @Value("${app.local-upload-dir}") String localUploadDir,
+            @Value("${app.local-image-upload-dir}") String localUploadDir,
             @Value("${app.local-base-url}") String localBaseUrl) {
         super(localUploadDir, localBaseUrl);
     }

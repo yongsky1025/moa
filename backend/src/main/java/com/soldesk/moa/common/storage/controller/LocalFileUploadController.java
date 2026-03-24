@@ -22,13 +22,16 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/local-files")
 public class LocalFileUploadController {
 
-    private final String localUploadDir;
+    private final String localImageUploadDir;
+    private final String localFileUploadDir;
     private final String localBaseUrl;
 
     public LocalFileUploadController(
-            @Value("${app.local-upload-dir}") String localUploadDir,
+            @Value("${app.local-image-upload-dir}") String localImageUploadDir,
+            @Value("${app.local-file-upload-dir}") String localFileUploadDir,
             @Value("${app.local-base-url}") String localBaseUrl) {
-        this.localUploadDir = localUploadDir;
+        this.localImageUploadDir = localImageUploadDir;
+        this.localFileUploadDir = localFileUploadDir;
         this.localBaseUrl = localBaseUrl;
     }
 
@@ -43,7 +46,7 @@ public class LocalFileUploadController {
         }
 
         String safeKey = normalizeKey(key);
-        Path baseDir = Paths.get(localUploadDir).normalize();
+        Path baseDir = resolveBaseDir(safeKey);
         Path targetPath = baseDir.resolve(safeKey).normalize();
 
         if (!targetPath.startsWith(baseDir)) {
@@ -62,6 +65,16 @@ public class LocalFileUploadController {
                 "status", "success",
                 "key", safeKey,
                 "fileUrl", fileUrl));
+    }
+
+    private Path resolveBaseDir(String safeKey) {
+        if (safeKey.startsWith("images/")) {
+            return Paths.get(localImageUploadDir).normalize();
+        }
+        if (safeKey.startsWith("files/")) {
+            return Paths.get(localFileUploadDir).normalize();
+        }
+        throw new IllegalArgumentException("지원하지 않는 key prefix입니다.");
     }
 
     private String normalizeKey(String key) {
