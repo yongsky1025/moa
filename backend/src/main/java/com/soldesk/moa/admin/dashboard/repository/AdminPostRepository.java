@@ -5,9 +5,9 @@ import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import com.soldesk.moa.board.entity.Post;
+import com.soldesk.moa.post.entity.Post;
 
-public interface AdminPostRepository extends JpaRepository<Post, Long>, SearchPostRepository {
+public interface AdminPostRepository extends JpaRepository<Post, Long>, SearchPostRepository, AdminPostSearchRepository {
 
     // 오늘 게시글 수
     @Query("select count(p) from Post p where p.createDate >= :start and p.createDate <= :end")

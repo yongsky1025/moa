@@ -32,10 +32,13 @@ export default function LoginPage() {
     const result = await dispatch(login({ email, password }));
     if (login.fulfilled.match(result)) {
       const user = result.payload;
-      if (user.onboardingCompleted) {
-        navigate("/main");
-      } else {
+      if (!user.onboardingCompleted) {
+        sessionStorage.removeItem("postLoginRedirect");
         navigate("/users/onboarding");
+      } else {
+        const redirect = sessionStorage.getItem("postLoginRedirect") ?? "/main";
+        sessionStorage.removeItem("postLoginRedirect");
+        navigate(redirect);
       }
     }
   };

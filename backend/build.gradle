@@ -93,3 +93,13 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+def generated = layout.buildDirectory.dir("generated/sources/annotationProcessor/java/main")
+
+sourceSets {
+	main {
+		java {
+			srcDir generated
+		}
+	}
+}

@@ -5,6 +5,9 @@ import { Provider } from 'react-redux';
 import { RouterProvider } from 'react-router-dom';
 import rootRouter from './routes/rootRouters.ts';
 import { store } from './users/reducers/store.ts';
+import { restoreAuth } from './users/reducers/authSlice.ts';
+
+store.dispatch(restoreAuth());
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

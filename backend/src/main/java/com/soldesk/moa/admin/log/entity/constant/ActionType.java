@@ -1,7 +1,7 @@
 package com.soldesk.moa.admin.log.entity.constant;
 
 public enum ActionType {
-    // 기본 crud 행동 파악
+    // 기본 CRUD
     CREATE,
     UPDATE,
     DELETE,
@@ -9,8 +9,18 @@ public enum ActionType {
     LOGIN,
     LOGOUT,
     WITHDRAW,
-    //
+    // 서클
     JOIN_CIRCLE,
     LEAVE_CIRCLE,
+    // 관리자 전용
+    APPROVE,
+    REJECT,
+    CLOSE,
+    RESTORE,
+    SANCTION,
+    CANCEL_SANCTION,
+    REPORT,
+    RESOLVE_REPORT,
+    //
     UNKNOWN
 }

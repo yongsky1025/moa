@@ -8,7 +8,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.querydsl.core.Tuple;
-
 public interface SearchPostRepository {
 
     Page<Object[]> searchBoardListByUserId(Long userId, Pageable pageable);

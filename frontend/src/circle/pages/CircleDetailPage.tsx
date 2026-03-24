@@ -1,25 +1,34 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { Users, Clock, MapPin } from 'lucide-react';
-import Navbar from '../../common/layout/Navbar';
-import Footer from '../../common/layout/Footer';
-import { circleApi } from '../../api/circleApi';
-import { useDirectChat } from '../../chat/hooks/useDirectChat';
-import { scheduleApi } from '../../api/scheduleApi';
-import { getErrorMessage } from '../../common/utils/errorMessage';
-import type { CircleResponse, CircleMember } from '../types/circle';
-import type { ScheduleResponse } from '../../schedule/types/schedule';
-import type { RootState } from '../../users/reducers/store';
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { Users, Clock, MapPin } from "lucide-react";
+import Navbar from "../../common/layout/Navbar";
+import Footer from "../../common/layout/Footer";
+import CircleBoardSideMenu from "../../board/components/CircleBoardSideMenu";
+import CircleBoardPostPreviewSection from "../../board/components/CircleBoardPostPreviewSection";
+import { circleApi } from "../../api/circleApi";
+import { chatApi } from "../../api/chatApi";
+import { useDirectChat } from "../../chat/hooks/useDirectChat";
+import { scheduleApi } from "../../api/scheduleApi";
+import { getErrorMessage } from "../../common/utils/errorMessage";
+import type { CircleResponse, CircleMember } from "../types/circle";
+import type { ScheduleResponse } from "../../schedule/types/schedule";
+import type { RootState } from "../../users/reducers/store";
 
-const STATUS_LABEL: Record<string, { text: string; color: string; bg: string }> = {
+const STATUS_LABEL: Record<
+  string,
+  { text: string; color: string; bg: string }
+> = {
   OPEN: { text: "모집중", color: "#16a34a", bg: "#dcfce7" },
   FULL: { text: "정원마감", color: "#dc2626", bg: "#fee2e2" },
   PENDING: { text: "승인대기", color: "#d97706", bg: "#fef3c7" },
   REJECTED: { text: "거절됨", color: "#6b7280", bg: "#f3f4f6" },
 };
 
-const SCHEDULE_STATUS_LABEL: Record<string, { text: string; color: string; bg: string }> = {
+const SCHEDULE_STATUS_LABEL: Record<
+  string,
+  { text: string; color: string; bg: string }
+> = {
   UPCOMING: { text: "모집중", color: "#2563eb", bg: "#dbeafe" },
   IN_PROGRESS: { text: "진행중", color: "#16a34a", bg: "#dcfce7" },
   COMPLETED: { text: "종료", color: "#6b7280", bg: "#f3f4f6" },
@@ -53,12 +62,17 @@ export default function CircleDetailPage() {
   const [circle, setCircle] = useState<CircleResponse | null>(null);
   const [activeMembers, setActiveMembers] = useState<CircleMember[]>([]);
   const [myMember, setMyMember] = useState<CircleMember | null>(null);
-  const [upcomingSchedules, setUpcomingSchedules] = useState<ScheduleResponse[]>([]);
+  const [upcomingSchedules, setUpcomingSchedules] = useState<
+    ScheduleResponse[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
-  const [selectedMember, setSelectedMember] = useState<CircleMember | null>(null);
+  const [selectedMember, setSelectedMember] = useState<CircleMember | null>(
+    null,
+  );
   const [profileModal, setProfileModal] = useState<CircleMember | null>(null);
   const [kakaoReady, setKakaoReady] = useState(false);
+  const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -66,7 +80,10 @@ export default function CircleDetailPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [circleRes, activeMembersRes] = await Promise.all([circleApi.getCircle(cid), circleApi.getActiveMembers(cid, { size: 100 })]);
+      const [circleRes, activeMembersRes] = await Promise.all([
+        circleApi.getCircle(cid),
+        circleApi.getActiveMembers(cid, { size: 100 }),
+      ]);
       setCircle(circleRes.data);
       const actives = activeMembersRes.data.dtoList;
       setActiveMembers(actives);
@@ -78,7 +95,9 @@ export default function CircleDetailPage() {
         if (me) {
           try {
             const schedRes = await scheduleApi.getSchedules(cid);
-            const upcoming = schedRes.data.filter((s) => s.status === "UPCOMING").slice(0, 6);
+            const upcoming = schedRes.data
+              .filter((s) => s.status === "UPCOMING")
+              .slice(0, 6);
             setUpcomingSchedules(upcoming);
           } catch {
             // 일정 로드 실패 무시
@@ -118,18 +137,25 @@ export default function CircleDetailPage() {
   }, [upcomingSchedules]);
 
   // 가장 가까운 위치 정보가 있는 일정
-  const nearestScheduleWithLocation = upcomingSchedules.find((s) => s.latitude && s.longitude) ?? upcomingSchedules.find((s) => s.location) ?? null;
+  const nearestScheduleWithLocation =
+    upcomingSchedules.find((s) => s.latitude && s.longitude) ??
+    upcomingSchedules.find((s) => s.location) ??
+    null;
 
   // 카카오맵 초기화
   useEffect(() => {
-    if (!kakaoReady || !nearestScheduleWithLocation || !mapContainerRef.current) return;
+    if (!kakaoReady || !nearestScheduleWithLocation || !mapContainerRef.current)
+      return;
     if (mapRef.current) return;
 
     const initMap = (lat: number, lng: number) => {
       if (!mapContainerRef.current) return;
       const maps = (kakao as any).maps;
       const position = new maps.LatLng(lat, lng);
-      const map = new maps.Map(mapContainerRef.current, { center: position, level: 4 });
+      const map = new maps.Map(mapContainerRef.current, {
+        center: position,
+        level: 4,
+      });
       mapRef.current = map;
       const marker = new maps.Marker({ map, position });
       if (nearestScheduleWithLocation.location) {
@@ -140,15 +166,24 @@ export default function CircleDetailPage() {
       }
     };
 
-    if (nearestScheduleWithLocation.latitude && nearestScheduleWithLocation.longitude) {
-      initMap(nearestScheduleWithLocation.latitude, nearestScheduleWithLocation.longitude);
+    if (
+      nearestScheduleWithLocation.latitude &&
+      nearestScheduleWithLocation.longitude
+    ) {
+      initMap(
+        nearestScheduleWithLocation.latitude,
+        nearestScheduleWithLocation.longitude,
+      );
     } else if (nearestScheduleWithLocation.location) {
       const geocoder = new (kakao as any).maps.services.Geocoder();
-      geocoder.addressSearch(nearestScheduleWithLocation.location, (result: any[], status: string) => {
-        if (status === (kakao as any).maps.services.Status.OK) {
-          initMap(parseFloat(result[0].y), parseFloat(result[0].x));
-        }
-      });
+      geocoder.addressSearch(
+        nearestScheduleWithLocation.location,
+        (result: any[], status: string) => {
+          if (status === (kakao as any).maps.services.Status.OK) {
+            initMap(parseFloat(result[0].y), parseFloat(result[0].x));
+          }
+        },
+      );
     }
   }, [kakaoReady, nearestScheduleWithLocation]);
 
@@ -162,7 +197,11 @@ export default function CircleDetailPage() {
     }
   };
 
-  const handleJoin = () => action(() => circleApi.joinCircle(cid), "가입 신청이 완료됐습니다. 리더의 승인을 기다려주세요.");
+  const handleJoin = () =>
+    action(
+      () => circleApi.joinCircle(cid),
+      "가입 신청이 완료됐습니다. 리더의 승인을 기다려주세요.",
+    );
   const handleLeave = () => {
     if (!confirm("서클에서 탈퇴하시겠습니까?")) return;
     action(() => circleApi.leaveCircle(cid), "탈퇴했습니다.");
@@ -174,7 +213,9 @@ export default function CircleDetailPage() {
     return (
       <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
         <Navbar />
-        <p style={{ textAlign: "center", padding: "80px 0", color: "#888" }}>로딩 중...</p>
+        <p style={{ textAlign: "center", padding: "80px 0", color: "#888" }}>
+          로딩 중...
+        </p>
         <Footer />
       </div>
     );
@@ -183,17 +224,32 @@ export default function CircleDetailPage() {
     return (
       <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
         <Navbar />
-        <p style={{ textAlign: "center", padding: "80px 0", color: "#dc2626" }}>서클을 찾을 수 없습니다.</p>
+        <p style={{ textAlign: "center", padding: "80px 0", color: "#dc2626" }}>
+          서클을 찾을 수 없습니다.
+        </p>
         <Footer />
       </div>
     );
 
-  const statusInfo = STATUS_LABEL[circle.status] ?? { text: circle.status, color: "#888", bg: "#f3f4f6" };
+  const statusInfo = STATUS_LABEL[circle.status] ?? {
+    text: circle.status,
+    color: "#888",
+    bg: "#f3f4f6",
+  };
   const isLeader = myMember?.role === "LEADER";
   const isMember = !!myMember;
 
-  const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
-  const nickColor = (nick: string) => AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
+  const AVATAR_COLORS = [
+    "#F4A261",
+    "#E76F51",
+    "#2A9D8F",
+    "#457B9D",
+    "#6D6875",
+    "#E9C46A",
+    "#264653",
+  ];
+  const nickColor = (nick: string) =>
+    AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
@@ -204,11 +260,23 @@ export default function CircleDetailPage() {
           onClick={() => { setProfileModal(null); clearDirectChatError(); }}
         >
           <div
-            style={{ background: "#fff", borderRadius: 20, width: 300, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}
+            style={{
+              background: "#fff",
+              borderRadius: 20,
+              width: 300,
+              overflow: "hidden",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              style={{ background: nickColor(profileModal.nickname), height: 100, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+              style={{
+                background: nickColor(profileModal.nickname),
+                height: 100,
+                display: "flex",
+                alignItems: "flex-end",
+                justifyContent: "center",
+              }}
             >
               <div
                 style={{
@@ -229,8 +297,12 @@ export default function CircleDetailPage() {
                 {profileModal.nickname.charAt(0)}
               </div>
             </div>
-            <div style={{ paddingTop: 44, paddingBottom: 24, textAlign: "center" }}>
-              <div style={{ fontWeight: 700, fontSize: 18, color: "#111" }}>{profileModal.nickname}</div>
+            <div
+              style={{ paddingTop: 44, paddingBottom: 24, textAlign: "center" }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 18, color: "#111" }}>
+                {profileModal.nickname}
+              </div>
               {profileModal.role === "LEADER" && (
                 <span
                   style={{
@@ -253,7 +325,7 @@ export default function CircleDetailPage() {
                 {directChatError}
               </div>
             )}
-            <div style={{ borderTop: '1px solid #f0f0f0', padding: '14px 24px' }}>
+            <div style={{ borderTop: "1px solid #f0f0f0", padding: "14px 24px" }}>
               <button
                 style={{ width: '100%', padding: '12px 0', background: '#111', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
                 onClick={() => startDirectChat(profileModal.userId)}
@@ -266,7 +338,9 @@ export default function CircleDetailPage() {
       )}
 
       <Navbar />
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 20px 60px" }}>
+      <main
+        style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 20px 60px" }}
+      >
         {msg && (
           <div
             style={{
@@ -283,15 +357,57 @@ export default function CircleDetailPage() {
         )}
 
         {/* 서클 헤더 카드 */}
-        <div style={{ backgroundColor: "white", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 20 }}>
+        <div
+          style={{
+            backgroundColor: "white",
+            borderRadius: 16,
+            overflow: "hidden",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+            marginBottom: 20,
+          }}
+        >
           {circle.coverImageUrl && (
-            <img src={circle.coverImageUrl} alt={circle.name} style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
+            <img
+              src={circle.coverImageUrl}
+              alt={circle.name}
+              style={{
+                width: "100%",
+                height: 220,
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
           )}
           <div style={{ padding: 28 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
               <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 999, backgroundColor: "#f3f4f6", color: "#555" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: "3px 10px",
+                      borderRadius: 999,
+                      backgroundColor: "#f3f4f6",
+                      color: "#555",
+                    }}
+                  >
                     {circle.categoryName}
                   </span>
                   <span
@@ -307,11 +423,31 @@ export default function CircleDetailPage() {
                     {statusInfo.text}
                   </span>
                 </div>
-                <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111", marginBottom: 8 }}>{circle.name}</h1>
-                <p style={{ fontSize: 14, color: "#555", lineHeight: 1.6 }}>{circle.description || "소개글이 없습니다."}</p>
+                <h1
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 800,
+                    color: "#111",
+                    marginBottom: 8,
+                  }}
+                >
+                  {circle.name}
+                </h1>
+                <p style={{ fontSize: 14, color: "#555", lineHeight: 1.6 }}>
+                  {circle.description || "소개글이 없습니다."}
+                </p>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "#333", justifyContent: "flex-end" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 15,
+                    color: "#333",
+                    justifyContent: "flex-end",
+                  }}
+                >
                   <Users size={16} />
                   <strong>{circle.currentMember}</strong>
                   <span style={{ color: "#aaa" }}>/ {circle.maxMember}명</span>
@@ -320,14 +456,31 @@ export default function CircleDetailPage() {
             </div>
 
             {/* 액션 버튼 */}
-            <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div
+              style={{
+                marginTop: 20,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
               {isLeader && (
-                <button onClick={() => navigate(`/circle/${cid}/manage`)} style={outlineBtnStyle}>
+                <button
+                  onClick={() => navigate(`/circle/${cid}/manage`)}
+                  style={outlineBtnStyle}
+                >
                   서클 관리
                 </button>
               )}
               {isMember && !isLeader && (
-                <button onClick={handleLeave} style={{ ...outlineBtnStyle, color: "#dc2626", borderColor: "#fca5a5" }}>
+                <button
+                  onClick={handleLeave}
+                  style={{
+                    ...outlineBtnStyle,
+                    color: "#dc2626",
+                    borderColor: "#fca5a5",
+                  }}
+                >
                   탈퇴
                 </button>
               )}
@@ -372,9 +525,24 @@ export default function CircleDetailPage() {
         {/* 2컬럼 레이아웃 */}
         <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
           {/* 왼쪽: 다가오는 일정 */}
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+            }}
+          >
             {/* 다가오는 일정 */}
-            <div style={{ backgroundColor: "white", borderRadius: 16, padding: 24, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: 16,
+                padding: 24,
+                boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+              }}
+            >
               <div style={{ marginBottom: 16 }}>
                 <h2 style={sectionTitleStyle}>다가오는 일정</h2>
               </div>
@@ -382,7 +550,13 @@ export default function CircleDetailPage() {
               {!isMember ? (
                 /* 비멤버 티저 카드 */
                 <>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 10,
+                    }}
+                  >
                     {[1, 2, 3, 4, 5, 6].map((i) => (
                       <div
                         key={i}
@@ -397,9 +571,33 @@ export default function CircleDetailPage() {
                           backgroundColor: "white",
                         }}
                       >
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 32 }}>
-                          <span style={{ fontSize: 11, color: "#ccc", fontWeight: 500 }}>--월</span>
-                          <span style={{ fontSize: 20, fontWeight: 800, color: "#d1d5db", lineHeight: 1.1 }}>--</span>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            minWidth: 32,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: "#ccc",
+                              fontWeight: 500,
+                            }}
+                          >
+                            --월
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 20,
+                              fontWeight: 800,
+                              color: "#d1d5db",
+                              lineHeight: 1.1,
+                            }}
+                          >
+                            --
+                          </span>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <span
@@ -415,12 +613,34 @@ export default function CircleDetailPage() {
                           >
                             모임에만 공개된 일정이에요.
                           </span>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#ddd" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 3,
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                fontSize: 12,
+                                color: "#ddd",
+                              }}
+                            >
                               <Clock size={12} />
                               <span>--:--</span>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#ddd" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                fontSize: 12,
+                                color: "#ddd",
+                              }}
+                            >
                               <Users size={12} />
                               <span>-/--명</span>
                             </div>
@@ -429,25 +649,60 @@ export default function CircleDetailPage() {
                       </div>
                     ))}
                   </div>
-                  <p style={{ fontSize: 12, color: "#bbb", textAlign: "center", marginTop: 8 }}>가입하면 일정을 확인할 수 있어요.</p>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: "#bbb",
+                      textAlign: "center",
+                      marginTop: 8,
+                    }}
+                  >
+                    가입하면 일정을 확인할 수 있어요.
+                  </p>
                 </>
               ) : upcomingSchedules.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "32px 0", color: "#bbb" }}>
-                  <p style={{ fontSize: 14, marginBottom: 8 }}>예정된 일정이 없습니다.</p>
-                  <Link to={`/circle/${cid}/schedules/create`} style={{ fontSize: 13, color: "#111", fontWeight: 600, textDecoration: "none" }}>
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "32px 0",
+                    color: "#bbb",
+                  }}
+                >
+                  <p style={{ fontSize: 14, marginBottom: 8 }}>
+                    예정된 일정이 없습니다.
+                  </p>
+                  <Link
+                    to={`/circle/${cid}/schedules/create`}
+                    style={{
+                      fontSize: 13,
+                      color: "#111",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                    }}
+                  >
                     + 일정 만들기
                   </Link>
                 </div>
               ) : (
                 <>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 10,
+                    }}
+                  >
                     {upcomingSchedules.map((s) => {
                       const { month, day } = formatMonthDay(s.startAt);
-                      const scheduleStatus = SCHEDULE_STATUS_LABEL[s.status] ?? { text: s.status, color: "#888", bg: "#f3f4f6" };
+                      const scheduleStatus = SCHEDULE_STATUS_LABEL[
+                        s.status
+                      ] ?? { text: s.status, color: "#888", bg: "#f3f4f6" };
                       return (
                         <div
                           key={s.scheduleId}
-                          onClick={() => navigate(`/circle/${cid}/schedules/${s.scheduleId}`)}
+                          onClick={() =>
+                            navigate(`/circle/${cid}/schedules/${s.scheduleId}`)
+                          }
                           style={{
                             border: "1px solid #f0f0f0",
                             borderRadius: 12,
@@ -459,13 +714,43 @@ export default function CircleDetailPage() {
                             backgroundColor: "#fff",
                             transition: "box-shadow 0.15s",
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.1)")}
-                          onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.boxShadow =
+                              "0 4px 16px rgba(0,0,0,0.1)")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.boxShadow = "none")
+                          }
                         >
                           {/* 날짜 */}
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 32, flexShrink: 0 }}>
-                            <span style={{ fontSize: 11, color: "#888", fontWeight: 500 }}>{month}</span>
-                            <span style={{ fontSize: 20, fontWeight: 800, color: "#111", lineHeight: 1.1 }}>{day}</span>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              minWidth: 32,
+                              flexShrink: 0,
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 11,
+                                color: "#888",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {month}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 20,
+                                fontWeight: 800,
+                                color: "#111",
+                                lineHeight: 1.1,
+                              }}
+                            >
+                              {day}
+                            </span>
                           </div>
                           {/* 내용 */}
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -483,18 +768,50 @@ export default function CircleDetailPage() {
                             >
                               {s.title}
                             </span>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: scheduleStatus.color, display: "block", marginBottom: 6 }}>
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: scheduleStatus.color,
+                                display: "block",
+                                marginBottom: 6,
+                              }}
+                            >
                               {scheduleStatus.text}
                             </span>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#888" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 3,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  fontSize: 12,
+                                  color: "#888",
+                                }}
+                              >
                                 <Clock size={12} />
                                 <span>{formatTime(s.startAt)}</span>
                               </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#888" }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  fontSize: 12,
+                                  color: "#888",
+                                }}
+                              >
                                 <Users size={12} />
                                 <span>
-                                  {s.currentMember !== undefined ? `${s.currentMember}/` : ""}
+                                  {s.currentMember !== undefined
+                                    ? `${s.currentMember}/`
+                                    : ""}
                                   {s.maxMember}명
                                 </span>
                               </div>
@@ -525,20 +842,54 @@ export default function CircleDetailPage() {
                 </>
               )}
             </div>
+
+            <CircleBoardPostPreviewSection
+              circleId={cid}
+              selectedBoardId={selectedBoardId}
+              onSelectedBoardChange={setSelectedBoardId}
+            />
           </div>
 
           {/* 오른쪽: 멤버 사이드바 + 지도 */}
-          <div style={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div
+            style={{
+              width: 280,
+              flexShrink: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+            }}
+          >
             {/* 멤버 카드 */}
-            <div style={{ backgroundColor: "white", borderRadius: 16, padding: 24, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: 16,
+                padding: 24,
+                boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+              }}
+            >
               <div style={{ marginBottom: 16 }}>
-                <h2 style={sectionTitleStyle}>멤버 ({activeMembers.length}명)</h2>
+                <h2 style={sectionTitleStyle}>
+                  멤버 ({activeMembers.length}명)
+                </h2>
               </div>
 
               {activeMembers.length === 0 ? (
-                <p style={{ fontSize: 13, color: "#aaa", textAlign: "center", padding: "16px 0" }}>멤버가 없습니다.</p>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "#aaa",
+                    textAlign: "center",
+                    padding: "16px 0",
+                  }}
+                >
+                  멤버가 없습니다.
+                </p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 0 }}
+                >
                   {activeMembers.slice(0, 5).map((m) => (
                     <div
                       key={m.circleMemberId}
@@ -559,11 +910,15 @@ export default function CircleDetailPage() {
                           height: 34,
                           borderRadius: "50%",
                           flexShrink: 0,
-                          backgroundColor: m.role === "LEADER" ? "#111" : "#e5e7eb",
+                          backgroundColor:
+                            m.role === "LEADER" ? "#111" : "#e5e7eb",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          cursor: m.nickname !== user?.nickname ? "pointer" : "default",
+                          cursor:
+                            m.nickname !== user?.nickname
+                              ? "pointer"
+                              : "default",
                         }}
                       >
                         <svg
@@ -594,7 +949,11 @@ export default function CircleDetailPage() {
                         >
                           {m.nickname}
                         </span>
-                        {m.nickname === user?.nickname && <span style={{ fontSize: 11, color: "#aaa" }}>나</span>}
+                        {m.nickname === user?.nickname && (
+                          <span style={{ fontSize: 11, color: "#aaa" }}>
+                            나
+                          </span>
+                        )}
                       </div>
                       {m.role === "LEADER" && (
                         <span
@@ -638,28 +997,74 @@ export default function CircleDetailPage() {
 
             {/* 가장 가까운 일정 위치 지도 */}
             {isMember && (
-              <div style={{ backgroundColor: "white", borderRadius: 16, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                <h2 style={{ ...sectionTitleStyle, marginBottom: 12 }}>다음 일정 장소</h2>
+              <div
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: 16,
+                  padding: 20,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                }}
+              >
+                <h2 style={{ ...sectionTitleStyle, marginBottom: 12 }}>
+                  다음 일정 장소
+                </h2>
                 {nearestScheduleWithLocation ? (
                   <>
                     {nearestScheduleWithLocation.location && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10, fontSize: 12, color: "#555" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                          marginBottom: 10,
+                          fontSize: 12,
+                          color: "#555",
+                        }}
+                      >
                         <MapPin size={13} color="#888" />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span
+                          style={{
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           {nearestScheduleWithLocation.location}
                         </span>
                       </div>
                     )}
                     <div
                       ref={mapContainerRef}
-                      style={{ width: "100%", height: 200, borderRadius: 10, backgroundColor: "#f3f4f6", overflow: "hidden" }}
+                      style={{
+                        width: "100%",
+                        height: 200,
+                        borderRadius: 10,
+                        backgroundColor: "#f3f4f6",
+                        overflow: "hidden",
+                      }}
                     />
                   </>
                 ) : (
-                  <p style={{ fontSize: 13, color: "#bbb", textAlign: "center", padding: "24px 0" }}>위치 정보가 있는 일정이 없어요.</p>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "#bbb",
+                      textAlign: "center",
+                      padding: "24px 0",
+                    }}
+                  >
+                    위치 정보가 있는 일정이 없어요.
+                  </p>
                 )}
               </div>
             )}
+            {/* 써클 게시판 */}
+            <CircleBoardSideMenu
+              circleId={cid}
+              showAllItem
+              currentBoardId={selectedBoardId ?? undefined}
+              onBoardSelect={setSelectedBoardId}
+            />
           </div>
         </div>
       </main>

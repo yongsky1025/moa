@@ -237,6 +237,8 @@ $RECYCLE.BIN/
 
 ### Gradle ###
 .gradle
+.gradle-**
+**/.gradle-user-home/
 **/build/   
 !src/**/build/
 
@@ -277,3 +279,7 @@ backend/src/test/resources/application-local.yml
 
 # Claude Code
 .claude/
+
+# Uploaded files
+/uploads/**
+/backend/uploads/**

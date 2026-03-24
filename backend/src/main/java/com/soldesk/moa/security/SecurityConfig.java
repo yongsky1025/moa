@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -76,6 +77,7 @@ public class SecurityConfig {
                                                                 "/js/**",
                                                                 "/img/**",
                                                                 "/images/**",
+                                                                "/uploads/**",
                                                                 "/vendor/**",
                                                                 "/fonts/**",
                                                                 "/favicon.ico",
@@ -96,15 +98,20 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/users/profile/check-nickname").permitAll()
                                                 .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**")
                                                 .permitAll()
+                                                // ----------- 서클 시큐리티 파트 ----------
+
+                                                .requestMatchers(HttpMethod.GET, "/circles", "/circles/categories",
+                                                                "/circles/*")
+                                                .permitAll()
 
                                                 // ----------- 보드 시큐리티 파트 ----------
                                                 // 보드 css, js
                                                 .requestMatchers("/board/**").permitAll()
                                                 // board 열람 비회원도 허용(컨트롤러에서 crud 권한 설정예정)
                                                 .requestMatchers("/notice/**", "/free/**", "/support/**").permitAll()
-                                                .requestMatchers("/api/notice/posts/**", "/api/free/posts/**",
-                                                                "/api/support/posts/**")
+                                                .requestMatchers("/api/notice/**", "/api/free/**", "/api/support/**")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/*/replies").permitAll()
                                                 // board 써클 회원만 열람?(예정)
                                                 // .requestMatchers("/circle/**").permitAll()
                                                 // viewcount 비회원도 허용

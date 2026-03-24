@@ -23,6 +23,7 @@ export interface AuthUser {
   userRole: "USER" | "ADMIN";
   userStatus: "ACTIVE" | "WITHDRAWN" | "SUSPENDED" | "BANNED";
   onboardingCompleted: boolean;
+  profileImageUrl?: string | null;
 }
 
 // AuthResponseDTO

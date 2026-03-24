@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserInfoCircleDTO {
+    private Long circleId;
     private String userName;
     private String circleName;
     private Integer currentMember;

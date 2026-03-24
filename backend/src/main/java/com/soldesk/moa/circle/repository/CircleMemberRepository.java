@@ -63,4 +63,17 @@ public interface CircleMemberRepository extends JpaRepository<CircleMember, Long
                 @Param("userId1") Long userId1,
                 @Param("userId2") Long userId2,
                 @Param("status") CircleMemberStatus status);
+
+        // 써클 게시판 권한
+        // 써클 멤버만
+        boolean existsByCircle_CircleIdAndUser_UserIdAndStatus(
+                        Long circleId,
+                        Long userId,
+                        CircleMemberStatus status);
+
+        boolean existsByCircle_CircleIdAndUser_UserIdAndStatusAndRole(
+                        Long circleId,
+                        Long userId,
+                        CircleMemberStatus status,
+                        CircleRole role);
 }

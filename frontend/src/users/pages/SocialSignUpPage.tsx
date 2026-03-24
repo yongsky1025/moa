@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { setAuthFromOAuth } from "../reducers/authSlice";
 import { authApi } from "../../api/authApi";
 import type { AppDispatch } from "../reducers/store";
-import SignUpStepper from "../../common/components/SignUpStepper";
+import SignUpStepper from "../components/SignUpStepper";
 
 export default function SocialSignUpPage() {
   const dispatch = useDispatch<AppDispatch>();

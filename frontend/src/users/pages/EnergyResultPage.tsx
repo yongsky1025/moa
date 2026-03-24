@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { EnergyProfileResponse } from "../../api/energyProfileApi";
-import { energyProfileApi } from "../../api/energyProfileApi";
+import type { EnergyProfileResponse } from "../../api/usersApi";
+import { energyProfileApi } from "../../api/usersApi";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 

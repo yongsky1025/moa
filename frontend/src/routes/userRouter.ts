@@ -4,6 +4,7 @@ import OnboardingPage from "../users/pages/OnboardingPage";
 import SocialSignUpPage from "../users/pages/SocialSignUpPage";
 import EnergyResultPage from "../users/pages/EnergyResultPage";
 import EnergyTestPage from "../users/pages/EnergyTestPage";
+import UserProfilePage from "../users/pages/UserProfilePage";
 
 export const userRouter = () => [
   { path: "login", Component: LoginPage },
@@ -12,4 +13,5 @@ export const userRouter = () => [
   { path: "onboarding", Component: OnboardingPage },
   { path: "energy-test", Component: EnergyTestPage },
   { path: "energy-test/result", Component: EnergyResultPage },
+  { path: "profile", Component: UserProfilePage },
 ];

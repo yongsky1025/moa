@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     properties:
       hibernate:
         "[format_sql]": true
@@ -23,3 +23,11 @@ jwt:
 
 cors:
   allowed-origins: http://localhost:5173
+
+app:
+  local-upload-dir: ${FILE_UPLOAD_DIR:${user.dir}/uploads}
+  local-base-url: ${APP_LOCAL_BASE_URL:http://localhost:8080}
+  seed:
+    enabled: true
+    reset: true
+    random-seed: 20260321

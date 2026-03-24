@@ -6,8 +6,10 @@ import java.util.List;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.post.entity.Post;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -43,6 +45,10 @@ public class Board extends BaseEntity {
 
     private String name;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "circle_id", nullable = true)
     private Circle circleId;
@@ -51,6 +57,14 @@ public class Board extends BaseEntity {
     // 이름변경
     public void changeName(String name) {
         this.name = name;
+    }
+
+    public void markDeleted() {
+        this.deleted = true;
+    }
+
+    public void restore() {
+        this.deleted = false;
     }
 
     // board -> post 삭제

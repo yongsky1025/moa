@@ -1,8 +1,8 @@
 package com.soldesk.moa.admin.dashboard.repository;
 
-import java.beans.Expression;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -11,17 +11,19 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.StringTemplate;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.JPQLQueryFactory;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.soldesk.moa.board.entity.Post;
 import com.soldesk.moa.board.entity.QBoard;
-import com.soldesk.moa.board.entity.QPost;
-import com.soldesk.moa.board.entity.QReply;
+import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.post.entity.QPost;
+import com.soldesk.moa.reply.entity.QReply;
 import com.soldesk.moa.users.entity.QUsers;
 
 import jakarta.persistence.EntityManager;

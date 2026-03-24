@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { energyProfileApi } from "../../api/energyProfileApi";
-import type { EnergyProfileRequest } from "../../api/energyProfileApi";
+import { energyProfileApi } from "../../api/usersApi";
+import type { EnergyProfileRequest } from "../../api/usersApi";
 import { setAuthFromOAuth } from "../reducers/authSlice";
 import { authApi } from "../../api/authApi";
 import type { AppDispatch } from "../reducers/store";
 import { getErrorMessage } from "../../common/utils/errorMessage";
-import SignUpStepper from "../../common/components/SignUpStepper";
+import SignUpStepper from "../components/SignUpStepper";
 
 // ─── 질문 데이터 ───
 
@@ -89,7 +89,7 @@ export default function EnergyTestPage() {
       .check()
       .then(() => {
         if (mode === "onboarding") {
-          navigate("/users/energy-test/result", { replace: true });
+          navigate("/main", { replace: true });
         } else {
           setHasProfile(true);
         }

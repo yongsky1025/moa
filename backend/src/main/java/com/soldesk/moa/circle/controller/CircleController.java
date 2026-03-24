@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.soldesk.moa.circle.dto.CircleCategoryResponseDTO;
+import com.soldesk.moa.circle.dto.CircleCoverImageUrlRequestDTO;
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
@@ -89,7 +90,8 @@ public class CircleController {
     }
 
     // 서클 수정 (JSON, 기존 방식 유지)
-    // - 이미지 변경은 별도 POST /{circleId}/image 사용
+    // - 이미지 변경은 POST /{circleId}/image-url 권장
+    // - POST /{circleId}/image 는 하위호환용 legacy
     @PutMapping("/{circleId}")
     public ResponseEntity<CircleResponseDTO> updateCircle(
             @PathVariable Long circleId,
@@ -99,7 +101,9 @@ public class CircleController {
         return ResponseEntity.ok(circleService.updateCircle(circleId, request, authUserDTO.getUserId()));
     }
 
-    // 서클 대표 이미지 업로드/교체 (POST는 multipart 정상 처리)
+    // 서클 대표 이미지 업로드/교체 legacy 경로 (하위호환 유지)
+    // 신규 코드는 /{circleId}/image-url 사용 권장
+    @Deprecated(since = "upload-url-introduced")
     @PostMapping(value = "/{circleId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CircleResponseDTO> uploadCoverImage(
             @PathVariable Long circleId,
@@ -107,6 +111,17 @@ public class CircleController {
             @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
         return ResponseEntity.ok(circleService.uploadCoverImage(circleId, image, authUserDTO.getUserId()));
+    }
+
+    // 서클 대표 이미지 URL 연결 (upload-url 계약 기반)
+    @PostMapping("/{circleId}/image-url")
+    public ResponseEntity<CircleResponseDTO> updateCoverImageByUrl(
+            @PathVariable Long circleId,
+            @RequestBody @Valid CircleCoverImageUrlRequestDTO request,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(
+                circleService.updateCoverImageByUrl(circleId, request.getFileUrl(), authUserDTO.getUserId()));
     }
 
 }
