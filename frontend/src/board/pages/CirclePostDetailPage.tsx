@@ -23,16 +23,16 @@ import { useDelayedLoading } from "../../common/hooks/useDelayedLoading";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../users/reducers/store";
 import { postApi } from "../../post/api/postApi";
-import type {
-  PostReactionSummary,
-} from "../../post/types/postTypes";
+import type { PostReactionSummary } from "../../post/types/postTypes";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 
-function applyLocalReaction(
-  current: PostReactionSummary,
-): PostReactionSummary {
+function applyLocalReaction(current: PostReactionSummary): PostReactionSummary {
   if (current.myReaction === "LIKE") {
-    return { ...current, likeCount: Math.max(0, current.likeCount - 1), myReaction: null };
+    return {
+      ...current,
+      likeCount: Math.max(0, current.likeCount - 1),
+      myReaction: null,
+    };
   }
 
   return {
@@ -83,7 +83,9 @@ export default function CirclePostDetailPage() {
   const [reactionSummary, setReactionSummary] =
     useState<PostReactionSummary | null>(null);
   const [reactionError, setReactionError] = useState("");
-  const [autoExpandParentId, setAutoExpandParentId] = useState<number | null>(null);
+  const [autoExpandParentId, setAutoExpandParentId] = useState<number | null>(
+    null,
+  );
   const [focusReplyId, setFocusReplyId] = useState<number | null>(null);
   const showPostLoading = useDelayedLoading(loading, 180);
   const showReplyLoading = useDelayedLoading(replyLoading, 180);
@@ -132,7 +134,11 @@ export default function CirclePostDetailPage() {
     if (circleIdNumber === null || boardIdNumber === null) return;
     if (!window.confirm("게시글을 삭제하시겠습니까?")) return;
     try {
-      await postApi.deleteCirclePost(circleIdNumber, boardIdNumber, data.postId);
+      await postApi.deleteCirclePost(
+        circleIdNumber,
+        boardIdNumber,
+        data.postId,
+      );
       window.alert("게시글이 삭제되었습니다.");
       navigate(postRoutes.circleBoard(circleIdNumber, boardIdNumber));
     } catch (e) {
@@ -186,7 +192,14 @@ export default function CirclePostDetailPage() {
                 />
               }
               actionSection={
-                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
                   <PostLikeButton
                     liked={
                       (reactionSummary?.myReaction ?? data.myReaction) ===
@@ -218,9 +231,7 @@ export default function CirclePostDetailPage() {
             />
 
             <section className="reply-section">
-              <h3
-                className="reply-section-title"
-              >
+              <h3 className="reply-section-title">
                 <svg
                   width="20"
                   height="20"
@@ -238,7 +249,9 @@ export default function CirclePostDetailPage() {
                 </svg>
                 댓글 {totalReplyCount}개
               </h3>
-              <p className="reply-section-subtitle">의견을 남기고 대화를 이어가 보세요.</p>
+              <p className="reply-section-subtitle">
+                의견을 남기고 대화를 이어가 보세요.
+              </p>
               <ReplyForm
                 postId={postIdNumber}
                 variant="panel"
@@ -283,14 +296,20 @@ export default function CirclePostDetailPage() {
                     )
                   }
                   onCreateChild={(content, targetReplyId, expandParentId) =>
-                    create({ postId: postIdNumber, content, parentId: targetReplyId }).then(async (createdReplyId) => {
+                    create({
+                      postId: postIdNumber,
+                      content,
+                      parentId: targetReplyId,
+                    }).then(async (createdReplyId) => {
                       setAutoExpandParentId(expandParentId);
                       setFocusReplyId(createdReplyId);
                       await refreshReplies(true, false);
                     })
                   }
                   onReact={(replyId) =>
-                    replyApi.reactToReply(postIdNumber, replyId).then((response) => response.data)
+                    replyApi
+                      .reactToReply(postIdNumber, replyId)
+                      .then((response) => response.data)
                   }
                   autoExpandParentId={autoExpandParentId}
                   focusReplyId={focusReplyId}
@@ -311,4 +330,3 @@ export default function CirclePostDetailPage() {
     </div>
   );
 }
-

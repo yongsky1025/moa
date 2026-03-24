@@ -28,7 +28,9 @@ interface ReplyItemProps {
   rootAuthorUserId?: number | null;
 }
 
-function applyLocalReaction(current: ReplyReactionSummary): ReplyReactionSummary {
+function applyLocalReaction(
+  current: ReplyReactionSummary,
+): ReplyReactionSummary {
   if (current.myReaction === "LIKE") {
     return {
       ...current,
@@ -44,12 +46,18 @@ function applyLocalReaction(current: ReplyReactionSummary): ReplyReactionSummary
   };
 }
 
-function hasDescendantReplyId(nodes: ReplyTreeNode[], targetReplyId: number): boolean {
+function hasDescendantReplyId(
+  nodes: ReplyTreeNode[],
+  targetReplyId: number,
+): boolean {
   for (const node of nodes) {
     if (node.replyId === targetReplyId) {
       return true;
     }
-    if (node.children.length > 0 && hasDescendantReplyId(node.children, targetReplyId)) {
+    if (
+      node.children.length > 0 &&
+      hasDescendantReplyId(node.children, targetReplyId)
+    ) {
       return true;
     }
   }
@@ -192,7 +200,9 @@ export default function ReplyItem({
       setReactionSummary(updated);
     } catch (e) {
       setReactionSummary(baseReaction);
-      setReactionError(e instanceof Error ? e.message : "좋아요 처리에 실패했습니다.");
+      setReactionError(
+        e instanceof Error ? e.message : "좋아요 처리에 실패했습니다.",
+      );
     } finally {
       setIsReacting(false);
     }
@@ -211,14 +221,20 @@ export default function ReplyItem({
 
   const metaText = `${reply.authorName} · ${formatDateTime(reply.createDate)}`;
   const mentionMatch = reply.content.match(/^(@[^\s]+)([\s\S]*)$/);
-  const mentionText = reply.replyToUserId && mentionMatch ? mentionMatch[1] : null;
-  const contentWithoutMention = mentionText ? mentionMatch?.[2] ?? "" : reply.content;
+  const mentionText =
+    reply.replyToUserId && mentionMatch ? mentionMatch[1] : null;
+  const contentWithoutMention = mentionText
+    ? (mentionMatch?.[2] ?? "")
+    : reply.content;
   const mentionSeparator =
-    mentionText && contentWithoutMention && !contentWithoutMention.startsWith("\n")
+    mentionText &&
+    contentWithoutMention &&
+    !contentWithoutMention.startsWith("\n")
       ? " "
       : "";
   const isChildReply = reply.depth > 0;
-  const effectiveRootAuthorUserId = rootAuthorUserId ?? reply.authorUserId ?? null;
+  const effectiveRootAuthorUserId =
+    rootAuthorUserId ?? reply.authorUserId ?? null;
   const isDeepChildVisual =
     isChildReply &&
     effectiveRootAuthorUserId !== null &&

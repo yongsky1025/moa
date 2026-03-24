@@ -77,7 +77,9 @@ export default function PostDetailPage() {
   const [reactionSummary, setReactionSummary] =
     useState<PostReactionSummary | null>(null);
   const [reactionError, setReactionError] = useState("");
-  const [autoExpandParentId, setAutoExpandParentId] = useState<number | null>(null);
+  const [autoExpandParentId, setAutoExpandParentId] = useState<number | null>(
+    null,
+  );
   const [focusReplyId, setFocusReplyId] = useState<number | null>(null);
   const showPostLoading = useDelayedLoading(loading, 180);
   const showReplyLoading = useDelayedLoading(replyLoading, 180);
@@ -211,9 +213,7 @@ export default function PostDetailPage() {
             />
 
             <section className="reply-section">
-              <h3
-                className="reply-section-title"
-              >
+              <h3 className="reply-section-title">
                 <svg
                   width="20"
                   height="20"
@@ -231,7 +231,9 @@ export default function PostDetailPage() {
                 </svg>
                 댓글 {totalReplyCount}개
               </h3>
-              <p className="reply-section-subtitle">의견을 남기고 대화를 이어가 보세요.</p>
+              <p className="reply-section-subtitle">
+                의견을 남기고 대화를 이어가 보세요.
+              </p>
               <ReplyForm
                 postId={postIdNumber}
                 variant="panel"
@@ -276,14 +278,20 @@ export default function PostDetailPage() {
                     )
                   }
                   onCreateChild={(content, targetReplyId, expandParentId) =>
-                    create({ postId: postIdNumber, content, parentId: targetReplyId }).then(async (createdReplyId) => {
+                    create({
+                      postId: postIdNumber,
+                      content,
+                      parentId: targetReplyId,
+                    }).then(async (createdReplyId) => {
                       setAutoExpandParentId(expandParentId);
                       setFocusReplyId(createdReplyId);
                       await refreshReplies(true, false);
                     })
                   }
                   onReact={(replyId) =>
-                    replyApi.reactToReply(postIdNumber, replyId).then((response) => response.data)
+                    replyApi
+                      .reactToReply(postIdNumber, replyId)
+                      .then((response) => response.data)
                   }
                   autoExpandParentId={autoExpandParentId}
                   focusReplyId={focusReplyId}
@@ -304,4 +312,3 @@ export default function PostDetailPage() {
     </div>
   );
 }
-
