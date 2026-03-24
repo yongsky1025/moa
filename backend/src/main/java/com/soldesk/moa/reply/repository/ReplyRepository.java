@@ -2,6 +2,8 @@ package com.soldesk.moa.reply.repository;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +15,16 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
 
     // 게시글별 댓글 목록 (작성일 순)
     List<Reply> findByPostId_PostIdOrderByCreateDateAsc(Long postId);
+    Page<Reply> findByPostId_PostIdOrderByCreateDateAscReplyIdAsc(Long postId, Pageable pageable);
+
+    @Query("""
+            select r.parentId.replyId, count(r)
+            from Reply r
+            where r.postId.postId = :postId
+              and r.parentId is not null
+            group by r.parentId.replyId
+            """)
+    List<Object[]> countChildRepliesByParentId(@Param("postId") Long postId);
 
     // 부모 댓글의 자식 댓글 삭제 (부모 삭제 전에 호출)
     void deleteByParentId_ReplyId(Long parentId);
@@ -64,5 +76,13 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
               and r.updateDate < :cutoff
             """)
     int hardDeleteSoftDeletedBefore(@Param("cutoff") java.time.LocalDateTime cutoff);
+
+    @Modifying
+    @Query("update Reply r set r.likeCount = r.likeCount + 1 where r.replyId = :replyId")
+    int incrementLikeCount(@Param("replyId") Long replyId);
+
+    @Modifying
+    @Query("update Reply r set r.likeCount = r.likeCount - 1 where r.replyId = :replyId and r.likeCount > 0")
+    int decrementLikeCount(@Param("replyId") Long replyId);
 
 }

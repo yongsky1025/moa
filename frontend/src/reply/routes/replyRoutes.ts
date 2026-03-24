@@ -10,4 +10,7 @@ export const replyRoutes = {
   update: (postId: number | string, replyId: number | string) => `/api/posts/${postId}/replies/${replyId}`,
   // 댓글 삭제
   delete: (postId: number | string, replyId: number | string) => `/api/posts/${postId}/replies/${replyId}`,
+  // 댓글 좋아요
+  reactLike: (postId: number | string, replyId: number | string) =>
+    `/api/posts/${postId}/replies/${replyId}/reactions/like`,
 };
