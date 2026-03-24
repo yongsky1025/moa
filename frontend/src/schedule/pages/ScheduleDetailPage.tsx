@@ -179,11 +179,11 @@ export default function ScheduleDetailPage() {
             {schedule.tags && schedule.tags.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 24 }}>
                 {schedule.tags.map(tag => (
-                  <span key={tag} style={{
+                  <span key={tag.id} style={{
                     padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500,
                     backgroundColor: '#eef2ff', color: '#6366f1', border: '1px solid #c7d2fe',
                   }}>
-                    {tag}
+                    {tag.name}
                   </span>
                 ))}
               </div>

@@ -14,6 +14,7 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.place.entity.Tag;
 import com.soldesk.moa.place.repository.TagRepository;
 import com.soldesk.moa.schedule.dto.ScheduleCreateRequestDTO;
@@ -98,7 +99,7 @@ public class ScheduleService {
                 scheduleMemberRepository.save(creatorMember);
                 saved.increaseCurrentMember();
 
-                List<String> savedTags = saveTags(saved, request.getTags());
+                List<TagResponseDTO> savedTags = saveTags(saved, request.getTagIds());
                 Long chatRoomId = chatRoomService
                                 .getOrCreateScheduleRoom(saved.getScheduleId(), saved.getTitle(), userId)
                                 .getId();
@@ -211,8 +212,11 @@ public class ScheduleService {
                 return scheduleRepository.findByCircleWithDateFilter(circleId, from, to)
                                 .stream()
                                 .map(s -> {
-                                        List<String> tags = scheduleTagRepository.findAllBySchedule(s).stream()
-                                                        .map(st -> st.getTag().getName())
+                                        List<TagResponseDTO> tags = scheduleTagRepository.findAllBySchedule(s).stream()
+                                                        .map(st -> TagResponseDTO.builder()
+                                                                        .id(st.getTag().getId())
+                                                                        .name(st.getTag().getName())
+                                                                        .build())
                                                         .toList();
                                         return new ScheduleResponseDTO(s, false, tags);
                                 })
@@ -238,8 +242,11 @@ public class ScheduleService {
                 }
 
                 boolean joined = scheduleMemberRepository.existsByScheduleAndCircleMember(schedule, circleMember);
-                List<String> tags = scheduleTagRepository.findAllBySchedule(schedule).stream()
-                                .map(st -> st.getTag().getName())
+                List<TagResponseDTO> tags = scheduleTagRepository.findAllBySchedule(schedule).stream()
+                                .map(st -> TagResponseDTO.builder()
+                                                .id(st.getTag().getId())
+                                                .name(st.getTag().getName())
+                                                .build())
                                 .toList();
                 return new ScheduleResponseDTO(schedule, joined, tags);
         }
@@ -297,7 +304,7 @@ public class ScheduleService {
 
                 Schedule savedUpdated = scheduleRepository.save(updated);
                 scheduleTagRepository.deleteAllBySchedule(savedUpdated);
-                List<String> updatedTags = saveTags(savedUpdated, request.getTags());
+                List<TagResponseDTO> updatedTags = saveTags(savedUpdated, request.getTagIds());
                 return new ScheduleResponseDTO(savedUpdated, false, updatedTags);
         }
 
@@ -326,12 +333,19 @@ public class ScheduleService {
         }
 
         // 태그 저장 헬퍼
-        private List<String> saveTags(Schedule schedule, List<String> tagNames) {
-                if (tagNames == null || tagNames.isEmpty()) return List.of();
-                List<Tag> tags = tagRepository.findByNameIn(tagNames);
+        private List<TagResponseDTO> saveTags(Schedule schedule, List<Long> tagIds) {
+                if (tagIds == null || tagIds.isEmpty()) return List.of();
+                List<Tag> tags = tagRepository.findAllById(tagIds).stream()
+                                .filter(Tag::getIsActive)
+                                .toList();
                 tags.forEach(tag -> scheduleTagRepository.save(
                                 ScheduleTag.builder().schedule(schedule).tag(tag).build()));
-                return tags.stream().map(Tag::getName).toList();
+                return tags.stream()
+                                .map(tag -> TagResponseDTO.builder()
+                                                .id(tag.getId())
+                                                .name(tag.getName())
+                                                .build())
+                                .toList();
         }
 
         // 일정 참여 취소 (일정 시작일 하루 전까지만 참여 취소가능)

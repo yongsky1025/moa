@@ -33,5 +33,5 @@ public class ScheduleUpdateRequestDTO {
     private Double latitude;
     private Double longitude;
 
-    private java.util.List<String> tags;
+    private java.util.List<Long> tagIds;
 }

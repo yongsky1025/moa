@@ -9,8 +9,6 @@ import com.soldesk.moa.place.entity.TagCategory;
 
 public interface TagRepository extends JpaRepository<Tag, Long> {
 
-    List<Tag> findByNameIn(List<String> names);
-
     List<Tag> findByIsActiveTrueOrderByNameAsc();
 
     List<Tag> findByTagCategoryAndIsActiveTrueOrderByNameAsc(TagCategory tagCategory);

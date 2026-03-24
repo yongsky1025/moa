@@ -1,5 +1,16 @@
 import api from '../users/utils/jwtUtil';
 
+export interface TagItem {
+  id: number;
+  name: string;
+}
+
+export interface TagCategoryGroup {
+  categoryId: number;
+  categoryName: string;
+  tags: TagItem[];
+}
+
 export interface PlaceRecommendResponse {
   id: number;
   name: string;
@@ -17,6 +28,9 @@ export interface PlaceRecommendResponse {
 }
 
 export const placeApi = {
+  getTagsGrouped: () =>
+    api.get<TagCategoryGroup[]>('/api/tags/grouped'),
+
   recommendPlaces: (
     title: string,
     description?: string,

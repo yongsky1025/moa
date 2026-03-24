@@ -4,7 +4,7 @@ import { Search, MapPin, X } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { scheduleApi } from '../../api/scheduleApi';
-import { placeApi, type PlaceRecommendResponse } from '../../api/placeApi';
+import { placeApi, type PlaceRecommendResponse, type TagCategoryGroup } from '../../api/placeApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
 
 function toInputDatetime(dt: string) {
@@ -43,7 +43,8 @@ export default function ScheduleFormPage() {
   const [placeResults, setPlaceResults] = useState<kakao.maps.services.PlaceItem[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null);
   const [kakaoReady, setKakaoReady] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagCategories, setTagCategories] = useState<TagCategoryGroup[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [openCategories, setOpenCategories] = useState<string[]>([]);
   const [nearbyPlaces, setNearbyPlaces] = useState<PlaceRecommendResponse[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
@@ -53,6 +54,11 @@ export default function ScheduleFormPage() {
   const markersRef = useRef<any[]>([]);
   const infowindowsRef = useRef<any[]>([]);
   const initialMarkerSetRef = useRef(false);
+
+  // 태그 목록 fetch
+  useEffect(() => {
+    placeApi.getTagsGrouped().then(res => setTagCategories(res.data)).catch(() => {});
+  }, []);
 
   // Kakao Maps SDK 초기화
   useEffect(() => {
@@ -94,6 +100,9 @@ export default function ScheduleFormPage() {
             latitude: s.latitude,
             longitude: s.longitude,
           });
+        }
+        if (s.tags && s.tags.length > 0) {
+          setSelectedTagIds(s.tags.map(t => t.id));
         }
       })
       .catch(() => setError('일정 정보를 불러올 수 없습니다.'));
@@ -180,11 +189,11 @@ export default function ScheduleFormPage() {
     clearMarkers();
   };
 
-  const toggleTag = (tag: string) => {
-    setSelectedTags(prev => {
-      if (prev.includes(tag)) return prev.filter(t => t !== tag);
+  const toggleTag = (tagId: number) => {
+    setSelectedTagIds(prev => {
+      if (prev.includes(tagId)) return prev.filter(id => id !== tagId);
       if (prev.length >= 10) return prev;
-      return [...prev, tag];
+      return [...prev, tagId];
     });
   };
 
@@ -200,7 +209,8 @@ export default function ScheduleFormPage() {
     const lat = Number(place.y);
     const lng = Number(place.x);
     setNearbyLoading(true);
-    placeApi.recommendPlaces(form.title, form.description, selectedTags.length > 0 ? selectedTags : undefined, lat, lng, 5)
+    const selectedTagNames = tagCategories.flatMap(c => c.tags).filter(t => selectedTagIds.includes(t.id)).map(t => t.name);
+    placeApi.recommendPlaces(form.title, form.description, selectedTagNames.length > 0 ? selectedTagNames : undefined, lat, lng, 5)
       .then(res => setNearbyPlaces(res.data))
       .catch(() => setNearbyPlaces([]))
       .finally(() => setNearbyLoading(false));
@@ -240,7 +250,7 @@ export default function ScheduleFormPage() {
         latitude: selectedPlace.latitude,
         longitude: selectedPlace.longitude,
       } : {}),
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
+      tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
     };
     setLoading(true);
     try {
@@ -380,17 +390,17 @@ export default function ScheduleFormPage() {
                   <label style={labelStyle}>
                     태그 <span style={{ color: '#aaa', fontWeight: 400 }}>(최대 10개 · 장소 추천 정확도 향상)</span>
                   </label>
-                  <div style={{ fontSize: 12, color: selectedTags.length >= 10 ? '#dc2626' : '#888', marginBottom: 8 }}>
-                    {selectedTags.length}/10 선택됨
+                  <div style={{ fontSize: 12, color: selectedTagIds.length >= 10 ? '#dc2626' : '#888', marginBottom: 8 }}>
+                    {selectedTagIds.length}/10 선택됨
                   </div>
-                  {TAG_CATEGORIES.map(({ category, tags }) => {
-                    const isOpen = openCategories.includes(category);
-                    const selectedInCategory = tags.filter(t => selectedTags.includes(t));
+                  {tagCategories.map(({ categoryId, categoryName, tags }) => {
+                    const isOpen = openCategories.includes(categoryName);
+                    const selectedInCategory = tags.filter(t => selectedTagIds.includes(t.id));
                     return (
-                      <div key={category} style={{ marginBottom: 4, border: '1px solid #e5e5e5', borderRadius: 8, overflow: 'hidden' }}>
+                      <div key={categoryId} style={{ marginBottom: 4, border: '1px solid #e5e5e5', borderRadius: 8, overflow: 'hidden' }}>
                         <button
                           type="button"
-                          onClick={() => toggleCategory(category)}
+                          onClick={() => toggleCategory(categoryName)}
                           style={{
                             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             padding: '7px 12px', background: isOpen ? '#f5f5ff' : 'white',
@@ -398,12 +408,12 @@ export default function ScheduleFormPage() {
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: '#444' }}>{category}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#444' }}>{categoryName}</span>
                             {selectedInCategory.map(t => (
-                              <span key={t} style={{
+                              <span key={t.id} style={{
                                 padding: '1px 7px', borderRadius: 20, fontSize: 11,
                                 backgroundColor: '#eef2ff', color: '#6366f1', fontWeight: 600,
-                              }}>{t}</span>
+                              }}>{t.name}</span>
                             ))}
                           </div>
                           <span style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }}>{isOpen ? '▲' : '▼'}</span>
@@ -411,13 +421,13 @@ export default function ScheduleFormPage() {
                         {isOpen && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '8px 12px', borderTop: '1px solid #f0f0f0' }}>
                             {tags.map(tag => {
-                              const selected = selectedTags.includes(tag);
-                              const disabled = !selected && selectedTags.length >= 10;
+                              const selected = selectedTagIds.includes(tag.id);
+                              const disabled = !selected && selectedTagIds.length >= 10;
                               return (
                                 <button
-                                  key={tag}
+                                  key={tag.id}
                                   type="button"
-                                  onClick={() => toggleTag(tag)}
+                                  onClick={() => toggleTag(tag.id)}
                                   disabled={disabled}
                                   style={{
                                     padding: '3px 9px', borderRadius: 20, fontSize: 12, fontWeight: 500,
@@ -427,7 +437,7 @@ export default function ScheduleFormPage() {
                                     cursor: disabled ? 'not-allowed' : 'pointer',
                                   }}
                                 >
-                                  {tag}
+                                  {tag.name}
                                 </button>
                               );
                             })}
@@ -606,19 +616,6 @@ export default function ScheduleFormPage() {
     </div>
   );
 }
-
-const TAG_CATEGORIES = [
-  { category: '분위기', tags: ['아늑한', '모던한', '인스타감성', '빈티지', '럭셔리', '캐주얼', '조용한', '활기찬', '아기자기한', '미니멀한'] },
-  { category: '학습/업무', tags: ['스터디', '회의', '집중력향상', '프레젠테이션', '강의', '코딩', '그룹스터디', '독서', '자격증', '언어학습'] },
-  { category: '모임/파티', tags: ['파티', '생일파티', '소셜모임', '동아리', '팀빌딩', '워크샵', '기업행사', '웨딩촬영', '돌잔치', '친목'] },
-  { category: '편의시설', tags: ['주차', '와이파이', '에어컨', '빔프로젝터', '화이트보드', '음향장비', '조명', '주방', '샤워실', '스크린', '냉장고', '전자레인지', '마이크', '악기대여', '방음'] },
-  { category: '스포츠/운동', tags: ['요가', '필라테스', '댄스', '클라이밍', '탁구', '배드민턴', '복싱', '헬스', '스트레칭', '수영'] },
-  { category: '음식/음료', tags: ['바베큐', '케이터링', '카페음료', '주류', '요리실습', '베이킹', '와인', '커피머신', '간식', '채식'] },
-  { category: '문화/예술', tags: ['미술', '음악', '사진', '영상제작', '도예', '목공', '드로잉', '공예', '악기연습', '창작'] },
-  { category: '위치/특성', tags: ['역세권', '루프탑', '한강뷰', '도심뷰', '자연채광', '야외', '금연', '24시간', '반려동물', '친환경'] },
-  { category: '엔터테인먼트', tags: ['보드게임', '방탈출', 'VR', '노래방', '당구', '게임', '마술', '공연', '영화감상', '파티게임'] },
-  { category: '규모/대상', tags: ['소규모', '대형', '프라이빗', '커플', '가족'] },
-];
 
 const labelStyle: React.CSSProperties = {
   display: 'block', fontSize: 13, fontWeight: 600, color: '#333', marginBottom: 6,

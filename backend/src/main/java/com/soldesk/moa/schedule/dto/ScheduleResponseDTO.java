@@ -3,6 +3,7 @@ package com.soldesk.moa.schedule.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.entity.constant.ScheduleStatus;
 
@@ -27,7 +28,7 @@ public class ScheduleResponseDTO {
     private Double latitude;
     private Double longitude;
     private boolean joined;
-    private List<String> tags;
+    private List<TagResponseDTO> tags;
     private Long chatRoomId;
 
     public ScheduleResponseDTO(Schedule schedule) {
@@ -50,7 +51,7 @@ public class ScheduleResponseDTO {
         this.joined = joined;
     }
 
-    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<String> tags) {
+    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<TagResponseDTO> tags) {
         this(schedule, joined);
         this.tags = tags;
     }
@@ -60,7 +61,7 @@ public class ScheduleResponseDTO {
         this.chatRoomId = chatRoomId;
     }
 
-    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<String> tags, Long chatRoomId) {
+    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<TagResponseDTO> tags, Long chatRoomId) {
         this(schedule, joined, tags);
         this.chatRoomId = chatRoomId;
     }

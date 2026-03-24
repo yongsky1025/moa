@@ -1,5 +1,10 @@
 export type ScheduleStatus = 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
 
+export interface ScheduleTagItem {
+  id: number;
+  name: string;
+}
+
 export interface ScheduleResponse {
   scheduleId: number;
   title: string;
@@ -13,7 +18,7 @@ export interface ScheduleResponse {
   latitude?: number;
   longitude?: number;
   joined?: boolean;
-  tags?: string[];
+  tags?: ScheduleTagItem[];
   chatRoomId?: number;
 }
 
@@ -26,7 +31,7 @@ export interface ScheduleCreateRequest {
   location?: string;
   latitude?: number;
   longitude?: number;
-  tags?: string[];
+  tagIds?: number[];
 }
 
 export type ScheduleUpdateRequest = ScheduleCreateRequest;
