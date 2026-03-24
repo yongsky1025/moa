@@ -25,6 +25,7 @@ interface ReplyItemProps {
   autoExpandParentId?: number | null;
   focusReplyId?: number | null;
   onFocusReplyHandled?: () => void;
+  rootAuthorUserId?: number | null;
 }
 
 function applyLocalReaction(current: ReplyReactionSummary): ReplyReactionSummary {
@@ -43,6 +44,18 @@ function applyLocalReaction(current: ReplyReactionSummary): ReplyReactionSummary
   };
 }
 
+function hasDescendantReplyId(nodes: ReplyTreeNode[], targetReplyId: number): boolean {
+  for (const node of nodes) {
+    if (node.replyId === targetReplyId) {
+      return true;
+    }
+    if (node.children.length > 0 && hasDescendantReplyId(node.children, targetReplyId)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export default function ReplyItem({
   postId,
   reply,
@@ -59,6 +72,7 @@ export default function ReplyItem({
   autoExpandParentId = null,
   focusReplyId = null,
   onFocusReplyHandled,
+  rootAuthorUserId = null,
 }: ReplyItemProps) {
   const [showChildForm, setShowChildForm] = useState(false);
   const [showChildren, setShowChildren] = useState(false);
@@ -109,6 +123,15 @@ export default function ReplyItem({
     element.scrollIntoView({ behavior: "smooth", block: "center" });
     onFocusReplyHandled?.();
   }, [focusReplyId, reply.replyId, onFocusReplyHandled]);
+
+  useEffect(() => {
+    if (!focusReplyId || showChildren || childrenReplies.length === 0) {
+      return;
+    }
+    if (hasDescendantReplyId(childrenReplies, focusReplyId)) {
+      setShowChildren(true);
+    }
+  }, [childrenReplies, focusReplyId, showChildren]);
 
   useEffect(() => {
     setReactionSummary({
@@ -194,9 +217,19 @@ export default function ReplyItem({
     mentionText && contentWithoutMention && !contentWithoutMention.startsWith("\n")
       ? " "
       : "";
+  const isChildReply = reply.depth > 0;
+  const effectiveRootAuthorUserId = rootAuthorUserId ?? reply.authorUserId ?? null;
+  const isDeepChildVisual =
+    isChildReply &&
+    effectiveRootAuthorUserId !== null &&
+    reply.replyToUserId !== null &&
+    reply.replyToUserId !== effectiveRootAuthorUserId;
 
   return (
-    <li ref={itemRef} className="reply-card">
+    <li
+      ref={itemRef}
+      className={`reply-card ${isChildReply ? "reply-card-depth-1" : ""} ${isDeepChildVisual ? "reply-card-depth-2" : ""}`}
+    >
       <div className="reply-header">
         <div className="reply-avatar">{authorInitial}</div>
         <p className="reply-meta-line">{metaText}</p>
@@ -387,6 +420,7 @@ export default function ReplyItem({
                   key={child.replyId}
                   postId={postId}
                   reply={child}
+                  childrenReplies={child.children}
                   currentUserPublicId={currentUserPublicId}
                   currentUserName={currentUserName}
                   isAdmin={isAdmin}
@@ -399,6 +433,7 @@ export default function ReplyItem({
                   autoExpandParentId={autoExpandParentId}
                   focusReplyId={focusReplyId}
                   onFocusReplyHandled={onFocusReplyHandled}
+                  rootAuthorUserId={effectiveRootAuthorUserId}
                 />
               ))}
             </ul>
