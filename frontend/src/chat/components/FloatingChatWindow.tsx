@@ -4,6 +4,8 @@ import { chatApi } from "../../api/chatApi";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
+import { reportApi, CATEGORY_LABELS } from "../../api/reportApi";
+import type { ReportCategory } from "../../api/reportApi";
 import EmojiPicker from "./EmojiPicker";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
@@ -55,7 +57,8 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNoti, setShowNoti] = useState(false);
-  const unreadNoti = notifications.filter((n) => !n.isRead).length;
+  const chatNotifications = notifications.filter((n) => n.type === 'CHAT_MESSAGE');
+  const unreadNoti = chatNotifications.filter((n) => !n.isRead).length;
 
   // 드래그 상태
   const dragging = useRef(false);
@@ -74,6 +77,9 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [menuId, setMenuId] = useState<number | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
   const [editMsgContent, setEditMsgContent] = useState("");
+  const [reportModal, setReportModal] = useState<{ messageId: number } | null>(null);
+  const [reportCategory, setReportCategory] = useState<ReportCategory>('ABUSE');
+  const [reportDesc, setReportDesc] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
@@ -200,8 +206,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     setShowNoti(false);
     switch (n.type) {
       case 'CHAT_MESSAGE':
-        // 플로팅 창에서 채팅 목록을 보여줌
-        setActiveRoomId(null);
+        setActiveRoomId(n.referenceId ?? null);
         break;
       case 'JOIN_REQUEST':
       case 'JOIN_APPROVED':
@@ -380,6 +385,17 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
       alert("삭제 실패");
     }
     setMenuId(null);
+  };
+
+  const handleReportSubmit = async () => {
+    if (!reportModal) return;
+    try {
+      await reportApi.submit({ targetType: 'CHAT_MESSAGE', targetId: reportModal.messageId, category: reportCategory, description: reportDesc });
+      setReportModal(null);
+      setReportDesc("");
+    } catch (e: any) {
+      alert(e?.response?.data?.message ?? '신고 접수 실패');
+    }
   };
 
   const startEditMsg = (msg: { messageId: number; content: string }) => {
@@ -594,10 +610,10 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                       전체 읽음
                     </button>
                   </div>
-                  {notifications.length === 0 ? (
+                  {chatNotifications.length === 0 ? (
                     <div style={s.notiEmpty}>알림 없음</div>
                   ) : (
-                    notifications.map((n) => (
+                    chatNotifications.map((n) => (
                       <div
                         key={n.id}
                         style={{ ...s.notiItem, background: n.isRead ? "#f9f9f9" : "#eaf4ff" }}
@@ -712,14 +728,20 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                                     boxShadow: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
                                     border: !msg.content.startsWith('/api/chat/files/') && !mine && !msg.isDeleted ? '1px solid #E5E7EB' : 'none',
                                   }}
-                                  onContextMenu={mine && !msg.isDeleted ? (e) => { e.preventDefault(); e.stopPropagation(); setMenuId(menuId === msg.messageId ? null : msg.messageId); } : undefined}
+                                  onContextMenu={!msg.isDeleted ? (e) => { e.preventDefault(); e.stopPropagation(); setMenuId(menuId === msg.messageId ? null : msg.messageId); } : undefined}
                                 >
                                   {msg.isDeleted ? '삭제된 메시지' : renderMsgContent(msg.content, mine)}
                                   {msg.updatedAt && !msg.isDeleted && <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 4 }}>(수정됨)</span>}
                                   {menuId === msg.messageId && (
-                                    <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 90, overflow: 'hidden' }}>
-                                      <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { setMenuId(null); startEditMsg(msg); }}>수정</button>
-                                      <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); handleDeleteMsg(msg.messageId); }}>삭제</button>
+                                    <div style={{ position: 'absolute', right: mine ? 0 : undefined, left: mine ? undefined : 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 90, overflow: 'hidden' }}>
+                                      {mine ? (
+                                        <>
+                                          <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { setMenuId(null); startEditMsg(msg); }}>수정</button>
+                                          <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); handleDeleteMsg(msg.messageId); }}>삭제</button>
+                                        </>
+                                      ) : (
+                                        <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); setReportCategory('ABUSE'); setReportDesc(''); setReportModal({ messageId: msg.messageId }); }}>신고</button>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -765,6 +787,42 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
           </div>
         </div>
       </div>
+
+      {/* 신고 모달 */}
+      {reportModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }} onClick={() => setReportModal(null)}>
+          <div style={{ background: '#fff', borderRadius: 14, padding: '24px', width: 320, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: '#1F2937', marginBottom: 16 }}>메시지 신고</div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>신고 유형</div>
+              <select
+                value={reportCategory}
+                onChange={(e) => setReportCategory(e.target.value as ReportCategory)}
+                style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none' }}
+              >
+                {(Object.entries(CATEGORY_LABELS) as [ReportCategory, string][]).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>상세 내용 (선택)</div>
+              <textarea
+                value={reportDesc}
+                onChange={(e) => setReportDesc(e.target.value)}
+                placeholder="신고 내용을 입력하세요"
+                maxLength={500}
+                rows={3}
+                style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setReportModal(null)} style={{ padding: '8px 16px', background: '#EAF4F0', color: '#1F2937', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>취소</button>
+              <button onClick={handleReportSubmit} style={{ padding: '8px 16px', background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>신고하기</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

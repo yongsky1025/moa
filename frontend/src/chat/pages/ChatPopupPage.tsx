@@ -94,7 +94,8 @@ export default function ChatPopupPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
 
-  const unreadNoti = notifications.filter((n) => !n.isRead).length;
+  const chatNotifications = notifications.filter((n) => n.type === 'CHAT_MESSAGE');
+  const unreadNoti = chatNotifications.filter((n) => !n.isRead).length;
 
   const loadRooms = useCallback(async () => {
     try {
@@ -430,10 +431,11 @@ export default function ChatPopupPage() {
     }
     setShowNoti(false);
     switch (n.type) {
-      case 'CHAT_MESSAGE':
-        // 이미 채팅 팝업 안에 있으므로 채팅 목록만 보여주면 됨
-        setActiveRoom(null);
+      case 'CHAT_MESSAGE': {
+        const target = rooms.find((r) => r.roomId === n.referenceId);
+        setActiveRoom(target ?? null);
         break;
+      }
       case 'JOIN_REQUEST':
       case 'JOIN_APPROVED':
       case 'JOIN_REJECTED':
@@ -516,10 +518,10 @@ export default function ChatPopupPage() {
                       전체 읽음
                     </button>
                   </div>
-                  {notifications.length === 0 ? (
+                  {chatNotifications.length === 0 ? (
                     <p style={s.notiEmpty}>알림 없음</p>
                   ) : (
-                    notifications.map((n) => (
+                    chatNotifications.map((n) => (
                       <div
                         key={n.id}
                         style={{ ...s.notiItem, background: n.isRead ? "#fafafa" : "#EAF4F0", cursor: 'pointer' }}
