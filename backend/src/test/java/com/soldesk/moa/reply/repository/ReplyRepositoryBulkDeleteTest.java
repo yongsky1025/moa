@@ -81,7 +81,7 @@ class ReplyRepositoryBulkDeleteTest {
                 .postId(post)
                 .userId(user)
                 .content("parent")
-                .depth(0)
+                .replyToUserId(null)
                 .build());
 
         replyRepository.save(Reply.builder()
@@ -89,7 +89,7 @@ class ReplyRepositoryBulkDeleteTest {
                 .userId(user)
                 .content("child")
                 .parentId(parent)
-                .depth(1)
+                .replyToUserId(parent.getUserId())
                 .build());
 
         int unlinkedCount = replyRepository.unlinkParentReferences();
