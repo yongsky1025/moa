@@ -9,8 +9,10 @@ export interface ReplyResponse {
   content: string;
   authorName: string;
   authorPublicId: string | null;
+  authorUserId: number | null;
   createDate: string;
   parentId: number | null;
+  depth: number;
   replyToUserId: number | null;
   deleted: boolean;
   likeCount: number;

@@ -205,8 +205,10 @@ public class ReplyService {
         String content = r.isDeleted() ? "삭제된 댓글입니다." : r.getContent();
         String author = r.isDeleted() ? "" : r.getUserId().getName();
         String authorPublicId = r.isDeleted() ? null : r.getUserId().getPublicId();
+        Long authorUserId = r.isDeleted() ? null : r.getUserId().getUserId();
         Reply rootReply = findRootReply(r);
         Long normalizedParentId = r.getParentId() == null ? null : rootReply.getReplyId();
+        int depth = r.getParentId() == null ? 0 : 1;
         long replyCount = childCountByParentId.getOrDefault(r.getReplyId(), 0L);
         String myReaction = r.isDeleted() ? null : myReactionByReplyId.get(r.getReplyId());
 
@@ -215,8 +217,10 @@ public class ReplyService {
                 .content(content)
                 .authorName(author)
                 .authorPublicId(authorPublicId)
+                .authorUserId(authorUserId)
                 .createDate(r.getCreateDate())
                 .parentId(normalizedParentId)
+                .depth(depth)
                 .replyToUserId(r.getReplyToUserId() != null ? r.getReplyToUserId().getUserId() : null)
                 .deleted(r.isDeleted())
                 .likeCount(r.getLikeCount())
