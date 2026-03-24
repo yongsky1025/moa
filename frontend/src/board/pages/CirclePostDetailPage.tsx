@@ -244,11 +244,16 @@ export default function CirclePostDetailPage() {
                 variant="panel"
                 currentUserName={user?.nickname}
                 onRequireLogin={() => navigate("/users/login")}
-                onSubmitReply={async (content) => {
-                  await create({ postId: postIdNumber, content });
-                }}
+                onSubmitReply={(content) =>
+                  create({ postId: postIdNumber, content })
+                }
                 canWrite={isLoggedIn}
-                onSuccess={() => void refreshReplies(true)}
+                onSuccess={(createdReplyId) => {
+                  if (createdReplyId) {
+                    setFocusReplyId(createdReplyId);
+                  }
+                  void refreshReplies(true, false);
+                }}
               />
               {replySubmitError && (
                 <p style={{ color: "#dc2626" }}>{replySubmitError}</p>

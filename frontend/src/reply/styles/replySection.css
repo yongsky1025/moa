@@ -249,6 +249,17 @@
   border-color: #cfd7df;
 }
 
+.reply-card-depth-1 {
+  background-color: #f8fbff;
+  border-color: #d8e7fb;
+}
+
+.reply-card-depth-2 {
+  margin-left: 18px;
+  background-color: #f2f8ff;
+  border-color: #c7dcfb;
+}
+
 .reply-header {
   display: flex;
   align-items: center;
@@ -267,6 +278,11 @@
   font-size: 15px;
   line-height: 1.75;
   color: #111827;
+}
+
+.reply-mention-text {
+  color: #2563eb;
+  font-weight: 700;
 }
 
 .reply-item-actions {

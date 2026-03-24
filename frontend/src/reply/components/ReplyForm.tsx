@@ -7,8 +7,8 @@ import "../styles/replySection.css";
 interface ReplyFormProps {
   postId: number;
   parentId?: number;
-  onSuccess: () => void;
-  onSubmitReply: (content: string, parentId?: number) => Promise<void>;
+  onSuccess: (createdReplyId?: number) => void;
+  onSubmitReply: (content: string, parentId?: number) => Promise<number | void>;
   variant?: "default" | "panel";
   submitLabel?: string;
   showCancelButton?: boolean;
@@ -63,9 +63,13 @@ export default function ReplyForm({
     setSubmitting(true);
     setError("");
     try {
-      await onSubmitReply(content, parentId);
+      const createdReplyId = await onSubmitReply(content, parentId);
       setContent("");
-      onSuccess();
+      if (typeof createdReplyId === "number") {
+        onSuccess(createdReplyId);
+      } else {
+        onSuccess();
+      }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "댓글 저장에 실패했습니다.");
     } finally {

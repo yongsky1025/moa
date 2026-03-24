@@ -25,7 +25,6 @@ export function buildReplyTree(replies: ReplyResponse[]): ReplyTreeNode[] {
       roots.push(node);
       continue;
     }
-
     root.children.push(node);
   }
 

@@ -25,9 +25,13 @@ public class ReplyResponseDTO {
 
     private String authorPublicId;
 
+    private Long authorUserId;
+
     private LocalDateTime createDate;
 
     private Long parentId;
+
+    private int depth;
 
     private Long replyToUserId;
 
