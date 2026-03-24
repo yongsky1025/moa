@@ -9,16 +9,16 @@ import type { CircleResponse, RecommendationBundle, RecommendationItem } from '.
 import type { RootState } from '../../users/reducers/store';
 
 const CATEGORY_COLORS: Record<string, string> = {
-  '자기계발': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  '푸드·드링크': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  '액티비티': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  '문화·예술': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  '대화': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  '운동': 'linear-gradient(135deg, #f77062 0%, #fe5196 100%)',
-  '재테크': 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-  '취미': 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+  '자기계발': 'linear-gradient(135deg, #5f8f7b 0%, #3d5f52 100%)',
+  '푸드·드링크': 'linear-gradient(135deg, #e3886d 0%, #c8674e 100%)',
+  '액티비티': 'linear-gradient(135deg, #4e7c69 0%, #a9c8bb 100%)',
+  '문화·예술': 'linear-gradient(135deg, #a9c8bb 0%, #5f8f7b 100%)',
+  '대화': 'linear-gradient(135deg, #e3886d 0%, #a9c8bb 100%)',
+  '운동': 'linear-gradient(135deg, #3d5f52 0%, #5f8f7b 100%)',
+  '재테크': 'linear-gradient(135deg, #5f8f7b 0%, #eaf4f0 100%)',
+  '취미': 'linear-gradient(135deg, #e3886d 0%, #fdf1ec 100%)',
 };
-const DEFAULT_GRADIENT = 'linear-gradient(135deg, #d3cce3 0%, #e9e4f0 100%)';
+const DEFAULT_GRADIENT = 'linear-gradient(135deg, #a9c8bb 0%, #eaf4f0 100%)';
 
 const STATUS_LABEL: Record<string, { text: string; color: string }> = {
   OPEN:     { text: '모집중',   color: '#16a34a' },
@@ -117,7 +117,7 @@ export default function CircleListPage() {
           {isLoggedIn && (
             <button
               onClick={() => navigate('/circle/create')}
-              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', backgroundColor: '#111', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginTop: 4 }}
+              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', backgroundColor: '#5f8f7b', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginTop: 4 }}
             >
               + 모임 만들기
             </button>
@@ -253,40 +253,50 @@ export default function CircleListPage() {
 
         {/* 메인 */}
         <main style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 20, alignItems: 'center' }}>
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 0, flex: 1 }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', marginBottom: 20, border: '1px solid #e5e5e5', borderRadius: 999, backgroundColor: 'white', overflow: 'hidden' }}>
+            {/* 모집중 토글 */}
+            <button
+              type="button"
+              onClick={() => { setOnlyOpen(v => !v); setPage(1); }}
+              style={{
+                width: 72, padding: '11px 0',
+                border: 'none', borderRight: '1px solid #e5e5e5',
+                backgroundColor: 'transparent',
+                color: onlyOpen ? '#5f8f7b' : '#555',
+                fontSize: 14, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+                textAlign: 'center', transition: 'color 0.15s',
+              }}
+            >
+              {onlyOpen ? '모집중' : '전체'}
+            </button>
+            {/* 검색 입력 */}
             <input
               type="text"
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
-              placeholder="모임 이름으로 검색해보세요"
+              placeholder="검색어를 입력해주세요"
               style={{
-                flex: 1, padding: '11px 18px', borderRadius: '10px 0 0 10px',
-                border: '1px solid #e5e5e5', borderRight: 'none',
-                fontSize: 14, color: '#111', outline: 'none', backgroundColor: 'white',
+                flex: 1, padding: '11px 18px',
+                border: 'none', outline: 'none',
+                fontSize: 14, color: '#111', backgroundColor: 'transparent',
               }}
             />
+            {/* 검색 버튼 */}
             <button
               type="submit"
-              style={{ padding: '11px 24px', borderRadius: '0 10px 10px 0', border: '1px solid #111', backgroundColor: '#111', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 36, height: 36, marginRight: 6,
+                borderRadius: '50%', border: 'none',
+                backgroundColor: '#5f8f7b', color: 'white',
+                cursor: 'pointer', flexShrink: 0,
+              }}
             >
-              검색
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 8H13M13 8L8.5 3.5M13 8L8.5 12.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
           </form>
-          <button
-            type="button"
-            onClick={() => { setOnlyOpen(v => !v); setPage(1); }}
-            style={{
-              padding: '11px 18px', borderRadius: 10, border: `1px solid ${onlyOpen ? '#16a34a' : '#e5e5e5'}`,
-              backgroundColor: onlyOpen ? '#f0fdf4' : 'white',
-              color: onlyOpen ? '#16a34a' : '#888',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'all 0.15s',
-            }}
-          >
-            모집중만 보기
-          </button>
-          </div>
 
           {loading ? (
             <p style={{ textAlign: 'center', color: '#888', padding: '60px 0' }}>로딩 중...</p>
@@ -373,7 +383,7 @@ export default function CircleListPage() {
                     <button
                       key={p}
                       onClick={() => setPage(p)}
-                      style={{ padding: '6px 12px', border: '1px solid #e5e5e5', borderRadius: 6, background: page === p ? '#111' : 'white', color: page === p ? 'white' : '#111', cursor: 'pointer', fontSize: 13, fontWeight: page === p ? 700 : 400 }}
+                      style={{ padding: '6px 12px', border: `1px solid ${page === p ? '#5f8f7b' : '#e5e5e5'}`, borderRadius: 6, background: page === p ? '#5f8f7b' : 'white', color: page === p ? 'white' : '#111', cursor: 'pointer', fontSize: 13, fontWeight: page === p ? 700 : 400 }}
                     >
                       {p}
                     </button>

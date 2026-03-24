@@ -247,7 +247,7 @@ public class CircleService {
         public List<CircleResponseDTO> getMyCircles(Long userId) {
                 return circleMemberRepository.findByUser_UserIdAndStatus(userId, CircleMemberStatus.ACTIVE)
                                 .stream()
-                                .map(cm -> CircleResponseDTO.from(cm.getCircle()))
+                                .map(cm -> new CircleResponseDTO(cm.getCircle(), cm.getRole()))
                                 .toList();
         }
 

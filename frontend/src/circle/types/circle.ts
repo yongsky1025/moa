@@ -12,6 +12,7 @@ export interface CircleResponse {
   categoryId: number;
   categoryName: string;
   coverImageUrl?: string;
+  myRole?: CircleRole;
 }
 
 export interface CircleCreateRequest {
@@ -38,6 +39,7 @@ export interface CircleMember {
   nickname: string;
   role: CircleRole;
   status: CircleMemberStatus;
+  statusMessage?: string;
 }
 
 export interface RecommendationItem {
