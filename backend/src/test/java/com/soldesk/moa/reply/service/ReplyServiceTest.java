@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 
 import com.soldesk.moa.board.entity.Board;
@@ -53,8 +55,10 @@ class ReplyServiceTest {
         Post circlePost = createPost(100L, BoardType.CIRCLE, 1L);
         when(postRepository.findByPostIdAndDeletedFalseAndBoardId_DeletedFalse(100L)).thenReturn(Optional.of(circlePost));
         when(replyRepository.findByPostId_PostIdOrderByCreateDateAsc(100L)).thenReturn(java.util.List.of());
+        when(replyRepository.findByPostId_PostIdOrderByCreateDateAscReplyIdAsc(100L, PageRequest.of(0, 20)))
+                .thenReturn(new PageImpl<>(java.util.List.of()));
 
-        replyService.list(100L, 10L);
+        replyService.list(100L, 10L, 0, 20);
 
         verify(circlePermissionService).requireActiveMember(1L, 10L);
     }
@@ -103,7 +107,7 @@ class ReplyServiceTest {
                 .userId(owner)
                 .postId(post)
                 .content("before")
-                .depth(0)
+                .replyToUserId(null)
                 .deleted(false)
                 .build();
     }

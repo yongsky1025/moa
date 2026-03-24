@@ -44,7 +44,7 @@ public class ReplyRepositoryTest {
                         .userId(author) // 엔티티 필드명에 맞게 확인
                         .content("댓글 " + i + " (postId=" + post.getPostId() + ")")
                         .parentId(null)
-                        .depth(0)
+                        .replyToUserId(null)
                         .build();
                 parent = replyRepository.save(parent);
 
@@ -55,7 +55,7 @@ public class ReplyRepositoryTest {
                             .userId(author)
                             .content("대댓글 " + i + "-" + c)
                             .parentId(parent)
-                            .depth(1)
+                            .replyToUserId(parent.getUserId())
                             .build();
                     replyRepository.save(child);
                 }

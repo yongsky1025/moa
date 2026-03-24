@@ -1,7 +1,5 @@
 package com.soldesk.moa.reply.entity;
 
-import org.hibernate.annotations.Parent;
-
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.post.entity.Post;
 import com.soldesk.moa.users.entity.Users;
@@ -25,7 +23,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = { "userId", "postId", "parentId" })
+@ToString(exclude = { "userId", "postId", "parentId", "replyToUserId" })
 @Table
 @Entity
 public class Reply extends BaseEntity {
@@ -45,11 +43,17 @@ public class Reply extends BaseEntity {
     @Column(nullable = false, length = 1000)
     private String content;
 
+    @Column(name = "like_count", nullable = false)
+    @Builder.Default
+    private int likeCount = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id", nullable = true)
     private Reply parentId;
 
-    private int depth;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_user_id")
+    private Users replyToUserId;
 
     // 기본값 false
     @Column(nullable = false)
