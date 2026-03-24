@@ -18,6 +18,9 @@ spring:
         "[highlight_sql]": true
   profiles:
     include: oauth2,local
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
   # Redis (채팅 메시지 브로커)
   data:
     redis:

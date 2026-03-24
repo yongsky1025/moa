@@ -274,6 +274,7 @@ bin/main/application-oauth2.yml
 src/main/resources/application-oauth2.yml
 backend/src/main/resources/application.yml
 backend/src/main/resources/application-oauth2.yml
+backend/src/main/resources/application-local.yml
 backend/src/test/resources/application.yml
 backend/src/test/resources/application-local.yml
 
