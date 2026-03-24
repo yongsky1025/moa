@@ -279,3 +279,6 @@ src/main/resources/application.properties
 
 # Ignore all files under any test directory
 **/test/**
+
+# Local-only seed runner
+backend/src/main/java/com/soldesk/moa/seed/LocalSeedDataRunner.java

@@ -55,9 +55,14 @@ public class Reply extends BaseEntity {
     @JoinColumn(name = "reply_to_user_id")
     private Users replyToUserId;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private int depth = 0;
+
     // 기본값 false
     @Column(nullable = false)
-    private boolean deleted;
+    @Builder.Default
+    private boolean deleted = false;
 
     public void changeContent(String content) {
         this.content = content;

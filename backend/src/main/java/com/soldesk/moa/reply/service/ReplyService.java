@@ -83,6 +83,8 @@ public class ReplyService {
                 .content(req.getContent())
                 .parentId(null)
                 .replyToUserId(null)
+                .depth(0)
+                .deleted(false)
                 .build();
 
         return replyRepository.save(reply).getReplyId();
@@ -112,6 +114,8 @@ public class ReplyService {
                 .content(req.getContent())
                 .parentId(rootParent)
                 .replyToUserId(target.getUserId())
+                .depth(1)
+                .deleted(false)
                 .build();
 
         return replyRepository.save(reply).getReplyId();

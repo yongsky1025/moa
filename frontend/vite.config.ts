@@ -12,6 +12,26 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      "/api/free": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/api/notice": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/api/posts": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/api/circle": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
       "/api": {
         target: "http://localhost:8080",
         changeOrigin: true,
