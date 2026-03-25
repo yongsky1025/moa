@@ -3,7 +3,10 @@ package com.soldesk.moa.circle.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import com.soldesk.moa.circle.dto.CircleLikeResponseDTO;
+import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.entity.Likes;
 import com.soldesk.moa.common.entity.constant.LikeTargetType;
@@ -50,6 +53,23 @@ public class CircleLikeService {
                 .liked(!alreadyLiked)
                 .likeCount(likeCount)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CircleResponseDTO> getLikedCircles(Long userId) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        return likesRepository.findByUserAndTargetType(user, LikeTargetType.CIRCLE)
+                .stream()
+                .flatMap(like -> circleRepository.findById(like.getTargetId())
+                        .map(circle -> {
+                            long likeCount = likesRepository.countByTargetTypeAndTargetId(
+                                    LikeTargetType.CIRCLE, circle.getCircleId());
+                            return CircleResponseDTO.from(circle, likeCount);
+                        })
+                        .stream())
+                .toList();
     }
 
     @Transactional(readOnly = true)

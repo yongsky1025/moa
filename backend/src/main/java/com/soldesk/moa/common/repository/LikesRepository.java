@@ -18,4 +18,7 @@ public interface LikesRepository extends JpaRepository<Likes, Long> {
 
         // 좋아요개수
         long countByTargetTypeAndTargetId(LikeTargetType targetType, Long targetId);
+
+        // 유저가 특정 타입에 좋아요한 목록
+        java.util.List<Likes> findByUserAndTargetType(Users user, LikeTargetType targetType);
 }

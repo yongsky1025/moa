@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users } from 'lucide-react';
+import { Users, Heart } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { circleApi } from '../../api/circleApi';
@@ -27,27 +27,36 @@ const STATUS_LABEL: Record<string, { text: string; color: string }> = {
   CLOSED:   { text: '종료됨',  color: '#6b7280' },
 };
 
-type Tab = 'all' | 'leader' | 'member';
+type Tab = 'all' | 'leader' | 'member' | 'liked';
 
 export default function MyCirclesPage() {
   const navigate = useNavigate();
   const [circles, setCircles] = useState<CircleResponse[]>([]);
+  const [likedCircles, setLikedCircles] = useState<CircleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('all');
 
   useEffect(() => {
-    circleApi.getMyCircles()
-      .then(res => setCircles(res.data))
+    Promise.all([
+      circleApi.getMyCircles(),
+      circleApi.getLikedCircles(),
+    ])
+      .then(([myRes, likedRes]) => {
+        setCircles(myRes.data);
+        setLikedCircles(likedRes.data);
+      })
       .catch(e => setError(getErrorMessage(e)))
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = circles.filter(c => {
-    if (tab === 'leader') return c.myRole === 'LEADER';
-    if (tab === 'member') return c.myRole === 'MEMBER';
-    return true;
-  });
+  const filtered = tab === 'liked'
+    ? likedCircles
+    : circles.filter(c => {
+        if (tab === 'leader') return c.myRole === 'LEADER';
+        if (tab === 'member') return c.myRole === 'MEMBER';
+        return true;
+      });
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
@@ -58,11 +67,12 @@ export default function MyCirclesPage() {
 
         {/* 탭 */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-          {(['all', 'leader', 'member'] as Tab[]).map(t => {
-            const label = t === 'all' ? '전체' : t === 'leader' ? '내가 리더' : '참여 중';
+          {(['all', 'leader', 'member', 'liked'] as Tab[]).map(t => {
+            const label = t === 'all' ? '전체' : t === 'leader' ? '내가 리더' : t === 'member' ? '참여 중' : '좋아요';
             const count = t === 'all' ? circles.length
               : t === 'leader' ? circles.filter(c => c.myRole === 'LEADER').length
-              : circles.filter(c => c.myRole === 'MEMBER').length;
+              : t === 'member' ? circles.filter(c => c.myRole === 'MEMBER').length
+              : likedCircles.length;
             const active = tab === t;
             return (
               <button
@@ -93,7 +103,7 @@ export default function MyCirclesPage() {
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: '#aaa' }}>
             <p style={{ fontSize: 15, marginBottom: 12 }}>
-              {tab === 'all' ? '아직 가입한 모임이 없습니다.' : tab === 'leader' ? '리더로 있는 모임이 없습니다.' : '참여 중인 모임이 없습니다.'}
+              {tab === 'all' ? '아직 가입한 모임이 없습니다.' : tab === 'leader' ? '리더로 있는 모임이 없습니다.' : tab === 'member' ? '참여 중인 모임이 없습니다.' : '좋아요한 모임이 없습니다.'}
             </p>
             {tab === 'all' && (
               <button
@@ -110,6 +120,7 @@ export default function MyCirclesPage() {
               const statusInfo = STATUS_LABEL[circle.status] ?? { text: circle.status, color: '#888' };
               const bgGradient = CATEGORY_COLORS[circle.categoryName] ?? DEFAULT_GRADIENT;
               const isLeader = circle.myRole === 'LEADER';
+              const isLikedTab = tab === 'liked';
 
               return (
                 <div
@@ -134,15 +145,21 @@ export default function MyCirclesPage() {
                   {/* 정보 */}
                   <div style={{ flex: 1, padding: '16px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
                     <div>
-                      {/* 상단: 역할 뱃지 + 카테고리 + 상태 */}
+                      {/* 상단: 역할/좋아요 뱃지 + 카테고리 + 상태 */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 4,
-                          backgroundColor: isLeader ? '#eaf4f0' : '#f3f4f6',
-                          color: isLeader ? '#5f8f7b' : '#6b7280',
-                        }}>
-                          {isLeader ? '리더' : '멤버'}
-                        </span>
+                        {isLikedTab ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 4, backgroundColor: '#fdf1ec', color: '#e3886d' }}>
+                            <Heart style={{ width: 10, height: 10, fill: '#e3886d' }} /> 좋아요
+                          </span>
+                        ) : (
+                          <span style={{
+                            fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 4,
+                            backgroundColor: isLeader ? '#eaf4f0' : '#f3f4f6',
+                            color: isLeader ? '#5f8f7b' : '#6b7280',
+                          }}>
+                            {isLeader ? '리더' : '멤버'}
+                          </span>
+                        )}
                         <span style={{ fontSize: 11, color: '#9ca3af' }}>{circle.categoryName}</span>
                         <span style={{ fontSize: 11, fontWeight: 600, color: statusInfo.color }}>{statusInfo.text}</span>
                       </div>
@@ -165,7 +182,7 @@ export default function MyCirclesPage() {
                         {circle.currentMember}/{circle.maxMember}명
                       </div>
                       <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
-                        {isLeader && (
+                        {!isLikedTab && isLeader && (
                           <button
                             onClick={() => navigate(`/circle/${circle.circleId}/manage`)}
                             style={{ padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', backgroundColor: '#5f8f7b', color: 'white', border: 'none' }}
