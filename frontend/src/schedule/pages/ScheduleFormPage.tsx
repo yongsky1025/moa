@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Search, MapPin, X } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
-import { scheduleApi } from '../../api/scheduleApi';
+import { scheduleApi, type TagSuggestResult } from '../../api/scheduleApi';
 import { placeApi, type PlaceRecommendResponse, type TagCategoryGroup } from '../../api/placeApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
 
@@ -48,6 +48,9 @@ export default function ScheduleFormPage() {
   const [openCategories, setOpenCategories] = useState<string[]>([]);
   const [nearbyPlaces, setNearbyPlaces] = useState<PlaceRecommendResponse[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [suggestedTags, setSuggestedTags] = useState<TagSuggestResult[]>([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -55,10 +58,30 @@ export default function ScheduleFormPage() {
   const infowindowsRef = useRef<any[]>([]);
   const initialMarkerSetRef = useRef(false);
 
-  // 태그 목록 fetch
+  // 태그 목록 fetch (일정용 카테고리만)
   useEffect(() => {
-    placeApi.getTagsGrouped().then(res => setTagCategories(res.data)).catch(() => {});
+    scheduleApi.getScheduleTags().then(res => setTagCategories(res.data)).catch(() => {});
   }, []);
+
+  // 제목+설명 디바운스 → 태그 추천
+  useEffect(() => {
+    if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current);
+    if (form.title.trim().length < 4 || form.description.trim().length < 6) {
+      setSuggestedTags([]);
+      setSuggestLoading(false);
+      return;
+    }
+    setSuggestLoading(true);
+    suggestTimerRef.current = setTimeout(() => {
+      scheduleApi.suggestTags(form.title, form.description)
+        .then(res => setSuggestedTags(res.data))
+        .catch(() => setSuggestedTags([]))
+        .finally(() => setSuggestLoading(false));
+    }, 800);
+    return () => {
+      if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current);
+    };
+  }, [form.title, form.description]);
 
   // Kakao Maps SDK 초기화
   useEffect(() => {
@@ -259,11 +282,7 @@ export default function ScheduleFormPage() {
         navigate(`/circle/${cid}/schedules/${sid}`);
       } else {
         const res = await scheduleApi.createSchedule(cid, payload);
-        if (res.data.chatRoomId) {
-          navigate(`/chat/room/${res.data.chatRoomId}`);
-        } else {
-          navigate(`/circle/${cid}/schedules/${res.data.scheduleId}`);
-        }
+        navigate(`/circle/${cid}/schedules/${res.data.scheduleId}`);
       }
     } catch (e) {
       setError(getErrorMessage(e));
@@ -358,33 +377,6 @@ export default function ScheduleFormPage() {
                   />
                 </div>
 
-                {error && (
-                  <p style={{ fontSize: 13, color: '#dc2626', padding: '8px 12px', backgroundColor: '#fef2f2', borderRadius: 8, margin: 0 }}>
-                    {error}
-                  </p>
-                )}
-
-                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                  <button
-                    type="button"
-                    onClick={() => navigate(-1)}
-                    style={{ ...btnStyle, flex: 1, background: 'white', color: '#666', border: '1px solid #e5e5e5' }}
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    style={{ ...btnStyle, flex: 2, background: '#111', color: 'white', opacity: loading ? 0.6 : 1 }}
-                  >
-                    {loading ? '처리 중...' : isEdit ? '수정하기' : '일정 만들기'}
-                  </button>
-                </div>
-              </div>
-
-              {/* ── 오른쪽: 태그 + 장소 ── */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-
                 {/* 태그 선택 */}
                 <div>
                   <label style={labelStyle}>
@@ -393,6 +385,51 @@ export default function ScheduleFormPage() {
                   <div style={{ fontSize: 12, color: selectedTagIds.length >= 10 ? '#dc2626' : '#888', marginBottom: 8 }}>
                     {selectedTagIds.length}/10 선택됨
                   </div>
+
+                  {/* 추천 태그 영역 */}
+                  {suggestLoading && (
+                    <div style={{
+                      marginBottom: 10, padding: '9px 12px',
+                      backgroundColor: '#faf5ff', borderRadius: 8, border: '1px solid #e9d5ff',
+                      fontSize: 12, color: '#9333ea',
+                    }}>
+                      태그 분석 중...
+                    </div>
+                  )}
+                  {!suggestLoading && suggestedTags.length > 0 && (
+                    <div style={{
+                      marginBottom: 10, padding: '10px 12px',
+                      backgroundColor: '#faf5ff', borderRadius: 8, border: '1px solid #e9d5ff',
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', marginBottom: 7 }}>
+                        추천 태그
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                        {suggestedTags.map(t => {
+                          const selected = selectedTagIds.includes(t.id);
+                          const disabled = !selected && selectedTagIds.length >= 10;
+                          return (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => toggleTag(t.id)}
+                              disabled={disabled}
+                              title={t.categoryName}
+                              style={{
+                                padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+                                border: selected ? '1.5px solid #7c3aed' : '1px solid #d8b4fe',
+                                backgroundColor: selected ? '#ede9fe' : 'white',
+                                color: selected ? '#7c3aed' : disabled ? '#ccc' : '#6d28d9',
+                                cursor: disabled ? 'not-allowed' : 'pointer',
+                              }}
+                            >
+                              {t.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   {tagCategories.map(({ categoryId, categoryName, tags }) => {
                     const isOpen = openCategories.includes(categoryName);
                     const selectedInCategory = tags.filter(t => selectedTagIds.includes(t.id));
@@ -447,6 +484,11 @@ export default function ScheduleFormPage() {
                     );
                   })}
                 </div>
+
+              </div>
+
+              {/* ── 오른쪽: 장소 ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
                 {/* 장소 검색 */}
                 <div>
@@ -605,6 +647,29 @@ export default function ScheduleFormPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {error && (
+                  <p style={{ fontSize: 13, color: '#dc2626', padding: '8px 12px', backgroundColor: '#fef2f2', borderRadius: 8, margin: 0 }}>
+                    {error}
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    style={{ ...btnStyle, flex: 1, background: 'white', color: '#666', border: '1px solid #e5e5e5' }}
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    style={{ ...btnStyle, flex: 2, background: '#111', color: 'white', opacity: loading ? 0.6 : 1 }}
+                  >
+                    {loading ? '처리 중...' : isEdit ? '수정하기' : '일정 만들기'}
+                  </button>
                 </div>
 
               </div>

@@ -34,6 +34,10 @@ export const circleApi = {
   getMyCircles: () =>
     api.get<CircleResponse[]>('/api/circles/me'),
 
+  // 내가 좋아요한 서클
+  getLikedCircles: () =>
+    api.get<CircleResponse[]>('/circles/me/liked'),
+
   // 추천 서클 번들 (에너지 프로필 기반 — 5축/사회/활동 3가지 기준)
   getRecommendationBundle: (limit = 5) =>
     api.post<RecommendationBundle>('/api/users/me/energy-profile/recommend', null, { params: { limit } }),

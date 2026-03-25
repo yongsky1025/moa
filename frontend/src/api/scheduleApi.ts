@@ -5,8 +5,19 @@ import type {
   ScheduleUpdateRequest,
   ScheduleMember,
 } from '../schedule/types/schedule';
+import type { TagCategoryGroup } from './placeApi';
+
+export interface TagSuggestResult {
+  id: number;
+  name: string;
+  categoryName: string;
+}
 
 export const scheduleApi = {
+  // 일정 생성 시 사용할 태그 목록 (scheduleEnabled=true 카테고리만)
+  getScheduleTags: () =>
+    api.get<TagCategoryGroup[]>('/api/tags/grouped', { params: { scheduleEnabled: true } }),
+
   // 일정 목록 (서클 멤버만, from/to 날짜 필터 선택적)
   getSchedules: (circleId: number, params?: { from?: string; to?: string }) =>
     api.get<ScheduleResponse[]>(`/api/circles/${circleId}/schedules`, { params }),
@@ -38,5 +49,9 @@ export const scheduleApi = {
   // 일정 참여 취소
   cancelSchedule: (circleId: number, scheduleId: number) =>
     api.delete<void>(`/api/circles/${circleId}/schedules/${scheduleId}/join`),
+
+  // 제목+설명 기반 태그 추천
+  suggestTags: (title: string, description: string) =>
+    api.post<TagSuggestResult[]>('/api/tags/suggest', { title, description }),
 };
 

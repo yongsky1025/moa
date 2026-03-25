@@ -104,8 +104,13 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
     //
     // 조건 메서드들
     private BooleanExpression categoryIn(List<Long> categoryIds) {
-        return (categoryIds == null || categoryIds.isEmpty()) ? null
-                : QCircleCategory.circleCategory.categoryId.in(categoryIds);
+        if (categoryIds == null || categoryIds.isEmpty()) return null;
+        BooleanExpression condition = null;
+        for (Long id : categoryIds) {
+            BooleanExpression eq = QCircle.circle.category.categoryId.eq(id);
+            condition = condition == null ? eq : condition.or(eq);
+        }
+        return condition;
     }
 
     private BooleanExpression keywordContains(String keyword) {
@@ -120,9 +125,12 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
             return QCircle.circle.status.notIn(CircleStatus.PENDING, CircleStatus.REJECTED, CircleStatus.CLOSED);
         }
 
-        // type=OPEN 일 때만 모집중 필터
         if ("OPEN".equalsIgnoreCase(type)) {
             return QCircle.circle.status.eq(CircleStatus.OPEN);
+        }
+
+        if ("FULL".equalsIgnoreCase(type)) {
+            return QCircle.circle.status.eq(CircleStatus.FULL);
         }
 
         return null;

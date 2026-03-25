@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Users, Sparkles } from 'lucide-react';
@@ -49,10 +49,22 @@ export default function CircleListPage() {
   const [prevPage, setPrevPage] = useState(0);
   const [nextPage, setNextPage] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [onlyOpen, setOnlyOpen] = useState(false);
+  const [statusType, setStatusType] = useState<'ALL' | 'OPEN' | 'FULL'>('ALL');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     circleApi.getCategories().then((res) => setCategories(res.data));
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -70,7 +82,7 @@ export default function CircleListPage() {
         const res = await circleApi.getCircles({
           ...(selectedCategoryIds.length > 0 ? { categoryIds: selectedCategoryIds } : {}),
           ...(keyword ? { keyword } : {}),
-          ...(onlyOpen ? { type: 'OPEN' } : {}),
+          ...(statusType !== 'ALL' ? { type: statusType } : {}),
           page,
           size: PAGE_SIZE,
         });
@@ -87,7 +99,7 @@ export default function CircleListPage() {
       }
     };
     fetchCircles();
-  }, [selectedCategoryIds, keyword, page, onlyOpen, recommendFilter]);
+  }, [selectedCategoryIds, keyword, page, statusType, recommendFilter]);
 
   const handleCategoryClick = (categoryId: number | null) => {
     if (categoryId === null) {
@@ -143,22 +155,52 @@ export default function CircleListPage() {
       {/* 본문 */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 20px 60px' }}>
         <main>
-          <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', marginBottom: 20, border: '1px solid #e5e5e5', borderRadius: 999, backgroundColor: 'white', overflow: 'hidden' }}>
-            {/* 모집중 토글 */}
-            <button
-              type="button"
-              onClick={() => { setOnlyOpen(v => !v); setPage(1); }}
-              style={{
-                width: 72, padding: '11px 0',
-                border: 'none', borderRight: '1px solid #e5e5e5',
-                backgroundColor: 'transparent',
-                color: onlyOpen ? '#5f8f7b' : '#555',
-                fontSize: 14, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-                textAlign: 'center', transition: 'color 0.15s',
-              }}
-            >
-              {onlyOpen ? '모집중' : '전체'}
-            </button>
+          <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', marginBottom: 20, border: '1px solid #e5e5e5', borderRadius: 999, backgroundColor: 'white' }}>
+            {/* 상태 드롭다운 */}
+            <div ref={dropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(v => !v)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4,
+                  width: 88, padding: '11px 12px 11px 16px',
+                  border: 'none', borderRight: '1px solid #e5e5e5',
+                  backgroundColor: 'transparent',
+                  color: statusType !== 'ALL' ? '#5f8f7b' : '#555',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+                }}
+              >
+                {{ ALL: '전체', OPEN: '모집중', FULL: '모집완료' }[statusType]}
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              {dropdownOpen && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 100,
+                  backgroundColor: 'white', borderRadius: 10,
+                  border: '1px solid #e5e5e5', boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+                  overflow: 'hidden', minWidth: 96,
+                }}>
+                  {([['ALL', '전체'], ['OPEN', '모집중'], ['FULL', '모집완료']] as const).map(([val, label]) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => { setStatusType(val); setPage(1); setDropdownOpen(false); }}
+                      style={{
+                        display: 'block', width: '100%', textAlign: 'left',
+                        padding: '9px 16px', border: 'none', cursor: 'pointer',
+                        backgroundColor: statusType === val ? '#f0f7f4' : 'white',
+                        color: statusType === val ? '#5f8f7b' : '#333',
+                        fontSize: 13, fontWeight: statusType === val ? 700 : 400,
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             {/* 검색 입력 */}
             <input
               type="text"
@@ -171,19 +213,19 @@ export default function CircleListPage() {
                 fontSize: 14, color: '#111', backgroundColor: 'transparent',
               }}
             />
-            {/* 검색 버튼 */}
+            {/* 돋보기 검색 버튼 */}
             <button
               type="submit"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 36, height: 36, marginRight: 6,
-                borderRadius: '50%', border: 'none',
-                backgroundColor: '#5f8f7b', color: 'white',
+                padding: '0 14px', border: 'none',
+                backgroundColor: 'transparent', color: '#5f8f7b',
                 cursor: 'pointer', flexShrink: 0,
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 8H13M13 8L8.5 3.5M13 8L8.5 12.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
               </svg>
             </button>
           </form>
@@ -274,7 +316,7 @@ export default function CircleListPage() {
                       <div
                         key={c.circleId}
                         onClick={() => navigate(`/circle/${c.circleId}`)}
-                        style={{ backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', cursor: 'pointer', transition: 'box-shadow 0.2s, transform 0.2s' }}
+                        style={{ backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', cursor: 'pointer', transition: 'box-shadow 0.2s, transform 0.2s', display: 'flex', flexDirection: 'column' }}
                         onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
                         onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                       >
@@ -286,9 +328,9 @@ export default function CircleListPage() {
                             {Math.round(c.similarity * 100)}% 일치
                           </div>
                         </div>
-                        <div style={{ padding: '12px 14px 16px' }}>
+                        <div style={{ padding: '12px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                           <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 800, lineHeight: 1.4, color: '#1f2937', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.name}</h3>
-                          <p style={{ margin: '0 0 10px', fontSize: 12, color: '#6b7280', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.description || '소개글이 없습니다.'}</p>
+                          <p style={{ margin: '0 0 10px', fontSize: 12, color: '#6b7280', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>{c.description || '소개글이 없습니다.'}</p>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}>
                             <Users style={{ width: 12, height: 12 }} />
                             {c.currentMember}/{c.maxMember}명
@@ -324,6 +366,7 @@ export default function CircleListPage() {
                           backgroundColor: 'white', borderRadius: 16, overflow: 'hidden',
                           border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                           cursor: 'pointer', transition: 'box-shadow 0.2s, transform 0.2s',
+                          display: 'flex', flexDirection: 'column',
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
@@ -349,7 +392,7 @@ export default function CircleListPage() {
                         </div>
 
                         {/* 정보 영역 */}
-                        <div style={{ padding: '12px 14px 16px' }}>
+                        <div style={{ padding: '12px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                           <h3 style={{
                             margin: '0 0 4px', fontSize: 14, fontWeight: 800, lineHeight: 1.4, color: '#1f2937',
                             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
@@ -359,6 +402,7 @@ export default function CircleListPage() {
                           <p style={{
                             margin: '0 0 10px', fontSize: 12, color: '#6b7280', lineHeight: 1.5,
                             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                            flex: 1,
                           }}>
                             {circle.description || '소개글이 없습니다.'}
                           </p>
