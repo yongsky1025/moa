@@ -1,8 +1,8 @@
 package com.soldesk.moa.circle.entity;
 
-import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
 import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.common.entity.Image;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,7 +25,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = "category")
+@ToString(exclude = { "category", "coverImage" })
 @Entity
 public class Circle extends BaseEntity {
 
@@ -48,6 +49,15 @@ public class Circle extends BaseEntity {
     @JoinColumn(name = "category_id", nullable = false)
     private CircleCategory category;
 
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "cover_image_id", nullable = true)
+    private Image coverImage;
+
+    // 신고 누적 횟수 컬럼
+    @Column(nullable = false)
+    @Builder.Default
+    private int sanctionCount = 0;
+
     // 상태 변경
     public void increaseMember() {
         if (this.status == CircleStatus.FULL) {
@@ -64,5 +74,35 @@ public class Circle extends BaseEntity {
         if (this.currentMember > 0) {
             this.currentMember--;
         }
+    }
+
+    // 서클 정보 수정 (리더 전용)
+    public void update(String name, String description, int maxMember) {
+        this.name = name;
+        this.description = description;
+        this.maxMember = maxMember;
+        // 정원을 늘려서 현재 인원보다 많아지면 FULL → OPEN
+        if (this.status == CircleStatus.FULL && maxMember > this.currentMember) {
+            this.status = CircleStatus.OPEN;
+        }
+    }
+
+    public void changeCoverImage(Image coverImage) {
+        this.coverImage = coverImage;
+    }
+
+    // admin - status 변경 메소드입니다(신고/제재용)
+    public void setStatus(CircleStatus status) {
+        this.status = status;
+    }
+
+    // admin - 신고 누적 횟수 메소드
+    public void increaseSanctionCount() {
+        this.sanctionCount++;
+    }
+
+    public void decreaseSanctionCount() {
+        if (this.sanctionCount > 0)
+            this.sanctionCount--;
     }
 }

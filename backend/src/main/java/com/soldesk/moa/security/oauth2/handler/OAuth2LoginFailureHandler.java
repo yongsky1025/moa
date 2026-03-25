@@ -21,7 +21,7 @@ import lombok.extern.log4j.Log4j2;
 @Component
 public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
 
-    @Value("${cors.allowed-origins:http://localhost:5173}")
+    @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
     @Override

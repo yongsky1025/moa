@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"energy\\\\|Energy\\\\|onboard\\\\|Onboard\")",
+      "Bash(xargs ls -la)",
+      "Bash(find /c/project/moa/frontend/src/circle/page* -type f -name \"*.tsx\")"
+    ]
+  }
+}

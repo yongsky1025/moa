@@ -30,24 +30,35 @@ const beforeRes = (response: AxiosResponse) => {
 
 // 응답 실패: 401이면 토큰 갱신 후 재요청
 const responseFail = async (error: AxiosError) => {
-  const originalRequest = error.config;
+  const originalRequest = error.config as InternalAxiosRequestConfig & {
+    _retry?: boolean;
+  };
+
+  const status = error.response?.status;
+  const url = originalRequest?.url ?? '';
 
   if (
-    error.response?.data === 'ERROR_ACCESS_TOKEN' &&
+    status === 401 &&
     originalRequest &&
-    !(originalRequest as unknown as Record<string, unknown>)._retry
+    !originalRequest._retry &&
+    url !== '/api/auth/refresh'
   ) {
-    (originalRequest as unknown as Record<string, unknown>)._retry = true;
+    originalRequest._retry = true;
 
     try {
       const res = await api.post('/api/auth/refresh');
-      const accessToken: string = res.data.accessToken;
+      const accessToken = (res.data as { accessToken: string }).accessToken;
+
       localStorage.setItem('accessToken', accessToken);
+      originalRequest.headers = originalRequest.headers ?? {};
       originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
       return api(originalRequest);
     } catch {
       localStorage.removeItem('accessToken');
-      window.location.href = '/';
+      window.location.href =
+        '/users/login?error=' +
+        encodeURIComponent('로그인이 만료되었습니다. 다시 로그인해주세요.');
       return Promise.reject(error);
     }
   }

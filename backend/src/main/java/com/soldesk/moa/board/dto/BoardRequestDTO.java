@@ -22,7 +22,7 @@ import lombok.ToString;
 @ToString
 public class BoardRequestDTO {
 
-    // 만들 때는 boardType이 필요 (NOTICE/FREE/SUPPORT/CIRCLE)
+    // 만들 때는 boardType이 필요 (NOTICE/FREE/CIRCLE)
     @NotNull
     private BoardType boardType;
 

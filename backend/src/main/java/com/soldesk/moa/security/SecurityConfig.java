@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -13,6 +14,8 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -22,6 +25,8 @@ import com.soldesk.moa.security.oauth2.handler.OAuth2LoginSuccessHandler;
 import com.soldesk.moa.security.oauth2.repository.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.soldesk.moa.security.oauth2.service.CustomOAuth2UserService;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import lombok.extern.log4j.Log4j2;
 
 @EnableMethodSecurity
@@ -29,6 +34,9 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @Configuration
 public class SecurityConfig {
+
+        @Value("${app.frontend-url:http://localhost:5173}")
+        private String frontendUrl;
 
         private final CustomOAuth2UserService customOAuth2UserService;
         private final JwtTokenProvider jwtTokenProvider;
@@ -63,21 +71,37 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .requestMatchers(
                                                                 "/",
+                                                                "/*.html",
                                                                 "/assets/**",
                                                                 "/css/**",
                                                                 "/js/**",
                                                                 "/img/**",
                                                                 "/images/**",
+                                                                "/uploads/**",
                                                                 "/vendor/**",
                                                                 "/fonts/**",
-                                                                "/favicon.ico")
+                                                                "/favicon.ico",
+                                                                "/swagger-ui.html",
+                                                                "/swagger-ui/**",
+                                                                "/v3/api-docs/**",
+                                                                "/webjars/**")
                                                 .permitAll()
 
                                                 // ----------- user 시큐리티 파트 ---------
 
-                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers(
+                                                                "/api/auth/login",
+                                                                "/api/auth/signup",
+                                                                "/api/auth/refresh",
+                                                                "/api/auth/logout")
+                                                .permitAll()
                                                 .requestMatchers("/api/users/profile/check-nickname").permitAll()
                                                 .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**")
+                                                .permitAll()
+                                                // ----------- 서클 시큐리티 파트 ----------
+
+                                                .requestMatchers(HttpMethod.GET, "/circles", "/circles/categories",
+                                                                "/circles/*")
                                                 .permitAll()
 
                                                 // ----------- 보드 시큐리티 파트 ----------
@@ -85,23 +109,50 @@ public class SecurityConfig {
                                                 .requestMatchers("/board/**").permitAll()
                                                 // board 열람 비회원도 허용(컨트롤러에서 crud 권한 설정예정)
                                                 .requestMatchers("/notice/**", "/free/**", "/support/**").permitAll()
-                                                .requestMatchers("/api/notice/posts/**", "/api/free/posts/**",
-                                                                "/api/support/posts/**")
+                                                .requestMatchers("/api/notice/**", "/api/free/**", "/api/support/**")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/*/replies").permitAll()
                                                 // board 써클 회원만 열람?(예정)
                                                 // .requestMatchers("/circle/**").permitAll()
                                                 // viewcount 비회원도 허용
                                                 .requestMatchers("/api/posts/*/view").permitAll()
                                                 // ----------- 보드 시큐리티 끝 ----------
+                                                .requestMatchers("/ws/chat/**", "/ws/chat-raw").permitAll() // WebSocket
+                                                                                                            // 핸드셰이크
+                                                // 채팅 파일 조회는 인증 없이 허용
+                                                .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                                                "/api/chat/files/**")
+                                                .permitAll()
+                                                // 채팅: 로그인한 유저만 접근 허용
+                                                .requestMatchers("/chat/**").authenticated()
+                                                .requestMatchers("/api/chat/**").authenticated()
+
+                                                // ---------- 관리자, 장소 ----------
+                                                .requestMatchers("/api/admin/**").permitAll() // 임시로 다 열어둠
+                                                .requestMatchers("/api/place/**").permitAll()
+                                                // ----------------------------------
+                                                // swagger 임시 허용(개발중)
+                                                .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
+                                                                "/v3/api-docs/**")
+                                                .permitAll()
+                                                // ----------------------------------
 
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth2 -> oauth2
+                                                .loginPage(frontendUrl + "/users/login")
                                                 .authorizationEndpoint(endpoint -> endpoint
                                                                 .authorizationRequestRepository(
                                                                                 cookieAuthorizationRequestRepository))
                                                 .userInfoEndpoint(info -> info.userService(customOAuth2UserService))
                                                 .successHandler(oAuth2LoginSuccessHandler)
                                                 .failureHandler(oAuth2LoginFailureHandler))
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint((request, response, authException) -> {
+                                                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                                        response.setContentType("application/json;charset=UTF-8");
+                                                        response.getWriter().write(
+                                                                        "{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Authentication required.\"}");
+                                                }))
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
                                                 UsernamePasswordAuthenticationFilter.class);
@@ -117,8 +168,8 @@ public class SecurityConfig {
         @Bean
         CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
-                configuration.addAllowedOriginPattern("*");
-                configuration.setAllowedMethods(Arrays.asList("HEAD", "GET", "POST", "PUT", "DELETE"));
+                configuration.addAllowedOriginPattern("http://localhost:5173");
+                configuration.setAllowedMethods(Arrays.asList("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH"));
                 configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
                 configuration.setAllowCredentials(true);
 

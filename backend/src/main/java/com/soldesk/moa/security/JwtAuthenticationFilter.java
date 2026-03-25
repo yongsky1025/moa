@@ -2,8 +2,6 @@ package com.soldesk.moa.security;
 
 import java.io.IOException;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,8 +16,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
-@Configuration
-@ConfigurationProperties(prefix = "jwt")
 @Log4j2
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -39,7 +35,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         log.info("check uri " + path);
 
         // 인증/로그인 엔드포인트는 JWT 필터 적용X
-        if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/api/auth"))
+        if (path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.equals("/api/auth/login")
+                || path.equals("/api/auth/signup")
+                || path.equals("/api/auth/refresh")
+                || path.equals("/api/auth/logout"))
             return true;
 
         // TODO: 공개 API가 늘어나면 permitAll 경로를 SecurityConfig에서 일괄 정리

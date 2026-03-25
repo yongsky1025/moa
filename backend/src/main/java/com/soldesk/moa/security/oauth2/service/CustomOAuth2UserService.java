@@ -93,11 +93,21 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             user.changeProvider(provider);
             user.changeProviderId(userInfo.getId());
         }
+        // 프로필 이미지 URL 업데이트
+        if (userInfo.getImageUrl() != null) {
+            user.changeProfileImageUrl(userInfo.getImageUrl());
+        }
         return user;
     }
 
     // ── 신규 소셜 유저 생성 ──
     private Users signupFromSocial(OAuth2UserInfo userInfo, AuthProvider provider) {
+        if (userInfo.getEmail() == null || userInfo.getEmail().isBlank()) {
+            throw new OAuth2AuthenticationException("소셜 계정에서 이메일 정보를 가져올 수 없습니다. 이메일 제공 동의가 필요합니다.");
+        }
+        if (userInfo.getName() == null || userInfo.getName().isBlank()) {
+            throw new OAuth2AuthenticationException("소셜 계정에서 이름 정보를 가져올 수 없습니다.");
+        }
         String nickname = generateUniqueNickname(userInfo.getName());
 
         Users newUser = Users.builder()
@@ -106,6 +116,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .nickname(nickname)
                 .provider(provider)
                 .providerId(userInfo.getId())
+                .profileImageUrl(userInfo.getImageUrl())
                 .userRole(UserRole.USER)
                 .userGender(UserGender.UNSPECIFIED)
                 .build();

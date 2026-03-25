@@ -1,15 +1,21 @@
 package com.soldesk.moa.auth.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 import com.soldesk.moa.auth.dto.AuthTokenBundleDTO;
 import com.soldesk.moa.auth.dto.AuthUserResponseDTO;
 import com.soldesk.moa.auth.dto.LoginRequestDTO;
 import com.soldesk.moa.auth.dto.SignUpRequestDTO;
+import com.soldesk.moa.auth.dto.SocialSignUpCompleteRequestDTO;
 import com.soldesk.moa.common.exception.DuplicateResourceException;
 import com.soldesk.moa.common.exception.InvalidCredentialsException;
+import com.soldesk.moa.common.exception.InvalidRequestException;
 import com.soldesk.moa.common.exception.UserNotActiveException;
 import com.soldesk.moa.security.JwtTokenProvider;
 import com.soldesk.moa.users.entity.Users;
@@ -48,7 +54,7 @@ public class AuthService {
                 .userRole(UserRole.USER)
                 .userGender(dto.getUserGender())
                 .birthDate(dto.getBirthDate())
-                .age(dto.getAge())
+                .privacyAgreedAt(LocalDateTime.now())
                 .build();
 
         usersRepository.save(user);
@@ -66,7 +72,7 @@ public class AuthService {
             throw new UserNotActiveException("User is not active.");
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole());
+        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole(), user.getUserId());
         String refreshToken = refreshTokenService.createAndStoreRefreshToken(user);
 
         return new AuthTokenBundleDTO(accessToken, refreshToken, AuthUserResponseDTO.from(user));
@@ -80,7 +86,7 @@ public class AuthService {
             throw new UserNotActiveException("User is not active.");
         }
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole());
+        String newAccessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole(), user.getUserId());
         String newRefreshToken = refreshTokenService.createAndStoreRefreshToken(user);
 
         return new AuthTokenBundleDTO(newAccessToken, newRefreshToken, AuthUserResponseDTO.from(user));
@@ -89,5 +95,17 @@ public class AuthService {
     @Transactional
     public void logout(String refreshToken) {
         refreshTokenService.revoke(refreshToken);
+    }
+
+    @Transactional
+    public void completeSocialSignUp(String email, SocialSignUpCompleteRequestDTO dto) {
+        Users user = usersRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidCredentialsException("User not found."));
+
+        if (user.getPrivacyAgreedAt() != null) {
+            throw new InvalidRequestException("이미 추가정보가 입력된 계정입니다.");
+        }
+
+        user.completeSocialSignUp(dto.getBirthDate(), dto.getUserGender());
     }
 }

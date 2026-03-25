@@ -19,6 +19,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import com.soldesk.moa.schedule.entity.constant.ScheduleStatus;
+
 @Entity
 @Table(name = "schedule")
 @Getter
@@ -59,12 +61,11 @@ public class Schedule {
     // 일정 시작
     @Column(nullable = false)
     private LocalDateTime startAt;
-
+    
     // 일정 종료
     @Column(nullable = false)
     private LocalDateTime endAt;
 
-    // 주소는 테이블을 따로 빼자//////////////////////
     // 위치 정보 (주소 / 장소명)
     @Column(length = 255)
     private String address;
@@ -76,7 +77,17 @@ public class Schedule {
     // 경도
     @Column
     private Double longitude;
-    //////////////////////////////////////////////////
+
+    public ScheduleStatus getStatus() {
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(startAt)) {
+            return ScheduleStatus.UPCOMING;
+        } else if (now.isAfter(endAt)) {
+            return ScheduleStatus.COMPLETED;
+        } else {
+            return ScheduleStatus.IN_PROGRESS;
+        }
+    }
 
     public void increaseCurrentMember() {
         if (this.currentMember >= this.maxMember) {

@@ -1,11 +1,29 @@
 spring:
   application:
     name: moa
+  config:
+    import: optional:file:.env[.properties]
   profiles:
     include: oauth2
-
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        "[format_sql]": true
+        "[highlight_sql]": true
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      embedding:
+        options:
+          model: ${OPENAI_EMBEDDING_MODEL}
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 30MB
 jwt:
-  secret: ${JWT_SECRET}
   access-exp-ms: 1800000
   refresh-exp-ms: 1209600000
 

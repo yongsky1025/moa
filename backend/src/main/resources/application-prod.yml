@@ -1,4 +1,18 @@
 spring:
+  config:
+    activate:
+      on-profile: prod
   jpa:
     hibernate:
       ddl-auto: validate
+
+app:
+  cookie:
+    secure: true
+    same-site: None
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: info

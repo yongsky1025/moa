@@ -16,6 +16,8 @@ public class UserProfileResponseDTO {
 
     private String name;
 
+    private String publicId;
+
     private String nickname;
 
     private String email;
@@ -25,4 +27,8 @@ public class UserProfileResponseDTO {
     private UserGender userGender;
 
     private LocalDate birthDate;
+
+    private String statusMessage;
+
+    private String profileImageUrl;
 }

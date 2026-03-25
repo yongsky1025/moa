@@ -35,7 +35,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final RefreshTokenService refreshTokenService;
     private final JwtProperties jwtProperties;
 
-    @Value("${cors.allowed-origins:http://localhost:5173}")
+    @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
     @Value("${app.cookie.secure:false}")
@@ -55,7 +55,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         log.info("OAuth2 로그인 성공 → JWT 발급: email={}", user.getEmail());
 
         // 1) JWT 토큰 발급
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole());
+        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole(), user.getUserId());
         String refreshToken = refreshTokenService.createAndStoreRefreshToken(user);
 
         // 2) Refresh token → HttpOnly 쿠키
@@ -70,10 +70,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         // 3) 프론트엔드로 리다이렉트 (access token은 URL 파라미터로 전달)
+        // isNew: 개인정보 동의 미완료 신규 소셜 유저
+        boolean isNew = user.getPrivacyAgreedAt() == null;
         String encodedToken = URLEncoder.encode(accessToken, StandardCharsets.UTF_8);
-        String redirectUrl = frontendUrl + "/oauth2/callback?token=" + encodedToken;
+        String redirectUrl = frontendUrl + "/oauth2/callback?token=" + encodedToken + "&isNew=" + isNew;
 
-        log.info("OAuth2 리다이렉트: {}", frontendUrl + "/oauth2/callback");
+        log.info("OAuth2 리다이렉트: {}, isNew={}", frontendUrl + "/oauth2/callback", isNew);
         response.sendRedirect(redirectUrl);
     }
 }

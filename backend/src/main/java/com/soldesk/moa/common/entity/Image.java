@@ -1,17 +1,16 @@
 package com.soldesk.moa.common.entity;
 
-import com.soldesk.moa.board.entity.Post;
-import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.common.entity.constant.ImageDomain;
+import com.soldesk.moa.common.entity.constant.ImageStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,8 +23,8 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = { "post", "user" })
-public class Image {
+@ToString
+public class Image extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,15 +39,35 @@ public class Image {
     @Column(nullable = false)
     private String path;
 
+    @Column(nullable = false, length = 30)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private ImageDomain domain = ImageDomain.COMMON;
+
+    @Column(nullable = true)
+    private Long ownerId;
+
+    @Column(nullable = false)
+    private Long uploadedByUserId;
+
     @Column(nullable = false)
     private Long ord;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "board_id")
-    private Post post;
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
-    private Users user;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private ImageStatus status = ImageStatus.USED;
+
+    public void markDeleted() {
+        this.deleted = true;
+    }
+
+    public void restore() {
+        this.deleted = false;
+    }
 
 }

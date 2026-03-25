@@ -42,5 +42,9 @@ public class AdminActionLog {
 
     private String requestUrl; // 요청 URL
 
+    private String ipAddress; // 요청ip
+
+    private String userAgent; // 브라우저
+
     private LocalDateTime timestamp; // 액션 발생 시간
 }

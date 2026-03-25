@@ -1,677 +1,734 @@
-/**
- * MOA Navbar Component
- * Design: Golden Afternoon Hygge - Warm ivory top nav
- * Features: 모임찾기, 커뮤니티, 에너지테스트, 알림, 로그인/로그아웃
- */
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Bell,
+  MessageCircle,
+  LayoutGrid,
+  Users,
+  MessageSquare,
+  Star,
+  HelpCircle,
+  Megaphone,
+  User,
+  Settings,
+  LogOut,
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../../users/reducers/authSlice";
+import type { AppDispatch, RootState } from "../../users/reducers/store";
+import { notificationApi } from "../../api/notificationApi";
+import type { Notification } from "../../types/notification";
+import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
 
-import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-
-interface NavbarProps {
-  isAdmin?: boolean;
-  isLoggedIn?: boolean;
-  userName?: string;
-}
-
-export default function Navbar({
-  isAdmin = false,
-  isLoggedIn = false,
-  userName = "",
-}: NavbarProps) {
+export default function Navbar() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
+  const { isLoggedIn, user } = useSelector((s: RootState) => s.auth);
+  const isAdmin = user?.userRole === "ADMIN";
+
+  const dropdownItems: Record<
+    string,
+    { label: string; href: string; icon: React.ReactNode }[]
+  > = {
+    "모임 찾기": [
+      { label: "전체 모임", href: "/circle", icon: <LayoutGrid size={15} /> },
+      { label: "내 모임", href: "/circle/my", icon: <Users size={15} /> },
+    ],
+    커뮤니티: [
+      { label: "자유게시판", href: "#", icon: <MessageSquare size={15} /> },
+      { label: "모임 후기", href: "#", icon: <Star size={15} /> },
+      { label: "Q&A", href: "#", icon: <HelpCircle size={15} /> },
+      { label: "공지사항", href: "#", icon: <Megaphone size={15} /> },
+    ],
+  };
+
+  const dispatch = useDispatch<AppDispatch>();
+
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [activityNoti, setActivityNoti] = useState<Notification[]>([]);
+  const [showActivityNoti, setShowActivityNoti] = useState(false);
+  const activityNotiRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const unreadActivityCount = activityNoti.filter((n) => !n.isRead).length;
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
+      ) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const navLinks = [
-    { label: "모임 찾기", path: "/gathering", icon: "🔍" },
-    { label: "커뮤니티", path: "/community", icon: "💬" },
-    { label: "에너지 테스트", path: "/energy-test", icon: "⚡" },
+  const handleLogout = async () => {
+    setProfileOpen(false);
+    await dispatch(logout());
+    navigate("/main");
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUnreadChatCount(0);
+      setActivityNoti([]);
+      return;
+    }
+    const fetch = () => {
+      notificationApi
+        .getAll()
+        .then((list) => {
+          setUnreadChatCount(
+            list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length,
+          );
+          setActivityNoti(list.filter((n) => n.type !== "CHAT_MESSAGE"));
+        })
+        .catch(() => {});
+    };
+    fetch();
+    const id = setInterval(fetch, 30000);
+    return () => clearInterval(id);
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (
+        activityNotiRef.current &&
+        !activityNotiRef.current.contains(e.target as Node)
+      ) {
+        setShowActivityNoti(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  const handleActivityNotiClick = async (n: Notification) => {
+    if (!n.isRead) {
+      await notificationApi.readOne(n.id);
+      setActivityNoti((p) =>
+        p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)),
+      );
+    }
+    setShowActivityNoti(false);
+    navigate("/circle/my");
+  };
+
+  const ACTIVITY_NOTI_ICONS: Record<string, string> = {
+    JOIN_REQUEST: "📨",
+    JOIN_APPROVED: "✅",
+    JOIN_REJECTED: "❌",
+    KICKED: "🚫",
+    CIRCLE_DISBANDED: "💔",
+  };
+
+  const navItems = [
+    "관리자 페이지",
+    "모임 찾기",
+    "커뮤니티",
+    "에너지 테스트",
+    "장소 추천",
   ];
 
-  const isActive = (path: string) => location.pathname === path;
-
-  const mockNotifications = [
-    {
-      id: 1,
-      text: "독서모임 '책벌레들'에서 새 공지가 올라왔어요.",
-      time: "5분 전",
-      unread: true,
-    },
-    {
-      id: 2,
-      text: "에너지 매칭: 새로운 모임 '수채화 그리기'를 추천드려요!",
-      time: "1시간 전",
-      unread: true,
-    },
-    {
-      id: 3,
-      text: "내일 오후 3시 '조용한 카페 모임' 일정을 잊지 마세요.",
-      time: "3시간 전",
-      unread: false,
-    },
-  ];
+  const navLinks: Record<string, string> = {
+    "모임 찾기": "/circle",
+    커뮤니티: "/board",
+    "에너지 테스트": isLoggedIn
+      ? "/users/energy-test/result"
+      : "/users/energy-test",
+    "장소 추천": "#",
+    "관리자 페이지": "/admin/maindashboard",
+  };
 
   return (
-    <nav
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        background: scrolled
-          ? "oklch(0.985 0.012 80 / 0.95)"
-          : "oklch(0.985 0.012 80 / 0.98)",
-        backdropFilter: "blur(12px)",
-        borderBottom: `1px solid oklch(0.88 0.02 75 / ${scrolled ? "0.8" : "0.5"})`,
-        boxShadow: scrolled ? "0 2px 20px oklch(0.28 0.05 55 / 0.06)" : "none",
-        transition: "all 0.3s ease",
-      }}
-    >
-      <div
+    <>
+      <header
         style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-          padding: "0 1.5rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          height: "64px",
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+          backgroundColor: "#fff",
+          borderBottom: "1px solid #e5e5e5",
         }}
       >
-        {/* Logo */}
-        <button
-          onClick={() => navigate("/main")}
+        <div
           style={{
+            maxWidth: 1200,
+            margin: "0 auto",
+            padding: "0 20px",
+            height: 60,
             display: "flex",
             alignItems: "center",
-            gap: "0.5rem",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
+            justifyContent: "space-between",
           }}
         >
-          <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663408313920/fypaDX6SmaoURVPotYREyB/moa-logo-icon-4GZ8pWmPxcRPenYiURWzgQ.webp"
-            alt="MOA"
-            style={{ width: "32px", height: "32px", objectFit: "contain" }}
-          />
-          <span
+          <Link
+            to="/main"
             style={{
-              fontFamily: "'Playfair Display', serif",
-              fontWeight: 700,
-              fontSize: "1.35rem",
-              color: "oklch(0.62 0.14 42)",
-              letterSpacing: "0.05em",
+              fontSize: 22,
+              fontWeight: 900,
+              letterSpacing: -0.5,
+              color: "#111",
+              textDecoration: "none",
             }}
           >
-            MOA
-          </span>
-        </button>
-
-        {/* Desktop Nav Links */}
-        <div className="hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => (
-            <button
-              key={link.path}
-              onClick={() => navigate(link.path)}
-              style={{
-                background: isActive(link.path)
-                  ? "oklch(0.62 0.14 42 / 0.1)"
-                  : "none",
-                border: "none",
-                borderRadius: "9999px",
-                padding: "0.5rem 1.1rem",
-                fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                fontWeight: isActive(link.path) ? 600 : 400,
-                fontSize: "0.9rem",
-                color: isActive(link.path)
-                  ? "oklch(0.62 0.14 42)"
-                  : "oklch(0.45 0.04 65)",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive(link.path)) {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "oklch(0.62 0.14 42 / 0.06)";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "oklch(0.62 0.14 42)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive(link.path)) {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "none";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "oklch(0.45 0.04 65)";
-                }
-              }}
-            >
-              <span style={{ fontSize: "0.85rem" }}>{link.icon}</span>
-              {link.label}
-            </button>
-          ))}
-          {isAdmin && (
-            <button
-              onClick={() => navigate("/admin")}
-              style={{
-                background: isActive("/admin")
-                  ? "oklch(0.52 0.07 130 / 0.12)"
-                  : "none",
-                border: "none",
-                borderRadius: "9999px",
-                padding: "0.5rem 1.1rem",
-                fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                fontWeight: isActive("/admin") ? 600 : 400,
-                fontSize: "0.9rem",
-                color: isActive("/admin")
-                  ? "oklch(0.52 0.07 130)"
-                  : "oklch(0.45 0.04 65)",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
-              }}
-            >
-              <span style={{ fontSize: "0.85rem" }}>⚙️</span>
-              관리자
-            </button>
-          )}
-        </div>
-
-        {/* Right: Notifications + Auth */}
-        <div className="hidden items-center gap-3 md:flex">
-          {/* Notification Bell */}
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => setNotifOpen(!notifOpen)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "oklch(0.45 0.04 65)",
-                transition: "all 0.2s ease",
-                position: "relative",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "oklch(0.62 0.14 42 / 0.08)";
-                (e.currentTarget as HTMLButtonElement).style.color =
-                  "oklch(0.62 0.14 42)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "none";
-                (e.currentTarget as HTMLButtonElement).style.color =
-                  "oklch(0.45 0.04 65)";
-              }}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-              {/* Unread badge */}
-              <span
-                style={{
-                  position: "absolute",
-                  top: "6px",
-                  right: "6px",
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  background: "oklch(0.62 0.14 42)",
-                  border: "2px solid oklch(0.985 0.012 80)",
-                }}
-              />
-            </button>
-
-            {/* Notification dropdown */}
-            {notifOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 8px)",
-                  right: 0,
-                  width: "320px",
-                  background: "oklch(0.985 0.012 80)",
-                  border: "1px solid oklch(0.88 0.02 75)",
-                  borderRadius: "1rem",
-                  boxShadow: "0 8px 32px oklch(0.28 0.05 55 / 0.12)",
-                  overflow: "hidden",
-                  zIndex: 200,
-                  animation: "fadeInUp 0.2s ease forwards",
-                }}
-              >
+            moa
+          </Link>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 24,
+              marginLeft: "auto",
+              marginRight: 24,
+            }}
+          >
+            <nav style={{ display: "flex", gap: 24 }}>
+              {navItems.map((item) => (
                 <div
+                  key={item}
+                  style={{ position: "relative" }}
+                  onMouseEnter={() => setHoveredItem(item)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  <Link
+                    to={navLinks[item] ?? "#"}
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 500,
+                      color: hoveredItem === item ? "#5F8F7B" : "#374151",
+                      textDecoration: "none",
+                      display: "inline-block",
+                      textAlign: "center",
+                      width: 76,
+                      whiteSpace: "nowrap",
+                      lineHeight: "60px",
+                      transition: "color 0.15s",
+                      visibility:
+                        item === "관리자 페이지" && !isAdmin
+                          ? "hidden"
+                          : "visible",
+                      pointerEvents:
+                        item === "관리자 페이지" && !isAdmin ? "none" : "auto",
+                    }}
+                  >
+                    {item}
+                  </Link>
+                  {hoveredItem === item && dropdownItems[item]?.length && (
+                    <div
+                      className="dropdown-menu"
+                      style={{
+                        position: "absolute",
+                        top: 51,
+                        left: 0,
+                        backgroundColor: "white",
+                        border: "1px solid #efefef",
+                        borderRadius: 12,
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                        padding: "6px",
+                        minWidth: 160,
+                        zIndex: 100,
+                      }}
+                    >
+                      {dropdownItems[item]?.map((sub) => (
+                        <Link
+                          key={sub.label}
+                          to={sub.href}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            height: 40,
+                            padding: "0 12px",
+                            borderRadius: 8,
+                            fontSize: 13,
+                            color: "#444",
+                            textDecoration: "none",
+                            whiteSpace: "nowrap",
+                            transition: "background 0.12s",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f5f5f5")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
+                        >
+                          <span style={{ color: "#888", display: "flex" }}>
+                            {sub.icon}
+                          </span>
+                          {sub.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </nav>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {!isLoggedIn && (
+              <div style={{ width: 68 }}>
+                <button
+                  onClick={() => {
+                    const current =
+                      window.location.pathname + window.location.search;
+                    const noRedirect = [
+                      "/users/login",
+                      "/users/signup",
+                      "/users/onboarding",
+                      "/",
+                    ];
+                    if (!noRedirect.some((p) => current.startsWith(p))) {
+                      sessionStorage.setItem("postLoginRedirect", current);
+                    }
+                    navigate("/users/login");
+                  }}
                   style={{
-                    padding: "1rem 1.25rem",
-                    borderBottom: "1px solid oklch(0.88 0.02 75)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    padding: "5px 0",
+                    width: "100%",
+                    borderRadius: 6,
+                    border: "1px solid #E38B6D",
+                    background: "transparent",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    color: "#E38B6D",
                   }}
                 >
+                  로그인
+                </button>
+              </div>
+            )}
+
+            {isLoggedIn && (
+              <div
+                ref={activityNotiRef}
+                style={{ position: "relative", marginRight: 16 }}
+              >
+                <button
+                  onClick={() => setShowActivityNoti((v) => !v)}
+                  title="활동 알림"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Bell size={20} color="#374151" strokeWidth={1.8} />
+                </button>
+                {unreadActivityCount > 0 && (
                   <span
                     style={{
-                      fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                      fontWeight: 600,
-                      fontSize: "0.9rem",
-                      color: "oklch(0.28 0.05 55)",
+                      position: "absolute",
+                      top: -3,
+                      right: -3,
+                      backgroundColor: "#ef4444",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: 16,
+                      height: 16,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      pointerEvents: "none",
                     }}
                   >
-                    알림
+                    {unreadActivityCount > 99 ? "99+" : unreadActivityCount}
                   </span>
-                  <span
-                    style={{
-                      background: "oklch(0.62 0.14 42)",
-                      color: "white",
-                      borderRadius: "9999px",
-                      padding: "0.1rem 0.5rem",
-                      fontSize: "0.72rem",
-                      fontWeight: 600,
-                    }}
-                  >
-                    2 새 알림
-                  </span>
-                </div>
-                {mockNotifications.map((notif) => (
+                )}
+                {showActivityNoti && (
                   <div
-                    key={notif.id}
                     style={{
-                      padding: "0.9rem 1.25rem",
-                      borderBottom: "1px solid oklch(0.88 0.02 75 / 0.5)",
-                      background: notif.unread
-                        ? "oklch(0.62 0.14 42 / 0.04)"
-                        : "transparent",
-                      cursor: "pointer",
-                      transition: "background 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.background =
-                        "oklch(0.62 0.14 42 / 0.07)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.background =
-                        notif.unread
-                          ? "oklch(0.62 0.14 42 / 0.04)"
-                          : "transparent";
+                      position: "absolute",
+                      top: "calc(100% + 8px)",
+                      right: 0,
+                      width: 300,
+                      background: "#fff",
+                      borderRadius: 12,
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                      border: "1px solid #E5E7EB",
+                      zIndex: 200,
+                      overflow: "hidden",
                     }}
                   >
                     <div
                       style={{
                         display: "flex",
-                        gap: "0.75rem",
-                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "12px 16px",
+                        borderBottom: "1px solid #F3F4F6",
                       }}
                     >
-                      {notif.unread && (
-                        <div
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 14,
+                          color: "#1F2937",
+                        }}
+                      >
+                        활동 알림
+                      </span>
+                      <button
+                        onClick={async () => {
+                          const ids = activityNoti
+                            .filter((n) => !n.isRead)
+                            .map((n) => n.id);
+                          if (ids.length === 0) return;
+                          await notificationApi.readAll();
+                          setActivityNoti((p) =>
+                            p.map((n) => ({ ...n, isRead: true })),
+                          );
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          fontSize: 12,
+                          color: "#5F8F7B",
+                          cursor: "pointer",
+                          fontWeight: 600,
+                        }}
+                      >
+                        전체 읽음
+                      </button>
+                    </div>
+                    <div style={{ maxHeight: 320, overflowY: "auto" }}>
+                      {activityNoti.length === 0 ? (
+                        <p
                           style={{
-                            width: "8px",
-                            height: "8px",
-                            borderRadius: "50%",
-                            background: "oklch(0.62 0.14 42)",
-                            marginTop: "5px",
-                            flexShrink: 0,
+                            textAlign: "center",
+                            padding: "24px 0",
+                            color: "#9CA3AF",
+                            fontSize: 13,
                           }}
-                        />
+                        >
+                          알림 없음
+                        </p>
+                      ) : (
+                        activityNoti.map((n) => (
+                          <div
+                            key={n.id}
+                            onClick={() => handleActivityNotiClick(n)}
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 10,
+                              padding: "10px 16px",
+                              cursor: "pointer",
+                              background: n.isRead ? "#fff" : "#EAF4F0",
+                              borderBottom: "1px solid #F3F4F6",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.background = "#F9FAFB")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.background = n.isRead
+                                ? "#fff"
+                                : "#EAF4F0")
+                            }
+                          >
+                            <span style={{ fontSize: 18, flexShrink: 0 }}>
+                              {ACTIVITY_NOTI_ICONS[n.type] ?? "🔔"}
+                            </span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  fontSize: 13,
+                                  color: "#1F2937",
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {n.message}
+                              </p>
+                              <p
+                                style={{
+                                  margin: "3px 0 0",
+                                  fontSize: 11,
+                                  color: "#9CA3AF",
+                                }}
+                              >
+                                {new Date(n.createdAt).toLocaleString("ko-KR", {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            </div>
+                            {!n.isRead && (
+                              <span
+                                style={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  background: "#5F8F7B",
+                                  flexShrink: 0,
+                                  marginTop: 4,
+                                }}
+                              />
+                            )}
+                          </div>
+                        ))
                       )}
-                      <div style={{ flex: 1 }}>
-                        <p
-                          style={{
-                            fontFamily: "'Noto Sans KR', sans-serif",
-                            fontSize: "0.82rem",
-                            color: "oklch(0.35 0.04 55)",
-                            lineHeight: 1.5,
-                            marginBottom: "0.25rem",
-                          }}
-                        >
-                          {notif.text}
-                        </p>
-                        <p
-                          style={{
-                            fontFamily: "'DM Sans', sans-serif",
-                            fontSize: "0.72rem",
-                            color: "oklch(0.6 0.03 65)",
-                          }}
-                        >
-                          {notif.time}
-                        </p>
-                      </div>
                     </div>
                   </div>
-                ))}
-                <div
-                  style={{
-                    padding: "0.75rem",
-                    textAlign: "center",
-                  }}
-                >
-                  <button
-                    onClick={() => {
-                      navigate("/notifications");
-                      setNotifOpen(false);
-                    }}
-                    style={{
-                      fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                      fontSize: "0.82rem",
-                      color: "oklch(0.62 0.14 42)",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      fontWeight: 500,
-                    }}
-                  >
-                    모든 알림 보기 →
-                  </button>
-                </div>
+                )}
               </div>
             )}
-          </div>
 
-          {/* Auth buttons */}
-          {isLoggedIn ? (
-            <div
-              style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
-            >
-              <button
-                onClick={() => navigate("/profile")}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  background: "oklch(0.62 0.14 42 / 0.08)",
-                  border: "none",
-                  borderRadius: "9999px",
-                  padding: "0.4rem 1rem 0.4rem 0.5rem",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "oklch(0.62 0.14 42 / 0.15)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "oklch(0.62 0.14 42 / 0.08)";
-                }}
-              >
-                <div
+            {isLoggedIn && (
+              <div style={{ position: "relative", marginRight: 20 }}>
+                <button
+                  onClick={() => setChatOpen((v) => !v)}
+                  title="채팅"
                   style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "50%",
-                    background: "oklch(0.62 0.14 42)",
+                    width: 32,
+                    height: 32,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    color: "white",
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    fontFamily: "'DM Sans', sans-serif",
+                    padding: 0,
+                    flexShrink: 0,
                   }}
                 >
-                  {userName.charAt(0) || "U"}
-                </div>
-                <span
-                  style={{
-                    fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                    fontSize: "0.85rem",
-                    fontWeight: 500,
-                    color: "oklch(0.35 0.04 55)",
-                  }}
-                >
-                  {userName || "내 프로필"}
-                </span>
-              </button>
-              <button
-                onClick={() => {
-                  toast.success("로그아웃 되었습니다.");
-                  navigate("/");
-                }}
-                style={{
-                  background: "none",
-                  border: "1px solid oklch(0.88 0.02 75)",
-                  borderRadius: "9999px",
-                  padding: "0.45rem 1rem",
-                  fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                  fontSize: "0.85rem",
-                  color: "oklch(0.52 0.04 65)",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor =
-                    "oklch(0.62 0.14 42)";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "oklch(0.62 0.14 42)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor =
-                    "oklch(0.88 0.02 75)";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "oklch(0.52 0.04 65)";
-                }}
-              >
-                로그아웃
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "flex", gap: "0.75rem" }}>
-              <button
-                onClick={() => navigate("/login")}
-                style={{
-                  background: "none",
-                  border: "1px solid oklch(0.88 0.02 75)",
-                  borderRadius: "9999px",
-                  padding: "0.5rem 1.2rem",
-                  fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                  fontSize: "0.88rem",
-                  color: "oklch(0.45 0.04 65)",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor =
-                    "oklch(0.62 0.14 42)";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "oklch(0.62 0.14 42)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor =
-                    "oklch(0.88 0.02 75)";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "oklch(0.45 0.04 65)";
-                }}
-              >
-                로그인
-              </button>
-              <button
-                onClick={() => navigate("/register")}
-                style={{
-                  background: "oklch(0.62 0.14 42)",
-                  border: "none",
-                  borderRadius: "9999px",
-                  padding: "0.5rem 1.2rem",
-                  fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                  fontSize: "0.88rem",
-                  fontWeight: 600,
-                  color: "oklch(0.972 0.018 85)",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "oklch(0.55 0.13 42)";
-                  (e.currentTarget as HTMLButtonElement).style.transform =
-                    "translateY(-1px)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "oklch(0.62 0.14 42)";
-                  (e.currentTarget as HTMLButtonElement).style.transform =
-                    "translateY(0)";
-                }}
-              >
-                회원가입
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "0.5rem",
-            color: "oklch(0.45 0.04 65)",
-          }}
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            {mobileOpen ? (
-              <path d="M18 6L6 18M6 6l12 12" />
-            ) : (
-              <>
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </>
+                  <MessageCircle size={20} color="#374151" strokeWidth={1.8} />
+                </button>
+                {unreadChatCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -3,
+                      right: -3,
+                      backgroundColor: "#ef4444",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: 16,
+                      height: 16,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {unreadChatCount > 99 ? "99+" : unreadChatCount}
+                  </span>
+                )}
+              </div>
             )}
-          </svg>
-        </button>
-      </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div
-          style={{
-            background: "oklch(0.985 0.012 80)",
-            borderTop: "1px solid oklch(0.88 0.02 75)",
-            padding: "1rem 1.5rem 1.5rem",
-            animation: "fadeInUp 0.2s ease forwards",
-          }}
-        >
-          {navLinks.map((link) => (
-            <button
-              key={link.path}
-              onClick={() => {
-                navigate(link.path);
-                setMobileOpen(false);
-              }}
+            <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "0.75rem",
-                width: "100%",
-                background: isActive(link.path)
-                  ? "oklch(0.62 0.14 42 / 0.08)"
-                  : "none",
-                border: "none",
-                borderRadius: "0.75rem",
-                padding: "0.85rem 1rem",
-                fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                fontWeight: isActive(link.path) ? 600 : 400,
-                fontSize: "0.95rem",
-                color: isActive(link.path)
-                  ? "oklch(0.62 0.14 42)"
-                  : "oklch(0.35 0.04 55)",
-                cursor: "pointer",
-                marginBottom: "0.25rem",
-                textAlign: "left",
+                gap: 6,
               }}
             >
-              <span>{link.icon}</span>
-              {link.label}
-            </button>
-          ))}
-          <div
-            style={{
-              borderTop: "1px solid oklch(0.88 0.02 75)",
-              marginTop: "0.75rem",
-              paddingTop: "0.75rem",
-              display: "flex",
-              gap: "0.75rem",
-            }}
-          >
-            <button
-              onClick={() => {
-                navigate("/login");
-                setMobileOpen(false);
-              }}
-              style={{
-                flex: 1,
-                background: "none",
-                border: "1px solid oklch(0.88 0.02 75)",
-                borderRadius: "9999px",
-                padding: "0.65rem",
-                fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                fontSize: "0.9rem",
-                color: "oklch(0.45 0.04 65)",
-                cursor: "pointer",
-              }}
-            >
-              로그인
-            </button>
-            <button
-              onClick={() => {
-                navigate("/register");
-                setMobileOpen(false);
-              }}
-              style={{
-                flex: 1,
-                background: "oklch(0.62 0.14 42)",
-                border: "none",
-                borderRadius: "9999px",
-                padding: "0.65rem",
-                fontFamily: "'DM Sans', 'Noto Sans KR', sans-serif",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                color: "oklch(0.972 0.018 85)",
-                cursor: "pointer",
-              }}
-            >
-              회원가입
-            </button>
+              {isLoggedIn ? (
+                <div
+                  ref={profileRef}
+                  style={{
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <div
+                    onClick={() => setProfileOpen((v) => !v)}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      backgroundColor: "#6C8197",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: "#fff",
+                      userSelect: "none",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {user?.profileImageUrl ? (
+                      <img
+                        src={user.profileImageUrl}
+                        alt="프로필"
+                        style={{ width: 40, height: 40, objectFit: "cover" }}
+                      />
+                    ) : (
+                      (user?.nickname?.[0]?.toUpperCase() ?? "U")
+                    )}
+                  </div>
+                  <span
+                    onClick={() => navigate("/users/profile")}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.textDecoration = "underline")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.textDecoration = "none")
+                    }
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 400,
+                      color: "#374151",
+                      maxWidth: 80,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {user?.nickname}
+                  </span>
+                  {profileOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 4px)",
+                        left: 0,
+                        backgroundColor: "white",
+                        border: "1px solid #efefef",
+                        borderRadius: 12,
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                        padding: "6px",
+                        minWidth: 150,
+                        zIndex: 100,
+                      }}
+                    >
+                      {[
+                        {
+                          label: "마이 프로필",
+                          href: "/users/profile",
+                          icon: <User size={15} />,
+                        },
+                        {
+                          label: "계정",
+                          href: "/users/profile",
+                          icon: <Settings size={15} />,
+                        },
+                      ].map((item) => (
+                        <Link
+                          key={item.label}
+                          to={item.href}
+                          onClick={() => setProfileOpen(false)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            height: 40,
+                            padding: "0 12px",
+                            borderRadius: 8,
+                            fontSize: 13,
+                            color: "#444",
+                            textDecoration: "none",
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f5f5f5")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
+                        >
+                          <span style={{ color: "#888", display: "flex" }}>
+                            {item.icon}
+                          </span>
+                          {item.label}
+                        </Link>
+                      ))}
+                      <div
+                        style={{
+                          height: 1,
+                          backgroundColor: "#f0f0f0",
+                          margin: "4px 6px",
+                        }}
+                      />
+                      <button
+                        onClick={handleLogout}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          height: 40,
+                          padding: "0 12px",
+                          borderRadius: 8,
+                          fontSize: 13,
+                          color: "#e53e3e",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          width: "100%",
+                          whiteSpace: "nowrap",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#fff5f5")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
+                      >
+                        <span style={{ color: "#e53e3e", display: "flex" }}>
+                          <LogOut size={15} />
+                        </span>
+                        로그아웃
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => navigate("/users/signup")}
+                  style={{
+                    padding: "5px 0",
+                    width: 72,
+                    borderRadius: 6,
+                    border: "none",
+                    background: "#E38B6D",
+                    color: "#fff",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  회원가입
+                </button>
+              )}
+            </div>
           </div>
         </div>
+      </header>
+      {isLoggedIn && (
+        <FloatingChatWindow
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+        />
       )}
-    </nav>
+    </>
   );
 }

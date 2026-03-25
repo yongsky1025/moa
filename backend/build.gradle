@@ -24,10 +24,23 @@ repositories {
 	mavenCentral()
 }
 
+dependencyManagement {
+	imports {
+		mavenBom 'org.springframework.ai:spring-ai-bom:1.0.0'
+	}
+}
+
 dependencies {
+	// Spring AI - OpenAI 임베딩
+	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+
 
 	// thymeleaf 레이아웃 상속
 	implementation 'nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect:3.4.0'
+	// WebSocket 클라이언트 라이브러리 (SockJS, STOMP)
+	implementation 'org.webjars:sockjs-client:1.5.1'
+	implementation 'org.webjars:stomp-websocket:2.3.4'
+	implementation 'org.webjars:webjars-locator-core:0.59'
 	// querydsl
 	implementation 'com.querydsl:querydsl-core:5.1.0'
 	
@@ -42,6 +55,14 @@ dependencies {
     // Jakarta (컴파일 타임)
     annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
     annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
+	// JWT
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+	// swagger
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15'
+	// entity <=> dto modelmapper
+	implementation 'org.modelmapper:modelmapper:3.2.6'
 	
 	// JWT
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
@@ -53,11 +74,13 @@ dependencies {
 	// 3.x => spring boot 4.x 버전만 가능(swagger-ui)
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	// implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+    implementation 'org.springframework.boot:spring-boot-starter-security' 
+	// implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.mysql:mysql-connector-j'
@@ -66,10 +89,26 @@ dependencies {
 	annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 	annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.springframework:spring-messaging'
+	testImplementation 'org.springframework:spring-websocket'
+	// testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	// 테스트용 인메모리 DB (빌드 오류 수정)
+	testRuntimeOnly 'com.h2database:h2'
+	// 채팅 - Redis pub/sub 메시지 브로커
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+def generated = layout.buildDirectory.dir("generated/sources/annotationProcessor/java/main")
+
+sourceSets {
+	main {
+		java {
+			srcDir generated
+		}
+	}
 }

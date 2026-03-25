@@ -1,17 +1,37 @@
 spring:
+  config:
+    activate:
+      on-profile: local
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/moa
-    username: team_moa
-    password: 12345
-
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: localhost
+      port: 6379
   jpa:
     hibernate:
       ddl-auto: create
-    properties:
-      hibernate:
-        "[format_sql]": true
-        "[highlight_sql]": true
 
-cors:
-  allowed-origins: http://localhost:5173
+jwt:
+  secret: ${JWT_SECRET}
+
+app:
+  frontend-url: http://localhost:5173
+  cookie:
+    secure: false
+    same-site: Lax
+
+upload:
+  root: ${user.dir}/uploads
+  base-url: http://localhost:8080
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: debug
+        orm:
+          jdbc:
+            bind: trace

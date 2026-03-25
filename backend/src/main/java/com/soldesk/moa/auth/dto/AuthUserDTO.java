@@ -22,6 +22,8 @@ public class AuthUserDTO extends User {
     private final String nickname;
     private final UserRole role;
     private final UserStatus status;
+    private final boolean onboardingCompleted;
+    private final String profileImageUrl;
 
     // 소셜로 로그인한 유저의 비밀번호 모름 = 삼항연산자
     public AuthUserDTO(Users users) {
@@ -34,10 +36,12 @@ public class AuthUserDTO extends User {
         this.nickname = users.getNickname();
         this.role = users.getUserRole();
         this.status = users.getUserStatus();
+        this.onboardingCompleted = users.getOnboardingCompletedAt() != null;
+        this.profileImageUrl = users.getProfileImageUrl();
     }
 
     // 응답용 DTO로 변환 편의 메서드
     public AuthUserResponseDTO toResponse() {
-        return new AuthUserResponseDTO(publicId, nickname, role, status);
+        return new AuthUserResponseDTO(publicId, nickname, role, status, onboardingCompleted, profileImageUrl);
     }
 }
