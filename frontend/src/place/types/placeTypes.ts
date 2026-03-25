@@ -1,3 +1,15 @@
+// ── 태그 ─────────────────────────────────────
+export interface TagDTO {
+  id: number;
+  name: string;
+}
+
+export interface TagCategoryGroupDTO {
+  categoryId: number;
+  categoryName: string;
+  tags: TagDTO[];
+}
+
 // ── 장소 목록 카드 ────────────────────────────
 export interface PlaceCardDTO {
   id: number;

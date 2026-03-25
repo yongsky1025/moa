@@ -1,17 +1,14 @@
-import axios from "axios";
 import type {
   AdminPlaceSearchDTO,
   AdminPlaceResponseDTO,
   AdminPlaceDetailDTO,
   ClosedDayDTO,
   PageResultDTO,
-  TagCategoryGroupDTO,
   PlaceCreateRequest,
 } from "../types/adminTypes";
 import { API_SERVER_HOST_ADMIN } from "./adminDashboardApi";
 import api from "../../api/axiosInstance";
-
-const API_HOST = "http://localhost:8080";
+export { fetchTagsGrouped } from "../../place/api/placeRentalApi";
 
 // ── 이미지 업로드 ────────────────────────────────────────
 
@@ -44,21 +41,13 @@ export const uploadImageFile = async (
 ): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await axios.post<{ fileUrl: string }>(
-    `${API_HOST}${uploadUrl}`,
-    formData,
-    { headers: { "Content-Type": "multipart/form-data" } },
-  );
+  const res = await api.post<{ fileUrl: string }>(uploadUrl, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   // fileUrl은 절대 URL(http://localhost:8080/uploads/...) → 경로만 추출
   const fileUrl = res.data.fileUrl;
   const idx = fileUrl.indexOf("/uploads/");
   return idx >= 0 ? fileUrl.substring(idx) : fileUrl;
-};
-
-// 태그 카테고리별 그룹핑 조회
-export const fetchTagsGrouped = async () => {
-  const res = await axios.get<TagCategoryGroupDTO[]>("api/tags/grouped");
-  return res.data;
 };
 
 // 장소 등록

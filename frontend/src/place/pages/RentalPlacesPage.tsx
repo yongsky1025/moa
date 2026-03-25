@@ -4,7 +4,7 @@ import PlaceSearchBar from "../components/PlaceSearchBar";
 import PlaceFilterBar from "../components/PlaceFilterBar";
 import PlaceCardGrid from "../components/PlaceCardGrid";
 import PlaceMapView from "../components/PlaceMapView";
-import { fetchPlaces } from "../api/placeListApi";
+import { fetchPlaces } from "../api/placeRentalApi";
 import type { PlaceCardDTO, PlaceListResponse, PlaceSearchParams } from "../types/placeTypes";
 import type { TagCategoryGroup } from "../components/PlaceTagFilterDropdown";
 import api from "../../users/utils/jwtUtil";

@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceDetailDTO;
 import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceResponseDTO;
 import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceSearchDTO;
-import com.soldesk.moa.admin.dashboard.service.AdminImageService;
 import com.soldesk.moa.admin.dashboard.service.AdminService;
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
@@ -56,16 +55,14 @@ public class AdminPlaceController {
     @PostMapping("/register")
     @Operation(summary = "장소 등록(관리자)")
     public Long postRegister(@RequestBody PlaceCreateDTO dto, @AuthenticationPrincipal AuthUserDTO authUserDTO) {
-        Long userId = authUserDTO != null ? authUserDTO.getUserId() : AdminImageService.ADMIN_UPLOADER_ID;
-        return adminService.createPlace(dto, userId);
+        return adminService.createPlace(dto, authUserDTO.getUserId());
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "장소 정보 수정(관리자)")
     public Long putPlaceInfo(@PathVariable Long id, @RequestBody PlaceCreateDTO dto,
             @AuthenticationPrincipal AuthUserDTO authUserDTO) {
-        Long userId = authUserDTO != null ? authUserDTO.getUserId() : AdminImageService.ADMIN_UPLOADER_ID;
-        return adminService.updatePlace(id, dto, userId);
+        return adminService.updatePlace(id, dto, authUserDTO.getUserId());
     }
 
     @DeleteMapping("/{id}")

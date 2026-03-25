@@ -1,4 +1,3 @@
-import axios from "axios";
 import { API_SERVER_HOST_ADMIN } from "./adminDashboardApi";
 import type {
   AdminCircleSearchDTO,
@@ -97,7 +96,7 @@ export const fetchCircleCategories = async () => {
 
 // 인기모임 TOP5
 export const fetchPopularCircles = async () => {
-  const res = await axios.get<PopularCircleDTO[]>(
+  const res = await api.get<PopularCircleDTO[]>(
     `${API_SERVER_HOST_ADMIN}/circles/popular-circles`,
   );
   return res.data;

@@ -124,7 +124,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/chat/**").authenticated()
 
                                                 // ---------- 관리자----------
-                                                .requestMatchers("api/admin/popular-circles").permitAll() // 메인페이지에
+                                                .requestMatchers("/api/admin/popular-circles").permitAll() // 메인페이지에
                                                                                                           // 써야할수있으니 허용
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 security 적용
                                                 // ---------------- 장소(place) -----------------

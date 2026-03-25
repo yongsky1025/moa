@@ -1,7 +1,7 @@
-package com.soldesk.moa.place.entity;
+package com.soldesk.moa.place.payment.entity;
 
 import com.soldesk.moa.common.entity.BaseEntity;
-import com.soldesk.moa.place.entity.constant.PaymentStatus;
+import com.soldesk.moa.place.payment.entity.constant.PaymentStatus;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
