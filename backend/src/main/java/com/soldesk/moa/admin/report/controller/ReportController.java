@@ -39,13 +39,13 @@ public class ReportController {
 
     @PostMapping
     @Operation(summary = "신고 접수")
-    // @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')") 추후 열기
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<Void> postReport(
             @AuthenticationPrincipal AuthUserDTO authUserDTO,
             @RequestBody ReportRequestDTO dto) {
         // Security 적용 전 임시: 인증 없으면 1L (개발용 기본 유저)
         // Security 적용 후: authUserDTO.getUserId() 만 사용
-        Long reporterId = authUserDTO != null ? authUserDTO.getUserId() : 1L;
+        Long reporterId = authUserDTO.getUserId();
         log.info("신고 접수 요청 reporterId={}", reporterId);
         reportService.submitReport(reporterId, dto);
         return ResponseEntity.ok().build();
@@ -53,6 +53,7 @@ public class ReportController {
 
     @GetMapping("/list")
     @Operation(summary = "신고 리스트")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PageResultDTO<ReportResponseDTO>> getReports(@ModelAttribute ReportFilterDTO filterDTO) {
         log.info("신고 리스트 요청");
         return ResponseEntity.ok(reportService.getReports(filterDTO));
@@ -60,6 +61,7 @@ public class ReportController {
 
     @GetMapping("/{reportId}")
     @Operation(summary = "신고 상세 정보")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ReportResponseDTO> getOneReport(@PathVariable Long reportId) {
         log.info("신고 상세 정보 요청");
         return ResponseEntity.ok(reportService.getOneReport(reportId));
@@ -67,6 +69,7 @@ public class ReportController {
 
     @PatchMapping("/{reportId}/status")
     @Operation(summary = "신고 상태 변경")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateStatus(
             @PathVariable Long reportId,
             @RequestParam ReportStatus status,

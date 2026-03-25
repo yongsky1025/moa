@@ -12,10 +12,11 @@ import type {
   PageRequestDTO,
   AdminCircleCategoryRequestDTO,
 } from "../types/adminTypes";
+import api from "../../api/axiosInstance";
 
 // 전체 모임 리스트 (페이징 + 필터)
 export const fetchCircleList = async (dto: AdminCircleSearchDTO) => {
-  const res = await axios.get<PageResultDTO<AdminCircleResponseDTO>>(
+  const res = await api.get<PageResultDTO<AdminCircleResponseDTO>>(
     `${API_SERVER_HOST_ADMIN}/circles/list`,
     { params: dto },
   );
@@ -24,7 +25,7 @@ export const fetchCircleList = async (dto: AdminCircleSearchDTO) => {
 
 // 모임 상세 조회
 export const fetchCircleDetail = async (circleId: number) => {
-  const res = await axios.get<AdminCircleDetailDTO>(
+  const res = await api.get<AdminCircleDetailDTO>(
     `${API_SERVER_HOST_ADMIN}/circles/${circleId}`,
   );
   return res.data;
@@ -35,7 +36,7 @@ export const fetchCircleMembers = async (
   circleId: number,
   dto: PageRequestDTO,
 ) => {
-  const res = await axios.get<PageResultDTO<AdminCircleMemberDTO>>(
+  const res = await api.get<PageResultDTO<AdminCircleMemberDTO>>(
     `${API_SERVER_HOST_ADMIN}/circles/${circleId}/members`,
     { params: dto },
   );
@@ -47,7 +48,7 @@ export const fetchCirclePosts = async (
   circleId: number,
   dto: PageRequestDTO,
 ) => {
-  const res = await axios.get<PageResultDTO<AdminCirclePostDTO>>(
+  const res = await api.get<PageResultDTO<AdminCirclePostDTO>>(
     `${API_SERVER_HOST_ADMIN}/circles/${circleId}/posts`,
     { params: dto },
   );
@@ -56,7 +57,7 @@ export const fetchCirclePosts = async (
 
 // 승인 대기 목록
 export const fetchPendingCircles = async () => {
-  const res = await axios.get<PendingCircleDTO[]>(
+  const res = await api.get<PendingCircleDTO[]>(
     `${API_SERVER_HOST_ADMIN}/circles/pending`,
   );
   return res.data;
@@ -64,7 +65,7 @@ export const fetchPendingCircles = async () => {
 
 // 모임 승인
 export const approveCircle = async (circleId: number) => {
-  const res = await axios.patch(
+  const res = await api.patch(
     `${API_SERVER_HOST_ADMIN}/circles/${circleId}/approve`,
   );
   return res.data;
@@ -72,7 +73,7 @@ export const approveCircle = async (circleId: number) => {
 
 // 모임 반려
 export const rejectCircle = async (circleId: number) => {
-  const res = await axios.patch(
+  const res = await api.patch(
     `${API_SERVER_HOST_ADMIN}/circles/${circleId}/reject`,
   );
   return res.data;
@@ -80,7 +81,7 @@ export const rejectCircle = async (circleId: number) => {
 
 // 모임 강제 해산
 export const closeCircle = async (circleId: number) => {
-  const res = await axios.patch(
+  const res = await api.patch(
     `${API_SERVER_HOST_ADMIN}/circles/${circleId}/close`,
   );
   return res.data;
@@ -88,7 +89,7 @@ export const closeCircle = async (circleId: number) => {
 
 // 카테고리 이름 목록
 export const fetchCircleCategories = async () => {
-  const res = await axios.get<string[]>(
+  const res = await api.get<string[]>(
     `${API_SERVER_HOST_ADMIN}/circles/categories`,
   );
   return res.data;
@@ -106,10 +107,7 @@ export const fetchPopularCircles = async () => {
 export const createCircleCategory = async (
   dto: AdminCircleCategoryRequestDTO,
 ) => {
-  const res = await axios.post(
-    `${API_SERVER_HOST_ADMIN}/circles/category`,
-    dto,
-  );
+  const res = await api.post(`${API_SERVER_HOST_ADMIN}/circles/category`, dto);
   console.log("circle category name", dto);
   return res.data;
 };

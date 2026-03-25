@@ -18,4 +18,5 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             AND r.endTime < :now
             """)
     List<Reservation> findExpiredReservations(LocalDateTime now);
+    
 }

@@ -9,8 +9,8 @@ import type {
   PlaceCreateRequest,
 } from "../types/adminTypes";
 import { API_SERVER_HOST_ADMIN } from "./adminDashboardApi";
+import api from "../../api/axiosInstance";
 
-const API_PLACES_HOST = "http://localhost:8080/api/places";
 const API_HOST = "http://localhost:8080";
 
 // ── 이미지 업로드 ────────────────────────────────────────
@@ -28,7 +28,7 @@ export const requestUploadUrl = async (
   contentType: string,
   domain = "PLACE",
 ): Promise<UploadUrlResponse> => {
-  const res = await axios.post<UploadUrlResponse>(
+  const res = await api.post<UploadUrlResponse>(
     `${API_SERVER_HOST_ADMIN}/images/upload-url`,
     { domain, fileName, contentType },
   );
@@ -57,15 +57,13 @@ export const uploadImageFile = async (
 
 // 태그 카테고리별 그룹핑 조회
 export const fetchTagsGrouped = async () => {
-  const res = await axios.get<TagCategoryGroupDTO[]>(
-    `${API_PLACES_HOST}/tags/grouped`,
-  );
+  const res = await axios.get<TagCategoryGroupDTO[]>("api/tags/grouped");
   return res.data;
 };
 
 // 장소 등록
 export const registerPlace = async (dto: PlaceCreateRequest) => {
-  const res = await axios.post<number>(
+  const res = await api.post<number>(
     `${API_SERVER_HOST_ADMIN}/places/register`,
     dto,
   );
@@ -74,7 +72,7 @@ export const registerPlace = async (dto: PlaceCreateRequest) => {
 
 // 장소 목록 조회 (검색/필터/정렬)
 export const fetchAdminPlaces = async (dto: AdminPlaceSearchDTO) => {
-  const res = await axios.get<PageResultDTO<AdminPlaceResponseDTO>>(
+  const res = await api.get<PageResultDTO<AdminPlaceResponseDTO>>(
     `${API_SERVER_HOST_ADMIN}/places/list`,
     { params: dto },
   );
@@ -83,7 +81,7 @@ export const fetchAdminPlaces = async (dto: AdminPlaceSearchDTO) => {
 
 // 장소 단건 조회 (수정 페이지용)
 export const fetchAdminPlace = async (id: number) => {
-  const res = await axios.get<AdminPlaceDetailDTO>(
+  const res = await api.get<AdminPlaceDetailDTO>(
     `${API_SERVER_HOST_ADMIN}/places/${id}`,
   );
   return res.data;
@@ -91,7 +89,7 @@ export const fetchAdminPlace = async (id: number) => {
 
 // 장소 수정
 export const updatePlace = async (id: number, dto: PlaceCreateRequest) => {
-  const res = await axios.put<number>(
+  const res = await api.put<number>(
     `${API_SERVER_HOST_ADMIN}/places/${id}`,
     dto,
   );
@@ -100,22 +98,26 @@ export const updatePlace = async (id: number, dto: PlaceCreateRequest) => {
 
 // 장소 삭제 (소프트)
 export const deletePlace = async (id: number) => {
-  await axios.delete(`${API_SERVER_HOST_ADMIN}/places/${id}`);
+  await api.delete(`${API_SERVER_HOST_ADMIN}/places/${id}`);
 };
 
 // ── 특정 휴무일 관리 ──
 
 // 특정 휴무일 목록 조회
 export const fetchClosedDays = async (placeId: number) => {
-  const res = await axios.get<ClosedDayDTO[]>(
+  const res = await api.get<ClosedDayDTO[]>(
     `${API_SERVER_HOST_ADMIN}/places/${placeId}/closed-days`,
   );
   return res.data;
 };
 
 // 특정 휴무일 추가
-export const addClosedDay = async (placeId: number, date: string, reason: string) => {
-  const res = await axios.post<ClosedDayDTO>(
+export const addClosedDay = async (
+  placeId: number,
+  date: string,
+  reason: string,
+) => {
+  const res = await api.post<ClosedDayDTO>(
     `${API_SERVER_HOST_ADMIN}/places/${placeId}/closed-days`,
     { date, reason },
   );
@@ -124,7 +126,7 @@ export const addClosedDay = async (placeId: number, date: string, reason: string
 
 // 특정 휴무일 삭제
 export const removeClosedDay = async (placeId: number, closedDayId: number) => {
-  await axios.delete(
+  await api.delete(
     `${API_SERVER_HOST_ADMIN}/places/${placeId}/closed-days/${closedDayId}`,
   );
 };

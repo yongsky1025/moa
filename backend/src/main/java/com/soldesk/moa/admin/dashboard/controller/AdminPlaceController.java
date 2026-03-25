@@ -3,6 +3,7 @@ package com.soldesk.moa.admin.dashboard.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +34,7 @@ import lombok.extern.log4j.Log4j2;
 @RequestMapping("/api/admin/places")
 @Tag(name = "Admin place section", description = "Response MOA API")
 @Log4j2
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminPlaceController {
 
     private final AdminService adminService;

@@ -123,11 +123,12 @@ public class SecurityConfig {
                                                 .requestMatchers("/chat/**").authenticated()
                                                 .requestMatchers("/api/chat/**").authenticated()
 
-                                                // ---------- 관리자, 장소, 이미지 ----------
-                                                .requestMatchers("/api/admin/**").permitAll() // 임시로 다 열어둠
+                                                // ---------- 관리자----------
+                                                .requestMatchers("api/admin/popular-circles").permitAll() // 메인페이지에
+                                                                                                          // 써야할수있으니 허용
+                                                .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 security 적용
+                                                // ---------------- 장소(place) -----------------
                                                 .requestMatchers("/api/places/**").permitAll()
-                                                .requestMatchers("/api/images/**").permitAll() // 이미지 업로드 (개발 임시)
-                                                .requestMatchers("/api/local-files/**").permitAll() // 로컬 파일 업로드 (개발 임시)
                                                 // ----------------------------------
                                                 // swagger 임시 허용(개발중)
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
