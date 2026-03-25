@@ -17,7 +17,7 @@ import com.soldesk.moa.auth.dto.AuthUserDTO;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/circles/{circleId}/members")
+@RequestMapping("/api/circles/{circleId}/members")
 @RequiredArgsConstructor
 @Validated
 public class CircleMemberContoller {

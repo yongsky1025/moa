@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/circles/{circleId}/schedules")
+@RequestMapping("/api/circles/{circleId}/schedules")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API_SERVER_HOST_ADMIN = 'http://localhost:8080/api/admin';
+export const API_SERVER_HOST_ADMIN = '/api/admin';
 
 export const fetchAdminMain = async () => {
   const res = await axios.get(`${API_SERVER_HOST_ADMIN}/main`);

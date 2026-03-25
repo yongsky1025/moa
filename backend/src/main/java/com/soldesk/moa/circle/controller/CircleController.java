@@ -23,7 +23,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/circles")
+@RequestMapping("/api/circles")
 @RequiredArgsConstructor
 @Validated
 public class CircleController {

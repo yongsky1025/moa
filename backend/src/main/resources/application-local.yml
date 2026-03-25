@@ -1,6 +1,7 @@
 spring:
   config:
     activate:
+      # 로컬 개발 환경에서만 적용되는 설정
       on-profile: local
   datasource:
     url: ${DB_URL}
@@ -18,7 +19,11 @@ jwt:
   secret: ${JWT_SECRET}
 
 app:
+  # 프론트 로그인/리다이렉트 기준 URL (로컬)
   frontend-url: http://localhost:5173
+  cors:
+    # 로컬 브라우저에서 백엔드 호출을 허용할 Origin
+    allowed-origin-patterns: http://localhost:5173
   cookie:
     secure: false
     same-site: Lax

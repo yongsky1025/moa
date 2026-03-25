@@ -10,7 +10,7 @@ import type {
 } from "../types/adminTypes";
 import { API_SERVER_HOST_ADMIN } from "./adminDashboardApi";
 
-const API_HOST = "http://localhost:8080/api";
+const API_HOST = "/api";
 
 // 태그 카테고리별 그룹핑 조회
 export const fetchTagsGrouped = async () => {
