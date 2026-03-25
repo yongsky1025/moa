@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 public class ScheduleResponseDTO {
 
     private Long scheduleId;
+    private Long circleId;
     private String title;
     private String description;
     private LocalDateTime startAt;
@@ -33,6 +34,7 @@ public class ScheduleResponseDTO {
 
     public ScheduleResponseDTO(Schedule schedule) {
         this.scheduleId = schedule.getScheduleId();
+        this.circleId = schedule.getCircle().getCircleId();
         this.title = schedule.getTitle();
         this.description = schedule.getDescription();
         this.startAt = schedule.getStartAt();

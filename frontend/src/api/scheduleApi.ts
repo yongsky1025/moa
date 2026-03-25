@@ -5,6 +5,7 @@ import type {
   ScheduleUpdateRequest,
   ScheduleMember,
 } from '../schedule/types/schedule';
+export type { ScheduleResponse };
 import type { TagCategoryGroup } from './placeApi';
 
 export interface TagSuggestResult {
@@ -53,5 +54,9 @@ export const scheduleApi = {
   // 제목+설명 기반 태그 추천
   suggestTags: (title: string, description: string) =>
     api.post<TagSuggestResult[]>('/api/tags/suggest', { title, description }),
+
+  // 내가 참석한 일정 목록
+  getMySchedules: (params?: { from?: string; to?: string }) =>
+    api.get<ScheduleResponse[]>('/api/schedules/my', { params }),
 };
 

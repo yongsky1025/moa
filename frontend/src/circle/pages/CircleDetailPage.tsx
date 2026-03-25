@@ -865,12 +865,12 @@ export default function CircleDetailPage() {
                             {s.tags && s.tags.length > 0 && (
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
                                 {s.tags.map(tag => (
-                                  <span key={tag} style={{
+                                  <span key={tag.id} style={{
                                     fontSize: 10, fontWeight: 600,
                                     padding: "2px 7px", borderRadius: 999,
                                     backgroundColor: "#eef2ff", color: "#6366f1",
                                   }}>
-                                    {tag}
+                                    {tag.name}
                                   </span>
                                 ))}
                               </div>

@@ -1,9 +1,12 @@
 package com.soldesk.moa.schedule.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.soldesk.moa.circle.entity.CircleMember;
 import com.soldesk.moa.schedule.entity.Schedule;
@@ -32,4 +35,15 @@ public interface ScheduleMemberRepository extends JpaRepository<ScheduleMember, 
 
     // 일정의 참여자 목록 조회
     List<ScheduleMember> findBySchedule(Schedule schedule);
+
+    // 내가 참석한 일정 목록 (날짜 범위 필터 선택적)
+    @Query("SELECT sm FROM ScheduleMember sm " +
+           "WHERE sm.circleMember.user.userId = :userId " +
+           "AND (:from IS NULL OR sm.schedule.startAt >= :from) " +
+           "AND (:to IS NULL OR sm.schedule.startAt <= :to) " +
+           "ORDER BY sm.schedule.startAt ASC")
+    List<ScheduleMember> findByUserIdWithDateFilter(
+            @Param("userId") Long userId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 }

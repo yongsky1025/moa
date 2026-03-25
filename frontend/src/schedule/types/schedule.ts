@@ -7,6 +7,7 @@ export interface ScheduleTagItem {
 
 export interface ScheduleResponse {
   scheduleId: number;
+  circleId?: number;
   title: string;
   description: string;
   startAt: string;

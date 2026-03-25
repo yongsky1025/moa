@@ -5,6 +5,7 @@ import SocialSignUpPage from "../users/pages/SocialSignUpPage";
 import EnergyResultPage from "../users/pages/EnergyResultPage";
 import EnergyTestPage from "../users/pages/EnergyTestPage";
 import UserProfilePage from "../users/pages/UserProfilePage";
+import MySchedulesPage from "../schedule/pages/MySchedulesPage";
 
 export const userRouter = () => [
   { path: "login", Component: LoginPage },
@@ -14,4 +15,5 @@ export const userRouter = () => [
   { path: "energy-test", Component: EnergyTestPage },
   { path: "energy-test/result", Component: EnergyResultPage },
   { path: "profile", Component: UserProfilePage },
+  { path: "my-schedules", Component: MySchedulesPage },
 ];

@@ -332,6 +332,24 @@ public class ScheduleService {
                                 .collect(Collectors.toList());
         }
 
+        // 내가 참석한 일정 목록 (날짜 범위 필터 선택적)
+        @Transactional(readOnly = true)
+        public List<ScheduleResponseDTO> getMySchedules(Long userId, LocalDateTime from, LocalDateTime to) {
+                return scheduleMemberRepository.findByUserIdWithDateFilter(userId, from, to)
+                                .stream()
+                                .map(sm -> {
+                                        Schedule s = sm.getSchedule();
+                                        List<TagResponseDTO> tags = scheduleTagRepository.findAllBySchedule(s).stream()
+                                                        .map(st -> TagResponseDTO.builder()
+                                                                        .id(st.getTag().getId())
+                                                                        .name(st.getTag().getName())
+                                                                        .build())
+                                                        .toList();
+                                        return new ScheduleResponseDTO(s, true, tags);
+                                })
+                                .toList();
+        }
+
         // 태그 저장 헬퍼
         private List<TagResponseDTO> saveTags(Schedule schedule, List<Long> tagIds) {
                 if (tagIds == null || tagIds.isEmpty()) return List.of();
