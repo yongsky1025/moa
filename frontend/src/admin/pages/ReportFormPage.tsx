@@ -29,7 +29,6 @@ export default function ReportFormPage() {
   const [params] = useSearchParams();
   const targetType = (params.get("targetType") ?? "POST") as ReportTargetType;
   const targetId = Number(params.get("targetId") ?? "0");
-  const reporterId = Number(params.get("reporterId") ?? "1");
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -95,7 +94,7 @@ export default function ReportFormPage() {
     setSubmitting(true);
     setError("");
     try {
-      await postReport(reporterId, {
+      await postReport({
         targetType,
         targetId,
         category,
@@ -113,7 +112,7 @@ export default function ReportFormPage() {
 
   if (done) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#fdf1ec] px-6">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-moa-accent-light px-6">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E3886D]">
           <ShieldAlert className="h-7 w-7 text-white" />
         </div>
@@ -124,7 +123,7 @@ export default function ReportFormPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#fdf1ec]">
+    <div className="flex min-h-screen flex-col bg-moa-accent-light">
       {/* 헤더 */}
       <div className="flex items-center gap-3 border-b border-orange-200 bg-white px-6 py-4 shadow-sm">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E3886D]">

@@ -34,11 +34,9 @@ export const fetchReportDetail = async (id: number) => {
   return res.data;
 };
 
-export const postReport = async (reporterId: number, dto: ReportRequestDTO) => {
-  const res = await axios.post(`${API_SERVER_HOST_ADMIN}/reports`, dto, {
-    params: { reporterId },
-  });
-  console.log('post report', reporterId, dto);
+export const postReport = async (dto: ReportRequestDTO) => {
+  const res = await axios.post(`${API_SERVER_HOST_ADMIN}/reports`, dto);
+  console.log('post report', dto);
 
   return res.data;
 };

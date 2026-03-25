@@ -10,6 +10,7 @@ import com.soldesk.moa.admin.report.dto.ReportResponseDTO;
 import com.soldesk.moa.admin.report.entity.Report;
 import com.soldesk.moa.admin.report.entity.constant.ReportStatus;
 import com.soldesk.moa.admin.report.service.ReportService;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +20,7 @@ import lombok.extern.log4j.Log4j2;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +40,12 @@ public class ReportController {
     @PostMapping
     @Operation(summary = "신고 접수")
     // @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')") 추후 열기
-    public ResponseEntity<Void> postReport(@RequestParam Long reporterId, @RequestBody ReportRequestDTO dto) {
+    public ResponseEntity<Void> postReport(
+            @AuthenticationPrincipal AuthUserDTO authUserDTO,
+            @RequestBody ReportRequestDTO dto) {
+        // Security 적용 전 임시: 인증 없으면 1L (개발용 기본 유저)
+        // Security 적용 후: authUserDTO.getUserId() 만 사용
+        Long reporterId = authUserDTO != null ? authUserDTO.getUserId() : 1L;
         log.info("신고 접수 요청 reporterId={}", reporterId);
         reportService.submitReport(reporterId, dto);
         return ResponseEntity.ok().build();
