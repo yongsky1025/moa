@@ -47,6 +47,9 @@ public class Place extends BaseEntity {
     @Column(nullable = false)
     private String district; // 구, 시
 
+    @Column
+    private String dong; // 동
+
     @Column(nullable = false)
     private Double latitude; // 위도
 
@@ -116,6 +119,10 @@ public class Place extends BaseEntity {
 
     public void setDistrict(String district) {
         this.district = district;
+    }
+
+    public void setDong(String dong) {
+        this.dong = dong;
     }
 
     public void setCapacity(Integer capacity) {

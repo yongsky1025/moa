@@ -129,7 +129,7 @@ export default function AdminPlaceTable() {
                       {p.address}
                     </td>
                     <td className="text-moa-secondary px-5 py-3.5 text-xs whitespace-nowrap">
-                      {p.city} {p.district}
+                      {p.city} {p.district} {p.dong}
                     </td>
                     <td className="text-moa-secondary px-5 py-3.5 text-right font-mono text-xs whitespace-nowrap">
                       {p.capacity}명

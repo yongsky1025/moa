@@ -11,6 +11,7 @@ public record AdminPlaceDetailDTO(
                 String address,
                 String city,
                 String district,
+                String dong,
                 double latitude,
                 double longitude,
                 int capacity,

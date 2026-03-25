@@ -106,7 +106,7 @@ export default function Navbar() {
     "에너지 테스트": isLoggedIn
       ? "/users/energy-test/result"
       : "/users/energy-test",
-    "장소 추천": "#",
+    "장소 추천": "/place/rental",
     "관리자 페이지": "/admin/maindashboard",
   };
 

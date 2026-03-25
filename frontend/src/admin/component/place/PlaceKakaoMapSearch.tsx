@@ -5,6 +5,7 @@ export interface SelectedAddress {
   address: string;
   city: string;
   district: string;
+  dong: string;
   latitude: number;
   longitude: number;
 }
@@ -47,14 +48,15 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
     const handler = (mouseEvent: { latLng: { getLat: () => number; getLng: () => number } }) => {
       const lat = mouseEvent.latLng.getLat();
       const lng = mouseEvent.latLng.getLng();
-      const geocoder = new (kakao.maps.services as unknown as { Geocoder: new () => { coord2Address: (lng: number, lat: number, cb: (result: { address: { address_name: string; region_1depth_name: string; region_2depth_name: string } }[], status: string) => void) => void } }).Geocoder();
+      const geocoder = new (kakao.maps.services as unknown as { Geocoder: new () => { coord2Address: (lng: number, lat: number, cb: (result: { address: { address_name: string; region_1depth_name: string; region_2depth_name: string; region_3depth_name: string } }[], status: string) => void) => void } }).Geocoder();
       geocoder.coord2Address(lng, lat, (result, status) => {
         if (status === (kakao.maps.services as unknown as { Status: { OK: string } }).Status.OK && result?.[0]?.address) {
           const addr = result[0].address;
           const addressName = addr.address_name;
           const city = addr.region_1depth_name || "";
           const district = addr.region_2depth_name || "";
-          onChangeRef.current({ address: addressName, city, district, latitude: lat, longitude: lng });
+          const dong = addr.region_3depth_name || "";
+          onChangeRef.current({ address: addressName, city, district, dong, latitude: lat, longitude: lng });
         }
       });
     };
@@ -78,9 +80,9 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
     mapRef.current.setLevel(3);
   }, [kakaoReady, value]);
 
-  const parseCityDistrict = (addr: string) => {
+  const parseCityDistrictDong = (addr: string) => {
     const parts = addr.split(" ");
-    return { city: parts[0] || "", district: parts[1] || "" };
+    return { city: parts[0] || "", district: parts[1] || "", dong: parts[2] || "" };
   };
 
   const handleSearch = () => {
@@ -99,9 +101,9 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
     const lat = Number(place.y);
     const lng = Number(place.x);
     const addr = place.road_address_name || place.address_name;
-    const { city, district } = parseCityDistrict(addr);
+    const { city, district, dong } = parseCityDistrictDong(addr);
 
-    onChange({ address: addr, city, district, latitude: lat, longitude: lng });
+    onChange({ address: addr, city, district, dong, latitude: lat, longitude: lng });
     setPlaceResults([]);
     setPlaceQuery("");
   };
@@ -127,7 +129,7 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
           <div>
             <p className="text-sm font-semibold text-[#4E7C69]">{value.address}</p>
             <p className="text-xs text-gray-500">
-              {value.city} {value.district} · 위도 {value.latitude.toFixed(4)}, 경도{" "}
+              {value.city} {value.district} {value.dong} · 위도 {value.latitude.toFixed(4)}, 경도{" "}
               {value.longitude.toFixed(4)}
             </p>
           </div>

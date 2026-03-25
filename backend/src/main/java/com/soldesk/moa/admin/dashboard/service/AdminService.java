@@ -691,6 +691,7 @@ public class AdminService {
                                 .address(dto.address())
                                 .city(dto.city())
                                 .district(dto.district())
+                                .dong(dto.dong())
                                 .latitude(dto.latitude())
                                 .longitude(dto.longitude())
                                 .capacity(dto.capacity())
@@ -754,6 +755,7 @@ public class AdminService {
                 place.setAddress(dto.address());
                 place.setCity(dto.city());
                 place.setDistrict(dto.district());
+                place.setDong(dto.dong());
                 place.setLatitude(dto.latitude());
                 place.setLongitude(dto.longitude());
                 place.setCapacity(dto.capacity());
@@ -833,6 +835,7 @@ public class AdminService {
                                                 .address(place.getAddress())
                                                 .city(place.getCity())
                                                 .district(place.getDistrict())
+                                                .dong(place.getDong())
                                                 .capacity(place.getCapacity())
                                                 .pricePerHour(place.getPricePerHour())
                                                 .avgRating(place.getAverageRating() != null ? place.getAverageRating()
@@ -876,6 +879,7 @@ public class AdminService {
                                 .address(place.getAddress())
                                 .city(place.getCity())
                                 .district(place.getDistrict())
+                                .dong(place.getDong())
                                 .latitude(place.getLatitude())
                                 .longitude(place.getLongitude())
                                 .capacity(place.getCapacity())

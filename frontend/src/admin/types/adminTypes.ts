@@ -498,6 +498,7 @@ export interface AdminPlaceResponseDTO {
   address: string;
   city: string;
   district: string;
+  dong?: string;
   capacity: number;
   pricePerHour: number;
   avgRating: number;
@@ -511,6 +512,7 @@ export interface AdminPlaceDetailDTO {
   address: string;
   city: string;
   district: string;
+  dong?: string;
   latitude: number;
   longitude: number;
   capacity: number;
@@ -565,6 +567,7 @@ export interface PlaceCreateRequest {
   address: string;
   city: string;
   district: string;
+  dong?: string;
   latitude: number;
   longitude: number;
   capacity: number;
@@ -589,6 +592,7 @@ export interface PlaceListItem {
   address: string;
   city: string;
   district: string;
+  dong?: string;
   capacity: number;
   pricePerHour: number;
   avgRating: number;

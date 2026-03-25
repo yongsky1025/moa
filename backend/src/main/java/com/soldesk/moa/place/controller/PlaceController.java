@@ -4,7 +4,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.place.dto.NearbyPlaceResponseDTO;
-import com.soldesk.moa.place.dto.PlaceResponseDTO;
+import com.soldesk.moa.place.dto.PlaceDetailResponseDTO;
+import com.soldesk.moa.place.dto.PlaceListResponseDTO;
+import com.soldesk.moa.place.dto.PlaceReviewDTO;
+import com.soldesk.moa.place.dto.PlaceSearchDTO;
 import com.soldesk.moa.place.dto.TagCategoryGroupDTO;
 import com.soldesk.moa.place.service.PlaceImageService;
 import com.soldesk.moa.place.service.PlaceService;
@@ -17,6 +20,7 @@ import lombok.extern.log4j.Log4j2;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -32,13 +36,18 @@ public class PlaceController {
     private final TagService tagService;
 
     @GetMapping("/{id}")
-    public PlaceResponseDTO getOnePlace(@PathVariable Long id) {
+    public PlaceDetailResponseDTO getOnePlace(@PathVariable Long id) {
         return placeService.getPlace(id);
     }
 
+    @GetMapping("/{id}/reviews")
+    public List<PlaceReviewDTO> getPlaceReviews(@PathVariable Long id) {
+        return placeService.getPlaceReviews(id);
+    }
+
     @GetMapping("/all-place")
-    public List<PlaceResponseDTO> getAllPlaces() {
-        return placeService.getAllPlaces();
+    public PlaceListResponseDTO searchPlaces(@ModelAttribute PlaceSearchDTO searchDTO) {
+        return placeService.searchPlaces(searchDTO);
     }
 
     @GetMapping("/nearby")

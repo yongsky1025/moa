@@ -55,6 +55,7 @@ export default function AdminPlaceEditPage() {
           address: data.address,
           city: data.city,
           district: data.district,
+          dong: data.dong ?? "",
           latitude: data.latitude,
           longitude: data.longitude,
         });
@@ -115,6 +116,7 @@ export default function AdminPlaceEditPage() {
         address: selectedAddress!.address,
         city: selectedAddress!.city,
         district: selectedAddress!.district,
+        dong: selectedAddress!.dong,
         latitude: selectedAddress!.latitude,
         longitude: selectedAddress!.longitude,
         capacity: operation.capacity,

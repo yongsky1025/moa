@@ -129,7 +129,9 @@ export default function AdminPlaceDetailPage() {
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
               <div>
                 <dt className="text-xs font-medium text-gray-400">지역</dt>
-                <dd className="mt-0.5 text-gray-700">{detail.city} {detail.district}</dd>
+                <dd className="mt-0.5 text-gray-700">
+                  {detail.city} {detail.district} {detail.dong}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium text-gray-400">좌표</dt>

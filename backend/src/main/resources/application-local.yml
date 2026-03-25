@@ -29,5 +29,5 @@ app:
   local-base-url: ${APP_LOCAL_BASE_URL:http://localhost:8080}
   seed:
     enabled: true
-    reset: true
+    reset: false
     random-seed: 20260321

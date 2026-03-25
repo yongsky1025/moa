@@ -89,6 +89,7 @@ export default function AdminPlaceRegisterPage() {
         address: selectedAddress.address,
         city: selectedAddress.city,
         district: selectedAddress.district,
+        dong: selectedAddress.dong,
         latitude: selectedAddress.latitude,
         longitude: selectedAddress.longitude,
         capacity: operation.capacity,

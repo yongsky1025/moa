@@ -11,10 +11,17 @@ import com.soldesk.moa.common.entity.Likes;
 import com.soldesk.moa.common.entity.constant.LikeTargetType;
 import com.soldesk.moa.common.repository.LikesRepository;
 import com.soldesk.moa.place.dto.NearbyPlaceResponseDTO;
+import com.soldesk.moa.place.dto.PlaceClosedDayDTO;
+import com.soldesk.moa.place.dto.PlaceDetailResponseDTO;
 import com.soldesk.moa.place.dto.PlaceLikiResponseDTO;
+import com.soldesk.moa.place.dto.PlaceListResponseDTO;
 import com.soldesk.moa.place.dto.PlaceResponseDTO;
+import com.soldesk.moa.place.dto.PlaceReviewDTO;
+import com.soldesk.moa.place.dto.PlaceSearchDTO;
+import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.place.entity.Place;
 import com.soldesk.moa.place.repository.PlaceRepository;
+import com.soldesk.moa.place.repository.PlaceReviewRepository;
 import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;
@@ -29,37 +36,100 @@ public class PlaceService {
         private final PlaceRepository placeRepository;
         private final LikesRepository likesRepository;
         private final AdminUsersRepository usersRepository;
+        private final PlaceReviewRepository placeReviewRepository;
+        private final PlaceImageService placeImageService;
 
-        // 장소 조회(하나)
+        // 장소 단건 상세 조회
         @Transactional(readOnly = true)
-        public PlaceResponseDTO getPlace(Long id) {
+        public PlaceDetailResponseDTO getPlace(Long id) {
 
                 Place place = placeRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("place not found"));
 
-                return PlaceResponseDTO.builder()
+                List<TagResponseDTO> tags = place.getTags().stream()
+                                .map(pt -> TagResponseDTO.builder()
+                                                .id(pt.getTag().getId())
+                                                .name(pt.getTag().getName())
+                                                .build())
+                                .toList();
+
+                List<PlaceClosedDayDTO> closedDays = place.getPlaceClosedDays().stream()
+                                .map(cd -> PlaceClosedDayDTO.builder()
+                                                .dayOfWeek(cd.getDayOfWeek())
+                                                .date(cd.getDate())
+                                                .reason(cd.getReason())
+                                                .closedType(cd.getClosedType().name())
+                                                .build())
+                                .toList();
+
+                List<String> images = placeImageService.getPlaceImages(id);
+                String representativeImage = images.isEmpty() ? null : images.get(0);
+
+                long likeCount = likesRepository.countByTargetTypeAndTargetId(
+                                com.soldesk.moa.common.entity.constant.LikeTargetType.PLACE, id);
+
+                String openTime = place.getOpenTime() != null
+                                ? place.getOpenTime().toString()
+                                : null;
+                String closeTime = place.getCloseTime() != null
+                                ? place.getCloseTime().toString()
+                                : null;
+
+                return PlaceDetailResponseDTO.builder()
                                 .id(place.getId())
                                 .name(place.getName())
                                 .address(place.getAddress())
                                 .city(place.getCity())
                                 .district(place.getDistrict())
+                                .dong(place.getDong())
+                                .latitude(place.getLatitude())
+                                .longitude(place.getLongitude())
                                 .capacity(place.getCapacity())
                                 .pricePerHour(place.getPricePerHour())
+                                .avgRating(place.getAverageRating() != null ? place.getAverageRating() : 0.0)
+                                .reviewCount(place.getReviewCount() != null ? place.getReviewCount() : 0)
+                                .representativeImagePath(representativeImage)
+                                .description(place.getDescription())
+                                .minReservationMinutes(place.getMinReservationMinutes())
+                                .maxReservationMinutes(place.getMaxReservationMinutes())
+                                .openTime(openTime)
+                                .closeTime(closeTime)
+                                .tags(tags)
+                                .closedDays(closedDays)
+                                .images(images)
+                                .likeCount(likeCount)
                                 .build();
         }
 
-        // 장소 전체 조회 (사용자용 카드 리스트)
+        // 장소 리뷰 목록 조회
         @Transactional(readOnly = true)
-        public List<PlaceResponseDTO> getAllPlaces() {
+        public List<PlaceReviewDTO> getPlaceReviews(Long id) {
+                return placeReviewRepository.findByPlaceIdOrderByIdDesc(id).stream()
+                                .map(r -> PlaceReviewDTO.builder()
+                                                .id(r.getId())
+                                                .rating(r.getRating())
+                                                .comment(r.getComment())
+                                                .reviewerNickname(r.getReviewer().getNickname())
+                                                .build())
+                                .toList();
+        }
 
-                return placeRepository.findAll()
-                                .stream()
+        // 장소 목록 검색/필터 (무한스크롤)
+        @Transactional(readOnly = true)
+        public PlaceListResponseDTO searchPlaces(PlaceSearchDTO searchDTO) {
+
+                List<Place> places = placeRepository.searchPlaces(searchDTO);
+
+                List<PlaceResponseDTO> dtoList = places.stream()
                                 .map(place -> PlaceResponseDTO.builder()
                                                 .id(place.getId())
                                                 .name(place.getName())
                                                 .address(place.getAddress())
                                                 .city(place.getCity())
                                                 .district(place.getDistrict())
+                                                .dong(place.getDong())
+                                                .latitude(place.getLatitude())
+                                                .longitude(place.getLongitude())
                                                 .capacity(place.getCapacity())
                                                 .pricePerHour(place.getPricePerHour())
                                                 .avgRating(place.getAverageRating() != null ? place.getAverageRating()
@@ -68,6 +138,11 @@ public class PlaceService {
                                                                 : 0)
                                                 .build())
                                 .toList();
+
+                boolean hasNext = places.size() == searchDTO.size();
+                Long lastId = places.isEmpty() ? null : places.get(places.size() - 1).getId();
+
+                return new PlaceListResponseDTO(dtoList, hasNext, lastId);
         }
 
         // 장소 좋아요 메소드

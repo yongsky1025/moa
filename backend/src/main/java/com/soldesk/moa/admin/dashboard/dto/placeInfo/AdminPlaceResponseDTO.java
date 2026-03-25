@@ -9,6 +9,7 @@ public record AdminPlaceResponseDTO(
         String address,
         String city,
         String district,
+        String dong,
         int capacity,
         int pricePerHour,
         double avgRating,
