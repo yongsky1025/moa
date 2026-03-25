@@ -242,6 +242,7 @@ $RECYCLE.BIN/
 .env
 ### Gradle ###
 .gradle
+.gradle-**
 **/build/   
 !src/**/build/
 
