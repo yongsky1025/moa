@@ -1,5 +1,6 @@
 package com.soldesk.moa.common.storage.local;
 
+import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Set;
 
@@ -18,9 +19,9 @@ public class LocalGeneralFileStorage extends AbstractLocalFileStorage implements
             "hwp", "hwpx", "zip", "7z", "csv", "json", "xml", "md");
 
     public LocalGeneralFileStorage(
-            @Value("${app.local-file-upload-dir}") String localUploadDir,
-            @Value("${app.local-base-url}") String localBaseUrl) {
-        super(localUploadDir, localBaseUrl);
+            @Value("${upload.root}") String localUploadDir,
+            @Value("${upload.base-url}") String localBaseUrl) {
+        super(Paths.get(localUploadDir, "files").toString(), localBaseUrl);
     }
 
     @Override

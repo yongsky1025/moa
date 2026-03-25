@@ -32,7 +32,7 @@ public class UnusedPostUploadCleanupScheduler {
     private final ImageRepository imageRepository;
     private final FileStorage fileStorage;
 
-    @Value("${app.local-image-upload-dir}")
+    @Value("${upload.root}")
     private String localUploadDir;
 
     @Value("${app.cleanup.unused-post-upload-hours:24}")
@@ -64,7 +64,7 @@ public class UnusedPostUploadCleanupScheduler {
         if (!deletedIds.isEmpty()) {
             deletedDbCount = imageRepository.deleteByImageIdsAndStatus(deletedIds, ImageStatus.TEMP);
         }
-        Path imagePostDir = Paths.get(localUploadDir).normalize().resolve("images").resolve("post").normalize();
+        Path imagePostDir = Paths.get(localUploadDir, "images", "post").normalize();
         int deletedDirCount = deleteEmptyDirectories(imagePostDir);
 
         if (deletedDbCount > 0 || deletedFileCount > 0 || deletedDirCount > 0) {
