@@ -134,10 +134,11 @@ public class Users extends BaseEntity {
     // === 탈퇴/재가입 메서드 ==
 
     // 탈퇴 이후 6개월 이내 재가입 불가
+    // withdrawnAt이 null이면 탈퇴 시점을 알 수 없으므로 안전하게 6개월 이내로 간주
     public boolean isNewSignupBlockedWithinReactive(LocalDateTime now) {
-        return this.userStatus == UserStatus.WITHDRAWN
-                && this.withdrawnAt != null
-                && now.isBefore(this.withdrawnAt.plusMonths(6));
+        if (this.userStatus != UserStatus.WITHDRAWN) return false;
+        if (this.withdrawnAt == null) return true;
+        return now.isBefore(this.withdrawnAt.plusMonths(6));
     }
 
     public LocalDateTime getRejoinAvailableAt() {

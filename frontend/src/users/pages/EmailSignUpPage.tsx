@@ -110,10 +110,19 @@ export default function EmailSignUpPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#f7f7f8",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px 16px",
+      }}
+    >
       <div style={{ width: "100%", maxWidth: 460 }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <Link to="/" style={{ fontSize: 32, fontWeight: 900, color: "#111", textDecoration: "none", letterSpacing: -1 }}>
+          <Link to="/main" style={{ fontSize: 32, fontWeight: 900, color: "#111", textDecoration: "none", letterSpacing: -1 }}>
             moa
           </Link>
         </div>
@@ -150,7 +159,11 @@ export default function EmailSignUpPage() {
                 type="password"
                 placeholder="비밀번호를 다시 입력해주세요"
                 value={passwordConfirm}
-                onChange={(e) => { setPasswordConfirm(e.target.value); setFieldErrors([]); setError(""); }}
+                onChange={(e) => {
+                  setPasswordConfirm(e.target.value);
+                  setFieldErrors([]);
+                  setError("");
+                }}
                 valid={passwordConfirm ? passwordMatch : null}
                 errMsg={passwordMismatch ? "비밀번호가 일치하지 않습니다." : undefined}
               />
@@ -172,14 +185,7 @@ export default function EmailSignUpPage() {
             <FormField label="닉네임">
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <div style={{ flex: 1, position: "relative" }}>
-                  <input
-                    type="text"
-                    placeholder="2~10자"
-                    value={form.nickname}
-                    onChange={set("nickname")}
-                    required
-                    style={inputStyle}
-                  />
+                  <input type="text" placeholder="2~10자" value={form.nickname} onChange={set("nickname")} required style={inputStyle} />
                   {form.nickname && nicknameValid && <CheckIcon />}
                   {form.nickname && nicknameMsg?.type === "err" && <XIcon />}
                 </div>
@@ -231,7 +237,9 @@ export default function EmailSignUpPage() {
 
             <div style={{ height: 1, backgroundColor: "#eee", margin: "20px 0 16px" }} />
 
-            <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13, color: "#555", cursor: "pointer" }}>
+            <label
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13, color: "#555", cursor: "pointer" }}
+            >
               <input
                 type="checkbox"
                 checked={privacyAgreed}
@@ -245,7 +253,10 @@ export default function EmailSignUpPage() {
             {fieldErrors.length > 0 && (
               <div style={{ marginTop: 14, padding: "10px 14px", backgroundColor: "#fff5f5", borderRadius: 10, border: "1px solid #ffccc7" }}>
                 {fieldErrors.map((msg, i) => (
-                  <p key={i} style={{ fontSize: 12, color: "#ff4d4f", margin: i === 0 ? 0 : "4px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
+                  <p
+                    key={i}
+                    style={{ fontSize: 12, color: "#ff4d4f", margin: i === 0 ? 0 : "4px 0 0", display: "flex", alignItems: "center", gap: 6 }}
+                  >
                     <svg viewBox="0 0 12 12" width="12" height="12" fill="none" style={{ flexShrink: 0 }}>
                       <path d="M3 3L9 9M9 3L3 9" stroke="#ff4d4f" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>

@@ -51,6 +51,9 @@ public class AuthService {
         Users user = usersRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다."));
 
+        // 계정 상태 먼저 확인 (탈퇴/정지/차단 → 403 + errorCode)
+        validateLoginStatus(user);
+
         if (isSocialAccount(user) && user.getPassword() == null) {
             throw new InvalidCredentialsException("소셜 로그인으로 가입한 계정입니다.");
         }
@@ -58,8 +61,6 @@ public class AuthService {
         if (user.getPassword() == null || !passwordEncoder.matches(req.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
-
-        validateLoginStatus(user);
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getUserRole(), user.getUserId());
         String refreshToken = refreshTokenService.createAndStoreRefreshToken(user);

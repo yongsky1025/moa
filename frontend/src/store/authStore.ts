@@ -138,6 +138,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // 비활성 계정이면 403 + errorCode → axios 인터셉터가 상태 페이지로 리다이렉트
       const res = await authApi.getMe();
       get().setAuth(token, res.data);
+
+      // 소셜 로그인 후 추가정보 미완료 → social-signup 페이지로 리다이렉트
+      if (!res.data.privacyAgreed && !window.location.pathname.startsWith('/users/social-signup')) {
+        window.location.href = '/users/social-signup';
+      }
     } catch {
       get().clearAuth();
     }

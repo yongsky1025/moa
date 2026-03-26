@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,21 +74,26 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private Users handleExistingUser(Users existingUser, AuthProvider provider, OAuth2UserInfo userInfo) {
         if (existingUser.getUserStatus() == UserStatus.BANNED) {
-            throw new OAuth2AuthenticationException("[ACCOUNT_BANNED]영구 정지된 계정입니다.");
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("ACCOUNT_BANNED"), "[ACCOUNT_BANNED]영구 정지된 계정입니다.");
         }
         if (existingUser.getUserStatus() == UserStatus.SUSPENDED) {
-            throw new OAuth2AuthenticationException("[ACCOUNT_SUSPENDED]활동이 제한된 계정입니다.");
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("ACCOUNT_SUSPENDED"), "[ACCOUNT_SUSPENDED]활동이 제한된 계정입니다.");
         }
         if (existingUser.getUserStatus() == UserStatus.WITHDRAWN) {
-            throw new OAuth2AuthenticationException("[ACCOUNT_WITHDRAWN]탈퇴한 계정입니다.");
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("ACCOUNT_WITHDRAWN"), "[ACCOUNT_WITHDRAWN]탈퇴한 계정입니다.");
         }
 
         if (existingUser.getProvider() == null || existingUser.getProvider() == AuthProvider.LOCAL) {
-            throw new OAuth2AuthenticationException("이미 로컬 가입된 이메일입니다.");
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("local_account"), "이미 로컬 가입된 이메일입니다.");
         }
 
         if (existingUser.getProvider() != provider) {
-            throw new OAuth2AuthenticationException("이미 다른 소셜 계정으로 가입했습니다.");
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("provider_mismatch"), "이미 다른 소셜 계정으로 가입했습니다.");
         }
 
         return updateExistingSocialUsers(existingUser, userInfo);
@@ -100,13 +106,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         if (existingUser.isNewSignupBlockedWithinReactive(now)) {
             if (existingUser.getProvider() == null || existingUser.getProvider() == AuthProvider.LOCAL) {
-                throw new OAuth2AuthenticationException("탈퇴 후 6개월 이내에는 로컬 회원 가입으로만 다시 이용할 수 있습니다.");
+                throw new OAuth2AuthenticationException(
+                        new OAuth2Error("withdrawn_local"), "탈퇴 후 6개월 이내에는 로컬 회원 가입으로만 다시 이용할 수 있습니다.");
             }
             if (existingUser.getProvider() != provider) {
-                throw new OAuth2AuthenticationException("탈퇴 후 6개월 이내에는 소셜 로그인으로만 다시 이용할 수 있습니다.");
+                throw new OAuth2AuthenticationException(
+                        new OAuth2Error("withdrawn_provider_mismatch"), "탈퇴 후 6개월 이내에는 소셜 로그인으로만 다시 이용할 수 있습니다.");
             }
             if (existingProviderId == null || !existingProviderId.equals(currentProviderId)) {
-                throw new OAuth2AuthenticationException("탈퇴 후 6개월 이내로 로컬 회원 가입을 통해 다시 이용할 수 있습니다.");
+                throw new OAuth2AuthenticationException(
+                        new OAuth2Error("withdrawn_id_mismatch"), "탈퇴 후 6개월 이내로 로컬 회원 가입을 통해 다시 이용할 수 있습니다.");
             }
 
             existingUser.reactivateSocial(
@@ -131,14 +140,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             case "google" -> new GoogleOAuth2UserInfo(attributes);
             case "kakao" -> new KakaoOAuth2UserInfo(attributes);
             case "naver" -> new NaverOAuth2UserInfo(attributes);
-            default -> throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인: " + registrationId);
+            default -> throw new OAuth2AuthenticationException(
+                    new OAuth2Error("unsupported_provider"), "지원하지 않는 소셜 로그인: " + registrationId);
         };
     }
 
     // ── 기존 유저: provider 정보만 연결 ──
     private Users updateExistingSocialUsers(Users user, OAuth2UserInfo userInfo) {
         if (user.getProviderId() != null && !user.getProviderId().equals(userInfo.getId())) {
-            throw new OAuth2AuthenticationException("다른 소셜 계정입니다.");
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("provider_id_mismatch"), "다른 소셜 계정입니다.");
         }
 
         if (user.getProviderId() == null) {
@@ -154,7 +165,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     // ── 신규 소셜 유저 생성 ──
     private Users signupFromSocial(OAuth2UserInfo userInfo, AuthProvider provider) {
         if (userInfo.getEmail() == null || userInfo.getEmail().isBlank()) {
-            throw new OAuth2AuthenticationException("소셜 계정에서 이메일 정보를 가져올 수 없습니다. 이메일 제공 동의가 필요합니다.");
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("email_missing"), "소셜 계정에서 이메일 정보를 가져올 수 없습니다. 이메일 제공 동의가 필요합니다.");
         }
 
         String socialName = resolveSocialName(userInfo);
