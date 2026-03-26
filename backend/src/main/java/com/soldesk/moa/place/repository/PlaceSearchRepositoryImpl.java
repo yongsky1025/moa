@@ -52,8 +52,8 @@ public class PlaceSearchRepositoryImpl implements PlaceSearchRepository {
         if (dto.city() != null && !dto.city().isBlank()) {
             builder.and(place.city.eq(dto.city()));
         }
-        if (dto.district() != null && !dto.district().isBlank()) {
-            builder.and(place.district.eq(dto.district()));
+        if (dto.districts() != null && !dto.districts().isEmpty()) {
+            builder.and(place.district.in(dto.districts()));
         }
         if (dto.dong() != null && !dto.dong().isBlank()) {
             builder.and(place.dong.eq(dto.dong()));

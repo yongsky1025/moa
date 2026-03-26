@@ -221,8 +221,9 @@ public class AdminService {
         // 유저 정보 일람
         @Transactional(readOnly = true)
         public PageResultDTO<AdminUserResponseDTO> getAllUserInfo(AdminUserSearchDTO searchDTO) {
+                Sort userSort = buildUserSort(searchDTO.getSort());
                 Pageable pageable = PageRequest.of(searchDTO.getPage() - 1,
-                                searchDTO.getSize(), Sort.by("userId"));
+                                searchDTO.getSize(), userSort);
                 Page<Users> result = adminUsersRepository.getUsersInfo(pageable, searchDTO);
 
                 List<AdminUserResponseDTO> dtoList = result.getContent().stream().map(this::entityToUserResponseDTO)
@@ -236,6 +237,28 @@ public class AdminService {
                                 .build();
 
                 return pageResultDTO;
+        }
+
+        private Sort buildUserSort(String sort) {
+                if (sort == null) return Sort.by(Sort.Direction.DESC, "userId");
+                return switch (sort) {
+                        case "oldest"   -> Sort.by(Sort.Direction.ASC,  "userId");
+                        case "name"     -> Sort.by(Sort.Direction.ASC,  "name");
+                        case "age_asc"  -> Sort.by(Sort.Direction.ASC,  "age");
+                        case "age_desc" -> Sort.by(Sort.Direction.DESC, "age");
+                        default         -> Sort.by(Sort.Direction.DESC, "userId");
+                };
+        }
+
+        private Sort buildCircleSort(String sort) {
+                if (sort == null) return Sort.by(Sort.Direction.DESC, "circleId");
+                return switch (sort) {
+                        case "oldest"      -> Sort.by(Sort.Direction.ASC,  "circleId");
+                        case "name"        -> Sort.by(Sort.Direction.ASC,  "name");
+                        case "member_desc" -> Sort.by(Sort.Direction.DESC, "currentMember");
+                        case "member_asc"  -> Sort.by(Sort.Direction.ASC,  "currentMember");
+                        default            -> Sort.by(Sort.Direction.DESC, "circleId");
+                };
         }
 
         // 유저 상세프로필(관리자용) 조회
@@ -312,7 +335,8 @@ public class AdminService {
         // 모임 리스트 일람
         @Transactional(readOnly = true)
         public PageResultDTO<AdminCircleResponseDTO> getAllCircleInfo(AdminCircleSearchDTO adminCircleSearchDTO) {
-                Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, adminCircleSearchDTO.getSize());
+                Sort circleSort = buildCircleSort(adminCircleSearchDTO.getSort());
+                Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, adminCircleSearchDTO.getSize(), circleSort);
                 Page<Object[]> result = adminCircleRepository.getCircleInfo(pageable, adminCircleSearchDTO);
 
                 long totalCount = result.getTotalElements();

@@ -1,4 +1,4 @@
-import { MapPin, Users, Star, MessageSquare, Heart, Clock } from "lucide-react";
+import { MapPin, Users, Star, Heart, Clock } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { PlaceCardDTO } from "../types/placeTypes";
@@ -31,7 +31,7 @@ export default function RentalPlaceCard({ place, minReservationMinutes }: Props)
 
   return (
     <article
-      onClick={() => navigate(`/places/${place.id}`)}
+      onClick={() => navigate(`/place/${place.id}`)}
       className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
     >
       {/* 이미지 영역 */}

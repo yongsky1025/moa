@@ -53,6 +53,14 @@ const ROLE_OPTIONS: { value: UserRole | ''; label: string }[] = [
   { value: 'ADMIN', label: '관리자'   },
 ];
 
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'newest',   label: '최신순 (기본)' },
+  { value: 'oldest',   label: '오래된순'      },
+  { value: 'name',     label: '이름순'        },
+  { value: 'age_asc',  label: '나이 오름차순' },
+  { value: 'age_desc', label: '나이 내림차순' },
+];
+
 const isBirthValid = (val: string) =>
   /^\d+$/.test(val) && [4, 6, 8].includes(val.length);
 
@@ -74,10 +82,11 @@ export default function AdminUserFilterBar() {
   const [gender,     setGender    ] = useState<UserGender | ''>('');
   const [status,     setStatus    ] = useState<UserStatus | ''>('');
   const [role,       setRole      ] = useState<UserRole   | ''>('');
+  const [sort,       setSort      ] = useState(params.sort ?? 'newest');
   const [birthError, setBirthError] = useState('');
 
   const currentOpt  = SEARCH_TYPE_OPTIONS.find(o => o.value === searchType)!;
-  const hasFilter   = !!(params.keyword || params.gender || params.status || params.role);
+  const hasFilter   = !!(params.keyword || params.gender || params.status || params.role || (params.sort && params.sort !== 'newest'));
 
   const handleTypeChange = (t: SearchType) => {
     setSearchType(t);
@@ -97,6 +106,7 @@ export default function AdminUserFilterBar() {
       gender:  gender  || undefined,
       status:  status  || undefined,
       role:    role    || undefined,
+      sort:    sort !== 'newest' ? sort : undefined,
     });
   };
 
@@ -106,8 +116,9 @@ export default function AdminUserFilterBar() {
     setGender('');
     setStatus('');
     setRole('');
+    setSort('newest');
     setBirthError('');
-    applyFilter({ type: undefined, keyword: undefined, gender: undefined, status: undefined, role: undefined });
+    applyFilter({ type: undefined, keyword: undefined, gender: undefined, status: undefined, role: undefined, sort: undefined });
   };
 
   // ─── 적용됨 태그 구성 ──────────────────────────────────────────────────────
@@ -142,6 +153,14 @@ export default function AdminUserFilterBar() {
       label: '권한',
       value: findLabel(ROLE_OPTIONS, params.role),
       onRemove: () => { setRole(''); applyFilter({ role: undefined }); },
+    });
+  }
+  if (params.sort && params.sort !== 'newest') {
+    appliedFilters.push({
+      key: 'sort',
+      label: '정렬',
+      value: findLabel(SORT_OPTIONS, params.sort),
+      onRemove: () => { setSort('newest'); applyFilter({ sort: undefined }); },
     });
   }
 
@@ -264,6 +283,22 @@ export default function AdminUserFilterBar() {
         >
           적용
         </button>
+      </div>
+
+      {/* ── 정렬행 ── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-moa-subtle">정렬</span>
+        <div className="h-4 w-px bg-moa-border" />
+        <select
+          value={sort}
+          onChange={e => {
+            setSort(e.target.value);
+            applyFilter({ sort: e.target.value !== 'newest' ? e.target.value : undefined });
+          }}
+          className={filterSelectCls(sort !== 'newest')}
+        >
+          {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       </div>
     </AdminFilterBar>
   );

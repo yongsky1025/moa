@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutGrid, Map } from "lucide-react";
+import Navbar from "../../common/layout/Navbar";
+import Footer from "../../common/layout/Footer";
 import PlaceSearchBar from "../components/PlaceSearchBar";
 import PlaceFilterBar from "../components/PlaceFilterBar";
 import PlaceCardGrid from "../components/PlaceCardGrid";
 import PlaceMapView from "../components/PlaceMapView";
-import { fetchPlaces } from "../api/placeRentalApi";
+import { fetchPlaces, fetchTagsGrouped } from "../api/placeRentalApi";
 import type { PlaceCardDTO, PlaceListResponse, PlaceSearchParams } from "../types/placeTypes";
 import type { TagCategoryGroup } from "../components/PlaceTagFilterDropdown";
-import api from "../../users/utils/jwtUtil";
 
 const DEFAULT_SIZE = 20;
 
@@ -30,9 +31,8 @@ export default function RentalPlacesPage() {
 
   // 태그 그룹 초기 로드
   useEffect(() => {
-    api
-      .get<TagCategoryGroup[]>("/api/places/tags/grouped")
-      .then((res) => setTagGroups(res.data))
+    fetchTagsGrouped()
+      .then((data) => setTagGroups(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, []);
 
@@ -50,11 +50,11 @@ export default function RentalPlacesPage() {
           keyword: searchKeyword || undefined,
           lastId: undefined,
         });
-        setPlaces(res.places);
-        setHasNext(res.hasNext);
-        lastIdRef.current = res.lastId;
+        setPlaces(res.places ?? []);
+        setHasNext(res.hasNext ?? false);
+        lastIdRef.current = res.lastId ?? null;
       } catch {
-        // 에러 무시 (네트워크 오류 등)
+        // 네트워크 오류 등 무시
       } finally {
         setLoading(false);
         isFetchingRef.current = false;
@@ -75,11 +75,11 @@ export default function RentalPlacesPage() {
         keyword: keyword || undefined,
         lastId: lastIdRef.current,
       });
-      setPlaces((prev) => [...prev, ...res.places]);
+      setPlaces((prev) => [...prev, ...(res.places ?? [])]);
       setHasNext(res.hasNext);
       lastIdRef.current = res.lastId;
     } catch {
-      // 에러 무시
+      // 네트워크 오류 등 무시
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
@@ -91,19 +91,16 @@ export default function RentalPlacesPage() {
     search(DEFAULT_PARAMS, "");
   }, [search]);
 
-  // 필터 변경 → 재검색
   const handleParamsChange = (partial: Partial<PlaceSearchParams>) => {
     const next = { ...params, ...partial, size: DEFAULT_SIZE };
     setParams(next);
     search(next, keyword);
   };
 
-  // 검색 실행
   const handleSearch = () => {
     search(params, keyword);
   };
 
-  // 필터 초기화
   const handleReset = () => {
     setKeyword("");
     setParams(DEFAULT_PARAMS);
@@ -111,71 +108,94 @@ export default function RentalPlacesPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div style={{ minHeight: "100vh", backgroundColor: "white" }}>
+      <Navbar />
+
       {/* 헤더 */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">장소 대여</h1>
-        <p className="mt-0.5 text-sm text-gray-400">모임에 딱 맞는 장소를 찾아보세요</p>
-      </div>
-
-      {/* 검색바 */}
-      <PlaceSearchBar value={keyword} onChange={setKeyword} onSearch={handleSearch} />
-
-      {/* 필터바 */}
-      <PlaceFilterBar
-        params={params}
-        tagGroups={tagGroups}
-        onParamsChange={handleParamsChange}
-        onReset={handleReset}
-      />
-
-      {/* 뷰 전환 + 결과 수 */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {!loading && (
-            <>
-              <span className="font-semibold text-gray-800">{places.length}</span>
-              {hasNext ? "개 이상" : "개"} 장소
-            </>
-          )}
-        </p>
-        <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
-          <button
-            onClick={() => setView("list")}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              view === "list"
-                ? "bg-[#5F8F7B] text-white shadow-sm"
-                : "text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            <LayoutGrid className="h-4 w-4" />
-            목록
-          </button>
-          <button
-            onClick={() => setView("map")}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              view === "map"
-                ? "bg-[#5F8F7B] text-white shadow-sm"
-                : "text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            <Map className="h-4 w-4" />
-            지도
-          </button>
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #f0f0f0", padding: "32px 0 24px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: "#111", letterSpacing: -0.5, marginBottom: 4 }}>
+            장소 대여
+          </h1>
+          <p style={{ fontSize: 14, color: "#888" }}>모임에 딱 맞는 장소를 찾아보세요</p>
         </div>
       </div>
 
-      {/* 메인 컨텐츠 */}
-      {view === "list" ? (
-        <PlaceCardGrid
-          places={places}
-          loading={loading}
-          hasNext={hasNext}
-          onLoadMore={loadMore}
-        />
-      ) : (
-        <PlaceMapView places={places} />
-      )}
+      {/* 본문 */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 60px" }}>
+        {/* 검색바 */}
+        <div style={{ marginBottom: 12 }}>
+          <PlaceSearchBar value={keyword} onChange={setKeyword} onSearch={handleSearch} />
+        </div>
+
+        {/* 필터바 */}
+        <div style={{ marginBottom: 16 }}>
+          <PlaceFilterBar
+            params={params}
+            tagGroups={tagGroups}
+            onParamsChange={handleParamsChange}
+            onReset={handleReset}
+          />
+        </div>
+
+        {/* 뷰 전환 + 결과 수 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <p style={{ fontSize: 14, color: "#888" }}>
+            {!loading && (
+              <>
+                <strong style={{ color: "#111" }}>{places.length}</strong>
+                {hasNext ? "개 이상" : "개"} 장소
+              </>
+            )}
+          </p>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 4,
+            borderRadius: 10, border: "1px solid #e5e5e5", backgroundColor: "white",
+            padding: 4, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          }}>
+            <button
+              onClick={() => setView("list")}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                borderRadius: 6, padding: "6px 14px", fontSize: 13, fontWeight: 500,
+                border: "none", cursor: "pointer", transition: "all 0.15s",
+                backgroundColor: view === "list" ? "#5F8F7B" : "transparent",
+                color: view === "list" ? "white" : "#888",
+              }}
+            >
+              <LayoutGrid style={{ width: 15, height: 15 }} />
+              목록
+            </button>
+            <button
+              onClick={() => setView("map")}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                borderRadius: 6, padding: "6px 14px", fontSize: 13, fontWeight: 500,
+                border: "none", cursor: "pointer", transition: "all 0.15s",
+                backgroundColor: view === "map" ? "#5F8F7B" : "transparent",
+                color: view === "map" ? "white" : "#888",
+              }}
+            >
+              <Map style={{ width: 15, height: 15 }} />
+              지도
+            </button>
+          </div>
+        </div>
+
+        {/* 메인 컨텐츠 */}
+        {view === "list" ? (
+          <PlaceCardGrid
+            places={places}
+            loading={loading}
+            hasNext={hasNext}
+            onLoadMore={loadMore}
+          />
+        ) : (
+          <PlaceMapView places={places} />
+        )}
+      </div>
+
+      <Footer />
     </div>
   );
 }

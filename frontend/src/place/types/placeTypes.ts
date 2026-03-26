@@ -27,6 +27,48 @@ export interface PlaceCardDTO {
   representativeImagePath?: string;
 }
 
+// ── 장소 상세 ────────────────────────────────
+export interface PlaceDetailDTO {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  district: string;
+  dong?: string;
+  latitude: number;
+  longitude: number;
+  capacity: number;
+  pricePerHour: number;
+  avgRating: number;
+  reviewCount: number;
+  representativeImagePath?: string;
+  description: string;
+  minReservationMinutes: number;
+  maxReservationMinutes: number;
+  openTime: string;   // "HH:mm:ss"
+  closeTime: string;  // "HH:mm:ss"
+  tags: TagDTO[];
+  closedDays: PlaceClosedDayDTO[];
+  images: string[];
+  likeCount: number;
+}
+
+// ── 휴무일 ────────────────────────────────────
+export interface PlaceClosedDayDTO {
+  dayOfWeek?: string;  // MONDAY ~ SUNDAY
+  date?: string;       // yyyy-MM-dd
+  reason: string;
+  closedType: string;  // WEEKLY | HOLIDAY
+}
+
+// ── 리뷰 ─────────────────────────────────────
+export interface PlaceReviewDTO {
+  id: number;
+  rating: number;
+  comment: string;
+  reviewerNickname: string;
+}
+
 // ── 검색 파라미터 ────────────────────────────
 export interface PlaceSearchParams {
   keyword?: string;
@@ -38,7 +80,7 @@ export interface PlaceSearchParams {
     | "reviews"
     | "capacity";
   city?: string;
-  district?: string;
+  districts?: string[];   // 구/시 복수 선택
   dong?: string;
   minPrice?: number;
   maxPrice?: number;

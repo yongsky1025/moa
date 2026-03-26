@@ -12,6 +12,7 @@ export const fetchAdminUserList = async (dto: AdminUserSearchDTO) => {
       gender: dto.gender,
       status: dto.status,
       role: dto.role,
+      sort: dto.sort,
     },
   });
   console.log("user list data", res);

@@ -27,6 +27,7 @@ function paramsToDTO(sp: URLSearchParams, pageSize: number): AdminUserSearchDTO 
     gender: (sp.get('gender') ?? undefined) as UserGender | undefined,
     status: (sp.get('status') ?? undefined) as UserStatus | undefined,
     role: (sp.get('role') ?? undefined) as UserRole | undefined,
+    sort: sp.get('sort') || undefined,
   };
 }
 
@@ -38,6 +39,7 @@ function dtoToParams(dto: AdminUserSearchDTO): Record<string, string> {
   if (dto.gender) r.gender = dto.gender;
   if (dto.status) r.status = dto.status;
   if (dto.role) r.role = dto.role;
+  if (dto.sort) r.sort = dto.sort;
   return r;
 }
 

@@ -27,7 +27,7 @@ function SkeletonCard() {
   );
 }
 
-export default function PlaceCardGrid({ places, loading, hasNext, onLoadMore }: Props) {
+export default function PlaceCardGrid({ places = [], loading, hasNext, onLoadMore }: Props) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer — sentinel이 보이면 다음 페이지 로드

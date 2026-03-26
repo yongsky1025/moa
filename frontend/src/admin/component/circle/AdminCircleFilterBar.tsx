@@ -21,6 +21,14 @@ const TYPE_OPTIONS = [
   { value: 'id',     label: '모임 ID' },
 ];
 
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'newest',      label: '최신순 (기본)' },
+  { value: 'oldest',      label: '오래된순'       },
+  { value: 'name',        label: '이름순'         },
+  { value: 'member_desc', label: '인원 많은순'    },
+  { value: 'member_asc',  label: '인원 적은순'    },
+];
+
 const findLabel = (options: { value: string; label: string }[], value: string) =>
   options.find(o => o.value === value)?.label ?? value;
 
@@ -30,13 +38,14 @@ export default function AdminCircleFilterBar() {
   const [searchType, setSearchType] = useState(params.type ?? '');
   const [status, setStatus] = useState<CircleStatus | ''>(params.status ?? '');
   const [category, setCategory] = useState(params.categoryName ?? '');
+  const [sort, setSort] = useState(params.sort ?? 'newest');
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     fetchCircleCategories().then(setCategories).catch(() => {});
   }, []);
 
-  const hasFilter = !!(params.keyword || params.status || params.categoryName);
+  const hasFilter = !!(params.keyword || params.status || params.categoryName || (params.sort && params.sort !== 'newest'));
 
   const handleSearch = () => {
     applyFilter({
@@ -44,6 +53,7 @@ export default function AdminCircleFilterBar() {
       keyword: keyword.trim() && searchType ? keyword.trim() : undefined,
       status: status || undefined,
       categoryName: category || undefined,
+      sort: sort !== 'newest' ? sort : undefined,
     });
   };
 
@@ -52,7 +62,8 @@ export default function AdminCircleFilterBar() {
     setSearchType('');
     setStatus('');
     setCategory('');
-    applyFilter({ type: undefined, keyword: undefined, status: undefined, categoryName: undefined });
+    setSort('newest');
+    applyFilter({ type: undefined, keyword: undefined, status: undefined, categoryName: undefined, sort: undefined });
   };
 
   // ─── 적용됨 태그 구성 ──────────────────────────────────────────────────────
@@ -79,6 +90,14 @@ export default function AdminCircleFilterBar() {
       label: '카테고리',
       value: params.categoryName,
       onRemove: () => { setCategory(''); applyFilter({ categoryName: undefined }); },
+    });
+  }
+  if (params.sort && params.sort !== 'newest') {
+    appliedFilters.push({
+      key: 'sort',
+      label: '정렬',
+      value: SORT_OPTIONS.find(o => o.value === params.sort)?.label ?? params.sort,
+      onRemove: () => { setSort('newest'); applyFilter({ sort: undefined }); },
     });
   }
 
@@ -159,6 +178,24 @@ export default function AdminCircleFilterBar() {
         >
           적용
         </button>
+      </div>
+
+      {/* 정렬 */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-moa-subtle text-xs font-medium">정렬</span>
+        <div className="bg-moa-border h-4 w-px" />
+        <select
+          value={sort}
+          onChange={e => {
+            setSort(e.target.value);
+            applyFilter({ sort: e.target.value !== 'newest' ? e.target.value : undefined });
+          }}
+          className={filterSelectCls(sort !== 'newest')}
+        >
+          {SORT_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
       </div>
     </AdminFilterBar>
   );

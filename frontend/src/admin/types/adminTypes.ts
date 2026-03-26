@@ -115,6 +115,7 @@ export interface AdminUserSearchDTO extends PageRequestDTO {
   gender?: UserGender;
   status?: UserStatus;
   role?: UserRole;
+  sort?: string;
 }
 
 export interface AdminUserResponseDTO {
@@ -174,6 +175,7 @@ export interface AdminCircleSearchDTO extends PageRequestDTO {
   categoryName?: string;
   status?: CircleStatus;
   leaderName?: string;
+  sort?: string;
 }
 
 export interface AdminCircleResponseDTO {

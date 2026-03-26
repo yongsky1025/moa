@@ -12,6 +12,7 @@ function paramsToDTO(sp: URLSearchParams, pageSize: number): AdminCircleSearchDT
     keyword: sp.get('keyword') || undefined,
     status: (sp.get('status') as CircleStatus) || undefined,
     categoryName: sp.get('categoryName') || undefined,
+    sort: sp.get('sort') || undefined,
   };
 }
 
@@ -22,6 +23,7 @@ function dtoToParams(dto: AdminCircleSearchDTO): Record<string, string> {
   if (dto.keyword) r.keyword = dto.keyword;
   if (dto.status) r.status = dto.status;
   if (dto.categoryName) r.categoryName = dto.categoryName;
+  if (dto.sort) r.sort = dto.sort;
   return r;
 }
 

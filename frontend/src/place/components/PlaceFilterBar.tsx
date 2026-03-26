@@ -5,6 +5,8 @@ import { ko } from "date-fns/locale";
 import "react-day-picker/style.css";
 import "../styles/placeDayPicker.css";
 import PlaceTagFilterDropdown, { type TagCategoryGroup } from "./PlaceTagFilterDropdown";
+import PlaceCityDistrictFilter from "./PlaceCityDistrictFilter";
+import PlacePriceRangeFilter from "./PlacePriceRangeFilter";
 import type { PlaceSearchParams } from "../types/placeTypes";
 
 // 한국 공휴일 (2025~2026 주요 날짜)
@@ -17,31 +19,22 @@ const HOLIDAYS = [
   new Date(2026, 9, 9), new Date(2026, 11, 25),
 ];
 
-const CITIES = ["서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시", "대전광역시", "울산광역시", "세종특별자치시", "경기도", "강원도", "충청북도", "충청남도", "전라북도", "전라남도", "경상북도", "경상남도", "제주특별자치도"];
-
-const PRICE_OPTIONS = [
-  { label: "가격 무관", min: undefined, max: undefined },
-  { label: "~2만원", min: undefined, max: 20000 },
-  { label: "2~5만원", min: 20000, max: 50000 },
-  { label: "5~10만원", min: 50000, max: 100000 },
-  { label: "10만원~", min: 100000, max: undefined },
-];
 
 const CAPACITY_OPTIONS = [
   { label: "인원 무관", min: undefined, max: undefined },
-  { label: "~10명", min: undefined, max: 10 },
-  { label: "10~30명", min: 10, max: 30 },
-  { label: "30~50명", min: 30, max: 50 },
-  { label: "50명~", min: 50, max: undefined },
+  { label: "~10명",    min: undefined, max: 10 },
+  { label: "10~30명",  min: 10,        max: 30 },
+  { label: "30~50명",  min: 30,        max: 50 },
+  { label: "50명~",    min: 50,        max: undefined },
 ];
 
 const SORT_OPTIONS = [
-  { label: "최신순", value: "newest" },
+  { label: "최신순",      value: "newest" },
   { label: "가격 낮은순", value: "price_asc" },
   { label: "가격 높은순", value: "price_desc" },
-  { label: "평점순", value: "rating" },
-  { label: "리뷰많은순", value: "reviews" },
-  { label: "인원많은순", value: "capacity" },
+  { label: "평점순",      value: "rating" },
+  { label: "리뷰많은순",  value: "reviews" },
+  { label: "인원많은순",  value: "capacity" },
 ];
 
 // ── 공통 드롭다운 버튼 ──────────────────────────────────────────
@@ -80,7 +73,7 @@ function FilterDropdown({
       </button>
       {open && (
         <div
-          className="absolute left-0 top-[calc(100%+6px)] z-30 min-w-45 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+          className="absolute left-0 top-[calc(100%+6px)] z-30 min-w-40 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
           onClick={() => setOpen(false)}
         >
           {children}
@@ -119,62 +112,38 @@ export default function PlaceFilterBar({ params, tagGroups, onParamsChange, onRe
 
   const selectedDate = params.availableDate ? new Date(params.availableDate) : undefined;
 
-  const priceActive =
-    params.minPrice !== undefined || params.maxPrice !== undefined;
-  const capacityActive =
-    params.minCapacity !== undefined || params.maxCapacity !== undefined;
+  const priceActive    = params.minPrice !== undefined || params.maxPrice !== undefined;
+  const capacityActive = params.minCapacity !== undefined || params.maxCapacity !== undefined;
   const hasActiveFilter =
     params.city ||
-    params.district ||
+    (params.districts && params.districts.length > 0) ||
     priceActive ||
     capacityActive ||
     params.availableDate ||
     (params.tagIds && params.tagIds.length > 0) ||
     (params.sort && params.sort !== "newest");
 
-  const cityLabel = params.city ? params.city.replace(/(특별시|광역시|도|특별자치시|특별자치도)$/, "") : "지역";
-  const priceLabel = priceActive
-    ? PRICE_OPTIONS.find(
-        (o) => o.min === params.minPrice && o.max === params.maxPrice,
-      )?.label ?? "가격"
-    : "가격";
   const capacityLabel = capacityActive
-    ? CAPACITY_OPTIONS.find(
-        (o) => o.min === params.minCapacity && o.max === params.maxCapacity,
-      )?.label ?? "인원"
+    ? (CAPACITY_OPTIONS.find((o) => o.min === params.minCapacity && o.max === params.maxCapacity)?.label ?? "인원")
     : "인원";
-  const dateLabel = params.availableDate
-    ? params.availableDate.replace(/-/g, ".")
-    : "예약가능날짜";
-  const sortLabel =
-    SORT_OPTIONS.find((o) => o.value === (params.sort ?? "newest"))?.label ?? "정렬";
+  const dateLabel   = params.availableDate ? params.availableDate.replace(/-/g, ".") : "예약가능날짜";
+  const sortLabel   = SORT_OPTIONS.find((o) => o.value === (params.sort ?? "newest"))?.label ?? "정렬";
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-      {/* 지역 */}
-      <FilterDropdown label={cityLabel} active={!!params.city}>
-        <button className={optionCls(!params.city)} onClick={() => onParamsChange({ city: undefined, district: undefined })}>
-          전체 지역
-        </button>
-        {CITIES.map((c) => (
-          <button key={c} className={optionCls(params.city === c)} onClick={() => onParamsChange({ city: c, district: undefined })}>
-            {c}
-          </button>
-        ))}
-      </FilterDropdown>
+      {/* 지역 (2단계: 시/도 + 구/시/군 복수) */}
+      <PlaceCityDistrictFilter
+        city={params.city}
+        districts={params.districts}
+        onChange={(city, districts) => onParamsChange({ city, districts })}
+      />
 
-      {/* 가격 */}
-      <FilterDropdown label={priceLabel} active={priceActive}>
-        {PRICE_OPTIONS.map((o) => (
-          <button
-            key={o.label}
-            className={optionCls(params.minPrice === o.min && params.maxPrice === o.max)}
-            onClick={() => onParamsChange({ minPrice: o.min, maxPrice: o.max })}
-          >
-            {o.label}
-          </button>
-        ))}
-      </FilterDropdown>
+      {/* 가격 범위 슬라이더 */}
+      <PlacePriceRangeFilter
+        minPrice={params.minPrice}
+        maxPrice={params.maxPrice}
+        onChange={(min, max) => onParamsChange({ minPrice: min, maxPrice: max })}
+      />
 
       {/* 인원 */}
       <FilterDropdown label={capacityLabel} active={capacityActive}>
@@ -189,7 +158,7 @@ export default function PlaceFilterBar({ params, tagGroups, onParamsChange, onRe
         ))}
       </FilterDropdown>
 
-      {/* 예약가능날짜 — react-day-picker */}
+      {/* 예약가능날짜 */}
       <div ref={calRef} className="relative">
         <button
           onClick={() => setCalOpen((v) => !v)}
@@ -202,10 +171,7 @@ export default function PlaceFilterBar({ params, tagGroups, onParamsChange, onRe
           {dateLabel}
           {params.availableDate ? (
             <span
-              onClick={(e) => {
-                e.stopPropagation();
-                onParamsChange({ availableDate: undefined });
-              }}
+              onClick={(e) => { e.stopPropagation(); onParamsChange({ availableDate: undefined }); }}
               className="ml-0.5 rounded-full p-0.5 hover:bg-[#d4ebe2]"
             >
               <X className="h-3 w-3" />
@@ -223,24 +189,16 @@ export default function PlaceFilterBar({ params, tagGroups, onParamsChange, onRe
               onSelect={(day) => {
                 if (!day) return;
                 const yyyy = day.getFullYear();
-                const mm = String(day.getMonth() + 1).padStart(2, "0");
-                const dd = String(day.getDate()).padStart(2, "0");
+                const mm   = String(day.getMonth() + 1).padStart(2, "0");
+                const dd   = String(day.getDate()).padStart(2, "0");
                 onParamsChange({ availableDate: `${yyyy}-${mm}-${dd}` });
                 setCalOpen(false);
               }}
               disabled={[{ before: new Date() }]}
               locale={ko}
               modifiers={{ holiday: HOLIDAYS, saturday: { dayOfWeek: [6] }, sunday: { dayOfWeek: [0] } }}
-              modifiersClassNames={{
-                holiday: "rdp-day--holiday",
-                saturday: "rdp-day--saturday",
-                sunday: "rdp-day--sunday",
-              }}
-              classNames={{
-                root: "moa-rdp",
-                today: "rdp-today",
-                selected: "rdp-selected",
-              }}
+              modifiersClassNames={{ holiday: "rdp-day--holiday", saturday: "rdp-day--saturday", sunday: "rdp-day--sunday" }}
+              classNames={{ root: "moa-rdp", today: "rdp-today", selected: "rdp-selected" }}
             />
           </div>
         )}

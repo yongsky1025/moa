@@ -33,7 +33,7 @@ export default function PlaceTagFilterDropdown({ tagGroups, selectedTagIds, onCh
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const allTags = tagGroups.flatMap((g) => g.tags);
+  const allTags = Array.isArray(tagGroups) ? tagGroups.flatMap((g) => Array.isArray(g.tags) ? g.tags : []) : [];
   const selectedTags = allTags.filter((t) => selectedTagIds.includes(t.id));
 
   const toggle = (id: number) => {
@@ -118,7 +118,7 @@ export default function PlaceTagFilterDropdown({ tagGroups, selectedTagIds, onCh
               <div key={group.categoryId} className="mb-3 last:mb-0">
                 <p className="mb-1.5 px-1 text-xs font-bold text-gray-400">{group.categoryName}</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {group.tags.map((tag) => {
+                  {(group.tags ?? []).map((tag) => {
                     const selected = selectedTagIds.includes(tag.id);
                     return (
                       <button
