@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
-import { Users, Sparkles } from "lucide-react";
+import { Users, Sparkles, Search, X, RotateCcw, ChevronDown } from "lucide-react";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
 import { circleApi } from "../../api/circleApi";
@@ -49,21 +49,23 @@ export default function CircleListPage() {
   const [nextPage, setNextPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statusType, setStatusType] = useState<"ALL" | "OPEN" | "FULL">("ALL");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [recOpen, setRecOpen] = useState(false);
+  const statusRef = useRef<HTMLDivElement>(null);
+  const recRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     circleApi.getCategories().then((res) => setCategories(res.data));
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
+    const handler = (e: MouseEvent) => {
+      if (statusRef.current && !statusRef.current.contains(e.target as Node)) setStatusOpen(false);
+      if (recRef.current && !recRef.current.contains(e.target as Node)) setRecOpen(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   useEffect(() => {
@@ -110,11 +112,27 @@ export default function CircleListPage() {
     setPage(1);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = () => {
     setKeyword(inputValue);
     setPage(1);
   };
+
+  const handleReset = () => {
+    setStatusType("ALL");
+    setSelectedCategoryIds([]);
+    setRecommendFilter(null);
+    setKeyword("");
+    setInputValue("");
+    setPage(1);
+  };
+
+  const hasActiveFilter = statusType !== "ALL" || selectedCategoryIds.length > 0 || recommendFilter !== null || !!keyword;
+
+  const statusLabel = { ALL: "전체", OPEN: "모집중", FULL: "모집완료" }[statusType];
+  const recLabel = recommendFilter
+    ? { overall: "추천 · 전체", social: "추천 · 사교", activity: "추천 · 활동" }[recommendFilter]
+    : "추천";
+  const recDisabled = !isLoggedIn || !recommendBundle;
 
   const isRecFiltered = recommendFilter !== null && !!recommendBundle;
   const selectedCategoryNames = new Set(categories.filter((c) => selectedCategoryIds.includes(c.categoryId)).map((c) => c.categoryName));
@@ -125,7 +143,7 @@ export default function CircleListPage() {
     : [];
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8", color: "#111" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "white", color: "#111" }}>
       <Navbar />
 
       {/* 헤더 */}
@@ -159,231 +177,148 @@ export default function CircleListPage() {
       </div>
 
       {/* 본문 */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 60px" }}>
         <main>
-          <form
-            onSubmit={handleSearch}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: 20,
-              border: "1px solid #e5e5e5",
-              borderRadius: 999,
-              backgroundColor: "white",
-            }}
+          {/* 검색바 */}
+          <div
+            className={`mb-3 flex items-center gap-3 rounded-full border-2 bg-white px-5 py-3.5 shadow-sm transition-all duration-200 ${
+              searchFocused ? "border-[#5F8F7B] shadow-md shadow-[#5F8F7B]/10" : "border-gray-200"
+            }`}
           >
-            {/* 상태 드롭다운 */}
-            <div ref={dropdownRef} style={{ position: "relative", flexShrink: 0 }}>
-              <button
-                type="button"
-                onClick={() => setDropdownOpen((v) => !v)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 4,
-                  width: 88,
-                  padding: "11px 12px 11px 16px",
-                  border: "none",
-                  borderRight: "1px solid #e5e5e5",
-                  backgroundColor: "transparent",
-                  color: statusType !== "ALL" ? "#5f8f7b" : "#555",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {{ ALL: "전체", OPEN: "모집중", FULL: "모집완료" }[statusType]}
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              {dropdownOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "calc(100% + 6px)",
-                    left: 0,
-                    zIndex: 100,
-                    backgroundColor: "white",
-                    borderRadius: 10,
-                    border: "1px solid #e5e5e5",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
-                    overflow: "hidden",
-                    minWidth: 96,
-                  }}
-                >
-                  {(
-                    [
-                      ["ALL", "전체"],
-                      ["OPEN", "모집중"],
-                      ["FULL", "모집완료"],
-                    ] as const
-                  ).map(([val, label]) => (
-                    <button
-                      key={val}
-                      type="button"
-                      onClick={() => {
-                        setStatusType(val);
-                        setPage(1);
-                        setDropdownOpen(false);
-                      }}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        textAlign: "left",
-                        padding: "9px 16px",
-                        border: "none",
-                        cursor: "pointer",
-                        backgroundColor: statusType === val ? "#f0f7f4" : "white",
-                        color: statusType === val ? "#5f8f7b" : "#333",
-                        fontSize: 13,
-                        fontWeight: statusType === val ? 700 : 400,
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {/* 검색 입력 */}
+            <Search className={`h-5 w-5 shrink-0 transition-colors ${searchFocused ? "text-[#5F8F7B]" : "text-gray-400"}`} />
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="검색어를 입력해주세요"
-              style={{
-                flex: 1,
-                padding: "11px 18px",
-                border: "none",
-                outline: "none",
-                fontSize: 14,
-                color: "#111",
-                backgroundColor: "transparent",
-              }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="모임명, 카테고리로 검색해보세요"
+              className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
             />
-            {/* 돋보기 검색 버튼 */}
+            {inputValue && (
+              <button
+                onClick={() => { setInputValue(""); setKeyword(""); setPage(1); }}
+                className="rounded-full p-0.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
             <button
-              type="submit"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "0 14px",
-                border: "none",
-                backgroundColor: "transparent",
-                color: "#5f8f7b",
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
+              onClick={handleSearch}
+              className="rounded-full bg-[#5F8F7B] px-5 py-1.5 text-sm font-semibold text-white transition hover:bg-[#4E7C69] active:scale-95"
             >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
+              검색
             </button>
-          </form>
+          </div>
 
-          {/* 필터 섹션 */}
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: 12,
-              border: "1px solid #f0f0f0",
-              padding: "14px 20px",
-              marginBottom: 20,
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
-            {/* 추천 행 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <span
-                style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: "#111", minWidth: 64, flexShrink: 0 }}
-              >
-                <Sparkles style={{ width: 13, height: 13, color: "#f59e0b" }} />
-                추천
-              </span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 7, alignItems: "center" }}>
-                {(
-                  [
-                    { key: "overall", label: "전체" },
-                    { key: "social", label: "사교" },
-                    { key: "activity", label: "활동" },
-                  ] as { key: "overall" | "social" | "activity"; label: string }[]
-                ).map(({ key, label }) => {
-                  const active = recommendFilter === key;
-                  const disabled = !isLoggedIn || !recommendBundle;
-                  return (
-                    <button
-                      key={key}
-                      disabled={disabled}
-                      onClick={() => {
-                        setRecommendFilter(active ? null : key);
-                        setPage(1);
-                      }}
-                      title={disabled ? (isLoggedIn ? "에너지 프로필이 필요합니다" : "로그인이 필요합니다") : undefined}
-                      style={{
-                        padding: "5px 14px",
-                        borderRadius: 999,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: disabled ? "not-allowed" : "pointer",
-                        border: `1px solid ${active ? "#5f8f7b" : "#e5e5e5"}`,
-                        backgroundColor: active ? "#5f8f7b" : "white",
-                        color: active ? "white" : disabled ? "#ccc" : "#555",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
+          {/* 필터 박스 */}
+          <div className="mb-5 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+            {/* 카테고리 행 */}
+            <div className="flex flex-wrap gap-2">
+              {[{ categoryId: null as null, categoryName: "전체" }, ...categories].map((cat) => {
+                const active = cat.categoryId === null ? selectedCategoryIds.length === 0 : selectedCategoryIds.includes(cat.categoryId);
+                return (
+                  <button
+                    key={cat.categoryId ?? "all"}
+                    onClick={() => handleCategoryClick(cat.categoryId)}
+                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                      active
+                        ? "border-[#5F8F7B] bg-[#EAF4F0] text-[#4E7C69]"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {cat.categoryName}
+                  </button>
+                );
+              })}
             </div>
 
             {/* 구분선 */}
-            <div style={{ borderTop: "1px solid #f0f0f0" }} />
+            <div className="border-t border-gray-100" />
 
-            {/* 카테고리 행 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#111", minWidth: 64, flexShrink: 0 }}>카테고리</span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-                {[{ categoryId: null as null, categoryName: "전체" }, ...categories].map((cat) => {
-                  const active = cat.categoryId === null ? selectedCategoryIds.length === 0 : selectedCategoryIds.includes(cat.categoryId);
-                  return (
-                    <button
-                      key={cat.categoryId ?? "all"}
-                      onClick={() => handleCategoryClick(cat.categoryId)}
-                      style={{
-                        padding: "5px 14px",
-                        borderRadius: 999,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        border: `1px solid ${active ? "#5f8f7b" : "#e5e5e5"}`,
-                        backgroundColor: active ? "#5f8f7b" : "white",
-                        color: active ? "white" : "#555",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {cat.categoryName}
-                    </button>
-                  );
-                })}
+            {/* 드롭다운 행 */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* 모집 상태 드롭다운 */}
+              <div ref={statusRef} className="relative">
+                <button
+                  onClick={() => setStatusOpen((v) => !v)}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    statusType !== "ALL"
+                      ? "border-[#5F8F7B] bg-[#EAF4F0] text-[#4E7C69]"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  {statusLabel}
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${statusOpen ? "rotate-180" : ""}`} />
+                </button>
+                {statusOpen && (
+                  <div className="absolute left-0 top-[calc(100%+6px)] z-30 min-w-36 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                    {(["ALL", "OPEN", "FULL"] as const).map((val) => (
+                      <button
+                        key={val}
+                        className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                          statusType === val ? "bg-[#EAF4F0] font-semibold text-[#4E7C69]" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                        onClick={() => { setStatusType(val); setPage(1); setStatusOpen(false); }}
+                      >
+                        {{ ALL: "전체", OPEN: "모집중", FULL: "모집완료" }[val]}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* 추천 드롭다운 */}
+              <div ref={recRef} className="relative">
+                <button
+                  disabled={recDisabled}
+                  title={recDisabled ? (isLoggedIn ? "에너지 프로필이 필요합니다" : "로그인이 필요합니다") : undefined}
+                  onClick={() => !recDisabled && setRecOpen((v) => !v)}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    recommendFilter !== null
+                      ? "border-[#5F8F7B] bg-[#EAF4F0] text-[#4E7C69]"
+                      : recDisabled
+                      ? "cursor-not-allowed border-gray-100 bg-white text-gray-300"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                  {recLabel}
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${recOpen ? "rotate-180" : ""}`} />
+                </button>
+                {recOpen && (
+                  <div className="absolute left-0 top-[calc(100%+6px)] z-30 min-w-36 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                    {([
+                      { key: null, label: "없음" },
+                      { key: "overall", label: "전체" },
+                      { key: "social", label: "사교" },
+                      { key: "activity", label: "활동" },
+                    ] as { key: "overall" | "social" | "activity" | null; label: string }[]).map(({ key, label }) => (
+                      <button
+                        key={key ?? "none"}
+                        className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                          recommendFilter === key ? "bg-[#EAF4F0] font-semibold text-[#4E7C69]" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                        onClick={() => { setRecommendFilter(key); setPage(1); setRecOpen(false); }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 초기화 */}
+              {hasActiveFilter && (
+                <button
+                  onClick={handleReset}
+                  className="ml-auto flex items-center gap-1 text-sm text-gray-400 transition hover:text-gray-600"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  초기화
+                </button>
+              )}
             </div>
           </div>
 
