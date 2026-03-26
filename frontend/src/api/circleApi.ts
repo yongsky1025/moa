@@ -51,7 +51,9 @@ export const circleApi = {
     const formData = new FormData();
     formData.append('data', new Blob([JSON.stringify(data)], { type: 'application/json' }));
     if (imageFile) formData.append('image', imageFile);
-    return api.post<CircleResponse>('/api/circles', formData);
+    return api.post<CircleResponse>('/api/circles', formData, {
+      headers: { 'Content-Type': undefined },
+    });
   },
 
   // 서클 수정 (JSON, PUT multipart는 Tomcat 미지원)
