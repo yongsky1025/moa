@@ -26,3 +26,9 @@ spring:
 jwt:
   access-exp-ms: 1800000
   refresh-exp-ms: 1209600000
+
+meilisearch:
+  enabled: ${MEILISEARCH_ENABLED:false}
+  host: ${MEILISEARCH_HOST}
+  master-api-key: ${MEILISEARCH_MASTER_API_KEY:${MEILI_MASTER_KEY:}}
+  search-api-key: ${MEILISEARCH_SEARCH_API_KEY}

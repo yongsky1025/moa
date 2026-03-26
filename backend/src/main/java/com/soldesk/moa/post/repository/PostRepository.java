@@ -3,6 +3,9 @@ package com.soldesk.moa.post.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -120,6 +123,61 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
   Optional<Post> findByPostIdAndDeletedFalseAndBoardId_DeletedFalse(Long postId);
 
+  @Query("""
+      select p
+      from Post p
+      join fetch p.boardId b
+      join fetch p.userId u
+      where p.postId = :postId
+        and p.deleted = false
+        and b.deleted = false
+      """)
+  Optional<Post> findActivePostForSearchIndex(@Param("postId") Long postId);
+
+  @Query("""
+      select p
+      from Post p
+      join fetch p.boardId b
+      join fetch p.userId u
+      where p.deleted = false
+        and b.deleted = false
+      order by p.postId asc
+      """)
+  Slice<Post> findActivePostsForSearchIndex(Pageable pageable);
+
+  @Query("""
+      select count(p)
+      from Post p
+      join p.boardId b
+      where p.deleted = false
+        and b.deleted = false
+      """)
+  long countActivePostsForSearchIndex();
+
+  @Query("""
+      select p
+      from Post p
+      join p.boardId b
+      join p.userId u
+      where p.deleted = false
+        and b.deleted = false
+        and (:keyword = '' or
+             lower(p.title) like lower(concat('%', :keyword, '%')) or
+             lower(p.content) like lower(concat('%', :keyword, '%')) or
+             lower(u.name) like lower(concat('%', :keyword, '%')))
+        and (
+             (:boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
+          or (:boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and b.boardType = :boardType)
+          or (:boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and b.circleId.circleId = :circleId)
+        )
+      order by p.createDate desc
+      """)
+  Page<Post> searchPostsForFallback(
+      @Param("keyword") String keyword,
+      @Param("boardType") BoardType boardType,
+      @Param("circleId") Long circleId,
+      Pageable pageable);
+
   @Modifying
   @Query("""
       update Post p
@@ -149,5 +207,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
          and p.updateDate < :cutoff
       """)
   int hardDeleteSoftDeletedBefore(@Param("cutoff") java.time.LocalDateTime cutoff);
+
+  @Query("""
+      select p.postId
+      from Post p
+      where p.deleted = true
+        and p.updateDate < :cutoff
+      """)
+  List<Long> findSoftDeletedPostIdsBefore(@Param("cutoff") java.time.LocalDateTime cutoff);
 
 }

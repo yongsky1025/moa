@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
@@ -10,6 +10,8 @@ import { useCirclePosts } from "../hooks/useCirclePosts";
 import { parseRouteNumber } from "../utils/boardRouteHelpers";
 import { postRoutes } from "../../post/routes/postRoutes";
 import { formatDate } from "../../post/utils/dateFormat";
+import type { PostResponse } from "../../post/types/postTypes";
+import { postApi } from "../../post/api/postApi";
 
 export default function CirclePostListPage() {
   const { circleId, boardId } = useParams<{
@@ -39,11 +41,74 @@ export default function CirclePostListPage() {
       : ((boards ?? []).find((board) => board.boardId === boardIdNumber)
           ?.name ?? "게시판");
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [searchResults, setSearchResults] = useState<PostResponse[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  useEffect(() => {
+    const keyword = searchKeyword.trim();
+    if (!keyword) {
+      setSearchResults(null);
+      setSearchLoading(false);
+      return;
+    }
+    if (!hasValidCircleId) return;
+
+    let cancelled = false;
+    setSearchLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await postApi.searchPosts({
+          q: keyword,
+          page: 1,
+          size: 100,
+          boardType: "CIRCLE",
+          circleId: circleIdNumber ?? undefined,
+        });
+        if (cancelled) return;
+        setSearchResults(
+          response.data.hits.map((hit) => ({
+            boardId: hit.boardId,
+            postId: hit.postId,
+            title: hit.title,
+            content: hit.content,
+            authorName: hit.authorName,
+            authorPublicId: hit.authorPublicId,
+            viewCount: hit.viewCount,
+            likeCount: hit.likeCount,
+            myReaction: null,
+            replyCount: hit.replyCount,
+            createDate: hit.createDate,
+            updateDate: hit.updateDate,
+          })),
+        );
+      } catch {
+        if (!cancelled) {
+          setSearchResults(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setSearchLoading(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [searchKeyword, hasValidCircleId, circleIdNumber]);
+
+  const sourcePosts = searchResults ?? posts;
   const filteredPosts = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
-    if (!keyword) return posts;
+    const boardFiltered =
+      boardIdNumber == null
+        ? sourcePosts
+        : sourcePosts.filter((post) => post.boardId === boardIdNumber);
+    if (!keyword) return boardFiltered;
+    if (searchResults) return boardFiltered;
 
-    return posts.filter((post) => {
+    return boardFiltered.filter((post) => {
       const title = post.title?.toLowerCase() ?? "";
       const content = post.content?.toLowerCase() ?? "";
       const author = post.authorName?.toLowerCase() ?? "";
@@ -53,7 +118,7 @@ export default function CirclePostListPage() {
         author.includes(keyword)
       );
     });
-  }, [posts, searchKeyword]);
+  }, [sourcePosts, searchKeyword, boardIdNumber]);
 
   if (!hasValidCircleId) {
     return (
@@ -169,9 +234,9 @@ export default function CirclePostListPage() {
               boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
             }}
           >
-            {loading && <BoardListSkeleton count={6} />}
+            {(loading || searchLoading) && <BoardListSkeleton count={6} />}
             {error && <p style={{ color: "#dc2626" }}>{error}</p>}
-            {!loading && !error && (
+            {!loading && !searchLoading && !error && (
               <>
                 <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 12 }}>
                   {filteredPosts.map((post) => (

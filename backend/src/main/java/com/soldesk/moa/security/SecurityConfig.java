@@ -116,6 +116,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/notice/**", "/free/**", "/support/**").permitAll()
                                                 .requestMatchers("/api/notice/**", "/api/free/**", "/api/support/**")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/search").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/posts/*/replies").permitAll()
                                                 // board 써클 회원만 열람?(예정)
                                                 // .requestMatchers("/circle/**").permitAll()

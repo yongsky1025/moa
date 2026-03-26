@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import Footer from "../../common/layout/Footer";
@@ -9,6 +9,9 @@ import PostList from "../components/PostList";
 import { usePosts } from "../hooks/usePosts";
 import { postRoutes } from "../routes/postRoutes";
 import type { PostKind } from "../types/postTypes";
+import type { PostResponse } from "../types/postTypes";
+import type { RootState } from "../../users/reducers/store";
+import { postApi } from "../api/postApi";
 
 function resolveKind(pathname: string): Exclude<PostKind, "circle"> {
   if (pathname.includes("/notice")) return "notice";
@@ -26,11 +29,70 @@ export default function PostListPage() {
   const canCreate = kind === "notice" ? isAdmin : isLoggedIn;
   const searchPlaceholder =
     kind === "notice" ? "공지사항 검색..." : "자유게시판 검색...";
+  const [searchResults, setSearchResults] = useState<PostResponse[] | null>(
+    null,
+  );
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  useEffect(() => {
+    const keyword = searchKeyword.trim();
+    if (!keyword) {
+      setSearchResults(null);
+      setSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSearchLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await postApi.searchPosts({
+          q: keyword,
+          page: 1,
+          size: 50,
+          boardType: kind === "notice" ? "NOTICE" : "FREE",
+        });
+        if (cancelled) return;
+        setSearchResults(
+          response.data.hits.map((hit) => ({
+            boardId: hit.boardId,
+            postId: hit.postId,
+            title: hit.title,
+            content: hit.content,
+            authorName: hit.authorName,
+            authorPublicId: hit.authorPublicId,
+            viewCount: hit.viewCount,
+            likeCount: hit.likeCount,
+            myReaction: null,
+            replyCount: hit.replyCount,
+            createDate: hit.createDate,
+            updateDate: hit.updateDate,
+          })),
+        );
+      } catch {
+        if (!cancelled) {
+          setSearchResults(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setSearchLoading(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [searchKeyword, kind]);
+
+  const sourceData = searchResults ?? data;
   const filteredPosts = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
-    if (!keyword) return data;
+    if (!keyword) return sourceData;
+    if (searchResults) return sourceData;
 
-    return data.filter((post) => {
+    return sourceData.filter((post) => {
       const title = post.title?.toLowerCase() ?? "";
       const content = post.content?.toLowerCase() ?? "";
       const author = post.authorName?.toLowerCase() ?? "";
@@ -40,7 +102,7 @@ export default function PostListPage() {
         author.includes(keyword)
       );
     });
-  }, [data, searchKeyword]);
+  }, [sourceData, searchKeyword]);
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
@@ -70,7 +132,12 @@ export default function PostListPage() {
                 fontWeight: 700,
               }}
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path
                   d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"
                   fill="none"
@@ -85,7 +152,12 @@ export default function PostListPage() {
           ) : undefined
         }
       />
-      <section style={{ backgroundColor: "#f3f4f6", borderBottom: "1px solid #e5e7eb" }}>
+      <section
+        style={{
+          backgroundColor: "#f3f4f6",
+          borderBottom: "1px solid #e5e7eb",
+        }}
+      >
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "18px 16px" }}>
           <div
             style={{
@@ -128,10 +200,12 @@ export default function PostListPage() {
         </div>
       </section>
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px" }}>
-        {loading && <BoardListSkeleton count={6} />}
+        {(loading || searchLoading) && <BoardListSkeleton count={6} />}
         {error && <p style={{ color: "#dc2626" }}>{error}</p>}
-        {!loading && !error && (
-          kind === "notice" ? (
+        {!loading &&
+          !searchLoading &&
+          !error &&
+          (kind === "notice" ? (
             <section
               style={{
                 backgroundColor: "#fff",
@@ -144,8 +218,7 @@ export default function PostListPage() {
             </section>
           ) : (
             <PostList posts={filteredPosts} kind={kind} />
-          )
-        )}
+          ))}
       </main>
       <Footer />
     </div>

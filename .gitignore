@@ -277,8 +277,11 @@ src/main/resources/application.properties
 /uploads/**
 /backend/uploads/**
 
+# Meilisearch local data
+data.ms/
+
 # Ignore all files under any test directory
 **/test/**
 
-# Local-only seed runner
-backend/src/main/java/com/soldesk/moa/seed/LocalSeedDataRunner.java
+# Seed data directory
+seed/
