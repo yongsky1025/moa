@@ -397,8 +397,16 @@ public class PostService {
                 if (trimmed.startsWith("/uploads/post/")) {
                         return trimmed;
                 }
+                if (trimmed.startsWith("/uploads/images/post/")) {
+                        return trimmed;
+                }
 
                 int idx = trimmed.indexOf("/uploads/post/");
+                if (idx >= 0) {
+                        return trimmed.substring(idx);
+                }
+
+                idx = trimmed.indexOf("/uploads/images/post/");
                 if (idx >= 0) {
                         return trimmed.substring(idx);
                 }

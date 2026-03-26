@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.post.repository.PostRepository;
+import com.soldesk.moa.reply.repository.ReplyReactionRepository;
 import com.soldesk.moa.reply.repository.ReplyRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import lombok.extern.log4j.Log4j2;
 public class SoftDeletedContentCleanupScheduler {
 
     private final ReplyRepository replyRepository;
+    private final ReplyReactionRepository replyReactionRepository;
     private final PostRepository postRepository;
     private final BoardRepository boardRepository;
 
@@ -30,13 +32,15 @@ public class SoftDeletedContentCleanupScheduler {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(30);
 
         int unlinkedParents = replyRepository.unlinkParentReferencesForHardDelete(cutoff);
+        int deletedReplyReactions = replyReactionRepository.deleteBySoftDeletedReplyBefore(cutoff);
         int deletedReplies = replyRepository.hardDeleteSoftDeletedBefore(cutoff);
         int deletedPosts = postRepository.hardDeleteSoftDeletedBefore(cutoff);
         int deletedBoards = boardRepository.hardDeleteSoftDeletedBefore(cutoff);
 
-        if (unlinkedParents > 0 || deletedReplies > 0 || deletedPosts > 0 || deletedBoards > 0) {
-            log.info("[CLEANUP] cutoff={}, unlinkedParents={}, replies={}, posts={}, boards={}",
-                    cutoff, unlinkedParents, deletedReplies, deletedPosts, deletedBoards);
+        if (unlinkedParents > 0 || deletedReplyReactions > 0 || deletedReplies > 0 || deletedPosts > 0
+                || deletedBoards > 0) {
+            log.info("[CLEANUP] cutoff={}, unlinkedParents={}, replyReactions={}, replies={}, posts={}, boards={}",
+                    cutoff, unlinkedParents, deletedReplyReactions, deletedReplies, deletedPosts, deletedBoards);
         }
     }
 }

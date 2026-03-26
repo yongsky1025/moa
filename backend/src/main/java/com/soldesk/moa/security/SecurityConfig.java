@@ -20,6 +20,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.soldesk.moa.common.config.CorsProperties;
 import com.soldesk.moa.security.oauth2.handler.OAuth2LoginFailureHandler;
 import com.soldesk.moa.security.oauth2.handler.OAuth2LoginSuccessHandler;
 import com.soldesk.moa.security.oauth2.repository.HttpCookieOAuth2AuthorizationRequestRepository;
@@ -44,19 +45,22 @@ public class SecurityConfig {
         private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
         private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
         private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
+        private final CorsProperties corsProperties;
 
         public SecurityConfig(JwtTokenProvider jwtTokenProvider,
                         UserDetailsService userDetailsService,
                         CustomOAuth2UserService customOAuth2UserService,
                         OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
                         OAuth2LoginFailureHandler oAuth2LoginFailureHandler,
-                        HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository) {
+                        HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository,
+                        CorsProperties corsProperties) {
                 this.jwtTokenProvider = jwtTokenProvider;
                 this.userDetailsService = userDetailsService;
                 this.customOAuth2UserService = customOAuth2UserService;
                 this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
                 this.oAuth2LoginFailureHandler = oAuth2LoginFailureHandler;
                 this.cookieAuthorizationRequestRepository = cookieAuthorizationRequestRepository;
+                this.corsProperties = corsProperties;
         }
 
         @Bean
@@ -100,8 +104,9 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 // ----------- 서클 시큐리티 파트 ----------
 
-                                                .requestMatchers(HttpMethod.GET, "/circles", "/circles/categories",
-                                                                "/circles/*")
+                                                .requestMatchers(HttpMethod.GET, "/api/circles",
+                                                                "/api/circles/categories",
+                                                                "/api/circles/*")
                                                 .permitAll()
 
                                                 // ----------- 보드 시큐리티 파트 ----------
@@ -119,13 +124,21 @@ public class SecurityConfig {
                                                 // ----------- 보드 시큐리티 끝 ----------
                                                 .requestMatchers("/ws/chat/**", "/ws/chat-raw").permitAll() // WebSocket
                                                                                                             // 핸드셰이크
+                                                // 채팅 파일 조회는 인증 없이 허용
+                                                .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                                                "/api/chat/files/**")
+                                                .permitAll()
                                                 // 채팅: 로그인한 유저만 접근 허용
                                                 .requestMatchers("/chat/**").authenticated()
                                                 .requestMatchers("/api/chat/**").authenticated()
 
-                                                // ---------- 관리자, 장소 ----------
-                                                .requestMatchers("/api/admin/**").permitAll() // 임시로 다 열어둠
-                                                .requestMatchers("/api/place/**").permitAll()
+                                                // ---------- 관리자----------
+                                                .requestMatchers("/api/admin/popular-circles").permitAll() // 메인페이지에
+                                                                                                           // 써야할수있으니 허용
+                                                .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 security 적용
+                                                // ---------------- 장소(place) -----------------
+                                                .requestMatchers("/api/places/**").permitAll()
+                                                .requestMatchers("/api/tags/**").permitAll() // 장소&일정 태그 다 열어야함
                                                 // ----------------------------------
                                                 // swagger 임시 허용(개발중)
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
@@ -164,7 +177,7 @@ public class SecurityConfig {
         @Bean
         CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
-                configuration.addAllowedOriginPattern("http://localhost:5173");
+                configuration.setAllowedOriginPatterns(corsProperties.getAllowedOriginPatterns());
                 configuration.setAllowedMethods(Arrays.asList("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH"));
                 configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
                 configuration.setAllowCredentials(true);

@@ -24,4 +24,7 @@ public class AdminUserSearchDTO extends PageRequestDTO {
     private UserGender gender;
 
     private UserRole role;
+
+    // 정렬 (newest|oldest|name|age_asc|age_desc)
+    private String sort;
 }

@@ -2,6 +2,9 @@ import type {
   AdminUserResponseDTO,
   AdminUserSearchDTO,
   PageResultDTO,
+  UserGender,
+  UserStatus,
+  UserRole,
 } from '../types/adminTypes';
 import {
   createContext,
@@ -11,22 +14,39 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchAdminUserList } from '../api/adminUserApi';
+import { usePageSize } from '../hooks/usePageSize';
 
-const initialParams: AdminUserSearchDTO = {
-  page: 1,
-  size: 20,
-  keyword:undefined,
-  type:undefined,
-  gender: undefined,
-  status: undefined,
-  role: undefined,
-};
+function paramsToDTO(sp: URLSearchParams, pageSize: number): AdminUserSearchDTO {
+  return {
+    page: Number(sp.get('page')) || 1,
+    size: pageSize,
+    keyword: sp.get('keyword') || undefined,
+    type: sp.get('type') || undefined,
+    gender: (sp.get('gender') ?? undefined) as UserGender | undefined,
+    status: (sp.get('status') ?? undefined) as UserStatus | undefined,
+    role: (sp.get('role') ?? undefined) as UserRole | undefined,
+    sort: sp.get('sort') || undefined,
+  };
+}
+
+function dtoToParams(dto: AdminUserSearchDTO): Record<string, string> {
+  const r: Record<string, string> = {};
+  if (dto.page > 1) r.page = String(dto.page);
+  if (dto.keyword) r.keyword = dto.keyword;
+  if (dto.type) r.type = dto.type;
+  if (dto.gender) r.gender = dto.gender;
+  if (dto.status) r.status = dto.status;
+  if (dto.role) r.role = dto.role;
+  if (dto.sort) r.sort = dto.sort;
+  return r;
+}
 
 interface UserListContextType {
   users: AdminUserResponseDTO[];
   totalCount: number;
-  actualTotalPage:number;
+  actualTotalPage: number;
   current: number;
   loading: boolean;
   error: string | null;
@@ -36,22 +56,20 @@ interface UserListContextType {
   refresh: () => void;
 }
 
-// context+provider
-// context 생성
 const AdminUsersContext = createContext<UserListContextType | null>(null);
 
 export function AdminUsersProvider({ children }: { children: ReactNode }) {
-  const [params, setParams] = useState<AdminUserSearchDTO>(initialParams);
-  const [data, setData] = useState<PageResultDTO<AdminUserResponseDTO> | null>(
-    null,
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [data, setData] = useState<PageResultDTO<AdminUserResponseDTO> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pageSize = usePageSize();
+
+  const params = paramsToDTO(searchParams, pageSize);
 
   const load = useCallback(async (dto: AdminUserSearchDTO) => {
     setLoading(true);
     setError(null);
-
     try {
       setData(await fetchAdminUserList(dto));
     } catch (e: any) {
@@ -63,25 +81,22 @@ export function AdminUsersProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
-    load(params);
-  }, [params, load]);
+  useEffect(() => { load(paramsToDTO(searchParams, pageSize)); }, [searchParams, pageSize, load]);
 
   const applyFilter = useCallback((partial: Partial<AdminUserSearchDTO>) => {
-    setParams((prev) => ({ ...prev, ...partial, page: 1 }));
-  }, []);
+    const next = { ...params, ...partial, page: 1 };
+    setSearchParams(dtoToParams(next), { replace: true });
+  }, [params, setSearchParams]);
 
-  // pagenate -1했던거 복구
   const handlePageChange = useCallback(({ selected }: { selected: number }) => {
-    setParams((prev) => ({ ...prev, page: selected + 1 }));
-  }, []);
+    const next = { ...params, page: selected + 1 };
+    setSearchParams(dtoToParams(next), { replace: true });
+  }, [params, setSearchParams]);
 
-  const refresh = useCallback(() => {
-    load(params);
-  }, [load, params]);
+  const refresh = useCallback(() => load(params), [load, params]);
 
   const actualTotalPage = data
-    ? Math.ceil(data.totalCount / params.size)
+    ? Math.ceil(data.totalCount / (params.size ?? pageSize))
     : 0;
 
   return (

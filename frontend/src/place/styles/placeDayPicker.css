@@ -1,0 +1,48 @@
+/* ── react-day-picker (장소 대여) 커스텀 테마 ─────────────────── */
+.moa-rdp {
+  --rdp-accent-color: #5f8f7b;
+  --rdp-accent-background-color: #eaf4f0;
+  font-size: 0.85rem;
+}
+
+.moa-rdp button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #5f8f7b44;
+}
+
+/* 선택된 날짜 */
+.moa-rdp .rdp-selected .rdp-day_button {
+  background-color: #5f8f7b;
+  color: #fff;
+  border-radius: 9999px;
+  font-weight: 700;
+}
+
+/* 오늘 날짜 */
+.moa-rdp .rdp-today:not(.rdp-selected) .rdp-day_button {
+  color: #5f8f7b;
+  font-weight: 700;
+}
+
+/* 토요일 — 파란색 */
+.moa-rdp .rdp-day--saturday .rdp-day_button {
+  color: #2563eb;
+}
+
+/* 일요일 + 공휴일 — 빨간색 */
+.moa-rdp .rdp-day--sunday .rdp-day_button,
+.moa-rdp .rdp-day--holiday .rdp-day_button {
+  color: #dc2626;
+}
+
+/* 비활성(과거) 날짜 */
+.moa-rdp .rdp-disabled .rdp-day_button {
+  color: #d1d5db;
+  pointer-events: none;
+}
+
+/* 호버 */
+.moa-rdp button.rdp-day_button:not(:disabled):hover {
+  background-color: #eaf4f0;
+  border-radius: 9999px;
+}

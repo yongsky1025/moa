@@ -6,12 +6,15 @@ import type {
 } from '../types/adminTypes';
 import {
   cancelSanction,
+  fetchReportDetail,
   fetchSanctionDetail,
   liftSanction,
 } from '../api/adminReportAndSanctionApi';
 import AdminSanctionStateBadge from '../component/sanction/AdminSanctionStateBadge';
+import AdminConfirmModal from '../component/AdminConfirmModal';
 import { useAdminToast } from '../hooks/useAdminToast';
 import AdminToast from '../component/AdminToast';
+import ReportEvidenceImages from '../component/report/ReportEvidenceImages';
 
 const formatDateTime = (date: string | null | undefined) => {
   if (!date) return '-';
@@ -33,9 +36,11 @@ export default function AdminSanctionDetailPage() {
   const [data, setData] = useState<SanctionResponseDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reportImagePaths, setReportImagePaths] = useState<string[] | null>(null);
   const [adminId, setAdminId] = useState(''); // security 붙으면 제거(토큰)
   const [cancelReason, setCancelReason] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'lift' | 'cancel' | null>(null);
 
   useEffect(() => {
     if (!Number.isFinite(sanctionId)) return;
@@ -62,6 +67,13 @@ export default function AdminSanctionDetailPage() {
       alive = false;
     };
   }, [sanctionId]);
+
+  useEffect(() => {
+    if (!data?.reportId) return;
+    fetchReportDetail(data.reportId).then((r) => {
+      setReportImagePaths(r.imagePaths ?? null);
+    }).catch(() => {});
+  }, [data?.reportId]);
 
   // 버튼 활성화 조건
   const canLift = useMemo(
@@ -167,7 +179,7 @@ export default function AdminSanctionDetailPage() {
 
   return (
     <div className="flex min-h-full flex-col gap-6 bg-[#FDFAF8] px-6 py-6">
-      {toast && <AdminToast msg={toast.msg} type={toast.type} />}
+      <AdminToast toast={toast} />
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-moa-primary flex h-10 w-10 items-center justify-center rounded-xl shadow-sm">
@@ -278,6 +290,9 @@ export default function AdminSanctionDetailPage() {
                     {data.reason}
                   </div>
                 </div>
+                {data.reportId && (
+                  <ReportEvidenceImages imagePaths={reportImagePaths} />
+                )}
                 {data.sanctionState === 'CANCELLED' && (
                   <div className="pt-2">
                     <div className="text-moa-subtle text-xs font-semibold">
@@ -317,9 +332,9 @@ export default function AdminSanctionDetailPage() {
             <div className="px-6 py-5">
               {canLift ? (
                 <button
-                  onClick={handleLift}
+                  onClick={() => setConfirmAction('lift')}
                   disabled={saving}
-                  className="w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-emerald-700 disabled:opacity-40"
+                  className="w-full cursor-pointer rounded-xl bg-emerald-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-emerald-700 disabled:opacity-40"
                 >
                   해제
                 </button>
@@ -375,9 +390,9 @@ export default function AdminSanctionDetailPage() {
               </div>
               {canCancel ? (
                 <button
-                  onClick={handleCancel}
+                  onClick={() => setConfirmAction('cancel')}
                   disabled={saving}
-                  className="w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-rose-700 disabled:opacity-40"
+                  className="w-full cursor-pointer rounded-xl bg-rose-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-rose-700 disabled:opacity-40"
                 >
                   취소
                 </button>
@@ -390,6 +405,26 @@ export default function AdminSanctionDetailPage() {
           </section>
         </div>
       </div>
+
+      <AdminConfirmModal
+        open={confirmAction === 'lift'}
+        title="제재 해제"
+        message="이 제재를 해제하시겠습니까? 해제 후 대상 유저의 제한이 즉시 풀립니다."
+        confirmLabel="해제"
+        confirmColor="green"
+        onConfirm={() => { setConfirmAction(null); handleLift(); }}
+        onCancel={() => setConfirmAction(null)}
+      />
+
+      <AdminConfirmModal
+        open={confirmAction === 'cancel'}
+        title="제재 취소"
+        message="이 제재를 취소하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+        confirmLabel="확인"
+        confirmColor="red"
+        onConfirm={() => { setConfirmAction(null); handleCancel(); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

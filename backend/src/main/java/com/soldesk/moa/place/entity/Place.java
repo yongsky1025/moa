@@ -5,10 +5,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.soldesk.moa.common.entity.BaseEntity;
+import com.soldesk.moa.place.entity.constant.PlaceStatus;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -44,6 +47,9 @@ public class Place extends BaseEntity {
     @Column(nullable = false)
     private String district; // 구, 시
 
+    @Column
+    private String dong; // 동
+
     @Column(nullable = false)
     private Double latitude; // 위도
 
@@ -61,16 +67,27 @@ public class Place extends BaseEntity {
     private String description; // 장소에 대한 설명(상세 페이지에서 사용, 물론 ai기반 추천도 가능)
 
     @Column(nullable = false)
-    private Integer minReservationHour; // 최소 예약 시간
+    private Integer minReservationMinutes; // 최소 예약 시간 (분 단위, 30분 배수)
 
     @Column(nullable = false)
-    private Integer maxReservationHour; // 최대 예약시간
+    private Integer maxReservationMinutes; // 최대 예약 시간 (분 단위, 30분 배수)
 
     @Column(nullable = false)
     private LocalTime openTime; // 장소 오픈 시간
 
     @Column(nullable = false)
-    private LocalTime closeTime; // 장소 클로즈 시간
+    private LocalTime closeTime; // 장소 마감 시간 (24:00은 23:59로 저장)
+
+    @Builder.Default
+    private Double averageRating = 0.0; // 평균 평점 (리뷰 작성/삭제 시 갱신)
+
+    @Builder.Default
+    private Integer reviewCount = 0; // 리뷰 수 (리뷰 작성/삭제 시 갱신)
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private PlaceStatus status = PlaceStatus.ACTIVE;
 
     @OneToMany(mappedBy = "place")
     @Builder.Default
@@ -104,6 +121,10 @@ public class Place extends BaseEntity {
         this.district = district;
     }
 
+    public void setDong(String dong) {
+        this.dong = dong;
+    }
+
     public void setCapacity(Integer capacity) {
         this.capacity = capacity;
     }
@@ -116,12 +137,12 @@ public class Place extends BaseEntity {
         this.description = description;
     }
 
-    public void setMinReservationHour(Integer minReservationHour) {
-        this.minReservationHour = minReservationHour;
+    public void setMinReservationMinutes(Integer minReservationMinutes) {
+        this.minReservationMinutes = minReservationMinutes;
     }
 
-    public void setMaxReservationHour(Integer maxReservationHour) {
-        this.maxReservationHour = maxReservationHour;
+    public void setMaxReservationMinutes(Integer maxReservationMinutes) {
+        this.maxReservationMinutes = maxReservationMinutes;
     }
 
     public void setOpenTime(LocalTime openTime) {
@@ -132,12 +153,24 @@ public class Place extends BaseEntity {
         this.closeTime = closeTime;
     }
 
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
     public void setTags(List<PlaceTag> tags) {
         this.tags = tags;
     }
 
     public void setPlaceClosedDays(List<PlaceClosedDay> placeClosedDays) {
         this.placeClosedDays = placeClosedDays;
+    }
+
+    public void setStatus(PlaceStatus status) {
+        this.status = status;
     }
 
 }

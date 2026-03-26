@@ -27,10 +27,10 @@ import lombok.RequiredArgsConstructor;
 public class CircleImageService {
     private static final ImageDomain CIRCLE_IMAGE_DOMAIN = ImageDomain.CIRCLE;
 
-    @Value("${app.local-upload-dir}")
+    @Value("${upload.root}")
     private String localUploadDir;
 
-    @Value("${app.local-base-url:http://localhost:8080}")
+    @Value("${upload.base-url:http://localhost:8080}")
     private String localBaseUrl;
 
     private final ImageRepository imageRepository;
@@ -48,10 +48,10 @@ public class CircleImageService {
         }
 
         String originalName = file.getOriginalFilename();
-        String key = StorageKeyGenerator.generate("circle", originalName);
+        String key = StorageKeyGenerator.generate("images", "circle", originalName);
 
         // 업로드 디렉토리 생성 후 파일 저장
-        Path uploadDir = Paths.get(localUploadDir);
+        Path uploadDir = Paths.get(localUploadDir, "images");
         Files.createDirectories(uploadDir);
         Path target = uploadDir.resolve(key);
         Path parent = target.getParent();

@@ -1,4 +1,25 @@
 spring:
+  config:
+    activate:
+      # 운영 배포 환경에서만 적용되는 설정
+      on-profile: prod
   jpa:
     hibernate:
       ddl-auto: validate
+
+app:
+  # 운영 프론트 도메인 URL (OAuth 리다이렉트 등에 사용)
+  frontend-url: ${APP_FRONTEND_URL}
+  cors:
+    # 운영 프론트 도메인 Origin (배포 시 환경변수로 주입)
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERN}
+  cookie:
+    # HTTPS 운영 환경 기준
+    secure: true
+    same-site: None
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: info

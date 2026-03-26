@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ReportResponseDTO } from '../../types/adminTypes';
 import { useAdminReports } from '../../context/AdminReportsContext';
 import AdminReportStatusBadge from './AdminReportStatusBadge';
+import AdminConfirmModal from '../AdminConfirmModal';
 import MoaPaginate from '../Moapaginate';
 
 const formatDateTime = (date: string | null | undefined) => {
@@ -20,8 +22,17 @@ const HEADERS = ['No.', '신고자', '대상', '대상 ID', '유형', '상태', 
 export default function AdminReportTable() {
   const navigate = useNavigate();
   const { data, loading, error, params, actualTotalPage, handlePageChange } = useAdminReports();
+  const [pendingReport, setPendingReport] = useState<ReportResponseDTO | null>(null);
 
   const list = data?.dtoList ?? [];
+
+  const handleRowClick = (r: ReportResponseDTO) => {
+    if (r.status === 'PENDING') {
+      setPendingReport(r);
+    } else {
+      navigate(`/admin/reports/${r.reportId}`);
+    }
+  };
   const totalCount = data?.totalCount ?? 0;
   const current = data?.current ?? 1;
 
@@ -78,7 +89,7 @@ export default function AdminReportTable() {
                 return (
                   <tr
                     key={r.reportId}
-                    onClick={() => navigate(`/admin/reports/${r.reportId}`)}
+                    onClick={() => handleRowClick(r)}
                     className="group cursor-pointer transition-colors hover:bg-moa-light/30"
                   >
                     <td className="text-moa-subtle px-5 py-3.5 font-mono text-xs whitespace-nowrap">{no}</td>
@@ -96,7 +107,7 @@ export default function AdminReportTable() {
                     <td className="text-moa-subtle px-5 py-3.5 whitespace-nowrap text-xs font-mono">{formatDateTime(r.createdAt)}</td>
                     <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <button
-                        onClick={() => navigate(`/admin/reports/${r.reportId}`)}
+                        onClick={() => handleRowClick(r)}
                         className="bg-moa-primary hover:bg-moa-hover inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white opacity-0 transition-all group-hover:opacity-100 whitespace-nowrap"
                       >
                         상세보기
@@ -121,6 +132,21 @@ export default function AdminReportTable() {
           </p>
         </div>
       )}
+
+      <AdminConfirmModal
+        open={!!pendingReport}
+        title="신고 검토"
+        message="이 신고를 검토하시겠습니까? 확인 시 검토 중으로 변경됩니다."
+        confirmLabel="검토하기"
+        confirmColor="green"
+        onConfirm={() => {
+          if (pendingReport) {
+            navigate(`/admin/reports/${pendingReport.reportId}`);
+            setPendingReport(null);
+          }
+        }}
+        onCancel={() => setPendingReport(null)}
+      />
     </div>
   );
 }

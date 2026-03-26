@@ -11,11 +11,14 @@ import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.springframework.data.domain.Sort;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.QCircle;
@@ -24,6 +27,9 @@ import com.soldesk.moa.circle.entity.QCircleMember;
 import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
+import com.soldesk.moa.board.entity.QBoard;
+import com.soldesk.moa.post.entity.QPost;
+import com.soldesk.moa.reply.entity.QReply;
 import com.soldesk.moa.schedule.entity.QSchedule;
 import com.soldesk.moa.users.entity.QUsers;
 
@@ -106,7 +112,7 @@ public class SearchCircleRepositoryImpl extends QuerydslRepositorySupport
                                                         .eq(Long.parseLong(adminCircleSearchDTO.getKeyword())));
                                         break;
                                 case "name":
-                                        builder.and(circle.name.eq(adminCircleSearchDTO.getKeyword()));
+                                        builder.and(circle.name.contains(adminCircleSearchDTO.getKeyword()));
                                         break;
                                 case "leader":
                                         builder.and(circleMemberSubQuery.contains(adminCircleSearchDTO.getKeyword()));
@@ -115,7 +121,21 @@ public class SearchCircleRepositoryImpl extends QuerydslRepositorySupport
                 }
 
                 tuple.where(builder);
-                tuple.orderBy(circle.circleId.asc());
+
+                Sort sortSpec = pageable.getSort();
+                if (sortSpec.isSorted()) {
+                        for (Sort.Order order : sortSpec) {
+                                Order dir = order.isAscending() ? Order.ASC : Order.DESC;
+                                switch (order.getProperty()) {
+                                        case "name"          -> tuple.orderBy(new OrderSpecifier<>(dir, circle.name));
+                                        case "currentMember" -> tuple.orderBy(new OrderSpecifier<>(dir, circle.currentMember));
+                                        case "createDate"    -> tuple.orderBy(new OrderSpecifier<>(dir, circle.createDate));
+                                        default              -> tuple.orderBy(new OrderSpecifier<>(dir, circle.circleId));
+                                }
+                        }
+                } else {
+                        tuple.orderBy(circle.circleId.desc());
+                }
 
                 tuple.offset(pageable.getOffset());
                 tuple.limit(pageable.getPageSize());
@@ -207,7 +227,8 @@ public class SearchCircleRepositoryImpl extends QuerydslRepositorySupport
                                                 .and(JPAExpressions.selectOne()
                                                                 .from(schedule)
                                                                 .where(schedule.circle.eq(circle)
-                                                                                .and(schedule.startAt.goe(activityThreshold)))
+                                                                                .and(schedule.startAt.goe(
+                                                                                                activityThreshold)))
                                                                 .notExists()))
                                 .fetchOne();
         }
@@ -231,6 +252,104 @@ public class SearchCircleRepositoryImpl extends QuerydslRepositorySupport
                 List<Tuple> list = tuple.fetch();
 
                 return list.stream().map(Tuple::toArray).collect(Collectors.toList());
+        }
+
+        // 모임 상세 조회 (circle + category + leader + coverImage + totalPosts)
+        @Override
+        public Object[] getCircleDetail(Long circleId) {
+                QCircle circle = QCircle.circle;
+                QCircleCategory category = QCircleCategory.circleCategory;
+                QCircleMember circleMember = QCircleMember.circleMember;
+                QBoard board = QBoard.board;
+                QPost post = QPost.post;
+
+                // 리더 이름 서브쿼리
+                JPQLQuery<String> leaderNameSub = JPAExpressions.select(circleMember.user.name)
+                                .from(circleMember)
+                                .where(circleMember.circle.eq(circle)
+                                                .and(circleMember.role.eq(CircleRole.LEADER)));
+
+                // 리더 userId 서브쿼리
+                JPQLQuery<Long> leaderIdSub = JPAExpressions.select(circleMember.user.userId)
+                                .from(circleMember)
+                                .where(circleMember.circle.eq(circle)
+                                                .and(circleMember.role.eq(CircleRole.LEADER)));
+
+                // 게시글 수 서브쿼리
+                JPQLQuery<Long> postCountSub = JPAExpressions.select(post.count())
+                                .from(post)
+                                .join(post.boardId, board)
+                                .where(board.circleId.eq(circle)
+                                                .and(post.deleted.eq(false)));
+
+                Tuple result = from(circle)
+                                .join(category).on(circle.category.eq(category))
+                                .where(circle.circleId.eq(circleId))
+                                .select(circle, category.categoryName, leaderNameSub, leaderIdSub, postCountSub)
+                                .fetchOne();
+
+                if (result == null) {
+                        return null;
+                }
+                return result.toArray();
+        }
+
+        // 모임 가입 회원 목록
+        @Override
+        public Page<Object[]> getCircleMembers(Long circleId, Pageable pageable) {
+                QCircleMember circleMember = QCircleMember.circleMember;
+                QUsers user = QUsers.users;
+
+                JPQLQuery<Tuple> tuple = from(circleMember)
+                                .join(circleMember.user, user)
+                                .where(circleMember.circle.circleId.eq(circleId)
+                                                .and(circleMember.status.notIn(
+                                                                CircleMemberStatus.LEFT,
+                                                                CircleMemberStatus.KICKED,
+                                                                CircleMemberStatus.REJECTED)))
+                                .select(user.userId, user.name, user.userGender, circleMember.role,
+                                                circleMember.status, circleMember.createDate);
+
+                tuple.orderBy(circleMember.role.asc(), circleMember.createDate.asc());
+                long count = tuple.fetchCount();
+
+                tuple.offset(pageable.getOffset());
+                tuple.limit(pageable.getPageSize());
+
+                List<Tuple> result = tuple.fetch();
+                List<Object[]> list = result.stream().map(Tuple::toArray).collect(Collectors.toList());
+
+                return new PageImpl<>(list, pageable, count);
+        }
+
+        // 모임 최근 게시물
+        @Override
+        public Page<Object[]> getCirclePosts(Long circleId, Pageable pageable) {
+                QPost post = QPost.post;
+                QBoard board = QBoard.board;
+                QUsers user = QUsers.users;
+                QReply reply = QReply.reply;
+
+                JPQLQuery<Tuple> tuple = from(post)
+                                .join(post.boardId, board)
+                                .join(post.userId, user)
+                                .leftJoin(reply).on(reply.postId.eq(post).and(reply.deleted.eq(false)))
+                                .where(board.circleId.circleId.eq(circleId)
+                                                .and(post.deleted.eq(false)))
+                                .groupBy(post.postId)
+                                .select(post.postId, post.title, user.name, post.viewCount, reply.count(),
+                                                post.createDate);
+
+                tuple.orderBy(post.createDate.desc());
+                long count = tuple.fetchCount();
+
+                tuple.offset(pageable.getOffset());
+                tuple.limit(pageable.getPageSize());
+
+                List<Tuple> result = tuple.fetch();
+                List<Object[]> list = result.stream().map(Tuple::toArray).collect(Collectors.toList());
+
+                return new PageImpl<>(list, pageable, count);
         }
 
 }

@@ -9,6 +9,19 @@ import AdminSanctionDetailPage from "../admin/pages/AdminSanctionDetailPage";
 import AdminStatsPage from "../admin/pages/AdminStatsPage";
 import AdminLogsPage from "../admin/pages/AdminLogsPage";
 import AdminUserLogsPage from "../admin/pages/AdminUserLogsPage";
+import AdminCirclesPage from "../admin/pages/AdminCirclesPage";
+import AdminCirclesPendingPage from "../admin/pages/AdminCirclesPendingPage";
+import AdminCircleDetailPage from "../admin/pages/AdminCircleDetailPage";
+import AdminCircleCategoryPage from "../admin/pages/AdminCircleCategoryPage";
+import AdminPostsPage from "../admin/pages/AdminPostsPage";
+import AdminPostDetailPage from "../admin/pages/AdminPostDetailPage";
+import AdminNoticesPage from "../admin/pages/AdminNoticesPage";
+import AdminNoticeWritePage from "../admin/pages/AdminNoticeWritePage";
+import AdminNoticeEditPage from "../admin/pages/AdminNoticeEditPage";
+import AdminPlacesPage from "../admin/pages/AdminPlacesPage";
+import AdminPlaceRegisterPage from "../admin/pages/AdminPlaceRegisterPage";
+import AdminPlaceEditPage from "../admin/pages/AdminPlaceEditPage";
+import AdminPlaceDetailPage from "../admin/pages/AdminPlaceDetailPage";
 
 export const adminRouter = () => {
   return [
@@ -20,6 +33,11 @@ export const adminRouter = () => {
         { path: "maindashboard", Component: AdminDashboardPage },
         { path: "users", Component: AdminUsersPage },
         { path: "users/profile/:id", Component: AdminUserDetailPage },
+        { path: "posts", Component: AdminPostsPage },
+        { path: "posts/:postId", Component: AdminPostDetailPage },
+        { path: "posts/notices", Component: AdminNoticesPage },
+        { path: "posts/notices/write", Component: AdminNoticeWritePage },
+        { path: "posts/notices/:postId/edit", Component: AdminNoticeEditPage },
         { path: "reports", Component: AdminReportsPage },
         { path: "reports/:id", Component: AdminReportDetailPage },
         { path: "sanctions", Component: AdminSanctionsPage },
@@ -27,11 +45,14 @@ export const adminRouter = () => {
         { path: "stats", Component: AdminStatsPage },
         { path: "logs", Component: AdminLogsPage },
         { path: "logs/user", Component: AdminUserLogsPage },
-        // 추후 추가
-        // { path: 'circles',        Component: AdminCirclesPage   },
-        // { path: 'circles/pending', Component: AdminCirclesPendingPage },
-        // { path: 'posts',          Component: AdminPostsPage     },
-        // { path: 'places',         Component: AdminPlacesPage    },
+        { path: "circles", Component: AdminCirclesPage },
+        { path: "circles/pending", Component: AdminCirclesPendingPage },
+        { path: "circles/category", Component: AdminCircleCategoryPage },
+        { path: "circles/:id", Component: AdminCircleDetailPage },
+        { path: "places", Component: AdminPlacesPage },
+        { path: "places/register", Component: AdminPlaceRegisterPage },
+        { path: "places/:id", Component: AdminPlaceDetailPage },
+        { path: "places/:id/edit", Component: AdminPlaceEditPage },
       ],
     },
   ];

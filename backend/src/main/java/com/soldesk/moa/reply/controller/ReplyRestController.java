@@ -1,7 +1,6 @@
 package com.soldesk.moa.reply.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,9 +10,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.reply.dto.ReplyRequestDTO;
+import com.soldesk.moa.reply.dto.ReplyReactionSummaryDTO;
 import com.soldesk.moa.reply.dto.ReplyResponseDTO;
 import com.soldesk.moa.reply.service.ReplyService;
 import com.soldesk.moa.auth.dto.AuthUserDTO;
@@ -29,10 +30,12 @@ public class ReplyRestController {
     private final ReplyService replyService;
 
     @GetMapping
-    public List<ReplyResponseDTO> list(@PathVariable("postId") Long postId,
+    public Page<ReplyResponseDTO> list(@PathVariable("postId") Long postId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal AuthUserDTO auth) {
         Long userId = auth == null ? null : auth.getUserId();
-        return replyService.list(postId, userId);
+        return replyService.list(postId, userId, page, size);
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -65,5 +68,13 @@ public class ReplyRestController {
     public void delete(@PathVariable("replyId") Long replyId,
             @AuthenticationPrincipal AuthUserDTO auth) {
         replyService.delete(replyId, auth.getUserId());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/{replyId}/reactions/like")
+    public ReplyReactionSummaryDTO react(@PathVariable("postId") Long postId,
+            @PathVariable("replyId") Long replyId,
+            @AuthenticationPrincipal AuthUserDTO auth) {
+        return replyService.reactToReply(postId, replyId, auth.getUserId());
     }
 }

@@ -1,7 +1,9 @@
 package com.soldesk.moa.schedule.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.entity.constant.ScheduleStatus;
 
@@ -15,6 +17,7 @@ import lombok.NoArgsConstructor;
 public class ScheduleResponseDTO {
 
     private Long scheduleId;
+    private Long circleId;
     private String title;
     private String description;
     private LocalDateTime startAt;
@@ -26,9 +29,12 @@ public class ScheduleResponseDTO {
     private Double latitude;
     private Double longitude;
     private boolean joined;
+    private List<TagResponseDTO> tags;
+    private Long chatRoomId;
 
     public ScheduleResponseDTO(Schedule schedule) {
         this.scheduleId = schedule.getScheduleId();
+        this.circleId = schedule.getCircle().getCircleId();
         this.title = schedule.getTitle();
         this.description = schedule.getDescription();
         this.startAt = schedule.getStartAt();
@@ -39,10 +45,26 @@ public class ScheduleResponseDTO {
         this.location = schedule.getAddress();
         this.latitude = schedule.getLatitude();
         this.longitude = schedule.getLongitude();
+        this.tags = List.of();
     }
 
     public ScheduleResponseDTO(Schedule schedule, boolean joined) {
         this(schedule);
         this.joined = joined;
+    }
+
+    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<TagResponseDTO> tags) {
+        this(schedule, joined);
+        this.tags = tags;
+    }
+
+    public ScheduleResponseDTO(Schedule schedule, Long chatRoomId) {
+        this(schedule);
+        this.chatRoomId = chatRoomId;
+    }
+
+    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<TagResponseDTO> tags, Long chatRoomId) {
+        this(schedule, joined, tags);
+        this.chatRoomId = chatRoomId;
     }
 }

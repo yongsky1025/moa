@@ -9,9 +9,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.soldesk.moa.admin.report.entity.Sanction;
+import com.soldesk.moa.admin.report.entity.constant.ReportTargetType;
 import com.soldesk.moa.admin.report.entity.constant.SanctionState;
 
 public interface SanctionRepository extends JpaRepository<Sanction, Long>, SearchSanctionRepository {
+
+    // 특정 대상(게시글/댓글 등)의 최신 활성 제재 조회
+    Optional<Sanction> findFirstByTargetTypeAndTargetIdAndSanctionStateOrderByCreateDateDesc(
+            ReportTargetType targetType, Long targetId, SanctionState sanctionState);
 
     // 특정 유저의 현재 활성 제재 여부 확인 (로그인 시 체크용)
     Optional<Sanction> findByTargetUser_UserIdAndSanctionState(

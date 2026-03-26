@@ -26,8 +26,8 @@ public class LocalFileUploadController {
     private final String localBaseUrl;
 
     public LocalFileUploadController(
-            @Value("${app.local-upload-dir}") String localUploadDir,
-            @Value("${app.local-base-url}") String localBaseUrl) {
+            @Value("${upload.root}") String localUploadDir,
+            @Value("${upload.base-url}") String localBaseUrl) {
         this.localUploadDir = localUploadDir;
         this.localBaseUrl = localBaseUrl;
     }
@@ -43,6 +43,7 @@ public class LocalFileUploadController {
         }
 
         String safeKey = normalizeKey(key);
+        validateSupportedPrefix(safeKey);
         Path baseDir = Paths.get(localUploadDir).normalize();
         Path targetPath = baseDir.resolve(safeKey).normalize();
 
@@ -62,6 +63,13 @@ public class LocalFileUploadController {
                 "status", "success",
                 "key", safeKey,
                 "fileUrl", fileUrl));
+    }
+
+    private void validateSupportedPrefix(String safeKey) {
+        if (safeKey.startsWith("images/") || safeKey.startsWith("files/")) {
+            return;
+        }
+        throw new IllegalArgumentException("지원하지 않는 key prefix입니다.");
     }
 
     private String normalizeKey(String key) {

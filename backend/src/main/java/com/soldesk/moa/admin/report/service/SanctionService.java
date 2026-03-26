@@ -25,8 +25,12 @@ import com.soldesk.moa.admin.report.entity.constant.SanctionType;
 import com.soldesk.moa.admin.report.repository.ReportRepository;
 import com.soldesk.moa.admin.report.repository.SanctionRepository;
 import com.soldesk.moa.circle.entity.Circle;
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleStatus;
+import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.notification.domain.NotificationType;
+import com.soldesk.moa.notification.service.NotificationService;
 import com.soldesk.moa.post.entity.Post;
 import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.users.entity.Users;
@@ -47,6 +51,8 @@ public class SanctionService {
     private final AdminPostRepository adminPostRepository;
     private final AdminReplyRepository adminReplyRepository;
     private final AdminCircleRepository adminCircleRepository;
+    private final CircleMemberRepository circleMemberRepository;
+    private final NotificationService notificationService;
 
     // 제재 목록 조회
     public PageResultDTO<SanctionResponseDTO> getSanctions(SanctionFilterDTO filter) {
@@ -194,6 +200,12 @@ public class SanctionService {
 
         if (count >= 3) {
             // 3회 -> 강제해산
+            // 상태 변경 전에 활성 멤버들에게 알림 발송
+            circleMemberRepository.findByCircleAndStatus(circle, CircleMemberStatus.ACTIVE)
+                    .forEach(m -> notificationService.send(
+                            m.getUser().getUserId(),
+                            NotificationType.CIRCLE_DISBANDED,
+                            "'" + circle.getName() + "' 모임이 해산되었습니다."));
             circle.setStatus(CircleStatus.CLOSED);
             log.info("제재 3회 누적 강제해산 circleId={}", circle.getCircleId());
         } else {

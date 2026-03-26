@@ -12,6 +12,8 @@ export interface CircleResponse {
   categoryId: number;
   categoryName: string;
   coverImageUrl?: string;
+  myRole?: CircleRole;
+  likeCount?: number;
 }
 
 export interface CircleCreateRequest {
@@ -38,6 +40,25 @@ export interface CircleMember {
   nickname: string;
   role: CircleRole;
   status: CircleMemberStatus;
+  statusMessage?: string;
+}
+
+export interface RecommendationItem {
+  circleId: number;
+  name: string;
+  description: string;
+  categoryName: string;
+  similarity: number;
+  status: CircleStatus;
+  maxMember: number;
+  currentMember: number;
+  coverImageUrl?: string;
+}
+
+export interface RecommendationBundle {
+  overall: RecommendationItem[];  // 5축 전체 매칭
+  social: RecommendationItem[];   // socialLoad + interactionMode
+  activity: RecommendationItem[]; // activityIntensity + commitmentLevel + structureLevel
 }
 
 // 백엔드 PageResultDTO 구조

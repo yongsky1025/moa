@@ -16,6 +16,7 @@ import lombok.extern.log4j.Log4j2;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RequestMapping("/api/admin/stats")
 @Tag(name = "Admin stats section", description = "Response MOA API")
 @Log4j2
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminStatsController {
     private final AdminStatisticsService adminStatisticsService;
 

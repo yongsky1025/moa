@@ -3,10 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import BoardSectionHeader from "../../common/components/BoardSectionHeader";
-import {
-  BoardDetailSkeleton,
-  ReplyListSkeleton,
-} from "../../common/components/BoardLoadingSkeletons";
+import { BoardDetailSkeleton, ReplyListSkeleton } from "../../common/components/BoardLoadingSkeletons";
 import PostDetailArticleCard from "../../post/components/PostDetailArticleCard";
 import PostLikeButton from "../../post/components/PostLikeButton";
 import PostActionMenu from "../../post/components/PostActionMenu";
@@ -16,29 +13,22 @@ import { postRoutes } from "../../post/routes/postRoutes";
 import { useReplies } from "../../reply/hooks/useReplies";
 import ReplyForm from "../../reply/components/ReplyForm";
 import { useReplyForm } from "../../reply/hooks/useReplyForm";
+import { replyApi } from "../../reply/api/replyApi";
 import ReplyList from "../../reply/components/ReplyList";
 import "../../reply/styles/replySection.css";
 import { useAuthStore } from "../../store/authStore";
+import { useDelayedLoading } from "../../common/hooks/useDelayedLoading";
 import { postApi } from "../../post/api/postApi";
-import type {
-  PostReactionSummary,
-} from "../../post/types/postTypes";
+import type { PostReactionSummary } from "../../post/types/postTypes";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 
-function countReplies(nodes: Array<{ children?: unknown[] }>): number {
-  return nodes.reduce((sum, node) => {
-    const childrenCount = Array.isArray(node.children)
-      ? node.children.length
-      : 0;
-    return sum + 1 + childrenCount;
-  }, 0);
-}
-
-function applyLocalReaction(
-  current: PostReactionSummary,
-): PostReactionSummary {
+function applyLocalReaction(current: PostReactionSummary): PostReactionSummary {
   if (current.myReaction === "LIKE") {
-    return { ...current, likeCount: Math.max(0, current.likeCount - 1), myReaction: null };
+    return {
+      ...current,
+      likeCount: Math.max(0, current.likeCount - 1),
+      myReaction: null,
+    };
   }
 
   return {
@@ -58,8 +48,7 @@ export default function CirclePostDetailPage() {
   const circleIdNumber = parseRouteNumber(circleId);
   const boardIdNumber = parseRouteNumber(boardId);
   const postIdNumber = parseRouteNumber(postId);
-  const hasValidParams =
-    circleIdNumber !== null && boardIdNumber !== null && postIdNumber !== null;
+  const hasValidParams = circleIdNumber !== null && boardIdNumber !== null && postIdNumber !== null;
 
   const { data, loading, error } = usePostDetail({
     kind: "circle",
@@ -71,8 +60,13 @@ export default function CirclePostDetailPage() {
   const {
     tree,
     loading: replyLoading,
+    loadingMore: replyLoadingMore,
     error: replyError,
+    hasMore: hasMoreReplies,
+    totalCount: totalReplyCount,
     refetch,
+    refetchAll,
+    loadMore,
   } = useReplies({
     postId: postIdNumber ?? 0,
     enabled: hasValidParams,
@@ -80,14 +74,32 @@ export default function CirclePostDetailPage() {
   const { create, update, remove, error: replySubmitError } = useReplyForm();
   const { isLoggedIn, user } = useAuthStore();
   const isOwner = !!data && !!user && data.authorPublicId === user.publicId;
-  const totalReplyCount = countReplies(tree);
   const reactionPostId = postIdNumber ?? 0;
-  const [reactionSummary, setReactionSummary] =
-    useState<PostReactionSummary | null>(null);
+  const [reactionSummary, setReactionSummary] = useState<PostReactionSummary | null>(null);
   const [reactionError, setReactionError] = useState("");
+  const [autoExpandParentId, setAutoExpandParentId] = useState<number | null>(null);
+  const [focusReplyId, setFocusReplyId] = useState<number | null>(null);
+  const showPostLoading = useDelayedLoading(loading, 180);
+  const showReplyLoading = useDelayedLoading(replyLoading, 180);
+
+  const refreshReplies = async (loadAll: boolean, keepScroll = true) => {
+    const currentScrollY = keepScroll ? window.scrollY : 0;
+    if (loadAll) {
+      await refetchAll();
+    } else {
+      await refetch();
+    }
+    if (keepScroll) {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: currentScrollY, behavior: "auto" });
+      });
+    }
+  };
 
   useEffect(() => {
     setReactionSummary(null);
+    setAutoExpandParentId(null);
+    setFocusReplyId(null);
   }, [data?.postId]);
 
   const react = async () => {
@@ -137,13 +149,9 @@ export default function CirclePostDetailPage() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
-      <BoardSectionHeader
-        title="서클 게시판"
-        backTo={postRoutes.circleBoard(circleIdNumber, boardIdNumber)}
-        backLabel="목록으로 이동"
-      />
+      <BoardSectionHeader title="서클 게시판" backTo={postRoutes.circleBoard(circleIdNumber, boardIdNumber)} backLabel="목록으로 이동" />
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px" }}>
-        {loading && <BoardDetailSkeleton />}
+        {showPostLoading && <BoardDetailSkeleton />}
         {error && <p style={{ color: "#dc2626" }}>{error}</p>}
         {data && (
           <>
@@ -154,26 +162,22 @@ export default function CirclePostDetailPage() {
                   canEdit={isOwner}
                   canDelete={isOwner}
                   canReport={isLoggedIn && !isOwner}
-                  onEdit={() =>
-                    navigate(
-                      postRoutes.circleEdit(
-                        circleIdNumber,
-                        boardIdNumber,
-                        postIdNumber,
-                      ),
-                    )
-                  }
+                  onEdit={() => navigate(postRoutes.circleEdit(circleIdNumber, boardIdNumber, postIdNumber))}
                   onDelete={() => void removePost()}
                   onReport={() => window.alert("신고 기능은 준비 중입니다.")}
                 />
               }
               actionSection={
-                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
                   <PostLikeButton
-                    liked={
-                      (reactionSummary?.myReaction ?? data.myReaction) ===
-                      "LIKE"
-                    }
+                    liked={(reactionSummary?.myReaction ?? data.myReaction) === "LIKE"}
                     likeCount={reactionSummary?.likeCount ?? data.likeCount}
                     disabled={!isLoggedIn}
                     onClick={() => void react()}
@@ -200,15 +204,8 @@ export default function CirclePostDetailPage() {
             />
 
             <section className="reply-section">
-              <h3
-                className="reply-section-title"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
+              <h3 className="reply-section-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v7A2.5 2.5 0 0 1 17.5 15H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 12.5v-7Z"
                     fill="none"
@@ -221,57 +218,58 @@ export default function CirclePostDetailPage() {
                 댓글 {totalReplyCount}개
               </h3>
               <p className="reply-section-subtitle">의견을 남기고 대화를 이어가 보세요.</p>
-              {!isLoggedIn ? (
-                <div className="reply-login-cta">
-                  <p className="reply-login-title">댓글을 작성하려면 로그인이 필요합니다.</p>
-                  <p className="reply-login-desc">로그인 후 의견을 남기고 대화에 참여해 보세요.</p>
-                  <button
-                    type="button"
-                    className="reply-login-btn"
-                    onClick={() => navigate("/users/login")}
-                  >
-                    로그인하고 댓글 쓰기
-                  </button>
-                </div>
-              ) : (
-                <ReplyForm
-                  postId={postIdNumber}
-                  variant="panel"
-                  currentUserName={user?.nickname}
-                  onSubmitReply={async (content) => {
-                    await create({ postId: postIdNumber, content });
-                  }}
-                  onSuccess={() => void refetch()}
-                />
-              )}
-              {replySubmitError && (
-                <p style={{ color: "#dc2626" }}>{replySubmitError}</p>
-              )}
-              {replyLoading && <ReplyListSkeleton count={4} />}
+              <ReplyForm
+                postId={postIdNumber}
+                variant="panel"
+                currentUserName={user?.nickname}
+                onRequireLogin={() => navigate("/users/login")}
+                onSubmitReply={(content) => create({ postId: postIdNumber, content })}
+                canWrite={isLoggedIn}
+                onSuccess={(createdReplyId) => {
+                  if (createdReplyId) {
+                    setFocusReplyId(createdReplyId);
+                  }
+                  void refreshReplies(true, false);
+                }}
+              />
+              {replySubmitError && <p style={{ color: "#dc2626" }}>{replySubmitError}</p>}
+              {showReplyLoading && <ReplyListSkeleton count={4} />}
               {replyError && <p style={{ color: "#dc2626" }}>{replyError}</p>}
               {!replyLoading && !replyError && (
                 <ReplyList
                   postId={postIdNumber}
                   tree={tree}
+                  hasMore={hasMoreReplies}
+                  loadingMore={replyLoadingMore}
+                  onLoadMore={loadMore}
                   currentUserPublicId={user?.publicId}
+                  currentUserName={user?.nickname}
                   isAdmin={false}
                   canWrite={isLoggedIn}
                   canDeleteAsAdmin={false}
-                  onUpdate={(replyId, content) =>
-                    update({ postId: postIdNumber, replyId, content }).then(
-                      () => refetch(),
-                    )
+                  onUpdate={(replyId, content) => update({ postId: postIdNumber, replyId, content }).then(() => refreshReplies(false))}
+                  onDelete={(replyId) => remove({ postId: postIdNumber, replyId }).then(() => refreshReplies(false))}
+                  onCreateChild={(content, targetReplyId, expandParentId) =>
+                    create({
+                      postId: postIdNumber,
+                      content,
+                      parentId: targetReplyId,
+                    }).then(async (createdReplyId) => {
+                      setAutoExpandParentId(expandParentId);
+                      setFocusReplyId(createdReplyId);
+                      await refreshReplies(true, false);
+                    })
                   }
-                  onDelete={(replyId) =>
-                    remove({ postId: postIdNumber, replyId }).then(() =>
-                      refetch(),
-                    )
-                  }
-                  onCreateChild={(content, parentId) =>
-                    create({ postId: postIdNumber, content, parentId }).then(
-                      () => refetch(),
-                    )
-                  }
+                  onReact={(replyId) => replyApi.reactToReply(postIdNumber, replyId).then((response) => response.data)}
+                  autoExpandParentId={autoExpandParentId}
+                  focusReplyId={focusReplyId}
+                  onFocusReplyHandled={() => setFocusReplyId(null)}
+                  onFocusReply={(replyId, expandParentId) => {
+                    if (expandParentId) {
+                      setAutoExpandParentId(expandParentId);
+                    }
+                    setFocusReplyId(replyId);
+                  }}
                 />
               )}
             </section>

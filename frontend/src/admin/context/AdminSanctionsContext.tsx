@@ -1,16 +1,31 @@
-import type { PageResultDTO, SanctionFilterDTO, SanctionResponseDTO } from '../types/adminTypes';
+import type { PageResultDTO, SanctionFilterDTO, SanctionResponseDTO, ReportTargetType, SanctionType, SanctionState } from '../types/adminTypes';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchSanctionList } from '../api/adminReportAndSanctionApi';
+import { usePageSize } from '../hooks/usePageSize';
 
-const initialParams: SanctionFilterDTO = {
-  page: 1,
-  size: 20,
-  type: undefined,
-  keyword: undefined,
-  targetType: undefined,
-  sanctionType: undefined,
-  sanctionState: undefined,
-};
+function paramsToDTO(sp: URLSearchParams, pageSize: number): SanctionFilterDTO {
+  return {
+    page: Number(sp.get('page')) || 1,
+    size: pageSize,
+    type: sp.get('type') || undefined,
+    keyword: sp.get('keyword') || undefined,
+    targetType: (sp.get('targetType') ?? undefined) as ReportTargetType | undefined,
+    sanctionType: (sp.get('sanctionType') ?? undefined) as SanctionType | undefined,
+    sanctionState: (sp.get('sanctionState') ?? undefined) as SanctionState | undefined,
+  };
+}
+
+function dtoToParams(dto: SanctionFilterDTO): Record<string, string> {
+  const r: Record<string, string> = {};
+  if (dto.page > 1) r.page = String(dto.page);
+  if (dto.type) r.type = dto.type;
+  if (dto.keyword) r.keyword = dto.keyword;
+  if (dto.targetType) r.targetType = dto.targetType;
+  if (dto.sanctionType) r.sanctionType = dto.sanctionType;
+  if (dto.sanctionState) r.sanctionState = dto.sanctionState;
+  return r;
+}
 
 interface AdminSanctionsContextValue {
   params: SanctionFilterDTO;
@@ -26,10 +41,13 @@ interface AdminSanctionsContextValue {
 const AdminSanctionsContext = createContext<AdminSanctionsContextValue | null>(null);
 
 export function AdminSanctionsProvider({ children }: { children: ReactNode }) {
-  const [params, setParams] = useState<SanctionFilterDTO>(initialParams);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState<PageResultDTO<SanctionResponseDTO> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pageSize = usePageSize();
+
+  const params = paramsToDTO(searchParams, pageSize);
 
   const load = useCallback(async (dto: SanctionFilterDTO) => {
     setLoading(true);
@@ -43,34 +61,25 @@ export function AdminSanctionsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
-    load(params);
-  }, [params, load]);
+  useEffect(() => { load(paramsToDTO(searchParams, pageSize)); }, [searchParams, pageSize, load]);
 
   const applyFilter = useCallback((partial: Partial<SanctionFilterDTO>) => {
-    setParams((prev) => ({ ...prev, ...partial, page: 1 }));
-  }, []);
+    const next = { ...params, ...partial, page: 1 };
+    setSearchParams(dtoToParams(next), { replace: true });
+  }, [params, setSearchParams]);
 
   const handlePageChange = useCallback(({ selected }: { selected: number }) => {
-    setParams((prev) => ({ ...prev, page: selected + 1 }));
-  }, []);
+    const next = { ...params, page: selected + 1 };
+    setSearchParams(dtoToParams(next), { replace: true });
+  }, [params, setSearchParams]);
 
   const refresh = useCallback(() => load(params), [load, params]);
 
-  const actualTotalPage = data ? Math.ceil((data.totalCount ?? 0) / (params.size ?? 20)) : 0;
+  const actualTotalPage = data ? Math.ceil((data.totalCount ?? 0) / (params.size ?? pageSize)) : 0;
 
   return (
     <AdminSanctionsContext.Provider
-      value={{
-        params,
-        data,
-        loading,
-        error,
-        actualTotalPage,
-        applyFilter,
-        handlePageChange,
-        refresh,
-      }}
+      value={{ params, data, loading, error, actualTotalPage, applyFilter, handlePageChange, refresh }}
     >
       {children}
     </AdminSanctionsContext.Provider>
@@ -80,4 +89,3 @@ export function AdminSanctionsProvider({ children }: { children: ReactNode }) {
 export function useAdminSanctions() {
   return useContext(AdminSanctionsContext)!;
 }
-

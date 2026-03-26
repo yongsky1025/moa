@@ -4,14 +4,17 @@ import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.chat.domain.ChatRoom;
 import com.soldesk.moa.chat.dto.response.ChatMessageResponse;
 import com.soldesk.moa.chat.dto.response.ChatRoomSummaryResponse;
+import com.soldesk.moa.chat.dto.response.ReadStatusResponse;
 import com.soldesk.moa.chat.dto.response.UnreadCountResponse;
 import com.soldesk.moa.chat.service.ChatMessageService;
 import com.soldesk.moa.chat.service.ChatRoomService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -31,10 +34,13 @@ public class ChatRestController {
 
     private final ChatRoomService roomService;
     private final ChatMessageService messageService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatRestController(ChatRoomService roomService, ChatMessageService messageService) {
+    public ChatRestController(ChatRoomService roomService, ChatMessageService messageService,
+                              SimpMessagingTemplate messagingTemplate) {
         this.roomService = roomService;
         this.messageService = messageService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     /** 내가 참여 중인 채팅방 목록 조회 */
@@ -62,6 +68,17 @@ public class ChatRestController {
             @AuthenticationPrincipal AuthUserDTO auth
     ) {
         ChatRoom room = roomService.getOrCreateGroupRoom(circleId, auth.getUserId());
+        return ResponseEntity.ok(Map.of("roomId", room.getId()));
+    }
+
+    /** 일정 채팅방 조회 또는 생성 */
+    @PostMapping("/rooms/schedule")
+    public ResponseEntity<Map<String, Long>> getOrCreateScheduleRoom(
+            @RequestParam Long scheduleId,
+            @RequestParam String scheduleName,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        ChatRoom room = roomService.getOrCreateScheduleRoom(scheduleId, scheduleName, auth.getUserId());
         return ResponseEntity.ok(Map.of("roomId", room.getId()));
     }
 
@@ -115,14 +132,26 @@ public class ChatRestController {
         return ResponseEntity.noContent().build();
     }
 
-    /** 읽음 처리 */
+    /** 읽음 처리 + WebSocket으로 읽음 이벤트 브로드캐스트 */
     @PostMapping("/rooms/{roomId}/read")
     public ResponseEntity<Void> markAsRead(
             @PathVariable Long roomId,
             @AuthenticationPrincipal AuthUserDTO auth
     ) {
-        roomService.markAsRead(roomId, auth.getUserId());
+        LocalDateTime lastReadAt = roomService.markAsRead(roomId, auth.getUserId());
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/read",
+                new ReadStatusResponse(auth.getUserId(), lastReadAt));
         return ResponseEntity.ok().build();
+    }
+
+    /** 방 멤버별 읽음 시각 조회 (읽음 표시 배지용) */
+    @GetMapping("/rooms/{roomId}/read-status")
+    public ResponseEntity<List<ReadStatusResponse>> getReadStatus(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        return ResponseEntity.ok(roomService.getReadStatus(roomId, auth.getUserId()));
     }
 
     /** 메시지 수정 (본인만) */

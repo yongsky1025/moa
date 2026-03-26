@@ -1,30 +1,32 @@
-export type UserRole = 'USER' | 'ADMIN';
-export type UserStatus = 'ACTIVE' | 'WITHDRAWN' | 'SUSPENDED' | 'BANNED';
-export type UserGender = 'MALE' | 'FEMALE' | 'UNSPECIFIED'; // 미설정
+export type UserRole = "USER" | "ADMIN";
+export type UserStatus = "ACTIVE" | "WITHDRAWN" | "SUSPENDED" | "BANNED";
+export type UserGender = "MALE" | "FEMALE" | "UNSPECIFIED"; // 미설정
 
-export type CircleStatus = 'OPEN' | 'FULL' | 'CLOSED' | 'PENDING' | 'REJECTED';
-export type CircleMemberRole = 'LEADER' | 'MEMBER';
+export type CircleStatus = "OPEN" | "FULL" | "CLOSED" | "PENDING" | "REJECTED";
+export type CircleMemberRole = "LEADER" | "MEMBER";
 
-export type ReportTargetType = 'USER' | 'POST' | 'REPLY' | 'CIRCLE';
-export type ReportStatus = 'PENDING' | 'REVIEWING' | 'RESOLVED' | 'REJECTED';
-export type SanctionState = 'ACTIVE' | 'LIFTED' | 'CANCELLED';
+export type BoardType = "NOTICE" | "FREE" | "SUPPORT" | "CIRCLE";
+
+export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE";
+export type ReportStatus = "PENDING" | "REVIEWING" | "RESOLVED" | "REJECTED";
+export type SanctionState = "ACTIVE" | "LIFTED" | "CANCELLED";
 
 export type ReportCategory =
-  | 'SPAM'
-  | 'OBSCENE'
-  | 'ABUSE'
-  | 'FRAUD'
-  | 'PRIVACY'
-  | 'INAPPROPRIATE'
-  | 'OTHER';
+  | "SPAM"
+  | "OBSCENE"
+  | "ABUSE"
+  | "FRAUD"
+  | "PRIVACY"
+  | "INAPPROPRIATE"
+  | "OTHER";
 
 export type SanctionType =
-  | 'WARNING'
-  | 'BAN_1D'
-  | 'BAN_3D'
-  | 'BAN_30D'
-  | 'PERMANENT_BAN'
-  | 'CONTENT_DELETE';
+  | "WARNING"
+  | "BAN_1D"
+  | "BAN_3D"
+  | "BAN_30D"
+  | "PERMANENT_BAN"
+  | "CONTENT_DELETE";
 
 export interface PageRequestDTO {
   type?: string;
@@ -113,6 +115,7 @@ export interface AdminUserSearchDTO extends PageRequestDTO {
   gender?: UserGender;
   status?: UserStatus;
   role?: UserRole;
+  sort?: string;
 }
 
 export interface AdminUserResponseDTO {
@@ -157,6 +160,7 @@ export interface UserInfoReplyDTO {
 }
 
 export interface UserInfoCircleDTO {
+  circleId: number;
   userName: string;
   circleName: string;
   currentMember: number;
@@ -171,6 +175,7 @@ export interface AdminCircleSearchDTO extends PageRequestDTO {
   categoryName?: string;
   status?: CircleStatus;
   leaderName?: string;
+  sort?: string;
 }
 
 export interface AdminCircleResponseDTO {
@@ -191,6 +196,117 @@ export interface PopularCircleDTO {
   score: number;
 }
 
+export interface AdminCircleCategoryRequestDTO {
+  categoryName: string;
+}
+
+// ======= 모임 상세 =======
+export interface AdminCircleDetailDTO {
+  circleId: number;
+  circleName: string;
+  description: string;
+  categoryName: string;
+  leaderName: string;
+  leaderId: number;
+  currentMember: number;
+  maxMember: number;
+  status: string;
+  coverImageUrl: string | null;
+  createDate: string;
+  totalPosts: number;
+}
+
+export interface AdminCircleMemberDTO {
+  userId: number;
+  userName: string;
+  gender: string;
+  role: string;
+  status: string;
+  joinDate: string;
+}
+
+export interface AdminCirclePostDTO {
+  postId: number;
+  title: string;
+  authorName: string;
+  viewCount: number;
+  replyCount: number;
+  createDate: string;
+}
+
+// pending 목록용 (CircleResponseDTO 매핑)
+export interface PendingCircleDTO {
+  circleId: number;
+  name: string;
+  description: string;
+  status: string;
+  maxMember: number;
+  currentMember: number;
+  categoryId: number;
+  categoryName: string;
+  coverImageUrl: string | null;
+}
+
+// ===== 게시글 관리 =====
+export interface AdminPostSearchDTO extends PageRequestDTO {
+  boardType?: BoardType;
+  deleted?: boolean;
+  startDate?: string; // yyyy-MM-dd
+  endDate?: string; // yyyy-MM-dd
+  circleId?: number;
+  sort?: string; // newest, views, replies
+}
+
+export interface AdminPostResponseDTO {
+  postId: number;
+  title: string;
+  authorName: string;
+  authorId: number;
+  boardName: string;
+  boardType: BoardType;
+  circleName: string | null;
+  circleId: number | null;
+  viewCount: number;
+  replyCount: number;
+  deleted: boolean;
+  createDate: string;
+}
+
+export interface AdminReplyDTO {
+  replyId: number;
+  content: string;
+  authorName: string;
+  authorId: number;
+  parentId: number | null;
+  depth: number;
+  deleted: boolean;
+  createDate: string;
+}
+
+export interface AdminPostDetailDTO {
+  postId: number;
+  title: string;
+  content: string;
+  authorName: string;
+  authorId: number;
+  boardName: string;
+  boardType: BoardType;
+  circleName: string | null;
+  circleId: number | null;
+  boardId: number;
+  viewCount: number;
+  deleted: boolean;
+  sanctionId: number | null;
+  createDate: string;
+  updateDate: string;
+  replies: AdminReplyDTO[];
+}
+
+export interface AdminNoticeRequestDTO {
+  title: string;
+  content: string;
+}
+
 // ==========신고관리===============
 export interface ReportFilterDTO extends PageRequestDTO {
   targetType?: ReportTargetType;
@@ -203,6 +319,47 @@ export interface ReportRequestDTO {
   targetId: number;
   category: ReportCategory;
   description: string;
+  imagePaths?: string[];
+}
+
+export interface UserRecentActivityDTO {
+  type: "POST" | "REPLY";
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface ReportTargetContentDTO {
+  targetType: ReportTargetType;
+  targetId: number;
+  deleted: boolean;
+  linkUrl?: string | null;
+  // POST
+  postTitle?: string | null;
+  postContent?: string | null;
+  postAuthorName?: string | null;
+  postBoardId?: number | null;
+  postCreatedAt?: string | null;
+  // REPLY
+  replyContent?: string | null;
+  replyAuthorName?: string | null;
+  replyPostId?: number | null;
+  replyPostTitle?: string | null;
+  replyCreatedAt?: string | null;
+  // CIRCLE
+  circleName?: string | null;
+  circleDescription?: string | null;
+  circleStatus?: string | null;
+  circleMaxMember?: number | null;
+  circleCurrentMember?: number | null;
+  circleCreatedAt?: string | null;
+  // USER
+  userNickname?: string | null;
+  userEmail?: string | null;
+  userStatus?: string | null;
+  userSanctionCount?: number | null;
+  userRecentActivities?: UserRecentActivityDTO[] | null;
 }
 
 export interface ReportResponseDTO {
@@ -211,9 +368,12 @@ export interface ReportResponseDTO {
   targetType: ReportTargetType;
   targetId: number;
   category: ReportCategory;
+  description: string;
   status: ReportStatus;
   adminNote?: string | null;
   createdAt: string;
+  targetContent?: ReportTargetContentDTO | null;
+  imagePaths?: string[] | null;
 }
 
 export interface ReportStatusUpdateRequest {
@@ -237,9 +397,9 @@ export interface CircleSurvivalStatsDTO {
 }
 
 export interface ActivityHeatmapStatsDTO {
-  dayOfweek: number;        // 1=Mon ... 7=Sun (Java DayOfWeek)
-  hour: number;             // 0-23
-  activityCount: number;    // 합산
+  dayOfweek: number; // 1=Mon ... 7=Sun (Java DayOfWeek)
+  hour: number; // 0-23
+  activityCount: number; // 합산
   userRegisterCount: number;
   circleCreateCount: number;
   postCount: number;
@@ -295,15 +455,15 @@ export interface SanctionCancelRequest {
 
 // ===== 유저 활동 로그 =====
 export type ActionType =
-  | 'CREATE'
-  | 'UPDATE'
-  | 'DELETE'
-  | 'LOGIN'
-  | 'LOGOUT'
-  | 'WITHDRAW'
-  | 'JOIN_CIRCLE'
-  | 'LEAVE_CIRCLE'
-  | 'UNKNOWN';
+  | "CREATE"
+  | "UPDATE"
+  | "DELETE"
+  | "LOGIN"
+  | "LOGOUT"
+  | "WITHDRAW"
+  | "JOIN_CIRCLE"
+  | "LEAVE_CIRCLE"
+  | "UNKNOWN";
 
 export interface AdminActionLog {
   id: number;
@@ -319,3 +479,124 @@ export interface AdminActionLog {
 }
 
 export interface LogSearchDTO extends PageRequestDTO {}
+
+// ===== 장소 관리 =====
+export type PlaceStatus = "ACTIVE" | "INACTIVE" | "MAINTENANCE";
+
+export interface AdminPlaceSearchDTO extends PageRequestDTO {
+  sort?: string; // newest, name, capacity, price, rating, reviews
+  city?: string;
+  district?: string;
+  status?: PlaceStatus;
+  minPrice?: number;
+  maxPrice?: number;
+  minCapacity?: number;
+  maxCapacity?: number;
+}
+
+export interface AdminPlaceResponseDTO {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  district: string;
+  dong?: string;
+  capacity: number;
+  pricePerHour: number;
+  avgRating: number;
+  reviewCount: number;
+  status: PlaceStatus;
+}
+
+export interface AdminPlaceDetailDTO {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  district: string;
+  dong?: string;
+  latitude: number;
+  longitude: number;
+  capacity: number;
+  pricePerHour: number;
+  description: string;
+  openTimeHour: number;
+  openTimeMinute: number;
+  closeTimeHour: number;
+  closeTimeMinute: number;
+  minReservationMinutes: number;
+  maxReservationMinutes: number;
+  status: PlaceStatus;
+  avgRating: number;
+  reviewCount: number;
+  tagIds: number[];
+  closedDays: ClosedDayDTO[];
+  imagePaths: string[] | null;
+}
+
+export interface ClosedDayDTO {
+  id?: number;
+  dayOfWeek?: string;
+  date?: string;
+  reason?: string;
+  closedType: string;
+}
+
+// ── 태그 관련 ──────────────────────────────
+
+export interface TagDTO {
+  id: number;
+  name: string;
+}
+
+export interface TagCategoryGroupDTO {
+  categoryId: number;
+  categoryName: string;
+  tags: TagDTO[];
+}
+
+// ── 장소 등록 ──────────────────────────────
+
+export interface PlaceClosedDayRequest {
+  dayOfWeek?: string;
+  date?: string;
+  reason?: string;
+  closedType: string;
+}
+
+export interface PlaceCreateRequest {
+  name: string;
+  address: string;
+  city: string;
+  district: string;
+  dong?: string;
+  latitude: number;
+  longitude: number;
+  capacity: number;
+  pricePerHour: number;
+  description: string;
+  openTimeHour: number;
+  openTimeMinute: number;
+  closeTimeHour: number;
+  closeTimeMinute: number;
+  minReservationMinutes: number;
+  maxReservationMinutes: number;
+  tagIds: number[];
+  placeClosedDays: PlaceClosedDayRequest[];
+  imagePaths?: string[];
+}
+
+// ── 장소 목록 ──────────────────────────────
+
+export interface PlaceListItem {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  district: string;
+  dong?: string;
+  capacity: number;
+  pricePerHour: number;
+  avgRating: number;
+  reviewCount: number;
+}

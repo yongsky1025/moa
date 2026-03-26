@@ -33,6 +33,12 @@ export const chatApi = {
   getOrCreateGroupRoom: (circleId: number) =>
     api.post<{ roomId: number }>("/api/chat/rooms/group", null, { params: { circleId } }).then((r) => r.data.roomId),
 
+  // 일정 채팅방 조회/생성 - 백엔드가 { roomId: number } 반환
+  getOrCreateScheduleRoom: (scheduleId: number, scheduleName: string) =>
+    api
+      .post<{ roomId: number }>('/api/chat/rooms/schedule', null, { params: { scheduleId, scheduleName } })
+      .then((r) => r.data.roomId),
+
   // 메시지 수정
   editMessage: (messageId: number, content: string) => api.patch<ChatMessage>(`/api/chat/messages/${messageId}`, { content }).then((r) => r.data),
 
@@ -42,13 +48,17 @@ export const chatApi = {
   // 모임 채팅방 이름 변경
   updateRoomName: (roomId: number, name: string) => api.patch(`/api/chat/rooms/${roomId}/name`, { name }),
 
+  // 방 멤버별 읽음 시각 조회
+  getReadStatus: (roomId: number) =>
+    api.get<{ userId: number; lastReadAt: string }[]>(`/api/chat/rooms/${roomId}/read-status`).then((r) => r.data),
+
   // 파일 업로드
   uploadFile: (file: File) => {
     const form = new FormData();
     form.append("file", file);
     return api
       .post<{ fileUrl: string }>("/api/chat/files", form, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": undefined },
       })
       .then((r) => r.data.fileUrl);
   },

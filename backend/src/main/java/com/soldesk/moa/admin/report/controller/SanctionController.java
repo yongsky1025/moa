@@ -18,6 +18,7 @@ import lombok.extern.log4j.Log4j2;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequestMapping("/api/admin/sanctions")
 @Tag(name = "Admin sanction section", description = "Response MOA API")
 @Log4j2
+@PreAuthorize("hasRole('ADMIN')")
 public class SanctionController {
 
     private final SanctionService sanctionService;
