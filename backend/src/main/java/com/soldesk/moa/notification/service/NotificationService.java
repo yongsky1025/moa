@@ -23,7 +23,9 @@ public class NotificationService {
     @Transactional
     public void send(Long userId, NotificationType type, String message) {
         Notification saved = notificationRepo.save(Notification.of(userId, type, message));
-        messagingTemplate.convertAndSend("/topic/alarm/" + userId, NotificationResponse.from(saved));
+        try {
+            messagingTemplate.convertAndSend("/topic/alarm/" + userId, NotificationResponse.from(saved));
+        } catch (Exception ignored) {}
     }
 
     /** 알림 저장 + WebSocket 실시간 전송 (비동기 — 채팅 메시지처럼 대량 발송 시 사용) */
@@ -37,7 +39,9 @@ public class NotificationService {
     @Transactional
     public void send(Long userId, NotificationType type, String message, Long referenceId) {
         Notification saved = notificationRepo.save(Notification.of(userId, type, message, referenceId));
-        messagingTemplate.convertAndSend("/topic/alarm/" + userId, NotificationResponse.from(saved));
+        try {
+            messagingTemplate.convertAndSend("/topic/alarm/" + userId, NotificationResponse.from(saved));
+        } catch (Exception ignored) {}
     }
 
     @Async

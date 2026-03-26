@@ -71,6 +71,7 @@ export const restoreAuth = createAsyncThunk(
     try {
       const res = await authApi.refresh();
       localStorage.setItem('accessToken', res.data.accessToken);
+      useAuthStore.getState().setAuth(res.data.accessToken, res.data.user);
       return res.data.user;
     } catch {
       localStorage.removeItem('accessToken');

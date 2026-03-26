@@ -19,10 +19,13 @@ import type { AppDispatch, RootState } from "../../users/reducers/store";
 import { notificationApi } from "../../api/notificationApi";
 import type { Notification } from "../../types/notification";
 import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
+import { useAlarmSocket } from "../../chat/hooks/useAlarmSocket";
+import { useAuthStore } from "../../store/authStore";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { isLoggedIn, user } = useSelector((s: RootState) => s.auth);
+  const { userId: alarmUserId } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
 
   const dropdownItems: Record<
@@ -53,6 +56,14 @@ export default function Navbar() {
   const profileRef = useRef<HTMLDivElement>(null);
 
   const unreadActivityCount = activityNoti.filter((n) => !n.isRead).length;
+
+  useAlarmSocket(isLoggedIn ? alarmUserId : null, (noti) => {
+    if (noti.type === 'CHAT_MESSAGE') {
+      setUnreadChatCount((c) => c + 1);
+    } else {
+      setActivityNoti((prev) => [noti, ...prev]);
+    }
+  });
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -108,6 +119,9 @@ export default function Navbar() {
     JOIN_REJECTED: '❌',
     KICKED: '🚫',
     CIRCLE_DISBANDED: '💔',
+    REPLY: '💬',
+    CHILD_REPLY: '↩️',
+    POST_LIKE: '👍',
   };
 
   const navItems = [
