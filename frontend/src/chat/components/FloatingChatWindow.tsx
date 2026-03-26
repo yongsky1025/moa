@@ -129,6 +129,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
   useEffect(() => {
     if (!activeRoomId) return;
+    setRooms((prev) => prev.map((r) => r.roomId === activeRoomId ? { ...r, unreadCount: 0 } : r));
     setLoadingMsg(true);
     chatApi
       .getMessages(activeRoomId)
@@ -186,7 +187,12 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
       if (prev.some((n) => n.id === noti.id)) return prev;
       return [noti, ...prev];
     });
-  }, []);
+    if (noti.type === 'CHAT_MESSAGE' && noti.referenceId && noti.referenceId !== activeRoomId) {
+      setRooms((prev) => prev.map((r) =>
+        r.roomId === noti.referenceId ? { ...r, unreadCount: r.unreadCount + 1 } : r
+      ));
+    }
+  }, [activeRoomId]);
 
   const { sendMessage } = useWebSocket({
     roomId: activeRoomId ?? 0,
@@ -670,6 +676,9 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                       </div>
                       <div style={s.roomRow}>
                         <span style={s.roomLast}>{r.lastMessage ?? ''}</span>
+                        {r.unreadCount > 0 && (
+                          <span style={s.unreadBadge}>{r.unreadCount > 99 ? '99+' : r.unreadCount}</span>
+                        )}
                       </div>
                     </div>
                   </div>

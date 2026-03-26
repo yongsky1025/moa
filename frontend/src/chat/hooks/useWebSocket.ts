@@ -66,9 +66,9 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
       const dedupeKey = noti.id != null
         ? `moa_alarm_${noti.id}`
         : `moa_alarm_${noti.type}_${noti.referenceId ?? ''}_${Math.floor(Date.now() / 2000)}`;
-      if (localStorage.getItem(dedupeKey)) return;
-      localStorage.setItem(dedupeKey, '1');
-      setTimeout(() => localStorage.removeItem(dedupeKey), 10_000);
+      if (sessionStorage.getItem(dedupeKey)) return;
+      sessionStorage.setItem(dedupeKey, '1');
+      setTimeout(() => sessionStorage.removeItem(dedupeKey), 10_000);
       onNotificationRef.current?.(noti);
     });
   }, []);

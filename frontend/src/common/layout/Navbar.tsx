@@ -387,7 +387,11 @@ export default function Navbar() {
             {isLoggedIn && (
               <div style={{ position: "relative", marginRight: 20 }}>
                 <button
-                  onClick={() => setChatOpen((v) => !v)}
+                  onClick={() => {
+                    const next = !chatOpen;
+                    setChatOpen(next);
+                    if (next) setUnreadChatCount(0);
+                  }}
                   title="채팅"
                   style={{
                     width: 32,
