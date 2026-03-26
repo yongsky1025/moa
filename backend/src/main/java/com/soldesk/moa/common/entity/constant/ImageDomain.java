@@ -9,7 +9,8 @@ public enum ImageDomain {
     USER,
     PLACE,
     CHAT,
-    REPORT;
+    REPORT,
+    PLACE_REVIEW;
 
     public static ImageDomain from(String raw) {
         if (raw == null || raw.isBlank()) {
