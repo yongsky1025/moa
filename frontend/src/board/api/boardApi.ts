@@ -1,4 +1,4 @@
-import api from "../../users/utils/jwtUtil";
+import api from "../../api/axiosInstance";
 import type { BoardRequest, BoardResponse } from "../types/boardTypes";
 
 // 게시판(Board) 도메인의 백엔드 호출 모음

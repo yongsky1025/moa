@@ -1,18 +1,17 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useAuthStore } from '../../store/authStore';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { circleApi } from '../../api/circleApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
 import type { CircleMember } from '../types/circle';
-import type { RootState } from '../../users/reducers/store';
 
 export default function CircleMembersPage() {
   const { circleId } = useParams<{ circleId: string }>();
   const cid = Number(circleId);
   const navigate = useNavigate();
-  const { user } = useSelector((s: RootState) => s.auth);
+  const { user } = useAuthStore();
 
   const [activeMembers, setActiveMembers] = useState<CircleMember[]>([]);
   const [pendingMembers, setPendingMembers] = useState<CircleMember[]>([]);

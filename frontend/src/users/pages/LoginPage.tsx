@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
 import { FcGoogle } from "react-icons/fc";
 import { RiKakaoTalkFill } from "react-icons/ri";
 import { SiNaver } from "react-icons/si";
-import { login, clearError } from "../reducers/authSlice";
-import type { AppDispatch, RootState } from "../reducers/store";
+import { useAuthStore } from "../../store/authStore";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const { loading, error, login, clearError } = useAuthStore();
   const [oauthError, setOauthError] = useState("");
 
   const [email, setEmail] = useState("");
@@ -29,9 +26,8 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.SubmitEvent) => {
     e.preventDefault();
-    const result = await dispatch(login({ email, password }));
-    if (login.fulfilled.match(result)) {
-      const user = result.payload;
+    const user = await login({ email, password });
+    if (user) {
       if (!user.onboardingCompleted) {
         sessionStorage.removeItem("postLoginRedirect");
         navigate("/users/onboarding");
@@ -200,7 +196,7 @@ export default function LoginPage() {
                 onChange={(e) => {
                   setEmail(e.target.value);
                   if (oauthError) setOauthError("");
-                  if (error) dispatch(clearError());
+                  if (error) clearError();
                 }}
                 required
                 style={{
@@ -225,7 +221,7 @@ export default function LoginPage() {
                 onChange={(e) => {
                   setPassword(e.target.value);
                   if (oauthError) setOauthError("");
-                  if (error) dispatch(clearError());
+                  if (error) clearError();
                 }}
                 required
                 style={{

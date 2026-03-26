@@ -18,8 +18,7 @@ import ReplyForm from "../../reply/components/ReplyForm";
 import { useReplyForm } from "../../reply/hooks/useReplyForm";
 import ReplyList from "../../reply/components/ReplyList";
 import "../../reply/styles/replySection.css";
-import { useSelector } from "react-redux";
-import type { RootState } from "../../users/reducers/store";
+import { useAuthStore } from "../../store/authStore";
 import { postApi } from "../../post/api/postApi";
 import type {
   PostReactionSummary,
@@ -79,7 +78,7 @@ export default function CirclePostDetailPage() {
     enabled: hasValidParams,
   });
   const { create, update, remove, error: replySubmitError } = useReplyForm();
-  const { isLoggedIn, user } = useSelector((state: RootState) => state.auth);
+  const { isLoggedIn, user } = useAuthStore();
   const isOwner = !!data && !!user && data.authorPublicId === user.publicId;
   const totalReplyCount = countReplies(tree);
   const reactionPostId = postIdNumber ?? 0;

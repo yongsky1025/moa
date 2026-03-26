@@ -8,6 +8,9 @@ export interface AuthUser {
   nickname: string;
   userRole: string;
   userStatus: string;
+  onboardingCompleted?: boolean;
+  privacyAgreed?: boolean;
+  profileImageUrl?: string | null;
 }
 
 export interface AuthResponse {

@@ -1,9 +1,8 @@
-import { useSelector } from "react-redux";
 import MainIndex from "../common/MainIndex";
-import type { RootState } from "../users/reducers/store";
+import { useAuthStore } from "../store/authStore";
 
 export default function MainIndexWrapper() {
-  const { isLoggedIn, user } = useSelector((state: RootState) => state.auth);
+  const { isLoggedIn, user } = useAuthStore();
 
   return <MainIndex isLoggedIn={isLoggedIn} isAdmin={user?.userRole === "ADMIN"} onToggleLogin={() => {}} />;
 }

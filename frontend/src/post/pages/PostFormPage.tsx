@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useAuthStore } from "../../store/authStore";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import BoardSectionHeader from "../../common/components/BoardSectionHeader";
@@ -9,7 +9,6 @@ import { usePostDetail } from "../hooks/usePostDetail";
 import { usePostForm } from "../hooks/usePostForm";
 import { postRoutes } from "../routes/postRoutes";
 import type { PostKind } from "../types/postTypes";
-import type { RootState } from "../../users/reducers/store";
 
 function resolveKind(pathname: string): Exclude<PostKind, "circle"> {
   if (pathname.includes("/notice")) return "notice";
@@ -23,7 +22,7 @@ export default function PostFormPage() {
   const navigate = useNavigate();
   const kind = resolveKind(location.pathname);
   const isEdit = location.pathname.endsWith("/edit");
-  const { isLoggedIn, user } = useSelector((state: RootState) => state.auth);
+  const { isLoggedIn, user } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
   const unauthorizedHandledRef = useRef(false);
 

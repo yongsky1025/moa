@@ -23,6 +23,7 @@ export interface AuthUser {
   userRole: "USER" | "ADMIN";
   userStatus: "ACTIVE" | "WITHDRAWN" | "SUSPENDED" | "BANNED";
   onboardingCompleted: boolean;
+  privacyAgreed: boolean;
   profileImageUrl?: string | null;
 }
 
@@ -34,6 +35,7 @@ export interface AuthResponse {
 
 export interface SocialSignUpCompleteRequest {
   birthDate: string; // "yyyy-MM-dd"
+  nickname: string;
   userGender: "MALE" | "FEMALE" | "UNSPECIFIED";
   privacyAgreed: boolean;
 }

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useAuthStore } from '../../store/authStore';
 import { Users, Sparkles } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { circleApi } from '../../api/circleApi';
 import type { CircleResponse } from '../types/circle';
-import type { RootState } from '../../users/reducers/store';
 
 const CATEGORY_COLORS: Record<string, string> = {
   '자기계발': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -32,7 +31,7 @@ const PAGE_SIZE = 12;
 
 export default function CircleListPage() {
   const navigate = useNavigate();
-  const { isLoggedIn } = useSelector((s: RootState) => s.auth);
+  const { isLoggedIn } = useAuthStore();
 
   const [circles, setCircles] = useState<CircleResponse[]>([]);
   const [categories, setCategories] = useState<{ categoryId: number; categoryName: string }[]>([]);

@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Bell, MessageCircle, LayoutGrid, Users, MessageSquare, Star, HelpCircle, Megaphone, User, Settings, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../../users/reducers/authSlice";
-import type { AppDispatch, RootState } from "../../users/reducers/store";
+import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
 import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useSelector((s: RootState) => s.auth);
+  const { isLoggedIn, user, logout } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
 
   const dropdownItems: Record<string, { label: string; href: string; icon: React.ReactNode }[]> = {
@@ -24,8 +22,6 @@ export default function Navbar() {
       { label: "공지사항", href: "#", icon: <Megaphone size={15} /> },
     ],
   };
-
-  const dispatch = useDispatch<AppDispatch>();
 
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -46,7 +42,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     setProfileOpen(false);
-    await dispatch(logout());
+    await logout();
     navigate("/main");
   };
 

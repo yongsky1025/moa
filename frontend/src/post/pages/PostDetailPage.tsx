@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useAuthStore } from "../../store/authStore";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import BoardSectionHeader from "../../common/components/BoardSectionHeader";
@@ -20,7 +20,6 @@ import "../../reply/styles/replySection.css";
 import { postRoutes } from "../routes/postRoutes";
 import { postApi } from "../api/postApi";
 import type { PostKind, PostReactionSummary } from "../types/postTypes";
-import type { RootState } from "../../users/reducers/store";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 
 function resolveKind(pathname: string): Exclude<PostKind, "circle"> {
@@ -71,7 +70,7 @@ export default function PostDetailPage() {
     refetch,
   } = useReplies({ postId: postIdNumber });
   const { create, update, remove, error: replySubmitError } = useReplyForm();
-  const { isLoggedIn, user } = useSelector((state: RootState) => state.auth);
+  const { isLoggedIn, user } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
   const isOwner = !!data && !!user && data.authorPublicId === user.publicId;
   const canEdit = kind === "notice" ? isAdmin : isOwner;

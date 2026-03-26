@@ -1,4 +1,4 @@
-import api from '../users/utils/jwtUtil';
+import api from './axiosInstance';
 import type {
   ScheduleResponse,
   ScheduleCreateRequest,

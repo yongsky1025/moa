@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useAuthStore } from '../../store/authStore';
 import { Settings, Trash2, Users, Calendar } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
@@ -9,7 +9,6 @@ import { scheduleApi } from '../../api/scheduleApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
 import type { CircleResponse, CircleMember } from '../types/circle';
 import type { ScheduleResponse } from '../../schedule/types/schedule';
-import type { RootState } from '../../users/reducers/store';
 
 type Menu = 'edit' | 'delete' | 'members' | 'schedules';
 
@@ -24,7 +23,7 @@ export default function CircleManagePage() {
   const { circleId } = useParams<{ circleId: string }>();
   const cid = Number(circleId);
   const navigate = useNavigate();
-  const { user } = useSelector((s: RootState) => s.auth);
+  const { user } = useAuthStore();
 
   const [activeMenu, setActiveMenu] = useState<Menu>('edit');
   const [circle, setCircle] = useState<CircleResponse | null>(null);

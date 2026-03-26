@@ -1,5 +1,6 @@
 package com.soldesk.moa.security.oauth2.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +21,7 @@ import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.AuthProvider;
 import com.soldesk.moa.users.entity.constant.UserGender;
 import com.soldesk.moa.users.entity.constant.UserRole;
+import com.soldesk.moa.users.entity.constant.UserStatus;
 import com.soldesk.moa.users.repository.UsersRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -52,10 +54,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         log.info("소셜 로그인 시도: provider={}, email={}", provider, userInfo.getEmail());
 
         // 4) DB에서 이메일로 유저 조회 → 있으면 업데이트, 없으면 신규 생성
-        // TODO: 이메일이 있으면-> 이미 로컬로 로그인했다고 거절. 혹은 이미 소셜로 로그인했다고 거절 -> 차단/탈퇴한 유저의 이메일과 대조
-        // 후 다음 단계 넘어가기
         Users user = usersRepository.findByEmail(userInfo.getEmail())
-                .map(existingUser -> updateExistingUser(existingUser, provider, userInfo))
+                .map(existingUser -> handleExistingUser(existingUser, provider, userInfo))
                 .orElseGet(() -> signupFromSocial(userInfo, provider));
 
         log.info("소셜 로그인 성공: email={}, provider={}", user.getEmail(), provider);
@@ -71,6 +71,59 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 user);
     }
 
+    private Users handleExistingUser(Users existingUser, AuthProvider provider, OAuth2UserInfo userInfo) {
+        if (existingUser.getUserStatus() == UserStatus.BANNED) {
+            throw new OAuth2AuthenticationException("[ACCOUNT_BANNED]영구 정지된 계정입니다.");
+        }
+        if (existingUser.getUserStatus() == UserStatus.SUSPENDED) {
+            throw new OAuth2AuthenticationException("[ACCOUNT_SUSPENDED]활동이 제한된 계정입니다.");
+        }
+        if (existingUser.getUserStatus() == UserStatus.WITHDRAWN) {
+            throw new OAuth2AuthenticationException("[ACCOUNT_WITHDRAWN]탈퇴한 계정입니다.");
+        }
+
+        if (existingUser.getProvider() == null || existingUser.getProvider() == AuthProvider.LOCAL) {
+            throw new OAuth2AuthenticationException("이미 로컬 가입된 이메일입니다.");
+        }
+
+        if (existingUser.getProvider() != provider) {
+            throw new OAuth2AuthenticationException("이미 다른 소셜 계정으로 가입했습니다.");
+        }
+
+        return updateExistingSocialUsers(existingUser, userInfo);
+    }
+
+    private Users handleWithdrawnUser(Users existingUser, AuthProvider provider, OAuth2UserInfo userInfo) {
+        String existingProviderId = existingUser.getProviderId();
+        String currentProviderId = userInfo.getId();
+        LocalDateTime now = LocalDateTime.now();
+
+        if (existingUser.isNewSignupBlockedWithinReactive(now)) {
+            if (existingUser.getProvider() == null || existingUser.getProvider() == AuthProvider.LOCAL) {
+                throw new OAuth2AuthenticationException("탈퇴 후 6개월 이내에는 로컬 회원 가입으로만 다시 이용할 수 있습니다.");
+            }
+            if (existingUser.getProvider() != provider) {
+                throw new OAuth2AuthenticationException("탈퇴 후 6개월 이내에는 소셜 로그인으로만 다시 이용할 수 있습니다.");
+            }
+            if (existingProviderId == null || !existingProviderId.equals(currentProviderId)) {
+                throw new OAuth2AuthenticationException("탈퇴 후 6개월 이내로 로컬 회원 가입을 통해 다시 이용할 수 있습니다.");
+            }
+
+            existingUser.reactivateSocial(
+                    resolveSocialName(userInfo),
+                    userInfo.getImageUrl(),
+                    userInfo.getId(),
+                    provider);
+            return existingUser;
+        }
+
+        existingUser.anonymizeForReSignup();
+        usersRepository.saveAndFlush(existingUser);
+
+        return signupFromSocial(userInfo, provider);
+
+    }
+
     // ── provider별 UserInfo 분기 ──
 
     private OAuth2UserInfo extractUserInfo(String registrationId, Map<String, Object> attributes) {
@@ -83,18 +136,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     // ── 기존 유저: provider 정보만 연결 ──
-    // TODO: 기존 로컬 유저가 소셜로 로그인했을 때, 이메일이 동일하다면 거절, 만일 사용자 요청 시 provider 정보 연결 - 연동 :
-    // 추후에 정하기, 여러 가지 생각할게 있음 =
+    private Users updateExistingSocialUsers(Users user, OAuth2UserInfo userInfo) {
+        if (user.getProviderId() != null && !user.getProviderId().equals(userInfo.getId())) {
+            throw new OAuth2AuthenticationException("다른 소셜 계정입니다.");
+        }
 
-    private Users updateExistingUser(Users user, AuthProvider provider, OAuth2UserInfo userInfo) {
-        // 이미 LOCAL 가입된 유저가 소셜 로그인하면 provider 정보를 연결
-        // (provider가 아직 설정 안 된 경우에만)
-        if (user.getProvider() == null) {
-            user.changeProvider(provider);
+        if (user.getProviderId() == null) {
             user.changeProviderId(userInfo.getId());
         }
-        // 프로필 이미지 URL 업데이트
-        if (userInfo.getImageUrl() != null) {
+
+        if (userInfo.getImageUrl() != null && !userInfo.getImageUrl().isBlank()) {
             user.changeProfileImageUrl(userInfo.getImageUrl());
         }
         return user;
@@ -105,15 +156,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (userInfo.getEmail() == null || userInfo.getEmail().isBlank()) {
             throw new OAuth2AuthenticationException("소셜 계정에서 이메일 정보를 가져올 수 없습니다. 이메일 제공 동의가 필요합니다.");
         }
-        if (userInfo.getName() == null || userInfo.getName().isBlank()) {
-            throw new OAuth2AuthenticationException("소셜 계정에서 이름 정보를 가져올 수 없습니다.");
-        }
-        String nickname = generateUniqueNickname(userInfo.getName());
+
+        String socialName = resolveSocialName(userInfo);
+        String tempNickname = generateUniqueNickname(socialName);
 
         Users newUser = Users.builder()
-                .name(userInfo.getName())
+                .name(socialName)
                 .email(userInfo.getEmail())
-                .nickname(nickname)
+                .nickname(tempNickname)
                 .provider(provider)
                 .providerId(userInfo.getId())
                 .profileImageUrl(userInfo.getImageUrl())
@@ -124,12 +174,27 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return usersRepository.save(newUser);
     }
 
+    // Social 회원 가입자 name = email의 @ 앞자리로 입력
+    private String resolveSocialName(OAuth2UserInfo userInfo) {
+        if (userInfo.getName() != null && !userInfo.getName().isBlank()) {
+            return userInfo.getName();
+        }
+
+        String email = userInfo.getEmail();
+
+        if (email != null && email.contains("@")) {
+            return email.substring(0, email.indexOf("@"));
+        }
+
+        return "social_user";
+    }
+
     // ── 닉네임 중복 방지 (소셜 이름 + 숫자) ──
-    // name = 소셜 이름?
-    private String generateUniqueNickname(String name) {
-        String base = (name != null && !name.isBlank()) ? name : "user";
+    private String generateUniqueNickname(String baseName) {
+        String base = (baseName != null && !baseName.isBlank()) ? baseName : "user";
         String nickname = base;
         int suffix = 1;
+
         while (usersRepository.existsByNickname(nickname)) {
             nickname = base + suffix++;
         }

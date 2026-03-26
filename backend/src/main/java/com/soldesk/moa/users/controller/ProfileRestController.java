@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.auth.dto.AuthUserDTO;
+import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.dto.profile.NicknameUpdateRequestDTO;
 import com.soldesk.moa.users.dto.profile.StatusMessageUpdateRequestDTO;
 import com.soldesk.moa.users.dto.profile.UserProfileResponseDTO;
@@ -32,8 +33,17 @@ public class ProfileRestController {
     private final ProfileService profileService;
 
     // 닉네임 중복 확인 (회원가입 이전에도 사용)
+    // 로그인 상태이면 자기 자신의 현재 닉네임은 중복으로 판정하지 않음
     @GetMapping("/profile/check-nickname")
-    public ResponseEntity<?> checkNickname(@RequestParam String nickname) {
+    public ResponseEntity<?> checkNickname(
+            @AuthenticationPrincipal AuthUserDTO authUser,
+            @RequestParam String nickname) {
+        if (authUser != null) {
+            Users currentUser = usersRepository.findById(authUser.getUserId()).orElse(null);
+            if (currentUser != null && nickname.equals(currentUser.getNickname())) {
+                return ResponseEntity.ok().build();
+            }
+        }
         if (usersRepository.existsByNickname(nickname)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 사용 중인 닉네임입니다.");
         }

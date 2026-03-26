@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useAuthStore } from "../../store/authStore";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import BoardSectionHeader from "../../common/components/BoardSectionHeader";
@@ -9,7 +9,6 @@ import PostList from "../components/PostList";
 import { usePosts } from "../hooks/usePosts";
 import { postRoutes } from "../routes/postRoutes";
 import type { PostKind } from "../types/postTypes";
-import type { RootState } from "../../users/reducers/store";
 
 function resolveKind(pathname: string): Exclude<PostKind, "circle"> {
   if (pathname.includes("/notice")) return "notice";
@@ -22,7 +21,7 @@ export default function PostListPage() {
   const boardTitle = kind === "notice" ? "공지게시판" : "자유게시판";
   const { data, loading, error } = usePosts({ kind });
   const [searchKeyword, setSearchKeyword] = useState("");
-  const { isLoggedIn, user } = useSelector((state: RootState) => state.auth);
+  const { isLoggedIn, user } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
   const canCreate = kind === "notice" ? isAdmin : isLoggedIn;
   const searchPlaceholder =

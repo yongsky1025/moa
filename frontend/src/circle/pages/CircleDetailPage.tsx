@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useAuthStore } from "../../store/authStore";
 import { Users, Clock, MapPin } from "lucide-react";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
@@ -12,7 +12,6 @@ import { scheduleApi } from "../../api/scheduleApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import type { CircleResponse, CircleMember } from "../types/circle";
 import type { ScheduleResponse } from "../../schedule/types/schedule";
-import type { RootState } from "../../users/reducers/store";
 
 const STATUS_LABEL: Record<
   string,
@@ -56,7 +55,7 @@ export default function CircleDetailPage() {
     return null;
   }
 
-  const { user, isLoggedIn } = useSelector((s: RootState) => s.auth);
+  const { user, isLoggedIn } = useAuthStore();
 
   const [circle, setCircle] = useState<CircleResponse | null>(null);
   const [activeMembers, setActiveMembers] = useState<CircleMember[]>([]);

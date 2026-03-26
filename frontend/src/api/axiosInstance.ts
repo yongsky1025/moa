@@ -3,6 +3,7 @@ import { useAuthStore } from "../store/authStore";
 
 const api = axios.create({
   baseURL: "/",
+  withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -29,12 +30,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// 응답 인터셉터: 401 시 토큰 갱신 시도
+const ACCOUNT_STATUS_CODES = new Set(['ACCOUNT_WITHDRAWN', 'ACCOUNT_SUSPENDED', 'ACCOUNT_BANNED']);
+
+// 응답 인터셉터: 403 계정 상태 / 401 토큰 갱신
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // 계정 상태 에러 → 경고 페이지로 리다이렉트
+    const errorCode = error.response?.data?.errorCode;
+    if (error.response?.status === 403 && errorCode && ACCOUNT_STATUS_CODES.has(errorCode)) {
+      useAuthStore.getState().clearAuth();
+      window.location.href = `/users/account-status?code=${errorCode}`;
+      return Promise.reject(error);
+    }
+
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    const url = original?.url ?? '';
+    if (error.response?.status === 401 && !original._retry && url !== '/api/auth/refresh') {
       original._retry = true;
 
       if (isRefreshing) {
@@ -57,10 +69,16 @@ api.interceptors.response.use(
         processQueue(newToken);
         original.headers.Authorization = `Bearer ${newToken}`;
         return api(original);
-      } catch (refreshError) {
+      } catch (refreshError: unknown) {
         rejectQueue(refreshError);
+        // refresh 실패 시에도 계정 상태 에러코드 확인
+        const refreshErrCode = (refreshError as { response?: { data?: { errorCode?: string } } })?.response?.data?.errorCode;
         useAuthStore.getState().clearAuth();
-        window.location.href = "/users/login";
+        if (refreshErrCode && ACCOUNT_STATUS_CODES.has(refreshErrCode)) {
+          window.location.href = `/users/account-status?code=${refreshErrCode}`;
+        } else {
+          window.location.href = "/users/login";
+        }
         return Promise.reject(error);
       } finally {
         isRefreshing = false;

@@ -1,4 +1,4 @@
-import api from "../../users/utils/jwtUtil";
+import api from "../../api/axiosInstance";
 import type { ReplyRequest, ReplyResponse } from "../types/replyTypes";
 
 // 댓글(Reply) 도메인의 백엔드 호출 모음
