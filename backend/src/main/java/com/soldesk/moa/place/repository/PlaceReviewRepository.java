@@ -8,5 +8,9 @@ import com.soldesk.moa.place.entity.PlaceReview;
 
 public interface PlaceReviewRepository extends JpaRepository<PlaceReview, Long> {
 
-    List<PlaceReview> findByPlaceIdOrderByIdDesc(Long placeId);
+    List<PlaceReview> findByPlaceIdOrderByCreateDateDesc(Long placeId);
+
+    List<PlaceReview> findByReviewerUserIdOrderByCreateDateDesc(Long userId);
+
+    boolean existsByReservationIdAndReviewerUserId(Long reservationId, Long userId);
 }

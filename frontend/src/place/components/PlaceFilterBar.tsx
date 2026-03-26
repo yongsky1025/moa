@@ -4,7 +4,7 @@ import { DayPicker } from "react-day-picker";
 import { ko } from "date-fns/locale";
 import "react-day-picker/style.css";
 import "../styles/placeDayPicker.css";
-import PlaceTagFilterDropdown, { type TagCategoryGroup } from "./PlaceTagFilterDropdown";
+import { type TagCategoryGroup } from "./PlaceTagFilterDropdown";
 import PlaceCityDistrictFilter from "./PlaceCityDistrictFilter";
 import PlacePriceRangeFilter from "./PlacePriceRangeFilter";
 import type { PlaceSearchParams } from "../types/placeTypes";
@@ -203,13 +203,6 @@ export default function PlaceFilterBar({ params, tagGroups, onParamsChange, onRe
           </div>
         )}
       </div>
-
-      {/* 태그 */}
-      <PlaceTagFilterDropdown
-        tagGroups={tagGroups}
-        selectedTagIds={params.tagIds ?? []}
-        onChange={(ids) => onParamsChange({ tagIds: ids })}
-      />
 
       {/* 정렬 */}
       <FilterDropdown label={sortLabel} active={!!params.sort && params.sort !== "newest"}>

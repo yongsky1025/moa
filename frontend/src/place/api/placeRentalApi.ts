@@ -43,3 +43,6 @@ export const fetchTagsGrouped = async (): Promise<TagCategoryGroupDTO[]> => {
   const res = await api.get<TagCategoryGroupDTO[]>(`/api/tags/grouped`);
   return res.data;
 };
+
+export const togglePlaceLike = (placeId: number): Promise<{ liked: boolean; likeCount: number }> =>
+  api.post(`/api/likes/places/PLACE/${placeId}`).then((res) => res.data);

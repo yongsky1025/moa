@@ -1,6 +1,7 @@
 package com.soldesk.moa.place.service;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +16,10 @@ import com.soldesk.moa.place.dto.PlaceDetailResponseDTO;
 import com.soldesk.moa.place.dto.PlaceLikiResponseDTO;
 import com.soldesk.moa.place.dto.PlaceListResponseDTO;
 import com.soldesk.moa.place.dto.PlaceResponseDTO;
-import com.soldesk.moa.place.dto.PlaceReviewDTO;
 import com.soldesk.moa.place.dto.PlaceSearchDTO;
 import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.place.entity.Place;
 import com.soldesk.moa.place.repository.PlaceRepository;
-import com.soldesk.moa.place.repository.PlaceReviewRepository;
 import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,6 @@ public class PlaceService {
         private final PlaceRepository placeRepository;
         private final LikesRepository likesRepository;
         private final AdminUsersRepository usersRepository;
-        private final PlaceReviewRepository placeReviewRepository;
         private final PlaceImageService placeImageService;
 
         // 장소 단건 상세 조회
@@ -100,24 +98,14 @@ public class PlaceService {
                                 .build();
         }
 
-        // 장소 리뷰 목록 조회
-        @Transactional(readOnly = true)
-        public List<PlaceReviewDTO> getPlaceReviews(Long id) {
-                return placeReviewRepository.findByPlaceIdOrderByIdDesc(id).stream()
-                                .map(r -> PlaceReviewDTO.builder()
-                                                .id(r.getId())
-                                                .rating(r.getRating())
-                                                .comment(r.getComment())
-                                                .reviewerNickname(r.getReviewer().getNickname())
-                                                .build())
-                                .toList();
-        }
-
         // 장소 목록 검색/필터 (무한스크롤)
         @Transactional(readOnly = true)
         public PlaceListResponseDTO searchPlaces(PlaceSearchDTO searchDTO) {
 
                 List<Place> places = placeRepository.searchPlaces(searchDTO);
+
+                List<Long> placeIds = places.stream().map(Place::getId).toList();
+                Map<Long, String> repImages = placeImageService.getRepresentativeImages(placeIds);
 
                 List<PlaceResponseDTO> dtoList = places.stream()
                                 .map(place -> PlaceResponseDTO.builder()
@@ -135,6 +123,8 @@ public class PlaceService {
                                                                 : 0.0)
                                                 .reviewCount(place.getReviewCount() != null ? place.getReviewCount()
                                                                 : 0)
+                                                .representativeImagePath(repImages.get(place.getId()))
+                                                .minReservationMinutes(place.getMinReservationMinutes())
                                                 .build())
                                 .toList();
 

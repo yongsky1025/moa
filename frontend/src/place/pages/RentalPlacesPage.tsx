@@ -6,6 +6,7 @@ import PlaceSearchBar from "../components/PlaceSearchBar";
 import PlaceFilterBar from "../components/PlaceFilterBar";
 import PlaceCardGrid from "../components/PlaceCardGrid";
 import PlaceMapView from "../components/PlaceMapView";
+import PlaceTagSection from "../components/PlaceTagSection";
 import { fetchPlaces, fetchTagsGrouped } from "../api/placeRentalApi";
 import type { PlaceCardDTO, PlaceListResponse, PlaceSearchParams } from "../types/placeTypes";
 import type { TagCategoryGroup } from "../components/PlaceTagFilterDropdown";
@@ -108,7 +109,7 @@ export default function RentalPlacesPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "white" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
 
       {/* 헤더 */}
@@ -128,14 +129,32 @@ export default function RentalPlacesPage() {
           <PlaceSearchBar value={keyword} onChange={setKeyword} onSearch={handleSearch} />
         </div>
 
-        {/* 필터바 */}
-        <div style={{ marginBottom: 16 }}>
-          <PlaceFilterBar
-            params={params}
-            tagGroups={tagGroups}
-            onParamsChange={handleParamsChange}
-            onReset={handleReset}
-          />
+        {/* 필터 영역 래퍼 */}
+        <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* 기본 필터 및 정렬 */}
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "#888", marginBottom: 6, letterSpacing: 0.2 }}>
+              기본 필터 및 정렬
+            </p>
+            <PlaceFilterBar
+              params={params}
+              tagGroups={tagGroups}
+              onParamsChange={handleParamsChange}
+              onReset={handleReset}
+            />
+          </div>
+
+          {/* 태그별 필터 */}
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "#888", marginBottom: 6, letterSpacing: 0.2 }}>
+              태그별 필터
+            </p>
+            <PlaceTagSection
+              tagGroups={tagGroups}
+              selectedTagIds={params.tagIds ?? []}
+              onChange={(ids) => handleParamsChange({ tagIds: ids })}
+            />
+          </div>
         </div>
 
         {/* 뷰 전환 + 결과 수 */}

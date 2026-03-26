@@ -1,7 +1,10 @@
 import { MapPin, Users, Star, Heart, Clock } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../users/reducers/store";
 import type { PlaceCardDTO } from "../types/placeTypes";
+import { togglePlaceLike } from "../api/placeRentalApi";
 
 const API_HOST = "http://localhost:8080";
 
@@ -17,8 +20,12 @@ interface Props {
   minReservationMinutes?: number;
 }
 
-export default function RentalPlaceCard({ place, minReservationMinutes }: Props) {
+export default function RentalPlaceCard({
+  place,
+  minReservationMinutes,
+}: Props) {
   const navigate = useNavigate();
+  const { isLoggedIn } = useSelector((s: RootState) => s.auth);
   const [liked, setLiked] = useState(false);
 
   const locationLabel = [place.city, place.district, place.dong]
@@ -29,13 +36,29 @@ export default function RentalPlaceCard({ place, minReservationMinutes }: Props)
     ? `${API_HOST}${place.representativeImagePath}`
     : null;
 
+  const minMinutes = minReservationMinutes ?? place.minReservationMinutes;
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isLoggedIn) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    try {
+      await togglePlaceLike(place.id);
+      setLiked((v) => !v);
+    } catch {
+      // 오류 무시
+    }
+  };
+
   return (
     <article
       onClick={() => navigate(`/place/${place.id}`)}
       className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
     >
       {/* 이미지 영역 */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+      <div className="relative aspect-4/3 overflow-hidden bg-gray-100">
         {imageSrc ? (
           <img
             src={imageSrc}
@@ -51,10 +74,7 @@ export default function RentalPlaceCard({ place, minReservationMinutes }: Props)
 
         {/* 좋아요 버튼 */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setLiked((v) => !v);
-          }}
+          onClick={handleLike}
           className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/85 shadow transition hover:bg-white"
           aria-label="좋아요"
         >
@@ -63,16 +83,12 @@ export default function RentalPlaceCard({ place, minReservationMinutes }: Props)
           />
         </button>
 
-        {/* 평점 배지 */}
-        {place.avgRating > 0 && (
-          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white">
-            <Star className="h-3 w-3 fill-yellow-400 stroke-yellow-400" />
-            {place.avgRating.toFixed(1)}
-            {place.reviewCount > 0 && (
-              <span className="text-white/70">({place.reviewCount})</span>
-            )}
-          </div>
-        )}
+        {/* 평점 배지 — 항상 표시 (리뷰 없으면 0.0) */}
+        <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white">
+          <Star className="h-3 w-3 fill-yellow-400 stroke-yellow-400" />
+          {place.avgRating.toFixed(1)}
+          <span className="text-white/70">({place.reviewCount})</span>
+        </div>
       </div>
 
       {/* 텍스트 영역 */}
@@ -98,16 +114,16 @@ export default function RentalPlaceCard({ place, minReservationMinutes }: Props)
               {place.pricePerHour.toLocaleString()}
               <span className="text-xs font-normal text-gray-400">원/시간</span>
             </span>
-            {minReservationMinutes != null && (
+            {minMinutes != null && (
               <span className="flex items-center gap-0.5 text-[11px] text-gray-400">
                 <Clock className="h-2.5 w-2.5" />
-                최소 {formatMinutes(minReservationMinutes)}
+                최소 {formatMinutes(minMinutes)}
               </span>
             )}
           </div>
           <div className="flex items-center gap-0.5 text-gray-400">
             <Users className="h-3 w-3" />
-            <span>{place.capacity}명</span>
+            <span>최대 {place.capacity}명</span>
           </div>
         </div>
       </div>

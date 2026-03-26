@@ -52,6 +52,10 @@ public interface PlaceImageRepository extends JpaRepository<Image, Long> {
             @Param("path") String path,
             @Param("ord") Long ord);
 
+    /** 여러 장소의 대표이미지(ord=0)를 한 번에 조회 */
+    @Query("select i from Image i where i.domain = :domain and i.ownerId in :ownerIds and i.ord = 0 and i.deleted = false")
+    List<Image> findRepresentativeImages(@Param("domain") ImageDomain domain, @Param("ownerIds") List<Long> ownerIds);
+
     /** 새 목록에 없는 이미지 soft delete (차등 삭제) */
     @Modifying
     @Query("""

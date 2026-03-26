@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   MapPin, Users, Star, Heart, Clock, CalendarX,
@@ -15,6 +15,15 @@ const DAY_KO: Record<string, string> = {
   MONDAY: "월요일", TUESDAY: "화요일", WEDNESDAY: "수요일",
   THURSDAY: "목요일", FRIDAY: "금요일", SATURDAY: "토요일", SUNDAY: "일요일",
 };
+
+const SUB_NAV_ITEMS = [
+  { key: "intro",    label: "장소 소개" },
+  { key: "info",     label: "이용 안내" },
+  { key: "location", label: "위치" },
+  { key: "review",   label: "후기" },
+] as const;
+
+type SectionKey = typeof SUB_NAV_ITEMS[number]["key"];
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -85,6 +94,20 @@ export default function PlaceDetailPage() {
   const [place, setPlace] = useState<PlaceDetailDTO | null>(null);
   const [reviews, setReviews] = useState<PlaceReviewDTO[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState<SectionKey>("intro");
+
+  // 섹션 refs
+  const introRef    = useRef<HTMLDivElement>(null);
+  const infoRef     = useRef<HTMLDivElement>(null);
+  const locationRef = useRef<HTMLDivElement>(null);
+  const reviewRef   = useRef<HTMLDivElement>(null);
+
+  const sectionRefs: Record<SectionKey, React.RefObject<HTMLDivElement | null>> = {
+    intro:    introRef,
+    info:     infoRef,
+    location: locationRef,
+    review:   reviewRef,
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -98,6 +121,41 @@ export default function PlaceDetailPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
+
+  // IntersectionObserver — 현재 보이는 섹션 active
+  // rootMargin: navbar(60) + subnav(~46) + 여백 = -110px
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    const entries: Record<SectionKey, boolean> = {
+      intro: false, info: false, location: false, review: false,
+    };
+
+    SUB_NAV_ITEMS.forEach(({ key }) => {
+      const el = sectionRefs[key].current;
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          entries[key] = entry.isIntersecting;
+          const first = SUB_NAV_ITEMS.find((s) => entries[s.key]);
+          if (first) setActiveSection(first.key);
+        },
+        { rootMargin: "-110px 0px -55% 0px", threshold: 0 },
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+
+    return () => observers.forEach((o) => o.disconnect());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [place]);
+
+  const scrollTo = (key: SectionKey) => {
+    const el = sectionRefs[key].current;
+    if (!el) return;
+    // navbar(60) + subnav(~46) + 여백 8 = 114
+    const offset = el.getBoundingClientRect().top + window.scrollY - 114;
+    window.scrollTo({ top: offset, behavior: "smooth" });
+  };
 
   if (loading) {
     return (
@@ -191,7 +249,7 @@ export default function PlaceDetailPage() {
 
             {/* 태그 */}
             {place.tags.length > 0 && (
-              <div style={{ marginBottom: 28 }}>
+              <div style={{ marginBottom: 24 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
                   <Tag style={{ width: 16, height: 16, color: "#5F8F7B" }} />
                   태그
@@ -213,8 +271,46 @@ export default function PlaceDetailPage() {
               </div>
             )}
 
+            {/* ── 서브 네비게이션 바 (태그↔장소소개 사이 인라인 → 스크롤 시 navbar 아래 sticky) ── */}
+            <div
+              style={{
+                position: "sticky",
+                top: 60,
+                zIndex: 30,
+                backgroundColor: "white",
+                borderTop: "1px solid #f0f0f0",
+                borderBottom: "1px solid #f0f0f0",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+                display: "flex",
+                gap: 0,
+                marginBottom: 24,
+                marginLeft: -4,
+              }}
+            >
+              {SUB_NAV_ITEMS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => scrollTo(key)}
+                  style={{
+                    padding: "13px 18px",
+                    fontSize: 14,
+                    fontWeight: activeSection === key ? 700 : 500,
+                    color: activeSection === key ? "#5F8F7B" : "#666",
+                    background: "none",
+                    border: "none",
+                    borderBottom: activeSection === key ? "2px solid #5F8F7B" : "2px solid transparent",
+                    cursor: "pointer",
+                    transition: "color 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             {/* 장소 소개 */}
-            <div style={{ marginBottom: 28 }}>
+            <div ref={introRef} style={{ marginBottom: 28, scrollMarginTop: 114 }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 12 }}>
                 장소 소개
               </h2>
@@ -226,7 +322,7 @@ export default function PlaceDetailPage() {
             <div style={{ height: 1, backgroundColor: "#f0f0f0", marginBottom: 24 }} />
 
             {/* 이용 안내 */}
-            <div style={{ marginBottom: 28 }}>
+            <div ref={infoRef} style={{ marginBottom: 28, scrollMarginTop: 114 }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
                 <Clock style={{ width: 16, height: 16, color: "#5F8F7B" }} />
                 이용 안내
@@ -301,7 +397,7 @@ export default function PlaceDetailPage() {
             <div style={{ height: 1, backgroundColor: "#f0f0f0", marginBottom: 24 }} />
 
             {/* 위치 지도 */}
-            <div style={{ marginBottom: 28 }}>
+            <div ref={locationRef} style={{ marginBottom: 28, scrollMarginTop: 114 }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
                 <MapPin style={{ width: 16, height: 16, color: "#5F8F7B" }} />
                 위치
@@ -313,10 +409,10 @@ export default function PlaceDetailPage() {
             <div style={{ height: 1, backgroundColor: "#f0f0f0", marginBottom: 24 }} />
 
             {/* 리뷰 */}
-            <div>
+            <div ref={reviewRef} style={{ scrollMarginTop: 114 }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
                 <MessageSquare style={{ width: 16, height: 16, color: "#5F8F7B" }} />
-                리뷰
+                후기
                 <span style={{ fontSize: 14, fontWeight: 400, color: "#888" }}>
                   ({place.reviewCount}개)
                 </span>
@@ -362,8 +458,8 @@ export default function PlaceDetailPage() {
             </div>
           </div>
 
-          {/* 오른쪽: 예약 패널 (sticky) */}
-          <div style={{ width: 340, flexShrink: 0, position: "sticky", top: 24 }}>
+          {/* 오른쪽: 예약 패널 (sticky — navbar 60 + 여백 24 = 84) */}
+          <div style={{ width: 340, flexShrink: 0, position: "sticky", top: 84 }}>
             <PlaceReservationPanel place={place} />
           </div>
         </div>

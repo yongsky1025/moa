@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { AdminMainDTO } from '../types/adminTypes';
-import { fetchAdminMain } from '../api/adminDashboardApi';
+import { useCallback, useEffect, useState } from "react";
+import type { AdminMainDTO } from "../types/adminTypes";
+import { fetchAdminMain } from "../api/adminDashboardApi";
 
 interface UseAdminMainResult {
   data: AdminMainDTO | null;
@@ -23,7 +23,7 @@ export function useAdminMain(): UseAdminMainResult {
       setData(result);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : '데이터를 불러오지 못했습니다.';
+        err instanceof Error ? err.message : "데이터를 불러오지 못했습니다.";
       setError(message);
     } finally {
       setLoading(false);

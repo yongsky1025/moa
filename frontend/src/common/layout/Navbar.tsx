@@ -194,6 +194,13 @@ export default function Navbar() {
                 >
                   <Link
                     to={navLinks[item] ?? "#"}
+                    onClick={(e) => {
+                      const target = navLinks[item];
+                      if (target && window.location.pathname === target) {
+                        e.preventDefault();
+                        navigate(0);
+                      }
+                    }}
                     style={{
                       fontSize: 15,
                       fontWeight: 500,

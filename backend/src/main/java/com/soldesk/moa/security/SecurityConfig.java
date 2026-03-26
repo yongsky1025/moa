@@ -140,6 +140,7 @@ public class SecurityConfig {
                                                 // ---------------- 장소(place) -----------------
                                                 .requestMatchers("/api/places/**").permitAll()
                                                 .requestMatchers("/api/tags/**").permitAll() // 장소&일정 태그 다 열어야함
+                                                .requestMatchers("/api/place-reviews/**").authenticated() // 장소 후기
                                                 // ----------------------------------
                                                 // swagger 임시 허용(개발중)
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",

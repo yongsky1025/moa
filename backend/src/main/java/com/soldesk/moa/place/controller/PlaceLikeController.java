@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 @Log4j2
 public class PlaceLikeController {
 
-    private PlaceService placeService;
+    private final PlaceService placeService;
 
     @PostMapping("/{targetType}/{targetId}")
     @PreAuthorize("isAuthenticated()")
