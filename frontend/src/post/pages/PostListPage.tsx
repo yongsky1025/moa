@@ -10,7 +10,6 @@ import { usePosts } from "../hooks/usePosts";
 import { postRoutes } from "../routes/postRoutes";
 import type { PostKind } from "../types/postTypes";
 import type { PostResponse } from "../types/postTypes";
-import type { RootState } from "../../users/reducers/store";
 import { postApi } from "../api/postApi";
 
 function resolveKind(pathname: string): Exclude<PostKind, "circle"> {

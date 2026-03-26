@@ -169,6 +169,8 @@ dist
 
 # SvelteKit build / generate output
 .svelte-kit
+.vite/
+frontend/.vite/
 
 ### react ###
 .DS_*
