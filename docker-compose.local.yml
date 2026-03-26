@@ -1,0 +1,11 @@
+services:
+  meilisearch:
+    env_file:
+      - ./backend/.env
+    environment:
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+  meili-init:
+    env_file:
+      - ./backend/.env

@@ -1,0 +1,13 @@
+services:
+  meilisearch:
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?set_MEILI_MASTER_KEY}
+    # 서버에서는 보통 외부 포트 직접 노출 대신 내부망/리버스프록시를 사용
+    expose:
+      - "7700"
+  meili-init:
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?set_MEILI_MASTER_KEY}
+      MEILI_SEARCH_KEY_UID: ${MEILI_SEARCH_KEY_UID:?set_MEILI_SEARCH_KEY_UID}
+      MEILISEARCH_SEARCH_API_KEY: ${MEILISEARCH_SEARCH_API_KEY:?set_MEILISEARCH_SEARCH_API_KEY}

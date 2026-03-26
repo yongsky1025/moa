@@ -1,6 +1,7 @@
 package com.soldesk.moa.board.schedule;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.post.repository.PostRepository;
+import com.soldesk.moa.post.service.PostSearchService;
 import com.soldesk.moa.reply.repository.ReplyReactionRepository;
 import com.soldesk.moa.reply.repository.ReplyRepository;
 
@@ -22,6 +24,7 @@ public class SoftDeletedContentCleanupScheduler {
     private final ReplyRepository replyRepository;
     private final ReplyReactionRepository replyReactionRepository;
     private final PostRepository postRepository;
+    private final PostSearchService postSearchService;
     private final BoardRepository boardRepository;
 
     // 매일 새벽 4시에 deleted=true 이고 30일 지난 board/post/reply를 물리 삭제
@@ -30,11 +33,15 @@ public class SoftDeletedContentCleanupScheduler {
     @Scheduled(cron = "0 0 4 * * ?")
     public void purgeSoftDeletedContent() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(30);
+        List<Long> postIdsToDelete = postRepository.findSoftDeletedPostIdsBefore(cutoff);
 
         int unlinkedParents = replyRepository.unlinkParentReferencesForHardDelete(cutoff);
         int deletedReplyReactions = replyReactionRepository.deleteBySoftDeletedReplyBefore(cutoff);
         int deletedReplies = replyRepository.hardDeleteSoftDeletedBefore(cutoff);
         int deletedPosts = postRepository.hardDeleteSoftDeletedBefore(cutoff);
+        if (deletedPosts > 0) {
+            postIdsToDelete.forEach(postSearchService::queueDeleteAfterCommit);
+        }
         int deletedBoards = boardRepository.hardDeleteSoftDeletedBefore(cutoff);
 
         if (unlinkedParents > 0 || deletedReplyReactions > 0 || deletedReplies > 0 || deletedPosts > 0
