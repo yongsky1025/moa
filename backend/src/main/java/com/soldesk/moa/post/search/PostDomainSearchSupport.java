@@ -19,6 +19,8 @@ public class PostDomainSearchSupport extends DomainSearchSupport<PostSearchDocum
     private static final String INDEX_UID = "posts";
     private static final String PRIMARY_KEY = "id";
     private static final List<String> BASE_SEARCHABLE_FIELDS = List.of("title", "authorName", "content");
+    private final Object configureLock = new Object();
+    private volatile boolean configured = false;
 
     public PostDomainSearchSupport(MeiliSearchOperations meiliSearchOperations) {
         super(meiliSearchOperations);
@@ -44,12 +46,23 @@ public class PostDomainSearchSupport extends DomainSearchSupport<PostSearchDocum
     }
 
     public void ensureConfigured() {
-        ensureIndex();
-        updateSettings(Map.of(
-                "searchableAttributes", searchableWithChosung(BASE_SEARCHABLE_FIELDS),
-                "filterableAttributes", List.of("boardType", "circleId"),
-                "sortableAttributes", List.of("createDate", "viewCount", "likeCount"),
-                "typoTolerance", typoToleranceForChosung(BASE_SEARCHABLE_FIELDS)));
+        if (configured) {
+            return;
+        }
+
+        synchronized (configureLock) {
+            if (configured) {
+                return;
+            }
+
+            ensureIndex();
+            updateSettings(Map.of(
+                    "searchableAttributes", searchableWithChosung(BASE_SEARCHABLE_FIELDS),
+                    "filterableAttributes", List.of("boardType", "circleId"),
+                    "sortableAttributes", List.of("createDate", "viewCount", "likeCount"),
+                    "typoTolerance", typoToleranceForChosung(BASE_SEARCHABLE_FIELDS)));
+            configured = true;
+        }
     }
 
     public long upsertDocuments(Collection<PostSearchDocument> documents) {
