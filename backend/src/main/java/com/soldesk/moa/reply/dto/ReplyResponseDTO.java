@@ -1,6 +1,5 @@
 package com.soldesk.moa.reply.dto;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
@@ -26,13 +25,21 @@ public class ReplyResponseDTO {
 
     private String authorPublicId;
 
+    private Long authorUserId;
+
     private LocalDateTime createDate;
 
     private Long parentId;
 
     private int depth;
 
+    private Long replyToUserId;
+
     private boolean deleted;
+
+    private int likeCount;
+
+    private String myReaction;
 
     private long replyCount;
 

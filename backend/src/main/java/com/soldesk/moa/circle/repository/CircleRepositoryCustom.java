@@ -8,8 +8,8 @@ import com.soldesk.moa.common.dto.PageResultDTO;
 
 public interface CircleRepositoryCustom {
 
-    PageResultDTO<Circle> findByCategory_CategoryId(
-            Long categoryId,
+    PageResultDTO<Circle> findByCategories(
+            List<Long> categoryIds,
             PageRequestDTO pageRequestDTO);
 
     List<Circle> findRecommended(

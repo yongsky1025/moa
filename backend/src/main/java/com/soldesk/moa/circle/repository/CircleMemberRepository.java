@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleMember;
@@ -52,6 +54,15 @@ public interface CircleMemberRepository extends JpaRepository<CircleMember, Long
 
         // 서클의 특정 역할 멤버 조회 (리더 알림용)
         Optional<CircleMember> findByCircleAndRole(Circle circle, CircleRole role);
+
+        // 두 유저가 같은 서클에 ACTIVE 상태로 함께 속해 있는지 확인 (1:1 채팅 제한용)
+        @Query("SELECT cm1 FROM CircleMember cm1, CircleMember cm2 " +
+               "WHERE cm1.user.userId = :userId1 AND cm2.user.userId = :userId2 " +
+               "AND cm1.circle = cm2.circle AND cm1.status = :status AND cm2.status = :status")
+        List<CircleMember> findSharedActiveCircles(
+                @Param("userId1") Long userId1,
+                @Param("userId2") Long userId2,
+                @Param("status") CircleMemberStatus status);
 
         // 써클 게시판 권한
         // 써클 멤버만

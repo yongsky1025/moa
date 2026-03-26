@@ -1,7 +1,13 @@
 export type ScheduleStatus = 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
 
+export interface ScheduleTagItem {
+  id: number;
+  name: string;
+}
+
 export interface ScheduleResponse {
   scheduleId: number;
+  circleId?: number;
   title: string;
   description: string;
   startAt: string;
@@ -13,6 +19,8 @@ export interface ScheduleResponse {
   latitude?: number;
   longitude?: number;
   joined?: boolean;
+  tags?: ScheduleTagItem[];
+  chatRoomId?: number;
 }
 
 export interface ScheduleCreateRequest {
@@ -24,6 +32,13 @@ export interface ScheduleCreateRequest {
   location?: string;
   latitude?: number;
   longitude?: number;
+  tagIds?: number[];
 }
 
 export type ScheduleUpdateRequest = ScheduleCreateRequest;
+
+export interface ScheduleMember {
+  userId: number;
+  nickname: string;
+  role: 'LEADER' | 'MEMBER';
+}

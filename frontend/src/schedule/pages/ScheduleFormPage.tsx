@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Search, MapPin, X } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
-import { scheduleApi } from '../../api/scheduleApi';
-import { placeApi, type NearbyPlace } from '../../api/placeApi';
+import { scheduleApi, type TagSuggestResult } from '../../api/scheduleApi';
+import { placeApi, type PlaceRecommendResponse, type TagCategoryGroup } from '../../api/placeApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
 
 function toInputDatetime(dt: string) {
@@ -43,14 +43,45 @@ export default function ScheduleFormPage() {
   const [placeResults, setPlaceResults] = useState<kakao.maps.services.PlaceItem[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null);
   const [kakaoReady, setKakaoReady] = useState(false);
-  const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([]);
+  const [tagCategories, setTagCategories] = useState<TagCategoryGroup[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [openCategories, setOpenCategories] = useState<string[]>([]);
+  const [nearbyPlaces, setNearbyPlaces] = useState<PlaceRecommendResponse[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [suggestedTags, setSuggestedTags] = useState<TagSuggestResult[]>([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const infowindowsRef = useRef<any[]>([]);
   const initialMarkerSetRef = useRef(false);
+
+  // 태그 목록 fetch (일정용 카테고리만)
+  useEffect(() => {
+    scheduleApi.getScheduleTags().then(res => setTagCategories(res.data)).catch(() => {});
+  }, []);
+
+  // 제목+설명 디바운스 → 태그 추천
+  useEffect(() => {
+    if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current);
+    if (form.title.trim().length < 4 || form.description.trim().length < 6) {
+      setSuggestedTags([]);
+      setSuggestLoading(false);
+      return;
+    }
+    setSuggestLoading(true);
+    suggestTimerRef.current = setTimeout(() => {
+      scheduleApi.suggestTags(form.title, form.description)
+        .then(res => setSuggestedTags(res.data))
+        .catch(() => setSuggestedTags([]))
+        .finally(() => setSuggestLoading(false));
+    }, 800);
+    return () => {
+      if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current);
+    };
+  }, [form.title, form.description]);
 
   // Kakao Maps SDK 초기화
   useEffect(() => {
@@ -92,6 +123,9 @@ export default function ScheduleFormPage() {
             latitude: s.latitude,
             longitude: s.longitude,
           });
+        }
+        if (s.tags && s.tags.length > 0) {
+          setSelectedTagIds(s.tags.map(t => t.id));
         }
       })
       .catch(() => setError('일정 정보를 불러올 수 없습니다.'));
@@ -178,19 +212,34 @@ export default function ScheduleFormPage() {
     clearMarkers();
   };
 
+  const toggleTag = (tagId: number) => {
+    setSelectedTagIds(prev => {
+      if (prev.includes(tagId)) return prev.filter(id => id !== tagId);
+      if (prev.length >= 10) return prev;
+      return [...prev, tagId];
+    });
+  };
+
+  const toggleCategory = (category: string) => {
+    setOpenCategories(prev =>
+      prev.includes(category) ? prev.filter(c => c !== category) : [...prev, category]
+    );
+  };
+
   const handlePlaceSelectFromKakao = (place: kakao.maps.services.PlaceItem) => {
     handlePlaceSelect(place);
     // 카카오 장소 선택 후 MOA 근처 장소 조회
     const lat = Number(place.y);
     const lng = Number(place.x);
     setNearbyLoading(true);
-    placeApi.getNearbyPlaces(lat, lng, 3.0)
+    const selectedTagNames = tagCategories.flatMap(c => c.tags).filter(t => selectedTagIds.includes(t.id)).map(t => t.name);
+    placeApi.recommendPlaces(form.title, form.description, selectedTagNames.length > 0 ? selectedTagNames : undefined, lat, lng, 5)
       .then(res => setNearbyPlaces(res.data))
       .catch(() => setNearbyPlaces([]))
       .finally(() => setNearbyLoading(false));
   };
 
-  const handleSelectMoaPlace = (p: NearbyPlace) => {
+  const handleSelectMoaPlace = (p: PlaceRecommendResponse) => {
     setSelectedPlace({ name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude });
     setNearbyPlaces([]);
     clearMarkers();
@@ -224,6 +273,7 @@ export default function ScheduleFormPage() {
         latitude: selectedPlace.latitude,
         longitude: selectedPlace.longitude,
       } : {}),
+      tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
     };
     setLoading(true);
     try {
@@ -244,267 +294,385 @@ export default function ScheduleFormPage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
       <Navbar />
-      <main style={{ maxWidth: 640, margin: '40px auto', padding: '0 20px 60px' }}>
+      <main style={{ maxWidth: 1100, margin: '40px auto', padding: '0 20px 60px' }}>
         <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 32, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24, color: '#111' }}>
             {isEdit ? '일정 수정' : '일정 만들기'}
           </h1>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
 
-            {/* 제목 */}
-            <div>
-              <label style={labelStyle}>
-                제목 <span style={{ color: '#aaa', fontWeight: 400 }}>(최대 100자)</span>
-              </label>
-              <input
-                type="text"
-                value={form.title}
-                maxLength={100}
-                onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                style={inputStyle}
-                placeholder="일정 제목을 입력하세요"
-                required
-              />
-            </div>
+              {/* ── 왼쪽: 기본 정보 ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-            {/* 설명 */}
-            <div>
-              <label style={labelStyle}>
-                설명 <span style={{ color: '#aaa', fontWeight: 400 }}>(최대 255자)</span>
-              </label>
-              <textarea
-                value={form.description}
-                maxLength={255}
-                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                rows={3}
-                style={{ ...inputStyle, resize: 'vertical' }}
-                placeholder="일정을 설명해주세요"
-                required
-              />
-            </div>
+                {/* 제목 */}
+                <div>
+                  <label style={labelStyle}>
+                    제목 <span style={{ color: '#aaa', fontWeight: 400 }}>(최대 100자)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.title}
+                    maxLength={100}
+                    onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                    style={inputStyle}
+                    placeholder="일정 제목을 입력하세요"
+                    required
+                  />
+                </div>
 
-            {/* 시작 / 종료 시간 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label style={labelStyle}>시작 시간</label>
-                <input
-                  type="datetime-local"
-                  value={form.startAt}
-                  onChange={e => setForm(p => ({ ...p, startAt: e.target.value }))}
-                  style={inputStyle}
-                  required
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>종료 시간</label>
-                <input
-                  type="datetime-local"
-                  value={form.endAt}
-                  onChange={e => setForm(p => ({ ...p, endAt: e.target.value }))}
-                  style={inputStyle}
-                  required
-                />
-              </div>
-            </div>
+                {/* 설명 */}
+                <div>
+                  <label style={labelStyle}>
+                    설명 <span style={{ color: '#aaa', fontWeight: 400 }}>(최대 255자)</span>
+                  </label>
+                  <textarea
+                    value={form.description}
+                    maxLength={255}
+                    onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                    rows={4}
+                    style={{ ...inputStyle, resize: 'vertical' }}
+                    placeholder="일정을 설명해주세요"
+                    required
+                  />
+                </div>
 
-            {/* 최대 인원 */}
-            <div>
-              <label style={labelStyle}>
-                최대 인원 <span style={{ color: '#aaa', fontWeight: 400 }}>(최소 2명)</span>
-              </label>
-              <input
-                type="number"
-                value={form.maxMember}
-                min={2}
-                onChange={e => setForm(p => ({ ...p, maxMember: Number(e.target.value) }))}
-                style={{ ...inputStyle, maxWidth: 120 }}
-                required
-              />
-            </div>
+                {/* 시작 / 종료 시간 */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={labelStyle}>시작 시간</label>
+                    <input
+                      type="datetime-local"
+                      value={form.startAt}
+                      onChange={e => setForm(p => ({ ...p, startAt: e.target.value }))}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>종료 시간</label>
+                    <input
+                      type="datetime-local"
+                      value={form.endAt}
+                      onChange={e => setForm(p => ({ ...p, endAt: e.target.value }))}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+                </div>
 
-            {/* ── 장소 검색 (카카오 맵) ── */}
-            <div>
-              <label style={labelStyle}>
-                장소 <span style={{ color: '#aaa', fontWeight: 400 }}>(선택)</span>
-              </label>
+                {/* 최대 인원 */}
+                <div>
+                  <label style={labelStyle}>
+                    최대 인원 <span style={{ color: '#aaa', fontWeight: 400 }}>(최소 2명)</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={form.maxMember}
+                    min={2}
+                    onChange={e => setForm(p => ({ ...p, maxMember: Number(e.target.value) }))}
+                    style={{ ...inputStyle, maxWidth: 120 }}
+                    required
+                  />
+                </div>
 
-              {/* 검색창 */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                <input
-                  type="text"
-                  value={placeQuery}
-                  onChange={e => setPlaceQuery(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePlaceSearch(); } }}
-                  style={{ ...inputStyle, flex: 1 }}
-                  placeholder={kakaoReady ? '장소명 또는 주소를 검색하세요' : '카카오 지도 준비 중...'}
-                  disabled={!kakaoReady}
-                />
-                <button
-                  type="button"
-                  onClick={handlePlaceSearch}
-                  disabled={!kakaoReady}
-                  style={{
-                    padding: '10px 16px', borderRadius: 8, border: 'none',
-                    backgroundColor: kakaoReady ? '#111' : '#ccc',
-                    color: 'white', cursor: kakaoReady ? 'pointer' : 'not-allowed',
-                    display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600, fontSize: 13,
-                  }}
-                >
-                  <Search size={15} />
-                  검색
-                </button>
-              </div>
+                {/* 태그 선택 */}
+                <div>
+                  <label style={labelStyle}>
+                    태그 <span style={{ color: '#aaa', fontWeight: 400 }}>(최대 10개 · 장소 추천 정확도 향상)</span>
+                  </label>
+                  <div style={{ fontSize: 12, color: selectedTagIds.length >= 10 ? '#dc2626' : '#888', marginBottom: 8 }}>
+                    {selectedTagIds.length}/10 선택됨
+                  </div>
 
-              {/* 검색 결과 리스트 */}
-              {placeResults.length > 0 && (
-                <div style={{
-                  border: '1px solid #e5e5e5', borderRadius: 8, marginBottom: 8,
-                  overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                }}>
-                  {placeResults.map((p, i) => (
-                    <div
-                      key={p.id}
-                      onClick={() => handlePlaceSelectFromKakao(p)}
-                      style={{
-                        padding: '10px 14px', cursor: 'pointer',
-                        borderBottom: i < placeResults.length - 1 ? '1px solid #f0f0f0' : 'none',
-                        backgroundColor: 'white', display: 'flex', alignItems: 'center', gap: 10,
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f7f7f8')}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'white')}
-                    >
-                      <MapPin size={14} style={{ color: '#f02c2c', flexShrink: 0 }} />
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{p.place_name}</div>
-                        <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-                          {p.road_address_name || p.address_name}
-                        </div>
-                        {p.category_name && (
-                          <div style={{ fontSize: 11, color: '#bbb', marginTop: 1 }}>
-                            {p.category_name.split(' > ').pop()}
+                  {/* 추천 태그 영역 */}
+                  {suggestLoading && (
+                    <div style={{
+                      marginBottom: 10, padding: '9px 12px',
+                      backgroundColor: '#faf5ff', borderRadius: 8, border: '1px solid #e9d5ff',
+                      fontSize: 12, color: '#9333ea',
+                    }}>
+                      태그 분석 중...
+                    </div>
+                  )}
+                  {!suggestLoading && suggestedTags.length > 0 && (
+                    <div style={{
+                      marginBottom: 10, padding: '10px 12px',
+                      backgroundColor: '#faf5ff', borderRadius: 8, border: '1px solid #e9d5ff',
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', marginBottom: 7 }}>
+                        추천 태그
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                        {suggestedTags.map(t => {
+                          const selected = selectedTagIds.includes(t.id);
+                          const disabled = !selected && selectedTagIds.length >= 10;
+                          return (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => toggleTag(t.id)}
+                              disabled={disabled}
+                              title={t.categoryName}
+                              style={{
+                                padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+                                border: selected ? '1.5px solid #7c3aed' : '1px solid #d8b4fe',
+                                backgroundColor: selected ? '#ede9fe' : 'white',
+                                color: selected ? '#7c3aed' : disabled ? '#ccc' : '#6d28d9',
+                                cursor: disabled ? 'not-allowed' : 'pointer',
+                              }}
+                            >
+                              {t.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {tagCategories.map(({ categoryId, categoryName, tags }) => {
+                    const isOpen = openCategories.includes(categoryName);
+                    const selectedInCategory = tags.filter(t => selectedTagIds.includes(t.id));
+                    return (
+                      <div key={categoryId} style={{ marginBottom: 4, border: '1px solid #e5e5e5', borderRadius: 8, overflow: 'hidden' }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleCategory(categoryName)}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '7px 12px', background: isOpen ? '#f5f5ff' : 'white',
+                            border: 'none', cursor: 'pointer', textAlign: 'left',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#444' }}>{categoryName}</span>
+                            {selectedInCategory.map(t => (
+                              <span key={t.id} style={{
+                                padding: '1px 7px', borderRadius: 20, fontSize: 11,
+                                backgroundColor: '#eef2ff', color: '#6366f1', fontWeight: 600,
+                              }}>{t.name}</span>
+                            ))}
+                          </div>
+                          <span style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }}>{isOpen ? '▲' : '▼'}</span>
+                        </button>
+                        {isOpen && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '8px 12px', borderTop: '1px solid #f0f0f0' }}>
+                            {tags.map(tag => {
+                              const selected = selectedTagIds.includes(tag.id);
+                              const disabled = !selected && selectedTagIds.length >= 10;
+                              return (
+                                <button
+                                  key={tag.id}
+                                  type="button"
+                                  onClick={() => toggleTag(tag.id)}
+                                  disabled={disabled}
+                                  style={{
+                                    padding: '3px 9px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+                                    border: selected ? '1.5px solid #6366f1' : '1px solid #e5e5e5',
+                                    backgroundColor: selected ? '#eef2ff' : 'white',
+                                    color: selected ? '#6366f1' : disabled ? '#ccc' : '#555',
+                                    cursor: disabled ? 'not-allowed' : 'pointer',
+                                  }}
+                                >
+                                  {tag.name}
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              )}
 
-              {/* 카카오 지도 */}
-              <div
-                ref={mapContainerRef}
-                style={{
-                  width: '100%', height: 300, borderRadius: 10,
-                  border: '1px solid #e5e5e5', overflow: 'hidden',
-                  backgroundColor: '#e8e8e8',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                {!kakaoReady && (
-                  <span style={{ color: '#999', fontSize: 13 }}>지도 로딩 중...</span>
-                )}
               </div>
 
-              {/* 선택된 장소 */}
-              {selectedPlace && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 14px', border: '1.5px solid #16a34a', borderRadius: 8,
-                  backgroundColor: '#f0fdf4', marginTop: 8,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <MapPin size={16} style={{ color: '#16a34a', flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
-                        {selectedPlace.name}
+              {/* ── 오른쪽: 장소 ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+                {/* 장소 검색 */}
+                <div>
+                  <label style={labelStyle}>
+                    장소 <span style={{ color: '#aaa', fontWeight: 400 }}>(선택)</span>
+                  </label>
+
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <input
+                      type="text"
+                      value={placeQuery}
+                      onChange={e => setPlaceQuery(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePlaceSearch(); } }}
+                      style={{ ...inputStyle, flex: 1 }}
+                      placeholder={kakaoReady ? '장소명 또는 주소를 검색하세요' : '카카오 지도 준비 중...'}
+                      disabled={!kakaoReady}
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePlaceSearch}
+                      disabled={!kakaoReady}
+                      style={{
+                        padding: '10px 16px', borderRadius: 8, border: 'none',
+                        backgroundColor: kakaoReady ? '#111' : '#ccc',
+                        color: 'white', cursor: kakaoReady ? 'pointer' : 'not-allowed',
+                        display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600, fontSize: 13,
+                      }}
+                    >
+                      <Search size={15} />
+                      검색
+                    </button>
+                  </div>
+
+                  {placeResults.length > 0 && (
+                    <div style={{
+                      border: '1px solid #e5e5e5', borderRadius: 8, marginBottom: 8,
+                      overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    }}>
+                      {placeResults.map((p, i) => (
+                        <div
+                          key={p.id}
+                          onClick={() => handlePlaceSelectFromKakao(p)}
+                          style={{
+                            padding: '10px 14px', cursor: 'pointer',
+                            borderBottom: i < placeResults.length - 1 ? '1px solid #f0f0f0' : 'none',
+                            backgroundColor: 'white', display: 'flex', alignItems: 'center', gap: 10,
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f7f7f8')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'white')}
+                        >
+                          <MapPin size={14} style={{ color: '#f02c2c', flexShrink: 0 }} />
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{p.place_name}</div>
+                            <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+                              {p.road_address_name || p.address_name}
+                            </div>
+                            {p.category_name && (
+                              <div style={{ fontSize: 11, color: '#bbb', marginTop: 1 }}>
+                                {p.category_name.split(' > ').pop()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div
+                    ref={mapContainerRef}
+                    style={{
+                      width: '100%', height: 260, borderRadius: 10,
+                      border: '1px solid #e5e5e5', overflow: 'hidden',
+                      backgroundColor: '#e8e8e8',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    {!kakaoReady && (
+                      <span style={{ color: '#999', fontSize: 13 }}>지도 로딩 중...</span>
+                    )}
+                  </div>
+
+                  {selectedPlace && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 14px', border: '1.5px solid #16a34a', borderRadius: 8,
+                      backgroundColor: '#f0fdf4', marginTop: 8,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <MapPin size={16} style={{ color: '#16a34a', flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>{selectedPlace.name}</div>
+                          <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{selectedPlace.address}</div>
+                          <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>
+                            {selectedPlace.latitude.toFixed(5)}, {selectedPlace.longitude.toFixed(5)}
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>
-                        {selectedPlace.address}
+                      <button
+                        type="button"
+                        onClick={handleClearPlace}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#aaa' }}
+                        title="장소 선택 취소"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+
+                  {nearbyLoading && (
+                    <div style={{ fontSize: 12, color: '#888', marginTop: 10, textAlign: 'center' }}>
+                      MOA 추천 장소 검색 중...
+                    </div>
+                  )}
+                  {!nearbyLoading && nearbyPlaces.length > 0 && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#555', marginBottom: 6 }}>
+                        ✨ MOA 추천 장소
                       </div>
-                      <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>
-                        {selectedPlace.latitude.toFixed(5)}, {selectedPlace.longitude.toFixed(5)}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {nearbyPlaces.map(p => (
+                          <div
+                            key={p.id}
+                            onClick={() => handleSelectMoaPlace(p)}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              padding: '10px 14px', border: '1px solid #e5e5e5', borderRadius: 8,
+                              backgroundColor: 'white', cursor: 'pointer', transition: 'background 0.1s',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f7f7f8')}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'white')}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <MapPin size={14} style={{ color: '#6366f1', flexShrink: 0 }} />
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{p.name}</div>
+                                <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{p.address}</div>
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
+                              <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>
+                                {p.distanceKm != null
+                                  ? (p.distanceKm < 1 ? `${Math.round(p.distanceKm * 1000)}m` : `${p.distanceKm.toFixed(1)}km`)
+                                  : ''}
+                              </div>
+                              <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>
+                                최대 {p.capacity}명 · {p.pricePerHour.toLocaleString()}원/h
+                              </div>
+                              {p.tags.length > 0 && (
+                                <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>
+                                  {p.tags.slice(0, 3).join(' · ')}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </div>
+                  )}
+                </div>
+
+                {error && (
+                  <p style={{ fontSize: 13, color: '#dc2626', padding: '8px 12px', backgroundColor: '#fef2f2', borderRadius: 8, margin: 0 }}>
+                    {error}
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
                   <button
                     type="button"
-                    onClick={handleClearPlace}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#aaa' }}
-                    title="장소 선택 취소"
+                    onClick={() => navigate(-1)}
+                    style={{ ...btnStyle, flex: 1, background: 'white', color: '#666', border: '1px solid #e5e5e5' }}
                   >
-                    <X size={16} />
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    style={{ ...btnStyle, flex: 2, background: '#111', color: 'white', opacity: loading ? 0.6 : 1 }}
+                  >
+                    {loading ? '처리 중...' : isEdit ? '수정하기' : '일정 만들기'}
                   </button>
                 </div>
-              )}
 
-              {/* 근처 MOA 등록 장소 */}
-              {nearbyLoading && (
-                <div style={{ fontSize: 12, color: '#888', marginTop: 10, textAlign: 'center' }}>
-                  근처 MOA 장소 검색 중...
-                </div>
-              )}
-              {!nearbyLoading && nearbyPlaces.length > 0 && (
-                <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#555', marginBottom: 6 }}>
-                    📍 근처 MOA 등록 장소
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {nearbyPlaces.map(p => (
-                      <div
-                        key={p.id}
-                        onClick={() => handleSelectMoaPlace(p)}
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '10px 14px', border: '1px solid #e5e5e5', borderRadius: 8,
-                          backgroundColor: 'white', cursor: 'pointer', transition: 'background 0.1s',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f7f7f8')}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'white')}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <MapPin size={14} style={{ color: '#6366f1', flexShrink: 0 }} />
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{p.name}</div>
-                            <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{p.address}</div>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
-                          <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>
-                            {p.distanceKm < 1 ? `${Math.round(p.distanceKm * 1000)}m` : `${p.distanceKm.toFixed(1)}km`}
-                          </div>
-                          <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>
-                            최대 {p.capacity}명 · {p.pricePerHour.toLocaleString()}원/h
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {error && (
-              <p style={{ fontSize: 13, color: '#dc2626', padding: '8px 12px', backgroundColor: '#fef2f2', borderRadius: 8, margin: 0 }}>
-                {error}
-              </p>
-            )}
-
-            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                style={{ ...btnStyle, flex: 1, background: 'white', color: '#666', border: '1px solid #e5e5e5' }}
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                style={{ ...btnStyle, flex: 2, background: '#111', color: 'white', opacity: loading ? 0.6 : 1 }}
-              >
-                {loading ? '처리 중...' : isEdit ? '수정하기' : '일정 만들기'}
-              </button>
+              </div>
             </div>
           </form>
         </div>

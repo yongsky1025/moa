@@ -1,6 +1,6 @@
 import api from "../../api/axiosInstance";
 
-export const API_SERVER_HOST_ADMIN = "http://localhost:8080/api/admin";
+export const API_SERVER_HOST_ADMIN = "/api/admin";
 
 export const fetchAdminMain = async () => {
   const res = await api.get(`${API_SERVER_HOST_ADMIN}/main`);

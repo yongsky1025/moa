@@ -270,16 +270,15 @@ gradle-app.setting
 
 src/main/resources/application.properties
 
-bin/main/application-oauth2.yml
-src/main/resources/application-oauth2.yml
-backend/src/main/resources/application.yml
-backend/src/main/resources/application-oauth2.yml
-backend/src/test/resources/application.yml
-backend/src/test/resources/application-local.yml
-
 # Claude Code
 .claude/
 
 # Uploaded files
 /uploads/**
 /backend/uploads/**
+
+# Ignore all files under any test directory
+**/test/**
+
+# Local-only seed runner
+backend/src/main/java/com/soldesk/moa/seed/LocalSeedDataRunner.java

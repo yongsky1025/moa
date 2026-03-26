@@ -10,9 +10,10 @@ public record NotificationResponse(
         NotificationType type,
         String message,
         boolean isRead,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Long referenceId
 ) {
     public static NotificationResponse from(Notification n) {
-        return new NotificationResponse(n.getId(), n.getType(), n.getMessage(), n.isRead(), n.getCreatedAt());
+        return new NotificationResponse(n.getId(), n.getType(), n.getMessage(), n.isRead(), n.getCreatedAt(), n.getReferenceId());
     }
 }

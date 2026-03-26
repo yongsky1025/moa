@@ -23,12 +23,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/circles")
+@RequestMapping("/api/circles")
 @RequiredArgsConstructor
 @Validated
 public class CircleController {
 
     private final CircleService circleService;
+    private final com.soldesk.moa.circle.service.CircleLikeService circleLikeService;
 
     // 카테고리 전체 목록 조회
     @GetMapping("/categories")
@@ -42,6 +43,14 @@ public class CircleController {
             @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
         return ResponseEntity.ok(circleService.getMyCircles(authUserDTO.getUserId()));
+    }
+
+    // 내가 좋아요한 서클 목록 조회
+    @GetMapping("/me/liked")
+    public ResponseEntity<List<CircleResponseDTO>> getLikedCircles(
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(circleLikeService.getLikedCircles(authUserDTO.getUserId()));
     }
 
     // 서클 생성 (multipart/form-data, POST는 Tomcat이 multipart 정상 처리)
@@ -74,10 +83,10 @@ public class CircleController {
     // 서클 목록 조회
     @GetMapping
     public ResponseEntity<PageResultDTO<CircleResponseDTO>> getCircles(
-            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(required = false) List<Long> categoryIds,
             @ModelAttribute PageRequestDTO pageRequestDTO) {
         return ResponseEntity.ok(
-                circleService.getCircles(categoryId, pageRequestDTO));
+                circleService.getCircles(categoryIds, pageRequestDTO));
     }
 
     // 서클 삭제

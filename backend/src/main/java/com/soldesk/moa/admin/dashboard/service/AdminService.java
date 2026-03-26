@@ -594,7 +594,7 @@ public class AdminService {
                                                 .parentId(reply.getParentId() != null
                                                                 ? reply.getParentId().getReplyId()
                                                                 : null)
-                                                .depth(reply.getDepth())
+                                                .depth(reply.getParentId() == null ? 0 : 1)
                                                 .deleted(reply.isDeleted())
                                                 .createDate(reply.getCreateDate())
                                                 .build())

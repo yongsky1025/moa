@@ -23,7 +23,9 @@ function serializeParams(params: Record<string, unknown>): string {
   return sp.toString();
 }
 
-export const fetchPlaces = (params: PlaceSearchParams): Promise<PlaceListResponse> =>
+export const fetchPlaces = (
+  params: PlaceSearchParams,
+): Promise<PlaceListResponse> =>
   api
     .get<PlaceListResponse>(`${BASE}/all-place`, {
       params,
@@ -38,6 +40,6 @@ export const fetchPlaceReviews = (id: number): Promise<PlaceReviewDTO[]> =>
   api.get<PlaceReviewDTO[]>(`${BASE}/${id}/reviews`).then((res) => res.data);
 
 export const fetchTagsGrouped = async (): Promise<TagCategoryGroupDTO[]> => {
-  const res = await api.get<TagCategoryGroupDTO[]>(`${BASE}/tags/grouped`);
+  const res = await api.get<TagCategoryGroupDTO[]>(`/api/tags/grouped`);
   return res.data;
 };
