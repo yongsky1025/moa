@@ -1,8 +1,7 @@
 import { MapPin, Users, Star, Heart, Clock } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import type { RootState } from "../../users/reducers/store";
+import { useAuthStore } from "../../store/authStore";
 import type { PlaceCardDTO } from "../types/placeTypes";
 import { togglePlaceLike } from "../api/placeRentalApi";
 
@@ -25,7 +24,7 @@ export default function RentalPlaceCard({
   minReservationMinutes,
 }: Props) {
   const navigate = useNavigate();
-  const { isLoggedIn } = useSelector((s: RootState) => s.auth);
+  const { isLoggedIn } = useAuthStore();
   const [liked, setLiked] = useState(place.liked ?? false);
 
   const locationLabel = [place.city, place.district, place.dong]

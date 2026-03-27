@@ -1,4 +1,4 @@
-import api from "../../users/utils/jwtUtil";
+import api from "../../api/axiosInstance";
 import { requestUploadUrl, uploadByContract } from "../../api/uploadUrlApi";
 import type { MyPlaceReviewDTO, PendingReviewDTO } from "../types/placeTypes";
 
@@ -27,8 +27,7 @@ export const createReview = (
 export const updateReview = (
   reviewId: number,
   data: ReviewUpdateRequest,
-): Promise<void> =>
-  api.put(`${BASE}/${reviewId}`, data).then(() => undefined);
+): Promise<void> => api.put(`${BASE}/${reviewId}`, data).then(() => undefined);
 
 /** 후기 삭제 */
 export const deleteReview = (reviewId: number): Promise<void> =>

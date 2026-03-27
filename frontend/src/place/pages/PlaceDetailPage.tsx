@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useAuthStore } from "../../store/authStore";
 import {
   MapPin, Users, Star, Heart, Clock, CalendarX,
   ChevronLeft, Tag, MessageSquare,
@@ -11,7 +11,6 @@ import PlaceImageGallery from "../components/PlaceImageGallery";
 import PlaceReservationPanel from "../components/PlaceReservationPanel";
 import { fetchPlaceDetail, fetchPlaceReviews, togglePlaceLike } from "../api/placeRentalApi";
 import type { PlaceDetailDTO, PlaceReviewDTO } from "../types/placeTypes";
-import type { RootState } from "../../users/reducers/store";
 
 const DAY_KO: Record<string, string> = {
   MONDAY: "월요일", TUESDAY: "화요일", WEDNESDAY: "수요일",
@@ -93,7 +92,7 @@ function PlaceMiniMap({ lat, lng, name }: { lat: number; lng: number; name: stri
 export default function PlaceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isLoggedIn } = useSelector((s: RootState) => s.auth);
+  const { isLoggedIn } = useAuthStore();
   const [place, setPlace] = useState<PlaceDetailDTO | null>(null);
   const [reviews, setReviews] = useState<PlaceReviewDTO[]>([]);
   const [loading, setLoading] = useState(true);
