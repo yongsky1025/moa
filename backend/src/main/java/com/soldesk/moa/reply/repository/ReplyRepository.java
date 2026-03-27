@@ -2,6 +2,7 @@ package com.soldesk.moa.reply.repository;
 
 import java.util.List;
 
+import com.soldesk.moa.board.entity.constant.BoardType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -84,5 +85,24 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
     @Modifying
     @Query("update Reply r set r.likeCount = r.likeCount - 1 where r.replyId = :replyId and r.likeCount > 0")
     int decrementLikeCount(@Param("replyId") Long replyId);
+
+    @Query("""
+            select r
+            from Reply r
+            join fetch r.postId p
+            join fetch p.boardId b
+            where r.userId.userId = :userId
+              and r.deleted = false
+              and p.deleted = false
+              and b.deleted = false
+              and (
+                   (:boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
+                or (:boardType is not null and b.boardType = :boardType)
+              )
+            order by r.createDate desc, r.replyId desc
+            """)
+    List<Reply> findMyCommunityReplies(
+            @Param("userId") Long userId,
+            @Param("boardType") BoardType boardType);
 
 }

@@ -1,22 +1,32 @@
-export type PostKind = "free" | "notice" | "circle";
+import type { NoticeCategory } from "../constants/noticeCategory";
+
+export type PostKind = "free" | "notice";
 export type PostReactionType = "LIKE";
+export type PostSearchTarget = "ALL" | "TITLE" | "CONTENT";
 
 export interface PostRequest {
   title: string;
   content: string;
+  noticeCategory?: NoticeCategory;
 }
 
 export interface PostResponse {
   boardId: number;
+  boardType?: "FREE" | "NOTICE" | "CIRCLE";
   postId: number;
   title: string;
   content: string;
+  thumbnailImageId?: number | null;
+  thumbnailUrl?: string | null;
   authorName: string;
   authorPublicId: string;
   viewCount: number;
   likeCount: number;
   myReaction: PostReactionType | null;
   replyCount: number;
+  noticeCategory?: NoticeCategory | null;
+  pinned?: boolean;
+  pinnedAt?: string | null;
   createDate: string;
   updateDate: string;
 }
@@ -26,10 +36,34 @@ export interface PostReactionSummary {
   myReaction: PostReactionType | null;
 }
 
+export interface PostBookmarkSummary {
+  bookmarked: boolean;
+}
+
+export interface CommunitySidebarPost {
+  postId: number;
+  boardType: "FREE" | "NOTICE" | "CIRCLE";
+  title: string;
+  viewCount: number;
+  replyCount: number;
+  createDate: string;
+}
+
+export interface CommunityMyReply {
+  replyId: number;
+  content: string;
+  likeCount: number;
+  createDate: string;
+  postId: number;
+  postTitle: string;
+  boardType: "FREE" | "NOTICE" | "CIRCLE";
+}
+
 export interface PostSearchRequest {
   q?: string;
   page?: number;
   size?: number;
+  target?: PostSearchTarget;
   boardType?: "FREE" | "NOTICE" | "CIRCLE";
   circleId?: number;
 }
@@ -63,4 +97,5 @@ export interface SearchPage<T> {
 export interface PostFormValues {
   title: string;
   content: string;
+  noticeCategory?: NoticeCategory;
 }

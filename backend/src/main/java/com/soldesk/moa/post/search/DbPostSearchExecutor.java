@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.common.search.dto.SearchPage;
 import com.soldesk.moa.post.dto.PostSearchHitDTO;
+import com.soldesk.moa.post.dto.PostSearchTarget;
 import com.soldesk.moa.post.entity.PostSearchEntity;
 import com.soldesk.moa.post.repository.PostSearchRepository;
 import com.soldesk.moa.reply.repository.ReplyRepository;
@@ -30,6 +31,7 @@ public class DbPostSearchExecutor implements PostSearchExecutor {
     @Override
     public SearchPage<PostSearchHitDTO> search(
             String keyword,
+            PostSearchTarget target,
             BoardType boardType,
             Long circleId,
             int page,
@@ -37,6 +39,7 @@ public class DbPostSearchExecutor implements PostSearchExecutor {
             String filter) {
         Page<PostSearchEntity> pageResult = postSearchRepository.searchPostsForFallback(
                 keyword,
+                target.name(),
                 boardType,
                 circleId,
                 PageRequest.of(page - 1, size));

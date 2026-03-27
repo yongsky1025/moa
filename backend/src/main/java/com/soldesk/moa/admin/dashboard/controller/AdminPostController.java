@@ -61,7 +61,7 @@ public class AdminPostController {
             @RequestParam Long adminId,
             @RequestBody AdminNoticeRequestDTO dto) {
         log.info("공지사항 작성 adminId={}", adminId);
-        Long postId = adminService.createNotice(adminId, dto.title(), dto.content());
+        Long postId = adminService.createNotice(adminId, dto.title(), dto.content(), dto.noticeCategory());
         return ResponseEntity.ok(postId);
     }
 
@@ -71,7 +71,7 @@ public class AdminPostController {
             @PathVariable Long postId,
             @RequestBody AdminNoticeRequestDTO dto) {
         log.info("공지사항 수정 postId={}", postId);
-        adminService.updateNotice(postId, dto.title(), dto.content());
+        adminService.updateNotice(postId, dto.title(), dto.content(), dto.noticeCategory());
         return ResponseEntity.ok().build();
     }
 

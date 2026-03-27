@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import {
+  useInfiniteQuery,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
 import { replyApi } from "../api/replyApi";
-import type { ReplyResponse } from "../types/replyTypes";
+import type { PageResponse, ReplyResponse } from "../types/replyTypes";
 import { buildReplyTree } from "../utils/replyTree";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 
@@ -12,106 +17,67 @@ interface UseRepliesParams {
 const PAGE_SIZE = 20;
 
 export function useReplies({ postId, enabled = true }: UseRepliesParams) {
-  const [data, setData] = useState<ReplyResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState("");
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
-
-  const fetchPage = useCallback(
-    async (targetPage: number, append: boolean) => {
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
-      setError("");
-      try {
-        const response = await replyApi.getReplies(postId, targetPage, PAGE_SIZE);
-        const pageResponse = response.data;
-        setData((previous) =>
-          append ? [...previous, ...pageResponse.content] : pageResponse.content,
-        );
-        setPage(pageResponse.number);
-        setHasMore(!pageResponse.last);
-        setTotalCount(pageResponse.totalElements);
-      } catch (e) {
-        setError(getErrorMessage(e));
-        if (!append) {
-          setData([]);
-          setHasMore(false);
-          setTotalCount(0);
-        }
-      } finally {
-        if (append) {
-          setLoadingMore(false);
-        } else {
-          setLoading(false);
-        }
-      }
-    },
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(
+    () => ["postReplies", postId, PAGE_SIZE] as const,
     [postId],
   );
+  const query = useInfiniteQuery<PageResponse<ReplyResponse>>({
+    queryKey,
+    enabled: enabled && Number.isFinite(postId),
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const response = await replyApi.getReplies(postId, Number(pageParam), PAGE_SIZE);
+      return response.data;
+    },
+    getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.number + 1),
+  });
+
+  const pages = query.data?.pages ?? [];
+  const data = useMemo(
+    () => pages.flatMap((page) => page.content),
+    [pages],
+  );
+  const lastPage = pages.length > 0 ? pages[pages.length - 1] : null;
+  const hasMore = enabled && !!lastPage && !lastPage.last;
+  const totalCount = enabled && lastPage ? lastPage.totalElements : 0;
+  const loading = enabled ? query.isPending : false;
+  const loadingMore = enabled ? query.isFetchingNextPage : false;
+  const error = query.isError ? getErrorMessage(query.error) : "";
 
   const refetch = useCallback(async () => {
-    await fetchPage(0, false);
-  }, [fetchPage]);
+    await query.refetch();
+  }, [query]);
 
   const refetchAll = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      let targetPage = 0;
-      let merged: ReplyResponse[] = [];
+    await query.refetch();
 
-      while (true) {
-        const response = await replyApi.getReplies(postId, targetPage, PAGE_SIZE);
-        const pageResponse = response.data;
-        merged = [...merged, ...pageResponse.content];
+    let guard = 0;
+    while (guard < 100) {
+      const cached = queryClient.getQueryData<InfiniteData<PageResponse<ReplyResponse>>>(queryKey);
+      const cachedPages = cached?.pages ?? [];
+      const cachedLast = cachedPages.length > 0 ? cachedPages[cachedPages.length - 1] : null;
 
-        if (pageResponse.last) {
-          setData(merged);
-          setPage(pageResponse.number);
-          setHasMore(false);
-          setTotalCount(pageResponse.totalElements);
-          break;
-        }
-        targetPage += 1;
+      if (!cachedLast || cachedLast.last) {
+        break;
       }
-    } catch (e) {
-      setError(getErrorMessage(e));
-      setData([]);
-      setHasMore(false);
-      setTotalCount(0);
-    } finally {
-      setLoading(false);
+
+      await query.fetchNextPage();
+      guard += 1;
     }
-  }, [postId]);
+  }, [query, queryClient, queryKey]);
 
   const loadMore = useCallback(async () => {
-    if (!enabled || loading || loadingMore || !hasMore) {
+    if (!enabled || !hasMore || query.isFetchingNextPage) {
       return;
     }
-    await fetchPage(page + 1, true);
-  }, [enabled, fetchPage, hasMore, loading, loadingMore, page]);
+    await query.fetchNextPage();
+  }, [enabled, hasMore, query]);
 
-  useEffect(() => {
-    if (!enabled) {
-      setData([]);
-      setHasMore(false);
-      setTotalCount(0);
-      setLoading(false);
-      return;
-    }
-    void refetch();
-  }, [enabled, refetch]);
-
-  const tree = useMemo(() => buildReplyTree(data), [data]);
+  const tree = useMemo(() => buildReplyTree(enabled ? data : []), [enabled, data]);
 
   return {
-    data,
+    data: enabled ? data : [],
     tree,
     loading,
     loadingMore,

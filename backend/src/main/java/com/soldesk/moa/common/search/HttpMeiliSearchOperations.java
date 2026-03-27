@@ -129,6 +129,9 @@ public class HttpMeiliSearchOperations implements MeiliSearchOperations {
         if (query.getSort() != null && !query.getSort().isEmpty()) {
             body.put("sort", query.getSort());
         }
+        if (query.getAttributesToSearchOn() != null && !query.getAttributesToSearchOn().isEmpty()) {
+            body.put("attributesToSearchOn", query.getAttributesToSearchOn());
+        }
         if (query.getAttributesToRetrieve() != null && !query.getAttributesToRetrieve().isEmpty()) {
             body.put("attributesToRetrieve", query.getAttributesToRetrieve());
         }

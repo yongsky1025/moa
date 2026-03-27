@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, MessageCircle, LayoutGrid, Users, MessageSquare, Star, HelpCircle, Megaphone, User, Settings, LogOut } from "lucide-react";
+import {
+  Bell,
+  MessageCircle,
+  LayoutGrid,
+  Users,
+  MessageSquare,
+  Star,
+  HelpCircle,
+  Megaphone,
+  User,
+  Settings,
+  LogOut,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
@@ -12,16 +24,13 @@ export default function Navbar() {
   const { isLoggedIn, user, logout, userId: alarmUserId } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
 
-  const dropdownItems: Record<string, { label: string; href: string; icon: React.ReactNode }[]> = {
+  const dropdownItems: Record<
+    string,
+    { label: string; href: string; icon: React.ReactNode }[]
+  > = {
     "모임 찾기": [
       { label: "전체 모임", href: "/circle", icon: <LayoutGrid size={15} /> },
       { label: "내 모임", href: "/circle/my", icon: <Users size={15} /> },
-    ],
-    커뮤니티: [
-      { label: "자유게시판", href: "#", icon: <MessageSquare size={15} /> },
-      { label: "모임 후기", href: "#", icon: <Star size={15} /> },
-      { label: "Q&A", href: "#", icon: <HelpCircle size={15} /> },
-      { label: "공지사항", href: "#", icon: <Megaphone size={15} /> },
     ],
   };
 
@@ -37,7 +46,7 @@ export default function Navbar() {
   const unreadActivityCount = activityNoti.filter((n) => !n.isRead).length;
 
   useAlarmSocket(isLoggedIn ? alarmUserId : null, (noti) => {
-    if (noti.type === 'CHAT_MESSAGE') {
+    if (noti.type === "CHAT_MESSAGE") {
       setUnreadChatCount((c) => c + 1);
     } else {
       setActivityNoti((prev) => [noti, ...prev]);
@@ -46,7 +55,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
+      ) {
         setProfileOpen(false);
       }
     };
@@ -70,7 +82,9 @@ export default function Navbar() {
       notificationApi
         .getAll()
         .then((list) => {
-          setUnreadChatCount(list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length);
+          setUnreadChatCount(
+            list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length,
+          );
           setActivityNoti(list.filter((n) => n.type !== "CHAT_MESSAGE"));
         })
         .catch(() => {});
@@ -82,7 +96,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
-      if (activityNotiRef.current && !activityNotiRef.current.contains(e.target as Node)) {
+      if (
+        activityNotiRef.current &&
+        !activityNotiRef.current.contains(e.target as Node)
+      ) {
         setShowActivityNoti(false);
       }
     };
@@ -93,25 +110,29 @@ export default function Navbar() {
   const handleActivityNotiClick = async (n: Notification) => {
     if (!n.isRead) {
       await notificationApi.readOne(n.id);
-      setActivityNoti((p) => p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
+      setActivityNoti((p) =>
+        p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)),
+      );
     }
     setShowActivityNoti(false);
     navigate("/circle/my");
   };
 
   const ACTIVITY_NOTI_ICONS: Record<string, string> = {
-    JOIN_REQUEST: '📨',
-    JOIN_APPROVED: '✅',
-    JOIN_REJECTED: '❌',
-    KICKED: '🚫',
-    CIRCLE_DISBANDED: '💔',
-    REPLY: '💬',
-    CHILD_REPLY: '↩️',
-    POST_LIKE: '👍',
+    JOIN_REQUEST: "📨",
+    JOIN_APPROVED: "✅",
+    JOIN_REJECTED: "❌",
+    KICKED: "🚫",
+    CIRCLE_DISBANDED: "💔",
+    REPLY: "💬",
+    CHILD_REPLY: "↩️",
+    POST_LIKE: "👍",
   };
 
   const navItems = ["관리자 페이지", "모임", "커뮤니티", "에너지", "플레이스"];
-  const visibleNavItems = navItems.filter((item) => item !== "관리자 페이지" || isAdmin);
+  const visibleNavItems = navItems.filter(
+    (item) => item !== "관리자 페이지" || isAdmin,
+  );
 
   const navLinks: Record<string, string> = {
     모임: "/circle",
@@ -166,7 +187,12 @@ export default function Navbar() {
           >
             <nav style={{ display: "flex", gap: 24 }}>
               {visibleNavItems.map((item) => (
-                <div key={item} style={{ position: "relative" }} onMouseEnter={() => setHoveredItem(item)} onMouseLeave={() => setHoveredItem(null)}>
+                <div
+                  key={item}
+                  style={{ position: "relative" }}
+                  onMouseEnter={() => setHoveredItem(item)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
                   <Link
                     to={navLinks[item] ?? "#"}
                     onClick={(e) => {
@@ -222,10 +248,17 @@ export default function Navbar() {
                             whiteSpace: "nowrap",
                             transition: "background 0.12s",
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f5f5f5")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
                         >
-                          <span style={{ color: "#888", display: "flex" }}>{sub.icon}</span>
+                          <span style={{ color: "#888", display: "flex" }}>
+                            {sub.icon}
+                          </span>
                           {sub.label}
                         </Link>
                       ))}
@@ -240,8 +273,14 @@ export default function Navbar() {
               <div style={{ width: 68 }}>
                 <button
                   onClick={() => {
-                    const current = window.location.pathname + window.location.search;
-                    const noRedirect = ["/users/login", "/users/signup", "/users/onboarding", "/"];
+                    const current =
+                      window.location.pathname + window.location.search;
+                    const noRedirect = [
+                      "/users/login",
+                      "/users/signup",
+                      "/users/onboarding",
+                      "/",
+                    ];
                     if (!noRedirect.some((p) => current.startsWith(p))) {
                       sessionStorage.setItem("postLoginRedirect", current);
                     }
@@ -265,7 +304,10 @@ export default function Navbar() {
             )}
 
             {isLoggedIn && (
-              <div ref={activityNotiRef} style={{ position: "relative", marginRight: 16 }}>
+              <div
+                ref={activityNotiRef}
+                style={{ position: "relative", marginRight: 16 }}
+              >
                 <button
                   onClick={() => setShowActivityNoti((v) => !v)}
                   title="활동 알림"
@@ -341,10 +383,14 @@ export default function Navbar() {
                       </span>
                       <button
                         onClick={async () => {
-                          const ids = activityNoti.filter((n) => !n.isRead).map((n) => n.id);
+                          const ids = activityNoti
+                            .filter((n) => !n.isRead)
+                            .map((n) => n.id);
                           if (ids.length === 0) return;
                           await notificationApi.readAll();
-                          setActivityNoti((p) => p.map((n) => ({ ...n, isRead: true })));
+                          setActivityNoti((p) =>
+                            p.map((n) => ({ ...n, isRead: true })),
+                          );
                         }}
                         style={{
                           background: "none",
@@ -384,10 +430,18 @@ export default function Navbar() {
                               background: n.isRead ? "#fff" : "#EAF4F0",
                               borderBottom: "1px solid #F3F4F6",
                             }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = n.isRead ? "#fff" : "#EAF4F0")}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.background = "#F9FAFB")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.background = n.isRead
+                                ? "#fff"
+                                : "#EAF4F0")
+                            }
                           >
-                            <span style={{ fontSize: 18, flexShrink: 0 }}>{ACTIVITY_NOTI_ICONS[n.type] ?? "🔔"}</span>
+                            <span style={{ fontSize: 18, flexShrink: 0 }}>
+                              {ACTIVITY_NOTI_ICONS[n.type] ?? "🔔"}
+                            </span>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <p
                                 style={{
@@ -520,15 +574,23 @@ export default function Navbar() {
                     }}
                   >
                     {user?.profileImageUrl ? (
-                      <img src={user.profileImageUrl} alt="프로필" style={{ width: 40, height: 40, objectFit: "cover" }} />
+                      <img
+                        src={user.profileImageUrl}
+                        alt="프로필"
+                        style={{ width: 40, height: 40, objectFit: "cover" }}
+                      />
                     ) : (
                       (user?.nickname?.[0]?.toUpperCase() ?? "U")
                     )}
                   </div>
                   <span
                     onClick={() => navigate("/users/profile")}
-                    onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-                    onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.textDecoration = "underline")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.textDecoration = "none")
+                    }
                     style={{
                       fontSize: 15,
                       fontWeight: 400,
@@ -585,10 +647,17 @@ export default function Navbar() {
                             textDecoration: "none",
                             whiteSpace: "nowrap",
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f5f5f5")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
                         >
-                          <span style={{ color: "#888", display: "flex" }}>{item.icon}</span>
+                          <span style={{ color: "#888", display: "flex" }}>
+                            {item.icon}
+                          </span>
                           {item.label}
                         </Link>
                       ))}
@@ -616,8 +685,13 @@ export default function Navbar() {
                           width: "100%",
                           whiteSpace: "nowrap",
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#fff5f5")}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#fff5f5")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
                       >
                         <span style={{ color: "#e53e3e", display: "flex" }}>
                           <LogOut size={15} />
@@ -649,7 +723,12 @@ export default function Navbar() {
           </div>
         </div>
       </header>
-      {isLoggedIn && <FloatingChatWindow open={chatOpen} onClose={() => setChatOpen(false)} />}
+      {isLoggedIn && (
+        <FloatingChatWindow
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
     </>
   );
 }

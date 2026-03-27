@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { createNotice } from "../api/adminPostApi";
 import { useAdminToast } from "../hooks/useAdminToast";
 import AdminToast from "../component/AdminToast";
+import {
+  NOTICE_CATEGORY_OPTIONS,
+  type NoticeCategory,
+} from "../../post/constants/noticeCategory";
 
 export default function AdminNoticeWritePage() {
   const navigate = useNavigate();
@@ -10,6 +14,8 @@ export default function AdminNoticeWritePage() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [noticeCategory, setNoticeCategory] =
+    useState<NoticeCategory>("ANNOUNCEMENT");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -25,7 +31,11 @@ export default function AdminNoticeWritePage() {
     setSubmitting(true);
     try {
       // TODO: 실제 로그인한 관리자 ID로 교체
-      await createNotice(1, { title: title.trim(), content: content.trim() });
+      await createNotice(1, {
+        title: title.trim(),
+        content: content.trim(),
+        noticeCategory,
+      });
       showToast("공지사항이 작성되었습니다.", { navigateTo: "/admin/posts/notices" });
     } catch (e: any) {
       showToast(
@@ -69,6 +79,23 @@ export default function AdminNoticeWritePage() {
         </div>
 
         <div className="flex flex-col gap-5 px-6 py-5">
+          <div>
+            <label className="text-moa-text mb-1.5 block text-sm font-semibold">
+              카테고리
+            </label>
+            <select
+              value={noticeCategory}
+              onChange={(e) => setNoticeCategory(e.target.value as NoticeCategory)}
+              className="border-moa-border focus:border-moa-primary text-moa-text w-full rounded-xl border px-4 py-3 text-sm outline-none transition-colors"
+            >
+              {NOTICE_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="text-moa-text mb-1.5 block text-sm font-semibold">
               제목

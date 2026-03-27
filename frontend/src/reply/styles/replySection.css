@@ -160,81 +160,6 @@
   gap: 18px;
 }
 
-.reply-best-section {
-  margin: 18px 0 16px;
-  padding: 14px;
-  border-radius: 14px;
-  border: 1px solid #f0dca8;
-  background: linear-gradient(180deg, #fffaf0 0%, #fff 100%);
-}
-
-.reply-best-title {
-  margin: 0 0 10px;
-  font-size: 14px;
-  color: #92400e;
-  font-weight: 800;
-}
-
-.reply-best-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
-
-.reply-best-card {
-  border: 1px solid #f3e7c3;
-  background: #fff;
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.reply-best-meta {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.reply-best-content {
-  margin: 8px 0 0;
-  white-space: pre-wrap;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #111827;
-}
-
-.reply-best-footer {
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.reply-best-like {
-  font-size: 13px;
-  color: #92400e;
-  font-weight: 700;
-}
-
-.reply-best-jump {
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 12px;
-  color: #374151;
-  cursor: pointer;
-}
-
-.reply-best-jump:hover {
-  background: #f9fafb;
-}
-
 .reply-card {
   background-color: #fff;
   border: 1px solid #d9dee5;
@@ -292,6 +217,33 @@
   gap: 8px;
 }
 
+.reply-like-btn {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+
+.reply-like-btn.on {
+  color: #dc2626;
+}
+
+.reply-like-btn.pulse {
+  animation: reply-heart-beating 0.5s 1 alternate;
+}
+
+.reply-like-btn:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
 .reply-action-btn {
   border: 1px solid #e5e7eb;
   background: #fff;
@@ -317,6 +269,21 @@
 .reply-action-btn:disabled {
   cursor: default;
   opacity: 0.65;
+}
+
+@keyframes reply-heart-beating {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .reply-more-wrap {

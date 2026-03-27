@@ -4,8 +4,6 @@ import { useAuthStore } from "../../store/authStore";
 import { Users, Clock, MapPin } from "lucide-react";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
-import CircleBoardSideMenu from "../../board/components/CircleBoardSideMenu";
-import CircleBoardPostPreviewSection from "../../board/components/CircleBoardPostPreviewSection";
 import { circleApi } from "../../api/circleApi";
 import { chatApi } from "../../api/chatApi";
 import { useDirectChat } from "../../chat/hooks/useDirectChat";
@@ -74,7 +72,6 @@ export default function CircleDetailPage() {
   );
   const [profileModal, setProfileModal] = useState<CircleMember | null>(null);
   const [kakaoReady, setKakaoReady] = useState(false);
-  const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -901,11 +898,6 @@ export default function CircleDetailPage() {
               )}
             </div>
 
-            <CircleBoardPostPreviewSection
-              circleId={cid}
-              selectedBoardId={selectedBoardId}
-              onSelectedBoardChange={setSelectedBoardId}
-            />
           </div>
 
           {/* 오른쪽: 멤버 사이드바 + 지도 */}
@@ -1116,13 +1108,6 @@ export default function CircleDetailPage() {
                 )}
               </div>
             )}
-            {/* 써클 게시판 */}
-            <CircleBoardSideMenu
-              circleId={cid}
-              showAllItem
-              currentBoardId={selectedBoardId ?? undefined}
-              onBoardSelect={setSelectedBoardId}
-            />
           </div>
         </div>
       </main>

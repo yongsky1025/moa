@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Comparator;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,17 +24,25 @@ import com.soldesk.moa.common.entity.Image;
 import com.soldesk.moa.common.entity.constant.ImageDomain;
 import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.common.repository.ImageRepository;
+import com.soldesk.moa.common.search.util.HangulChosungTextUtils;
 import com.soldesk.moa.common.service.ProfanityFilterService;
 import com.soldesk.moa.post.dto.PostRequestDTO;
+import com.soldesk.moa.post.dto.PostBookmarkSummaryDTO;
+import com.soldesk.moa.post.dto.CommunityMyReplyDTO;
+import com.soldesk.moa.post.dto.PostSearchTarget;
 import com.soldesk.moa.post.dto.PostReactionSummaryDTO;
 import com.soldesk.moa.post.dto.PostResponseDTO;
+import com.soldesk.moa.post.dto.CommunitySidebarPostDTO;
+import com.soldesk.moa.post.entity.PostBookmark;
 import com.soldesk.moa.post.entity.Post;
 import com.soldesk.moa.post.entity.PostReaction;
 import com.soldesk.moa.post.entity.PostViewLog;
+import com.soldesk.moa.post.entity.constant.NoticeCategory;
 import com.soldesk.moa.post.entity.constant.PostReactionType;
 import com.soldesk.moa.post.exception.PostForbiddenException;
 import com.soldesk.moa.post.exception.PostNotFoundException;
 import com.soldesk.moa.post.repository.PostReactionRepository;
+import com.soldesk.moa.post.repository.PostBookmarkRepository;
 import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.post.repository.PostViewLogRepository;
 import com.soldesk.moa.reply.repository.ReplyRepository;
@@ -50,6 +60,7 @@ import lombok.extern.log4j.Log4j2;
 public class PostService {
 
         private static final ImageDomain POST_IMAGE_DOMAIN = ImageDomain.POST;
+        private static final int MAX_PINNED_NOTICE_COUNT = 5;
         private static final Pattern IMG_SRC_PATTERN = Pattern.compile("<img[^>]*\\bsrc\\s*=\\s*['\\\"]([^'\\\"]+)['\\\"][^>]*>",
                         Pattern.CASE_INSENSITIVE);
 
@@ -62,6 +73,7 @@ public class PostService {
         private final PostViewLogRepository postViewLogRepository;
         private final ProfanityFilterService profanityFilterService;
         private final PostReactionRepository postReactionRepository;
+        private final PostBookmarkRepository postBookmarkRepository;
         private final PostSearchService postSearchService;
 
         // ===== Global =====
@@ -75,8 +87,46 @@ public class PostService {
 
         // 글로벌 게시판 리스트(댓글 포함)
         public List<PostResponseDTO> listGlobal(BoardType type) {
-                return postRepository.findGlobalPostsWithReplyCount(type).stream()
+                List<PostResponseDTO> list = postRepository.findGlobalPostsWithReplyCount(type).stream()
                                 .map(this::toPostResponseWithCount)
+                                .toList();
+                if (type == BoardType.NOTICE) {
+                        return sortWithPinnedPriority(list);
+                }
+                return list;
+        }
+
+        public List<PostResponseDTO> listCommunity(BoardType boardType) {
+                if (boardType == BoardType.NOTICE || boardType == BoardType.FREE) {
+                        return listGlobal(boardType);
+                }
+
+                List<PostResponseDTO> merged = new ArrayList<>();
+                merged.addAll(listGlobal(BoardType.NOTICE));
+                merged.addAll(listGlobal(BoardType.FREE));
+                merged = sortWithPinnedPriority(merged);
+                return merged;
+        }
+
+        public List<CommunitySidebarPostDTO> listCommunitySidebar(BoardType boardType, String sort, Integer limit) {
+                int cappedLimit = safeSidebarLimit(limit);
+                String normalizedSort = normalizeSidebarSort(sort);
+                BoardType normalizedBoardType = normalizeSidebarBoardType(boardType);
+
+                List<Object[]> rows = switch (normalizedSort) {
+                        case "views" -> postRepository.findCommunityPostsByViews(
+                                        normalizedBoardType,
+                                        PageRequest.of(0, cappedLimit));
+                        case "replies" -> postRepository.findCommunityPostsByReplies(
+                                        normalizedBoardType,
+                                        PageRequest.of(0, cappedLimit));
+                        default -> postRepository.findCommunityPostsByRecent(
+                                        normalizedBoardType,
+                                        PageRequest.of(0, cappedLimit));
+                };
+
+                return rows.stream()
+                                .map(this::toCommunitySidebarPost)
                                 .toList();
         }
 
@@ -101,6 +151,7 @@ public class PostService {
                                 .title(req.getTitle())
                                 .content(req.getContent())
                                 .userId(user)
+                                .noticeCategory(resolveNoticeCategory(type, req.getNoticeCategory()))
                                 .build();
 
                 Post saved = postRepository.save(post);
@@ -117,6 +168,9 @@ public class PostService {
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
                 post.changeTitle(req.getTitle());
                 post.changeContent(req.getContent());
+                if (type == BoardType.NOTICE) {
+                        post.changeNoticeCategory(resolveNoticeCategory(type, req.getNoticeCategory()));
+                }
                 syncPostImages(post, post.getUserId(), req.getContent());
                 postSearchService.queueUpsertAfterCommit(post.getPostId());
                 return post.getPostId();
@@ -309,6 +363,105 @@ public class PostService {
                 return buildReactionSummary(postId, myReaction);
         }
 
+        @Transactional
+        public PostBookmarkSummaryDTO toggleBookmark(Long postId, Long userId) {
+                Post post = requireActivePost(postId);
+                requireReactionPermission(post, userId);
+                Users user = usersRepository.findById(userId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 사용자를 찾을 수 없습니다."));
+
+                PostBookmark existing = postBookmarkRepository.findByPost_PostIdAndUser_UserId(postId, userId)
+                                .orElse(null);
+
+                boolean bookmarked;
+                if (existing == null) {
+                        postBookmarkRepository.save(PostBookmark.builder()
+                                        .post(post)
+                                        .user(user)
+                                        .build());
+                        bookmarked = true;
+                } else {
+                        postBookmarkRepository.delete(existing);
+                        bookmarked = false;
+                }
+
+                return PostBookmarkSummaryDTO.builder()
+                                .bookmarked(bookmarked)
+                                .build();
+        }
+
+        public PostBookmarkSummaryDTO getBookmarkSummary(Long postId, Long userId) {
+                Post post = requireActivePost(postId);
+                requireReactionPermission(post, userId);
+                boolean bookmarked = postBookmarkRepository.findByPost_PostIdAndUser_UserId(postId, userId)
+                                .isPresent();
+                return PostBookmarkSummaryDTO.builder()
+                                .bookmarked(bookmarked)
+                                .build();
+        }
+
+        public List<PostResponseDTO> listMyBookmarkedCommunity(
+                        Long userId,
+                        BoardType boardType,
+                        String keyword,
+                        PostSearchTarget target) {
+                BoardType normalizedBoardType = normalizeSidebarBoardType(boardType);
+                List<PostResponseDTO> list = postBookmarkRepository.findBookmarkedPostsByUserId(userId, normalizedBoardType)
+                                .stream()
+                                .map(post -> toPostResponse(post, userId))
+                                .toList();
+                return filterPostResponsesByKeyword(sortWithPinnedPriority(list), keyword, target);
+        }
+
+        public List<PostResponseDTO> listMyCommunityPosts(
+                        Long userId,
+                        BoardType boardType,
+                        String keyword,
+                        PostSearchTarget target) {
+                BoardType normalizedBoardType = normalizeSidebarBoardType(boardType);
+                List<PostResponseDTO> list = postRepository.findMyCommunityPosts(userId, normalizedBoardType).stream()
+                                .map(post -> toPostResponse(post, userId))
+                                .toList();
+                return filterPostResponsesByKeyword(sortWithPinnedPriority(list), keyword, target);
+        }
+
+        public List<CommunityMyReplyDTO> listMyCommunityReplies(
+                        Long userId,
+                        BoardType boardType,
+                        String keyword,
+                        PostSearchTarget target) {
+                BoardType normalizedBoardType = normalizeSidebarBoardType(boardType);
+                List<CommunityMyReplyDTO> list = replyRepository.findMyCommunityReplies(userId, normalizedBoardType).stream()
+                                .map(reply -> CommunityMyReplyDTO.builder()
+                                                .replyId(reply.getReplyId())
+                                                .content(reply.getContent())
+                                                .likeCount(reply.getLikeCount())
+                                                .createDate(reply.getCreateDate())
+                                                .postId(reply.getPostId().getPostId())
+                                                .postTitle(reply.getPostId().getTitle())
+                                                .boardType(reply.getPostId().getBoardId().getBoardType())
+                                                .build())
+                                .toList();
+                return filterMyRepliesByKeyword(list, keyword, target);
+        }
+
+        @Transactional
+        public boolean toggleNoticePin(Long postId) {
+                Post post = postRepository.findGlobalPost(BoardType.NOTICE, postId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
+
+                if (!post.isPinned()) {
+                        long pinnedCount = postRepository.countPinnedNoticePosts();
+                        if (pinnedCount >= MAX_PINNED_NOTICE_COUNT) {
+                                throw new InvalidRequestException(
+                                                "[#POST] 공지 상단 고정은 최대 " + MAX_PINNED_NOTICE_COUNT + "개까지 가능합니다.");
+                        }
+                }
+
+                post.changePinned(!post.isPinned());
+                return post.isPinned();
+        }
+
         // ===== helpers =====
         // 작성자 확인
         private boolean isOwner(Post post, Long userId) {
@@ -451,16 +604,22 @@ public class PostService {
 
                 return PostResponseDTO.builder()
                                 .boardId(p.getBoardId().getBoardId())
+                                .boardType(p.getBoardId().getBoardType())
                                 .postId(p.getPostId())
                                 .title(p.getTitle())
                                 .content(p.getContent())
                                 .imagePaths(extractPostImagePaths(p.getContent()))
+                                .thumbnailImageId(p.getImage() != null ? p.getImage().getImageId() : null)
+                                .thumbnailUrl(p.getImage() != null ? p.getImage().getPath() : null)
                                 .authorName(p.getUserId().getName()) // Users PK명 맞춰 수정
                                 .authorPublicId(p.getUserId().getPublicId())
                                 .viewCount(p.getViewCount())
                                 .likeCount(p.getLikeCount())
                                 .myReaction(myReaction)
                                 .replyCount(replyCount)
+                                .noticeCategory(resolveNoticeCategory(p))
+                                .pinned(p.isPinned())
+                                .pinnedAt(p.getPinnedAt())
                                 .createDate(p.getCreateDate())
                                 .updateDate(p.getUpdateDate())
                                 .build();
@@ -472,18 +631,38 @@ public class PostService {
 
                 return PostResponseDTO.builder()
                                 .boardId(p.getBoardId().getBoardId())
+                                .boardType(p.getBoardId().getBoardType())
                                 .postId(p.getPostId())
                                 .title(p.getTitle())
                                 .content(p.getContent())
                                 .imagePaths(extractPostImagePaths(p.getContent()))
+                                .thumbnailImageId(p.getImage() != null ? p.getImage().getImageId() : null)
+                                .thumbnailUrl(p.getImage() != null ? p.getImage().getPath() : null)
                                 .authorName(p.getUserId().getName())
                                 .authorPublicId(p.getUserId().getPublicId())
                                 .viewCount(p.getViewCount())
                                 .likeCount(p.getLikeCount())
+                                .noticeCategory(resolveNoticeCategory(p))
+                                .pinned(p.isPinned())
+                                .pinnedAt(p.getPinnedAt())
                                 .createDate(p.getCreateDate())
                                 .updateDate(p.getUpdateDate())
                                 .replyCount(replyCount)
                                 .build();
+        }
+
+        private NoticeCategory resolveNoticeCategory(BoardType boardType, NoticeCategory noticeCategory) {
+                if (boardType != BoardType.NOTICE) {
+                        return null;
+                }
+                return noticeCategory != null ? noticeCategory : NoticeCategory.ANNOUNCEMENT;
+        }
+
+        private NoticeCategory resolveNoticeCategory(Post post) {
+                if (post.getBoardId().getBoardType() != BoardType.NOTICE) {
+                        return null;
+                }
+                return post.getNoticeCategory() != null ? post.getNoticeCategory() : NoticeCategory.ANNOUNCEMENT;
         }
 
         private Post requireActivePost(Long postId) {
@@ -529,6 +708,121 @@ public class PostService {
                                                 ImageStatus.USED)
                                 .orElse(null);
                 post.changeImage(primary);
+        }
+
+        private CommunitySidebarPostDTO toCommunitySidebarPost(Object[] row) {
+                Post post = (Post) row[0];
+                long replyCount = ((Number) row[1]).longValue();
+                return CommunitySidebarPostDTO.builder()
+                                .postId(post.getPostId())
+                                .boardType(post.getBoardId().getBoardType())
+                                .title(post.getTitle())
+                                .viewCount(post.getViewCount())
+                                .replyCount(replyCount)
+                                .createDate(post.getCreateDate())
+                                .build();
+        }
+
+        private int safeSidebarLimit(Integer limit) {
+                if (limit == null || limit < 1) {
+                        return 12;
+                }
+                return Math.min(limit, 50);
+        }
+
+        private String normalizeSidebarSort(String sort) {
+                if (sort == null || sort.isBlank()) {
+                        return "recent";
+                }
+                String normalized = sort.trim().toLowerCase();
+                if ("views".equals(normalized) || "replies".equals(normalized) || "recent".equals(normalized)) {
+                        return normalized;
+                }
+                return "recent";
+        }
+
+        private BoardType normalizeSidebarBoardType(BoardType boardType) {
+                if (boardType == BoardType.FREE || boardType == BoardType.NOTICE) {
+                        return boardType;
+                }
+                return null;
+        }
+
+        private List<PostResponseDTO> sortWithPinnedPriority(List<PostResponseDTO> source) {
+                return source.stream()
+                                .sorted(Comparator
+                                                .comparing(PostResponseDTO::isPinned).reversed()
+                                                .thenComparing(PostResponseDTO::getPinnedAt,
+                                                                Comparator.nullsLast(Comparator.reverseOrder()))
+                                                .thenComparing(PostResponseDTO::getCreateDate,
+                                                                Comparator.nullsLast(Comparator.reverseOrder())))
+                                .toList();
+        }
+
+        private List<PostResponseDTO> filterPostResponsesByKeyword(
+                        List<PostResponseDTO> source,
+                        String keyword,
+                        PostSearchTarget target) {
+                String normalized = normalizeKeyword(keyword);
+                if (normalized.isEmpty()) {
+                        return source;
+                }
+                PostSearchTarget safeTarget = target == null ? PostSearchTarget.ALL : target;
+                return source.stream()
+                                .filter(post -> matchesPostKeyword(post, normalized, safeTarget))
+                                .toList();
+        }
+
+        private List<CommunityMyReplyDTO> filterMyRepliesByKeyword(
+                        List<CommunityMyReplyDTO> source,
+                        String keyword,
+                        PostSearchTarget target) {
+                String normalized = normalizeKeyword(keyword);
+                if (normalized.isEmpty()) {
+                        return source;
+                }
+                PostSearchTarget safeTarget = target == null ? PostSearchTarget.ALL : target;
+                return source.stream()
+                                .filter(reply -> matchesReplyKeyword(reply, normalized, safeTarget))
+                                .toList();
+        }
+
+        private boolean matchesPostKeyword(PostResponseDTO post, String keyword, PostSearchTarget target) {
+                String title = safeLower(post.getTitle());
+                String content = safeLower(post.getContent());
+                return switch (target) {
+                        case TITLE -> containsWithChoseong(title, keyword);
+                        case CONTENT -> containsWithChoseong(content, keyword);
+                        case ALL -> containsWithChoseong(title, keyword) || containsWithChoseong(content, keyword);
+                };
+        }
+
+        private boolean matchesReplyKeyword(CommunityMyReplyDTO reply, String keyword, PostSearchTarget target) {
+                String title = safeLower(reply.getPostTitle());
+                String content = safeLower(reply.getContent());
+                return switch (target) {
+                        case TITLE -> containsWithChoseong(title, keyword);
+                        case CONTENT -> containsWithChoseong(content, keyword);
+                        case ALL -> containsWithChoseong(title, keyword) || containsWithChoseong(content, keyword);
+                };
+        }
+
+        private String normalizeKeyword(String keyword) {
+                if (keyword == null) {
+                        return "";
+                }
+                return keyword.trim().toLowerCase();
+        }
+
+        private String safeLower(String value) {
+                return value == null ? "" : value.toLowerCase();
+        }
+
+        private boolean containsWithChoseong(String source, String keyword) {
+                if (source.contains(keyword)) {
+                        return true;
+                }
+                return HangulChosungTextUtils.includesByCho(source, keyword);
         }
 
 }

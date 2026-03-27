@@ -17,6 +17,7 @@ import com.soldesk.moa.common.search.dto.SearchPage;
 import com.soldesk.moa.post.dto.PostSearchDocument;
 import com.soldesk.moa.post.dto.PostSearchHitDTO;
 import com.soldesk.moa.post.dto.PostSearchRequestDTO;
+import com.soldesk.moa.post.dto.PostSearchTarget;
 import com.soldesk.moa.post.entity.Post;
 import com.soldesk.moa.post.entity.PostSearchEntity;
 import com.soldesk.moa.post.repository.PostRepository;
@@ -36,6 +37,7 @@ import lombok.extern.log4j.Log4j2;
 public class PostSearchService {
 
     private static final String INDEX_UID = "posts";
+    private static final int BLOCKED_SINGLE_KEYWORD_LENGTH = 1;
 
     private final PostDomainSearchSupport postDomainSearchSupport;
     private final PostRepository postRepository;
@@ -49,31 +51,44 @@ public class PostSearchService {
         if (postId == null) {
             return;
         }
-        runAfterCommit(() -> {
-            Optional<PostSearchEntity> savedSearchEntity = upsertSearchTable(postId);
-            if (postDomainSearchSupport.enabled()) {
-                safeRun(() -> upsert(postId, savedSearchEntity), "upsert", postId);
-            }
-        });
+
+        // DB fallback 검색의 일관성을 위해 post_search는 즉시 동기화한다.
+        Optional<PostSearchEntity> savedSearchEntity = upsertSearchTable(postId);
+
+        if (!postDomainSearchSupport.enabled()) {
+            return;
+        }
+
+        // Meilisearch는 커밋 이후 동기화한다.
+        runAfterCommit(() -> safeRun(() -> upsert(postId, savedSearchEntity), "upsert", postId));
     }
 
     public void queueDeleteAfterCommit(Long postId) {
         if (postId == null) {
             return;
         }
-        runAfterCommit(() -> {
-            deleteSearchTable(postId);
-            if (postDomainSearchSupport.enabled()) {
-                safeRun(() -> postDomainSearchSupport.deleteByPostId(postId), "delete", postId);
-            }
-        });
+
+        // DB fallback 검색의 일관성을 위해 post_search는 즉시 동기화한다.
+        deleteSearchTable(postId);
+
+        if (!postDomainSearchSupport.enabled()) {
+            return;
+        }
+
+        // Meilisearch는 커밋 이후 동기화한다.
+        runAfterCommit(() -> safeRun(() -> postDomainSearchSupport.deleteByPostId(postId), "delete", postId));
     }
 
     public long reindexAll(Integer requestedBatchSize) {
         int batchSize = safeBatchSize(requestedBatchSize);
         boolean meiliEnabled = postDomainSearchSupport.enabled();
         if (meiliEnabled) {
-            ensureIndexConfigured();
+            try {
+                ensureIndexConfigured();
+            } catch (RestClientException | IllegalStateException e) {
+                log.warn("[#SEARCH] Meilisearch 인덱스 초기화 실패, DB 검색 인덱싱만 진행합니다. message={}", e.getMessage());
+                meiliEnabled = false;
+            }
         }
 
         long indexedCount = 0L;
@@ -92,10 +107,15 @@ public class PostSearchService {
             indexedCount += searchEntities.size();
 
             if (meiliEnabled) {
-                List<PostSearchDocument> documents = searchEntities.stream()
-                        .map(this::toDocument)
-                        .toList();
-                postDomainSearchSupport.upsertDocuments(documents);
+                try {
+                    List<PostSearchDocument> documents = searchEntities.stream()
+                            .map(this::toDocument)
+                            .toList();
+                    postDomainSearchSupport.upsertDocuments(documents);
+                } catch (RestClientException | IllegalStateException e) {
+                    log.warn("[#SEARCH] Meilisearch 배치 동기화 실패, 남은 배치는 DB 검색 인덱싱만 진행합니다. message={}", e.getMessage());
+                    meiliEnabled = false;
+                }
             }
 
             if (!slice.hasNext()) {
@@ -116,23 +136,25 @@ public class PostSearchService {
 
     public SearchPage<PostSearchHitDTO> search(PostSearchRequestDTO request, Long userId) {
         String keyword = defaultString(request.getQ()).trim();
+        validateKeyword(keyword);
         String normalizedKeyword = normalizeKeyword(keyword);
         int page = safePage(request.getPage());
         int size = safeSize(request.getSize());
+        PostSearchTarget target = request.getTarget() == null ? PostSearchTarget.ALL : request.getTarget();
         BoardType boardType = request.getBoardType();
         Long circleId = request.getCircleId();
         String filter = buildFilter(boardType, circleId, userId);
 
         PostSearchEngineType primaryEngine = resolvePrimaryEngine();
         if (primaryEngine == PostSearchEngineType.DB) {
-            return dbPostSearchExecutor.search(normalizedKeyword, boardType, circleId, page, size, filter);
+            return dbPostSearchExecutor.search(normalizedKeyword, target, boardType, circleId, page, size, filter);
         }
 
         try {
-            return meiliPostSearchExecutor.search(normalizedKeyword, boardType, circleId, page, size, filter);
+            return meiliPostSearchExecutor.search(normalizedKeyword, target, boardType, circleId, page, size, filter);
         } catch (RestClientException | IllegalStateException e) {
             log.warn("[#SEARCH] Meilisearch 실패로 DB fallback 검색을 수행합니다. index={}, message={}", INDEX_UID, e.getMessage());
-            return dbPostSearchExecutor.search(normalizedKeyword, boardType, circleId, page, size, filter);
+            return dbPostSearchExecutor.search(normalizedKeyword, target, boardType, circleId, page, size, filter);
         }
     }
 
@@ -225,6 +247,12 @@ public class PostSearchService {
 
     private String defaultString(String value) {
         return value == null ? "" : value;
+    }
+
+    private void validateKeyword(String keyword) {
+        if (keyword.length() == BLOCKED_SINGLE_KEYWORD_LENGTH) {
+            throw new InvalidRequestException("[#POST] 검색어는 2자 이상 입력해주세요.");
+        }
     }
 
     private String normalizeKeyword(String keyword) {

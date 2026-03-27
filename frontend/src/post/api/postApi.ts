@@ -1,15 +1,19 @@
 import api from "../../api/axiosInstance";
 import type {
+  CommunitySidebarPost,
+  CommunityMyReply,
+  PostBookmarkSummary,
   PostReactionSummary,
   PostRequest,
   PostResponse,
   PostSearchHit,
+  PostSearchTarget,
   PostSearchRequest,
   SearchPage,
 } from "../types/postTypes";
 
 // 게시글(Post) 도메인의 백엔드 호출 모음
-// - 자유/공지/써클 게시글 CRUD API를 담당
+// - 자유/공지 게시글 CRUD API를 담당
 export const postApi = {
   // 자유게시판 게시글
   getFreePosts: () => api.get<PostResponse[]>("/api/free"),
@@ -24,23 +28,47 @@ export const postApi = {
   createNoticePost: (data: PostRequest) => api.post<number>("/api/notice", data),
   updateNoticePost: (postId: number, data: PostRequest) => api.put<number>(`/api/notice/${postId}`, data),
   deleteNoticePost: (postId: number) => api.delete<void>(`/api/notice/${postId}`),
+  toggleNoticePin: (postId: number) => api.post<boolean>(`/api/notice/${postId}/pin`),
 
-  // 써클 게시판 게시글
-  getCircleAllPosts: (circleId: number) => api.get<PostResponse[]>(`/api/circle/${circleId}/posts`),
-  getCircleBoardPosts: (circleId: number, boardId: number) =>
-    api.get<PostResponse[]>(`/api/circle/${circleId}/boards/${boardId}/posts`),
-  getCirclePost: (circleId: number, boardId: number, postId: number) =>
-    api.get<PostResponse>(`/api/circle/${circleId}/boards/${boardId}/posts/${postId}`),
-  createCirclePost: (circleId: number, boardId: number, data: PostRequest) =>
-    api.post<number>(`/api/circle/${circleId}/boards/${boardId}/posts`, data),
-  updateCirclePost: (circleId: number, boardId: number, postId: number, data: PostRequest) =>
-    api.put<number>(`/api/circle/${circleId}/boards/${boardId}/posts/${postId}`, data),
-  deleteCirclePost: (circleId: number, boardId: number, postId: number) =>
-    api.delete<void>(`/api/circle/${circleId}/boards/${boardId}/posts/${postId}`),
+  getCommunityPosts: (board: "all" | "notice" | "free" = "all") =>
+    api.get<PostResponse[]>("/api/posts/community", { params: { board } }),
+
+  getMyCommunityBookmarkedPosts: (params?: {
+    board?: "all" | "notice" | "free";
+    q?: string;
+    target?: PostSearchTarget;
+  }) =>
+    api.get<PostResponse[]>("/api/posts/community/bookmarks", { params }),
+
+  getMyCommunityPosts: (params?: {
+    board?: "all" | "notice" | "free";
+    q?: string;
+    target?: PostSearchTarget;
+  }) =>
+    api.get<PostResponse[]>("/api/posts/community/my-posts", { params }),
+
+  getMyCommunityRepliedPosts: (params?: {
+    board?: "all" | "notice" | "free";
+    q?: string;
+    target?: PostSearchTarget;
+  }) =>
+    api.get<CommunityMyReply[]>("/api/posts/community/my-replies", { params }),
+
+  getCommunitySidebarPosts: (params?: {
+    board?: "all" | "notice" | "free";
+    sort?: "recent" | "views" | "replies";
+    limit?: number;
+  }) => api.get<CommunitySidebarPost[]>("/api/posts/community/sidebar", { params }),
 
   searchPosts: (params: PostSearchRequest) =>
     api.get<SearchPage<PostSearchHit>>("/api/posts/search", { params }),
 
   reactToPost: (postId: number) =>
     api.post<PostReactionSummary>(`/api/posts/${postId}/reactions/like`),
+
+  getMyPostBookmark: (postId: number) =>
+    api.get<PostBookmarkSummary>(`/api/posts/${postId}/bookmarks`),
+
+  togglePostBookmark: (postId: number) =>
+    api.post<PostBookmarkSummary>(`/api/posts/${postId}/bookmarks`),
 };
