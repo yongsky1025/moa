@@ -45,11 +45,15 @@ public class AccountService {
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
 
-        if (user.getPassword() == null) {
-            throw new InvalidRequestException("소셜 로그인 계정은 현재 비밀번호 기반 탈퇴를 지원하지 않습니다.");
-        }
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new InvalidCredentialsException("비밀번호가 일치하지 않습니다.");
+        if (user.getPassword() != null) {
+            if (password == null || password.isBlank()) {
+                throw new InvalidCredentialsException("비밀번호를 입력해주세요.");
+            }
+
+            if (!passwordEncoder.matches(password, user.getPassword())) {
+                throw new InvalidCredentialsException("비밀번호가 일치하지 않습니다.");
+            }
+
         }
 
         user.withdraw();

@@ -12,19 +12,19 @@ import SignUpStepper from "../components/SignUpStepper";
 const questions = [
   {
     key: "socialLoad" as const,
-    title: "사회적 에너지",
+    title: "사교 범위",
     question: "모임에서 사람들과 대화하는 건 어떤가요?",
     options: ["거의 없는 게 편해요", "필요할 때만 간단히", "자연스럽게 적당히", "활발하게 자주", "대화가 많을수록 좋아요"],
   },
   {
     key: "interactionMode" as const,
-    title: "활동 방식",
+    title: "움직임",
     question: "모임에서 활동은 어떻게 하고 싶나요?",
     options: ["혼자 하는 활동이 좋아요", "개인 활동 위주, 가끔 공유", "개인과 그룹 반반", "그룹 활동 위주, 가끔 개인", "항상 함께하는 활동이 좋아요"],
   },
   {
     key: "structureLevel" as const,
-    title: "진행 방식",
+    title: "구조감",
     question: "모임의 진행 방식은 어떤 게 좋나요?",
     options: [
       "완전 자유로운 게 좋아요",
@@ -36,7 +36,7 @@ const questions = [
   },
   {
     key: "activityIntensity" as const,
-    title: "활동 강도",
+    title: "몰입도",
     question: "어느 정도 에너지를 쓰는 모임이 좋나요?",
     options: [
       "매우 가볍게 (휴식처럼)",

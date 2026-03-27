@@ -6,6 +6,7 @@ import SocialSignUpPage from "../users/pages/SocialSignUpPage";
 import EnergyResultPage from "../users/pages/EnergyResultPage";
 import EnergyTestPage from "../users/pages/EnergyTestPage";
 import UserProfilePage from "../users/pages/UserProfilePage";
+import AccountPage from "../users/pages/AccountPage";
 import AccountStatusPage from "../users/pages/AccountStatusPage";
 import MySchedulesPage from "../schedule/pages/MySchedulesPage";
 
@@ -18,6 +19,7 @@ export const userRouter = () => [
   { path: "energy-test", Component: EnergyTestPage },
   { path: "energy-test/result", Component: EnergyResultPage },
   { path: "profile", Component: UserProfilePage },
+  { path: "account", Component: AccountPage },
   { path: "account-status", Component: AccountStatusPage },
   { path: "my-schedules", Component: MySchedulesPage },
 ];
