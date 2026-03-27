@@ -32,3 +32,8 @@ meilisearch:
   host: ${MEILISEARCH_HOST}
   master-api-key: ${MEILISEARCH_MASTER_API_KEY:${MEILI_MASTER_KEY:}}
   search-api-key: ${MEILISEARCH_SEARCH_API_KEY}
+
+toss:
+  payments:
+    client-key: ${TOSS_CLIENT_KEY}
+    secret-key: ${TOSS_SECRET_KEY}

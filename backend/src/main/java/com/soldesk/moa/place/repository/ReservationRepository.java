@@ -56,4 +56,26 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             ORDER BY r.endTime DESC
             """)
     List<Reservation> findPendingScheduleReviews(@Param("userId") Long userId, @Param("cutoff") LocalDateTime cutoff);
+
+    // =-=-=-=-=-=-=-===-= 결제 관련 쿼리 =-=-=-=-=-=-=-=-=-=-=-=
+    // 시간대 중복 검증
+    @Query("""
+            SELECT COUNT(r) > 0 FROM Reservation r
+            WHERE r.place.id = :placeId
+            AND r.reservationStatus IN ('HOLDING', 'RESERVED')
+            AND r.startTime < :endTime
+            AND r.endTime > :startTime
+            """)
+    boolean existsOverlapping(
+            @Param("placeId") Long placeId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
+
+    // HOLDING 만료 스케줄러용
+    @Query("""
+            SELECT r FROM Reservation r
+            WHERE r.reservationStatus = 'HOLDING'
+            AND r.holdExpiredAt < :now
+            """)
+    List<Reservation> findExpiredHoldings(@Param("now") LocalDateTime now);
 }
