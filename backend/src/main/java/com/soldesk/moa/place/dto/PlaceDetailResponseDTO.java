@@ -27,5 +27,6 @@ public record PlaceDetailResponseDTO(
         List<TagResponseDTO> tags,
         List<PlaceClosedDayDTO> closedDays,
         List<String> images,
-        long likeCount) {
+        long likeCount,
+        boolean liked) {
 }

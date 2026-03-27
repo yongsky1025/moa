@@ -91,11 +91,33 @@ export interface DashboardChartDTO {
   withdrawnChart: MonthlyCountDTO[];
 }
 
+export interface PopularPlaceDTO {
+  placeId: number;
+  name: string;
+  city: string;
+  score: number;
+  averageRating: number;
+  recentReservationCount: number;
+  recentLikeCount: number;
+}
+
+export interface ReservationCountDTO {
+  todayCount: number;
+  yesterdayCount: number;
+  todayChangeRate: number;
+  weekCount: number;
+  lastWeekCount: number;
+  weekChangeRate: number;
+}
+
 export interface AdminMainDTO {
   userCountDTO: UserCountDTO;
   userStatusDTO: UserStatusDTO;
   circleSummaryDTO: CircleSummaryDTO;
   dashboardChartDTO: DashboardChartDTO;
+  popularPlaceDTOs: PopularPlaceDTO[];
+  reservationCountDTO: ReservationCountDTO;
+  placeUtilizationRateDTO: number;
 }
 
 export interface DailyCountDTO {
@@ -109,6 +131,8 @@ export interface PostActivitySummaryDTO {
   weeklyPosts: DailyCountDTO[];
   weeklyReplies: DailyCountDTO[];
 }
+
+// export interface
 
 // ================= 유저관리 ==============
 export interface AdminUserSearchDTO extends PageRequestDTO {
@@ -413,6 +437,38 @@ export interface AgeCategoryRetentionStatsDTO {
   totalMembers: number;
   retainedMembers: number;
   rate: number; // 0.0 ~ 100.0
+}
+
+export interface CategoryUsageDTO {
+  categoryName: string;
+  count: number;
+  percentage: number;
+}
+
+export interface CityDistDTO {
+  city: string;
+  count: number;
+  percentage: number;
+}
+
+export interface PlaceConversionRateDTO {
+  rate: number;
+  linkedSchedules: number;
+  totalSchedules: number;
+}
+
+export interface AdminPlaceStatisticDTO {
+  categoryUsageDTOs: CategoryUsageDTO[];
+  cityDistDTOs: CityDistDTO[];
+  placeConversionRateDTO: PlaceConversionRateDTO;
+}
+
+export interface DistrictDistDTO {
+  city: string;
+  district: string;
+  count: number;
+  percentage: number;
+  monthOverMonthChange: number;
 }
 
 // ===== 제재 관리 =====

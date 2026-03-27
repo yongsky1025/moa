@@ -19,9 +19,12 @@ import com.querydsl.core.Tuple;
 import com.soldesk.moa.admin.dashboard.dto.statistic.ActivityHeatmapDTO;
 import com.soldesk.moa.admin.dashboard.dto.statistic.AgeCategoryRetentionDTO;
 import com.soldesk.moa.admin.dashboard.dto.statistic.AgeGroupDTO;
+import com.soldesk.moa.admin.dashboard.dto.statistic.AdminPlaceStatisticDTO;
 import com.soldesk.moa.admin.dashboard.dto.statistic.CircleSurvivalDTO;
+import com.soldesk.moa.admin.dashboard.dto.statistic.DistrictDistDTO;
 import com.soldesk.moa.admin.dashboard.repository.AdminCircleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
+import com.soldesk.moa.place.repository.PlaceRepository;
 import com.soldesk.moa.users.entity.constant.UserGender;
 
 import lombok.RequiredArgsConstructor;
@@ -36,6 +39,7 @@ public class AdminStatisticsService {
     private final AdminPostRepository adminPostRepository;
     private final AdminUsersRepository adminUsersRepository;
     private final AdminCircleRepository adminCircleRepository;
+    private final PlaceRepository placeRepository;
 
     // 연령대별 유저 수
     @Transactional(readOnly = true)
@@ -203,4 +207,25 @@ public class AdminStatisticsService {
                     .build();
         }).toList();
     }
+
+    // ──────────────────────────────────────────────
+    // 장소 통계 리포트
+    // ──────────────────────────────────────────────
+
+    /** 장소 통계 리포트 전체 (연계율 + 지역분포 + 카테고리별 사용률) */
+    @Transactional(readOnly = true)
+    public AdminPlaceStatisticDTO getAdminPlaceStatistic() {
+        return AdminPlaceStatisticDTO.builder()
+                .placeConversionRateDTO(placeRepository.calculateConversionRate())
+                .cityDistDTOs(placeRepository.getCityDistribution())
+                .categoryUsageDTOs(placeRepository.getCategoryUsageStats())
+                .build();
+    }
+
+    /** 구/군 드릴다운 (시/도 클릭 시 호출) */
+    @Transactional(readOnly = true)
+    public List<DistrictDistDTO> getDistrictDistribution(String city) {
+        return placeRepository.getDistrictDistribution(city);
+    }
+
 }

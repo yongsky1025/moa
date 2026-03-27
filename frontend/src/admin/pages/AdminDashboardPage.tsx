@@ -1,7 +1,3 @@
-// pages/AdminDashboardPage.tsx
-// ★ 변경: 인라인 사이드바 코드 전부 제거 → AdminLayout이 처리
-// 대시보드 콘텐츠만 남김
-
 import "../styles/dashboard.css";
 import KpiCards from "../component/mainboard/KpiCards";
 import GenderDonutCard from "../component/mainboard/GenderDonutCard";
@@ -9,6 +5,9 @@ import MonthlyTrendCard from "../component/mainboard/MonthlyTrendCard";
 import CircleStatusCard from "../component/mainboard/CircleStatusCard";
 import PostActivityCard from "../component/mainboard/PostActivityCard";
 import QuickActionsCard from "../component/mainboard/QuickActionsCard";
+import PopularPlacesCard from "../component/mainboard/PopularPlacesCard";
+import PlaceUtilizationCard from "../component/mainboard/PlaceUtilizationCard";
+import PlaceReservationCard from "../component/mainboard/PlaceReservationCard";
 import { useAdminPostActivity } from "../hooks/useAdminPostActivity";
 import { useAdminMain } from "../hooks/useAdminMain";
 
@@ -82,7 +81,23 @@ export default function AdminDashboardPage() {
         <PostActivityCard data={postData} loading={postLoading} />
       </div>
 
-      {/* Row 4: 빠른 작업 */}
+      {/* Row 4: 장소이용률 | 인기장소 TOP5 | 예약현황 */}
+      <div className="mb-4 grid grid-cols-[1fr_2fr_1fr] gap-3.5">
+        <PlaceUtilizationCard
+          rate={mainData?.placeUtilizationRateDTO ?? null}
+          loading={mainLoading}
+        />
+        <PopularPlacesCard
+          data={mainData?.popularPlaceDTOs ?? []}
+          loading={mainLoading}
+        />
+        <PlaceReservationCard
+          data={mainData?.reservationCountDTO ?? null}
+          loading={mainLoading}
+        />
+      </div>
+
+      {/* Row 5: 빠른 작업 */}
       <QuickActionsCard />
     </div>
   );

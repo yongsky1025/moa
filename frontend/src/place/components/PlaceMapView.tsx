@@ -13,6 +13,7 @@ export default function PlaceMapView({ places }: Props) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const overlayBtnRef = useRef<Map<number, { btn: HTMLButtonElement; arrow: HTMLDivElement }>>(new Map());
   const placesRef = useRef<PlaceCardDTO[]>(places); // 최신 places를 클로저 없이 참조
   const [kakaoReady, setKakaoReady] = useState(false);
   const [selected, setSelected] = useState<PlaceCardDTO | null>(null);
@@ -55,6 +56,17 @@ export default function PlaceMapView({ places }: Props) {
     });
   }, [kakaoReady]);
 
+  // selected 변경 시 말풍선 색상 업데이트
+  useEffect(() => {
+    overlayBtnRef.current.forEach(({ btn, arrow }, placeId) => {
+      const isSelected = selected?.id === placeId;
+      btn.style.background = isSelected ? "#ffffff" : "#5F8F7B";
+      btn.style.color = isSelected ? "#5F8F7B" : "#ffffff";
+      btn.style.border = isSelected ? "1.5px solid #5F8F7B" : "none";
+      arrow.style.background = isSelected ? "#ffffff" : "#5F8F7B";
+    });
+  }, [selected]);
+
   // places가 바뀔 때 마커만 재렌더링
   useEffect(() => {
     if (!kakaoReady || !mapRef.current) return;
@@ -62,6 +74,7 @@ export default function PlaceMapView({ places }: Props) {
     // 기존 마커 제거
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
+    overlayBtnRef.current.clear();
 
     if (places.length === 0) {
       setVisiblePlaces([]);
@@ -96,6 +109,9 @@ export default function PlaceMapView({ places }: Props) {
         "></div>
       `;
       content.style.cssText = "display:flex;flex-direction:column;align-items:center;cursor:pointer;";
+      const btn = content.querySelector("button") as HTMLButtonElement;
+      const arrow = content.querySelector("div") as HTMLDivElement;
+      overlayBtnRef.current.set(place.id, { btn, arrow });
       content.addEventListener("click", () => {
         setSelected(place);
       });

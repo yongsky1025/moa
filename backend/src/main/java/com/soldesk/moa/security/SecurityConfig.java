@@ -137,6 +137,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/admin/popular-circles").permitAll() // 메인페이지에
                                                                                                            // 써야할수있으니 허용
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 security 적용
+                                                // .requestMatchers("/api/admin/**").permitAll() // 개발중에만 허용
                                                 // ---------------- 장소(place) -----------------
                                                 .requestMatchers("/api/places/**").permitAll()
                                                 .requestMatchers("/api/tags/**").permitAll() // 장소&일정 태그 다 열어야함

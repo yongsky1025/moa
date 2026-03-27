@@ -26,6 +26,7 @@ export interface PlaceCardDTO {
   reviewCount: number;
   representativeImagePath?: string;
   minReservationMinutes?: number;
+  liked?: boolean;
 }
 
 // ── 장소 상세 ────────────────────────────────
@@ -52,6 +53,7 @@ export interface PlaceDetailDTO {
   closedDays: PlaceClosedDayDTO[];
   images: string[];
   likeCount: number;
+  liked?: boolean;
 }
 
 // ── 휴무일 ────────────────────────────────────

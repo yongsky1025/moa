@@ -1,7 +1,7 @@
 import type {
   AdminMainDTO,
   PostActivitySummaryDTO,
-} from '../../types/adminTypes';
+} from "../../types/adminTypes";
 
 interface Props {
   mainData: AdminMainDTO | null;
@@ -10,16 +10,16 @@ interface Props {
 }
 
 function fmtNum(n: number) {
-  return n.toLocaleString('ko-KR');
+  return n.toLocaleString("ko-KR");
 }
 
 const ACCENT_COLORS = [
-  'border-t-moa-primary',
-  'border-t-moa-muted',
-  'border-t-[#C8DDD6]',
-  'border-t-moa-hover',
-  'border-t-moa-primary',
-  'border-t-moa-accent',
+  "border-t-moa-primary",
+  "border-t-moa-muted",
+  "border-t-[#C8DDD6]",
+  "border-t-moa-hover",
+  "border-t-moa-primary",
+  "border-t-moa-accent",
 ];
 
 function SkeletonCard({ accent }: { accent: string }) {
@@ -43,38 +43,40 @@ export default function KpiCards({ mainData, postData, loading }: Props) {
   const todayActivity =
     (postData?.todayPostCount ?? 0) + (postData?.todayReplyCount ?? 0);
 
-  const cards = [
+  const baseCards = [
     {
-      label: '전체 유저',
-      value: uc ? fmtNum(uc.countTotalUser) : '-',
-      sub: uc ? `남 ${(+uc.maleRatio).toFixed(1)}% · 여 ${(+uc.femaleRatio).toFixed(1)}%` : '',
+      label: "전체 유저",
+      value: uc ? fmtNum(uc.countTotalUser) : "-",
+      sub: uc
+        ? `남 ${(+uc.maleRatio).toFixed(1)}% · 여 ${(+uc.femaleRatio).toFixed(1)}%`
+        : "",
     },
     {
-      label: '모임 참여율',
-      value: uc ? `${joinRate}%` : '-',
-      sub: uc ? `${fmtNum(uc.countJoinUser)}명 참여 중` : '',
+      label: "모임 참여율",
+      value: uc ? `${joinRate}%` : "-",
+      sub: uc ? `${fmtNum(uc.countJoinUser)}명 참여 중` : "",
     },
     {
-      label: '전체 모임 수',
-      value: cs ? fmtNum(cs.circleCount) : '-',
-      sub: cs ? `카테고리 ${cs.circleDataDTOs.length}개` : '',
+      label: "전체 모임 수",
+      value: cs ? fmtNum(cs.circleCount) : "-",
+      sub: cs ? `카테고리 ${cs.circleDataDTOs.length}개` : "",
     },
     {
-      label: `${us?.month ?? '-'}월 신규 가입`,
-      value: us ? fmtNum(us.signUpCount) : '-',
-      sub: us ? `${us.month}월 ${us.date}일 기준` : '',
+      label: `${us?.month ?? "-"}월 신규 가입`,
+      value: us ? fmtNum(us.signUpCount) : "-",
+      sub: us ? `${us.month}월 ${us.date}일 기준` : "",
     },
     {
-      label: `${us?.month ?? '-'}월 탈퇴`,
-      value: us ? fmtNum(us.withdrawnCount) : '-',
-      sub: us ? `순증 +${fmtNum(us.signUpCount - us.withdrawnCount)}명` : '',
+      label: `${us?.month ?? "-"}월 탈퇴`,
+      value: us ? fmtNum(us.withdrawnCount) : "-",
+      sub: us ? `순증 +${fmtNum(us.signUpCount - us.withdrawnCount)}명` : "",
     },
     {
-      label: '오늘 활동',
-      value: postData ? fmtNum(todayActivity) : '-',
+      label: "오늘 활동",
+      value: postData ? fmtNum(todayActivity) : "-",
       sub: postData
         ? `게시글 ${postData.todayPostCount} · 댓글 ${postData.todayReplyCount}`
-        : '',
+        : "",
     },
   ];
 
@@ -90,13 +92,13 @@ export default function KpiCards({ mainData, postData, loading }: Props) {
 
   return (
     <div className="mb-4 grid grid-cols-6 gap-3.5">
-      {cards.map((card, i) => (
+      {baseCards.map((card, i) => (
         <div
           key={card.label}
           className={`admin-card border-t-2 ${ACCENT_COLORS[i]}`}
         >
           <p className="mb-2 text-xs text-moa-subtle">{card.label}</p>
-          <p className="text-2xl leading-tight font-black tracking-tight text-moa-text">
+          <p className="text-2xl font-black leading-tight tracking-tight text-moa-text">
             {card.value}
           </p>
           <p className="mt-1.5 text-xs text-moa-subtle">{card.sub}</p>

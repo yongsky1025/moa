@@ -26,7 +26,7 @@ export default function RentalPlaceCard({
 }: Props) {
   const navigate = useNavigate();
   const { isLoggedIn } = useSelector((s: RootState) => s.auth);
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(place.liked ?? false);
 
   const locationLabel = [place.city, place.district, place.dong]
     .filter(Boolean)
@@ -45,8 +45,8 @@ export default function RentalPlaceCard({
       return;
     }
     try {
-      await togglePlaceLike(place.id);
-      setLiked((v) => !v);
+      const res = await togglePlaceLike(place.id);
+      setLiked(res.liked);
     } catch {
       // 오류 무시
     }

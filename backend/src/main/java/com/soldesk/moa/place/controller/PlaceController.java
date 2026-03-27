@@ -19,10 +19,13 @@ import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 
 @RestController
 @RequiredArgsConstructor
@@ -37,8 +40,14 @@ public class PlaceController {
     private final PlaceReviewService placeReviewService;
 
     @GetMapping("/{id}")
-    public PlaceDetailResponseDTO getOnePlace(@PathVariable Long id) {
-        return placeService.getPlace(id);
+    public PlaceDetailResponseDTO getOnePlace(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = null;
+        if (authentication != null && authentication.getPrincipal() instanceof AuthUserDTO auth) {
+            userId = auth.getUserId();
+        }
+        return placeService.getPlace(id, userId);
     }
 
     @GetMapping("/{id}/reviews")
@@ -47,8 +56,14 @@ public class PlaceController {
     }
 
     @GetMapping("/all-place")
-    public PlaceListResponseDTO searchPlaces(@ModelAttribute PlaceSearchDTO searchDTO) {
-        return placeService.searchPlaces(searchDTO);
+    public PlaceListResponseDTO searchPlaces(
+            @ModelAttribute PlaceSearchDTO searchDTO,
+            Authentication authentication) {
+        Long userId = null;
+        if (authentication != null && authentication.getPrincipal() instanceof AuthUserDTO auth) {
+            userId = auth.getUserId();
+        }
+        return placeService.searchPlaces(searchDTO, userId);
     }
 
     // @PutMapping("/{id}")

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   MapPin, Users, Star, Heart, Clock, CalendarX,
   ChevronLeft, Tag, MessageSquare,
@@ -8,8 +9,9 @@ import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
 import PlaceImageGallery from "../components/PlaceImageGallery";
 import PlaceReservationPanel from "../components/PlaceReservationPanel";
-import { fetchPlaceDetail, fetchPlaceReviews } from "../api/placeRentalApi";
+import { fetchPlaceDetail, fetchPlaceReviews, togglePlaceLike } from "../api/placeRentalApi";
 import type { PlaceDetailDTO, PlaceReviewDTO } from "../types/placeTypes";
+import type { RootState } from "../../users/reducers/store";
 
 const DAY_KO: Record<string, string> = {
   MONDAY: "월요일", TUESDAY: "화요일", WEDNESDAY: "수요일",
@@ -91,10 +93,13 @@ function PlaceMiniMap({ lat, lng, name }: { lat: number; lng: number; name: stri
 export default function PlaceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isLoggedIn } = useSelector((s: RootState) => s.auth);
   const [place, setPlace] = useState<PlaceDetailDTO | null>(null);
   const [reviews, setReviews] = useState<PlaceReviewDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<SectionKey>("intro");
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
 
   // 섹션 refs
   const introRef    = useRef<HTMLDivElement>(null);
@@ -116,6 +121,8 @@ export default function PlaceDetailPage() {
     Promise.all([fetchPlaceDetail(placeId), fetchPlaceReviews(placeId)])
       .then(([detail, revs]) => {
         setPlace(detail);
+        setLikeCount(detail.likeCount);
+        setLiked(detail.liked ?? false);
         setReviews(revs);
       })
       .catch(() => {})
@@ -148,6 +155,16 @@ export default function PlaceDetailPage() {
     return () => observers.forEach((o) => o.disconnect());
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [place]);
+
+  const handleLike = async () => {
+    if (!isLoggedIn) { alert("로그인이 필요합니다."); return; }
+    if (!place) return;
+    try {
+      const res = await togglePlaceLike(place.id);
+      setLiked(res.liked);
+      setLikeCount(res.likeCount);
+    } catch {}
+  };
 
   const scrollTo = (key: SectionKey) => {
     const el = sectionRefs[key].current;
@@ -220,9 +237,27 @@ export default function PlaceDetailPage() {
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* 제목 + 메타 */}
             <div style={{ marginBottom: 20 }}>
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: "#111", marginBottom: 8 }}>
-                {place.name}
-              </h1>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                <h1 style={{ fontSize: 26, fontWeight: 800, color: "#111", margin: 0 }}>
+                  {place.name}
+                </h1>
+                <button
+                  onClick={handleLike}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "5px 13px", borderRadius: 999,
+                    border: `1.5px solid ${liked ? "#ef4444" : "#e5e7eb"}`,
+                    background: liked ? "#fff5f5" : "#fff",
+                    cursor: "pointer", fontSize: 13, fontWeight: 600,
+                    color: liked ? "#ef4444" : "#888",
+                    transition: "all 0.15s",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Heart style={{ width: 14, height: 14, fill: liked ? "#ef4444" : "none", color: liked ? "#ef4444" : "#888" }} />
+                  찜하기
+                </button>
+              </div>
               <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, fontSize: 14, color: "#666" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <MapPin style={{ width: 14, height: 14, color: "#5F8F7B" }} />
@@ -234,8 +269,8 @@ export default function PlaceDetailPage() {
                   <span style={{ color: "#aaa" }}>({place.reviewCount}개 리뷰)</span>
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <Heart style={{ width: 14, height: 14, color: "#ef4444" }} />
-                  {place.likeCount.toLocaleString()}
+                  <Heart style={{ width: 14, height: 14, fill: liked ? "#ef4444" : "none", color: "#ef4444" }} />
+                  {likeCount.toLocaleString()}
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <Users style={{ width: 14, height: 14 }} />
