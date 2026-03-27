@@ -10,6 +10,7 @@ import { applySanction } from "../api/adminReportAndSanctionApi";
 import AdminSanctionModal from "../component/post/AdminSanctionModal";
 import { useAdminToast } from "../hooks/useAdminToast";
 import AdminToast from "../component/AdminToast";
+import { NOTICE_CATEGORY_LABEL } from "../../post/constants/noticeCategory";
 
 const formatDateTime = (date: string | null | undefined) => {
   if (!date) return "-";
@@ -160,6 +161,10 @@ export default function AdminPostDetailPage() {
     post.boardType === "CIRCLE" && post.circleName
       ? `모임 · ${post.circleName}`
       : (BOARD_TYPE_LABEL[post.boardType] ?? post.boardName);
+  const noticeCategoryLabel =
+    post.boardType === "NOTICE" && post.noticeCategory
+      ? (NOTICE_CATEGORY_LABEL[post.noticeCategory] ?? "공지")
+      : null;
 
   return (
     <div className="flex min-h-full flex-col gap-6 bg-[#FDFAF8] px-6 py-6">
@@ -256,6 +261,14 @@ export default function AdminPostDetailPage() {
                 {post.viewCount.toLocaleString()}
               </span>
             </div>
+            {noticeCategoryLabel && (
+              <div>
+                <span className="text-moa-subtle">카테고리:</span>{" "}
+                <span className="text-moa-text font-semibold">
+                  {noticeCategoryLabel}
+                </span>
+              </div>
+            )}
             <div>
               <span className="text-moa-subtle">작성일:</span>{" "}
               <span className="text-moa-text font-mono text-xs">

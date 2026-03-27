@@ -18,13 +18,32 @@ public interface PostSearchRepository extends JpaRepository<PostSearchEntity, Lo
         join Post p on p.postId = ps.postId
         where p.deleted = false
           and p.boardId.deleted = false
-          and (:keyword = '' or
-             lower(ps.title) like lower(concat('%', :keyword, '%')) or
-             ps.content like concat('%', :keyword, '%') or
-             lower(ps.authorName) like lower(concat('%', :keyword, '%')) or
-             lower(ps.titleChosung) like lower(concat('%', :keyword, '%')) or
-             ps.contentChosung like concat('%', :keyword, '%') or
-             lower(ps.authorNameChosung) like lower(concat('%', :keyword, '%')))
+          and (
+               :keyword = ''
+               or (
+                   :target = 'ALL'
+                   and (
+                       lower(ps.title) like lower(concat('%', :keyword, '%'))
+                       or ps.content like concat('%', :keyword, '%')
+                       or lower(ps.titleChosung) like lower(concat('%', :keyword, '%'))
+                       or ps.contentChosung like concat('%', :keyword, '%')
+                   )
+               )
+               or (
+                   :target = 'TITLE'
+                   and (
+                       lower(ps.title) like lower(concat('%', :keyword, '%'))
+                       or lower(ps.titleChosung) like lower(concat('%', :keyword, '%'))
+                   )
+               )
+               or (
+                   :target = 'CONTENT'
+                   and (
+                       ps.content like concat('%', :keyword, '%')
+                       or ps.contentChosung like concat('%', :keyword, '%')
+                   )
+               )
+          )
           and (
                (:boardType is null and ps.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
             or (:boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = :boardType)
@@ -38,13 +57,32 @@ public interface PostSearchRepository extends JpaRepository<PostSearchEntity, Lo
         join Post p on p.postId = ps.postId
         where p.deleted = false
           and p.boardId.deleted = false
-          and (:keyword = '' or
-             lower(ps.title) like lower(concat('%', :keyword, '%')) or
-             ps.content like concat('%', :keyword, '%') or
-             lower(ps.authorName) like lower(concat('%', :keyword, '%')) or
-             lower(ps.titleChosung) like lower(concat('%', :keyword, '%')) or
-             ps.contentChosung like concat('%', :keyword, '%') or
-             lower(ps.authorNameChosung) like lower(concat('%', :keyword, '%')))
+          and (
+               :keyword = ''
+               or (
+                   :target = 'ALL'
+                   and (
+                       lower(ps.title) like lower(concat('%', :keyword, '%'))
+                       or ps.content like concat('%', :keyword, '%')
+                       or lower(ps.titleChosung) like lower(concat('%', :keyword, '%'))
+                       or ps.contentChosung like concat('%', :keyword, '%')
+                   )
+               )
+               or (
+                   :target = 'TITLE'
+                   and (
+                       lower(ps.title) like lower(concat('%', :keyword, '%'))
+                       or lower(ps.titleChosung) like lower(concat('%', :keyword, '%'))
+                   )
+               )
+               or (
+                   :target = 'CONTENT'
+                   and (
+                       ps.content like concat('%', :keyword, '%')
+                       or ps.contentChosung like concat('%', :keyword, '%')
+                   )
+               )
+          )
           and (
                (:boardType is null and ps.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
             or (:boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = :boardType)
@@ -53,6 +91,7 @@ public interface PostSearchRepository extends JpaRepository<PostSearchEntity, Lo
         """)
     Page<PostSearchEntity> searchPostsForFallback(
             @Param("keyword") String keyword,
+            @Param("target") String target,
             @Param("boardType") BoardType boardType,
             @Param("circleId") Long circleId,
             Pageable pageable);

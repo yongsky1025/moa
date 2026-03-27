@@ -42,8 +42,7 @@ public class BoardService {
 
     // ===== Global boards =====
     public List<BoardResponseDTO> listGlobalBoards() {
-        return List.of(BoardType.NOTICE, BoardType.FREE).stream()
-                .map(this::getGlobalBoardOrThrow)
+        return boardRepository.findByCircleIdIsNullAndDeletedFalseOrderByBoardIdAsc().stream()
                 .map(this::toBoardResponse)
                 .toList();
     }
@@ -51,6 +50,11 @@ public class BoardService {
     public BoardResponseDTO readGlobalBoard(BoardType type) {
         Board b = getGlobalBoardOrThrow(type);
         return toBoardResponse(b);
+    }
+
+    public BoardResponseDTO readGlobalBoardById(Long boardId) {
+        Board board = getGlobalBoardByIdOrThrow(boardId);
+        return toBoardResponse(board);
     }
 
     @Transactional
@@ -62,12 +66,57 @@ public class BoardService {
         return board.getBoardId();
     }
 
+    @Transactional
+    public Long createGlobalBoard(BoardRequestDTO dto) {
+        validateBoardName(dto.getName());
+        if (!dto.getBoardType().isGlobal()) {
+            throw new GlobalBoardTypeInvalidException("[#BOARD] 글로벌 게시판 생성 시 CIRCLE 타입은 사용할 수 없습니다.");
+        }
+        if (dto.getCircleId() != null) {
+            throw new MissingCircleIdException("[#BOARD] 글로벌 게시판 생성 시 circleId는 null 이어야 합니다.");
+        }
+
+        Board board = Board.builder()
+                .boardType(dto.getBoardType())
+                .name(dto.getName())
+                .circleId(null)
+                .build();
+
+        return boardRepository.save(board).getBoardId();
+    }
+
+    @Transactional
+    public Long updateGlobalBoardName(Long boardId, String newName) {
+        validateBoardName(newName);
+        Board board = getGlobalBoardByIdOrThrow(boardId);
+        board.changeName(newName);
+        return board.getBoardId();
+    }
+
+    @Transactional
+    public void deleteGlobalBoard(Long boardId) {
+        Board board = getGlobalBoardByIdOrThrow(boardId);
+        replyRepository.softDeleteByBoardId(board.getBoardId());
+        imageRepository.softDeleteByBoardId(board.getBoardId());
+        postRepository.softDeleteByBoardId(board.getBoardId());
+        board.markDeleted();
+    }
+
     private Board getGlobalBoardOrThrow(BoardType type) {
-        if (type == BoardType.CIRCLE) {
+        if (!type.isGlobal()) {
             throw new GlobalBoardTypeInvalidException("[#BOARD] CIRCLE 타입은 글로벌 게시판이 아닙니다.");
         }
         return boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(type)
                 .orElseThrow(() -> new InvalidBoardTypeException("[#BOARD] 잘못된 게시판 타입입니다."));
+    }
+
+    private Board getGlobalBoardByIdOrThrow(Long boardId) {
+        Board board = boardRepository.findByBoardIdAndCircleIdIsNullAndDeletedFalse(boardId)
+                .orElseThrow(() -> new BoardNotFoundException("[#BOARD] 글로벌 게시판을 찾을 수 없습니다."));
+        if (!board.getBoardType().isGlobal()) {
+            throw new GlobalBoardTypeInvalidException("[#BOARD] 글로벌 게시판 타입이 아닙니다.");
+        }
+        return board;
     }
 
     // ===== Circle boards =====

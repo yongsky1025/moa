@@ -13,6 +13,7 @@
     "@ckeditor/ckeditor5-react": "^11.0.1",
     "@reduxjs/toolkit": "^2.11.2",
     "@stomp/stompjs": "^7.0.0",
+    "@tanstack/react-query": "^5.95.2",
     "@types/react-datepicker": "^6.2.0",
     "axios": "^1.13.6",
     "badwords-ko": "^1.0.4",

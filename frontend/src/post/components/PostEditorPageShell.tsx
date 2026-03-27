@@ -8,6 +8,7 @@ import "../styles/postEditor.css";
 interface PostEditorPageShellProps {
   title: string;
   listPath: string;
+  listLabel?: string;
   mode: "create" | "edit";
   showForm: boolean;
   initialValue?: PostFormValues;
@@ -24,6 +25,7 @@ interface PostEditorPageShellProps {
 export default function PostEditorPageShell({
   title,
   listPath,
+  listLabel = "목록으로",
   mode,
   showForm,
   initialValue,
@@ -42,7 +44,7 @@ export default function PostEditorPageShell({
         <div className="post-editor-card-header">
           <h2 className="post-editor-card-title">{title}</h2>
           <Link className="post-editor-list-link" to={listPath}>
-            목록으로
+            {listLabel}
           </Link>
         </div>
         <div className="post-editor-divider" />

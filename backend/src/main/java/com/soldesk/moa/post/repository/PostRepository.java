@@ -11,7 +11,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.post.entity.Post;
 
@@ -58,6 +57,105 @@ public interface PostRepository extends JpaRepository<Post, Long> {
           order by p.postId desc
       """)
   List<Object[]> findGlobalPostsWithReplyCount(@Param("type") BoardType type);
+
+  @Query("""
+          select p, count(r)
+          from Post p
+          left join Reply r on r.postId = p and r.deleted = false
+          where p.boardId.deleted = false
+            and p.deleted = false
+            and (
+                 (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
+              or (:boardType is not null and p.boardId.boardType = :boardType)
+            )
+          group by p
+          order by p.createDate desc
+      """)
+  List<Object[]> findCommunityPostsByRecent(
+      @Param("boardType") BoardType boardType,
+      Pageable pageable);
+
+  @Query("""
+          select p, count(r)
+          from Post p
+          left join Reply r on r.postId = p and r.deleted = false
+          where p.boardId.deleted = false
+            and p.deleted = false
+            and (
+                 (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
+              or (:boardType is not null and p.boardId.boardType = :boardType)
+            )
+          group by p
+          order by p.viewCount desc, p.createDate desc
+      """)
+  List<Object[]> findCommunityPostsByViews(
+      @Param("boardType") BoardType boardType,
+      Pageable pageable);
+
+  @Query("""
+          select p, count(r)
+          from Post p
+          left join Reply r on r.postId = p and r.deleted = false
+          where p.boardId.deleted = false
+            and p.deleted = false
+            and (
+                 (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
+              or (:boardType is not null and p.boardId.boardType = :boardType)
+            )
+          group by p
+          order by count(r) desc, p.createDate desc
+      """)
+  List<Object[]> findCommunityPostsByReplies(
+      @Param("boardType") BoardType boardType,
+      Pageable pageable);
+
+  @Query("""
+          select p
+          from Post p
+          join p.boardId b
+          where p.userId.userId = :userId
+            and b.deleted = false
+            and p.deleted = false
+            and (
+                 (:boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
+              or (:boardType is not null and b.boardType = :boardType)
+            )
+          order by p.createDate desc
+      """)
+  List<Post> findMyCommunityPosts(
+      @Param("userId") Long userId,
+      @Param("boardType") BoardType boardType);
+
+  @Query("""
+          select distinct p
+          from Reply r
+          join r.postId p
+          join p.boardId b
+          where r.userId.userId = :userId
+            and r.deleted = false
+            and b.deleted = false
+            and p.deleted = false
+            and (
+                 (:boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
+              or (:boardType is not null and b.boardType = :boardType)
+            )
+          order by p.createDate desc
+      """)
+  List<Post> findMyRepliedCommunityPosts(
+      @Param("userId") Long userId,
+      @Param("boardType") BoardType boardType);
+
+  @Query("""
+      select count(p)
+      from Post p
+      join p.boardId b
+      where b.boardType = com.soldesk.moa.board.entity.constant.BoardType.NOTICE
+        and b.circleId is null
+        and b.deleted = false
+        and p.deleted = false
+        and p.pinned = true
+      """)
+  long countPinnedNoticePosts();
 
   // ===== Circle =====
   @Query("""

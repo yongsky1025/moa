@@ -4,10 +4,6 @@ import {
   MessageCircle,
   LayoutGrid,
   Users,
-  MessageSquare,
-  Star,
-  HelpCircle,
-  Megaphone,
   User,
   Settings,
   LogOut,
@@ -30,12 +26,6 @@ export default function Navbar() {
     "모임 찾기": [
       { label: "전체 모임", href: "/circle", icon: <LayoutGrid size={15} /> },
       { label: "내 모임", href: "/circle/my", icon: <Users size={15} /> },
-    ],
-    커뮤니티: [
-      { label: "자유게시판", href: "#", icon: <MessageSquare size={15} /> },
-      { label: "모임 후기", href: "#", icon: <Star size={15} /> },
-      { label: "Q&A", href: "#", icon: <HelpCircle size={15} /> },
-      { label: "공지사항", href: "#", icon: <Megaphone size={15} /> },
     ],
   };
 

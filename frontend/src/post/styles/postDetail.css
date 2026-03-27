@@ -1,0 +1,109 @@
+.post-detail-engagement {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.post-detail-like-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: #111827;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.post-detail-like-button.on {
+  color: #dc2626;
+}
+
+.post-detail-like-button.pulse {
+  animation: post-detail-heart-beating 0.5s 1 alternate;
+}
+
+.post-detail-like-button.disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.post-detail-like-count {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.post-detail-reply-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #111827;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.post-detail-reply-value {
+  font-weight: 500;
+  line-height: 1;
+}
+
+.post-detail-reaction-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.post-detail-bookmark-button,
+.post-detail-more-button {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: #111827;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 20px;
+  transition: color 0.18s ease;
+}
+
+.post-detail-bookmark-button:hover,
+.post-detail-more-button:hover {
+  color: #374151;
+}
+
+.post-detail-bookmark-button.on {
+  color: #f59e0b;
+}
+
+.post-detail-bookmark-button.on:hover {
+  color: #d97706;
+}
+
+.post-detail-bookmark-button.pulse {
+  animation: post-detail-heart-beating 0.5s 1 alternate;
+}
+
+@keyframes post-detail-heart-beating {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

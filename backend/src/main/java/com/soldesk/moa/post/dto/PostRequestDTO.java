@@ -1,15 +1,6 @@
 package com.soldesk.moa.post.dto;
 
-import java.time.LocalDateTime;
-
-import com.soldesk.moa.board.entity.Board;
-import com.soldesk.moa.board.entity.constant.BoardType;
-import com.soldesk.moa.users.entity.Users;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import com.soldesk.moa.post.entity.constant.NoticeCategory;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,4 +22,6 @@ public class PostRequestDTO {
 
     @NotBlank
     private String content;
+
+    private NoticeCategory noticeCategory;
 }

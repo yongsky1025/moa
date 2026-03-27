@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.post.entity.constant.NoticeCategory;
 
 import lombok.Builder;
 
@@ -20,6 +21,7 @@ public record AdminPostDetailDTO(
     Long circleId,
     Long boardId,
     int viewCount,
+    NoticeCategory noticeCategory,
     boolean deleted,
     Long sanctionId,
     LocalDateTime createDate,

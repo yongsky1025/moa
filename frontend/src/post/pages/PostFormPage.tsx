@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import Footer from "../../common/layout/Footer";
@@ -9,6 +9,10 @@ import { usePostDetail } from "../hooks/usePostDetail";
 import { usePostForm } from "../hooks/usePostForm";
 import { postRoutes } from "../routes/postRoutes";
 import type { PostKind } from "../types/postTypes";
+import {
+  NOTICE_CATEGORY_OPTIONS,
+  type NoticeCategory,
+} from "../constants/noticeCategory";
 
 function resolveKind(pathname: string): Exclude<PostKind, "circle"> {
   if (pathname.includes("/notice")) return "notice";
@@ -25,6 +29,7 @@ export default function PostFormPage() {
   const { isLoggedIn, user } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
   const unauthorizedHandledRef = useRef(false);
+  const [noticeCategory, setNoticeCategory] = useState<NoticeCategory>("ANNOUNCEMENT");
 
   const {
     data,
@@ -91,17 +96,23 @@ export default function PostFormPage() {
     navigate,
   ]);
 
+  useEffect(() => {
+    if (!isEdit || !data || kind !== "notice") return;
+    setNoticeCategory((data.noticeCategory as NoticeCategory | undefined) ?? "ANNOUNCEMENT");
+  }, [isEdit, data, kind]);
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
       <BoardSectionHeader
         title={boardTitle}
-        backTo={listPath}
-        backLabel="목록으로 이동"
+        backTo={isEdit ? detailPath : listPath}
+        backLabel={isEdit ? "이전으로 이동" : "목록으로 이동"}
       />
       <PostEditorPageShell
         title={isEdit ? "게시글 수정" : "게시글 작성"}
-        listPath={listPath}
+        listPath={isEdit ? detailPath : listPath}
+        listLabel={isEdit ? "이전으로" : "목록으로"}
         mode={isEdit ? "edit" : "create"}
         detailLoading={detailLoading}
         detailError={detailError}
@@ -110,10 +121,35 @@ export default function PostFormPage() {
         initialValue={data ? { title: data.title, content: data.content } : undefined}
         submitting={submitting}
         deleting={deleting}
+        preFormSlot={
+          kind === "notice" ? (
+            <div className="post-editor-board-group" style={{ marginBottom: 16 }}>
+              <label className="post-editor-label" htmlFor="notice-category">
+                카테고리
+              </label>
+              <select
+                id="notice-category"
+                value={noticeCategory}
+                onChange={(e) => setNoticeCategory(e.target.value as NoticeCategory)}
+                className="post-editor-board-select"
+              >
+                {NOTICE_CATEGORY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null
+        }
         onSubmit={async (values) => {
           if (isEdit && data) {
             const isChanged =
-              values.title !== data.title || values.content !== data.content;
+              values.title !== data.title ||
+              values.content !== data.content ||
+              (kind === "notice" &&
+                noticeCategory !==
+                  ((data.noticeCategory as NoticeCategory | undefined) ?? "ANNOUNCEMENT"));
             if (!isChanged) {
               navigate(detailPath);
               return;
@@ -122,7 +158,10 @@ export default function PostFormPage() {
 
           const savedPostId = await submit({
             kind,
-            values,
+            values: {
+              ...values,
+              noticeCategory: kind === "notice" ? noticeCategory : undefined,
+            },
             postId: isEdit ? postIdNumber : undefined,
           });
           const savedDetailPath =
