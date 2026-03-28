@@ -94,6 +94,11 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [roomCtxMenu, setRoomCtxMenu] = useState<{ x: number; y: number; room: ChatRoomSummary } | null>(null);
   const [renaming, setRenaming] = useState<{ roomId: number; value: string } | null>(null);
   const [readStatus, setReadStatus] = useState<Record<number, string>>({});
+  const [mutedRooms, setMutedRooms] = useState<Set<number>>(() =>
+    new Set(JSON.parse(localStorage.getItem('moa_muted_rooms') ?? '[]'))
+  );
+  const mutedRoomsRef = useRef(mutedRooms);
+  mutedRoomsRef.current = mutedRooms;
   const [menuId, setMenuId] = useState<number | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
   const [editMsgContent, setEditMsgContent] = useState("");
@@ -179,6 +184,26 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     if (!searchQuery) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, searchQuery]);
 
+  const toggleMute = (roomId: number) => {
+    setMutedRooms((prev) => {
+      const next = new Set(prev);
+      if (next.has(roomId)) { next.delete(roomId); } else { next.add(roomId); }
+      localStorage.setItem('moa_muted_rooms', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  // 다른 창에서 뮤트 변경 시 동기화
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'moa_muted_rooms') {
+        setMutedRooms(new Set(JSON.parse(e.newValue ?? '[]')));
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   const handleNewMessage = useCallback(
     (msg: ChatMessage) => {
       if (msg.roomId === activeRoomId) {
@@ -198,7 +223,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
       setRooms((prev) =>
         prev.map((r) =>
           r.roomId === msg.roomId
-            ? { ...r, lastMessage: msg.content, lastMessageAt: msg.createdAt, unreadCount: msg.roomId === activeRoomId ? 0 : r.unreadCount + 1 }
+            ? { ...r, lastMessage: msg.content, lastMessageAt: msg.createdAt, unreadCount: (msg.roomId === activeRoomId || mutedRoomsRef.current.has(r.roomId)) ? 0 : r.unreadCount + 1 }
             : r,
         ),
       );
@@ -215,7 +240,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
       if (noti.id != null && prev.some((n) => n.id === noti.id)) return prev;
       return [noti, ...prev];
     });
-    if (noti.type === 'CHAT_MESSAGE' && noti.referenceId && noti.referenceId !== activeRoomId) {
+    if (noti.type === 'CHAT_MESSAGE' && noti.referenceId && noti.referenceId !== activeRoomId && !mutedRoomsRef.current.has(noti.referenceId)) {
       setRooms((prev) => prev.map((r) =>
         r.roomId === noti.referenceId ? { ...r, unreadCount: r.unreadCount + 1 } : r
       ));
@@ -554,6 +579,12 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             </button>
           )}
           <button
+            style={{ display: "block", width: "100%", padding: "10px 14px", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: 13, color: "#262626" }}
+            onClick={() => { toggleMute(roomCtxMenu.room.roomId); setRoomCtxMenu(null); }}
+          >
+            {mutedRooms.has(roomCtxMenu.room.roomId) ? '🔔 알림 켜기' : '🔕 알림 끄기'}
+          </button>
+          <button
             style={{
               display: "block",
               width: "100%",
@@ -756,9 +787,10 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                       </div>
                       <div style={s.roomRow}>
                         <span style={s.roomLast}>{r.lastMessage ?? ''}</span>
-                        {r.unreadCount > 0 && (
-                          <span style={s.unreadBadge}>{r.unreadCount > 99 ? '99+' : r.unreadCount}</span>
-                        )}
+                        {mutedRooms.has(r.roomId)
+                          ? <span style={{ fontSize: 13, color: '#9CA3AF' }}>🔕</span>
+                          : r.unreadCount > 0 && <span style={s.unreadBadge}>{r.unreadCount > 99 ? '99+' : r.unreadCount}</span>
+                        }
                       </div>
                     </div>
                   </div>

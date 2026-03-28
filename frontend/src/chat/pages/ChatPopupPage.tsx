@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { chatApi } from "../../api/chatApi";
 import { circleApi } from "../../api/circleApi";
 import { notificationApi } from "../../api/notificationApi";
-import { useWebSocket } from "../hooks/useWebSocket";
+import { useWebSocket, type TypingEvent } from "../hooks/useWebSocket";
 import { useAuthStore } from "../../store/authStore";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
@@ -90,6 +90,14 @@ export default function ChatPopupPage() {
   const [profileChatError, setProfileChatError] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [readStatus, setReadStatus] = useState<Record<number, string>>({});
+  const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
+  const typingTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const typingCooldownRef = useRef(false);
+  const [mutedRooms, setMutedRooms] = useState<Set<number>>(() =>
+    new Set(JSON.parse(localStorage.getItem('moa_muted_rooms') ?? '[]'))
+  );
+  const mutedRoomsRef = useRef(mutedRooms);
+  mutedRoomsRef.current = mutedRooms;
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -158,6 +166,9 @@ export default function ChatPopupPage() {
 
   useEffect(() => {
     if (!activeRoom) return;
+    setTypingUsers({});
+    Object.values(typingTimersRef.current).forEach(clearTimeout);
+    typingTimersRef.current = {};
     setRooms((prev) => prev.map((r) => r.roomId === activeRoom.roomId ? { ...r, unreadCount: 0 } : r));
     setLoadingMsg(true);
     chatApi
@@ -263,7 +274,7 @@ export default function ChatPopupPage() {
       setRooms((prev) =>
         prev.map((r) =>
           r.roomId === msg.roomId
-            ? { ...r, lastMessage: msg.content, lastMessageAt: msg.createdAt, unreadCount: r.roomId === activeRoom?.roomId ? 0 : r.unreadCount + 1 }
+            ? { ...r, lastMessage: msg.content, lastMessageAt: msg.createdAt, unreadCount: (r.roomId === activeRoom?.roomId || mutedRoomsRef.current.has(r.roomId)) ? 0 : r.unreadCount + 1 }
             : r,
         ),
       );
@@ -275,12 +286,41 @@ export default function ChatPopupPage() {
     setReadStatus((prev) => ({ ...prev, [event.userId]: event.lastReadAt }));
   }, []);
 
+  // 메인창에서 뮤트 변경 시 동기화
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'moa_muted_rooms') {
+        setMutedRooms(new Set(JSON.parse(e.newValue ?? '[]')));
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  const toggleMute = (roomId: number) => {
+    setMutedRooms((prev) => {
+      const next = new Set(prev);
+      if (next.has(roomId)) { next.delete(roomId); } else { next.add(roomId); }
+      localStorage.setItem('moa_muted_rooms', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const handleTyping = useCallback((event: TypingEvent) => {
+    if (event.userId === userId) return;
+    setTypingUsers((prev) => ({ ...prev, [event.userId]: event.nickname }));
+    if (typingTimersRef.current[event.userId]) clearTimeout(typingTimersRef.current[event.userId]);
+    typingTimersRef.current[event.userId] = setTimeout(() => {
+      setTypingUsers((prev) => { const next = { ...prev }; delete next[event.userId]; return next; });
+    }, 3000);
+  }, [userId]);
+
   const handleNotification = useCallback((noti: import('../../types/notification').Notification) => {
     setNotifications((prev) => {
       if (noti.id != null && prev.some((n) => n.id === noti.id)) return prev;
       return [noti, ...prev];
     });
-    if (noti.type === 'CHAT_MESSAGE' && noti.referenceId) {
+    if (noti.type === 'CHAT_MESSAGE' && noti.referenceId && !mutedRoomsRef.current.has(noti.referenceId)) {
       setRooms((prev) =>
         prev.map((r) =>
           r.roomId === noti.referenceId && r.roomId !== activeRoom?.roomId
@@ -291,12 +331,13 @@ export default function ChatPopupPage() {
     }
   }, [activeRoom]);
 
-  const { sendMessage } = useWebSocket({
+  const { sendMessage, sendTyping } = useWebSocket({
     roomId: activeRoom?.roomId ?? 0,
     userId: userId ?? undefined,
     onMessage: handleNewMessage,
     onReadEvent: handleReadEvent,
     onNotification: handleNotification,
+    onTyping: handleTyping,
   });
 
   const handleSend = () => {
@@ -463,6 +504,14 @@ export default function ChatPopupPage() {
   return (
     <div style={s.root}>
       <style>{`
+        @keyframes typing-bounce {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-5px); opacity: 1; }
+        }
+        .typing-dots { display: flex; gap: 4px; align-items: center; height: 14px; }
+        .typing-dots span { width: 7px; height: 7px; border-radius: 50%; background: #9CA3AF; animation: typing-bounce 1.2s infinite; display: inline-block; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
         .bubble-mine {
           border-radius: 18px 18px 4px 18px !important;
         }
@@ -570,7 +619,10 @@ export default function ChatPopupPage() {
                   </div>
                   <div style={s.roomTop}>
                     <span style={s.roomLast}>{r.lastMessage ?? ""}</span>
-                    {r.unreadCount > 0 && <span style={s.unreadBadge}>{r.unreadCount}</span>}
+                    {mutedRooms.has(r.roomId)
+                      ? <span style={{ fontSize: 13, color: '#9CA3AF' }}>🔕</span>
+                      : r.unreadCount > 0 && <span style={s.unreadBadge}>{r.unreadCount}</span>
+                    }
                   </div>
                 </div>
               </div>
@@ -596,6 +648,9 @@ export default function ChatPopupPage() {
               ✏️ 방 이름 변경
             </button>
           )}
+          <button style={s.ctxItem} onClick={() => { toggleMute(roomCtxMenu.room.roomId); setRoomCtxMenu(null); }}>
+            {mutedRooms.has(roomCtxMenu.room.roomId) ? '🔔 알림 켜기' : '🔕 알림 끄기'}
+          </button>
           <button style={{ ...s.ctxItem, color: "#c62828" }} onClick={() => handleRoomLeave(roomCtxMenu.room.roomId)}>
             🚪 채팅방 나가기
           </button>
@@ -841,6 +896,17 @@ export default function ChatPopupPage() {
                   );
                 })
               }
+              {Object.entries(typingUsers).map(([uid, nickname]) => (
+                <div key={uid} style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                  <div style={{ ...s.avatar, background: avatarColor(Number(uid)) }}>{nickname.charAt(0)}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <span style={s.senderName}>{nickname}</span>
+                    <div className="bubble-other" style={{ ...s.bubble, position: 'relative', background: '#fff', border: '1px solid #E5E7EB', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', padding: '12px 16px' }}>
+                      <div className="typing-dots"><span /><span /><span /></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
               <div ref={bottomRef} />
             </div>
 
@@ -877,6 +943,11 @@ export default function ChatPopupPage() {
                     setInput(e.target.value);
                     e.target.style.height = "auto";
                     e.target.style.height = e.target.scrollHeight + "px";
+                    if (!typingCooldownRef.current && e.target.value.trim()) {
+                      sendTyping(user?.nickname ?? '');
+                      typingCooldownRef.current = true;
+                      setTimeout(() => { typingCooldownRef.current = false; }, 2000);
+                    }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
