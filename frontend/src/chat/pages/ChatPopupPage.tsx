@@ -42,8 +42,9 @@ const EMOJIS = [
 ];
 
 const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
+const isFileUrl = (c: string) => c.startsWith('/uploads/') || c.startsWith('/api/chat/files/');
 function renderMsgContent(content: string, mine: boolean) {
-  if (content.startsWith('/api/chat/files/')) {
+  if (isFileUrl(content)) {
     if (IMAGE_EXTS.test(content)) {
       return (
         <img
@@ -93,6 +94,7 @@ export default function ChatPopupPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const chatNotifications = notifications.filter((n) => n.type === 'CHAT_MESSAGE');
   const unreadNoti = chatNotifications.filter((n) => !n.isRead).length;
@@ -275,7 +277,7 @@ export default function ChatPopupPage() {
 
   const handleNotification = useCallback((noti: import('../../types/notification').Notification) => {
     setNotifications((prev) => {
-      if (prev.some((n) => n.id === noti.id)) return prev;
+      if (noti.id != null && prev.some((n) => n.id === noti.id)) return prev;
       return [noti, ...prev];
     });
     if (noti.type === 'CHAT_MESSAGE' && noti.referenceId) {
@@ -318,6 +320,9 @@ export default function ChatPopupPage() {
     ));
     setInput("");
     setShowEmoji(false);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
     sendMessage(content);
   };
 
@@ -793,17 +798,17 @@ export default function ChatPopupPage() {
                               </div>
                             ) : (
                               <div
-                                className={(!msg.content.startsWith('/api/chat/files/') && !msg.isDeleted) ? (mine ? 'bubble-mine' : 'bubble-other') : undefined}
+                                className={(!isFileUrl(msg.content) && !msg.isDeleted) ? (mine ? 'bubble-mine' : 'bubble-other') : undefined}
                                 style={{
                                   ...s.bubble,
                                   position: 'relative',
-                                  background: msg.isDeleted ? '#e0e0e0' : !msg.content.startsWith('/api/chat/files/') ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
+                                  background: msg.isDeleted ? '#e0e0e0' : !isFileUrl(msg.content) ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
                                   color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1F2937',
                                   fontStyle: msg.isDeleted ? 'italic' : 'normal',
-                                  borderRadius: msg.isDeleted ? 18 : msg.content.startsWith('/api/chat/files/') ? 8 : undefined,
-                                  padding: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 0 : undefined,
-                                  boxShadow: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
-                                  border: !msg.content.startsWith('/api/chat/files/') && !mine && !msg.isDeleted ? '1px solid #E5E7EB' : 'none',
+                                  borderRadius: msg.isDeleted ? 18 : isFileUrl(msg.content) ? 8 : undefined,
+                                  padding: isFileUrl(msg.content) && !msg.isDeleted ? 0 : undefined,
+                                  boxShadow: isFileUrl(msg.content) && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
+                                  border: !isFileUrl(msg.content) && !mine && !msg.isDeleted ? '1px solid #E5E7EB' : 'none',
                                 }}
                                 onContextMenu={mine && !msg.isDeleted ? (e) => {
                                   e.preventDefault();
@@ -863,11 +868,16 @@ export default function ChatPopupPage() {
               </div>
               <div style={s.inputRow}>
                 <textarea
+                  ref={textareaRef}
                   style={s.textarea}
                   placeholder="메시지를 입력하세요"
                   value={input}
                   rows={1}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = e.target.scrollHeight + "px";
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -1095,7 +1105,7 @@ const s: Record<string, React.CSSProperties> = {
     outline: "none",
     resize: "none" as const,
     lineHeight: 1.5,
-    maxHeight: 100,
+    maxHeight: 120,
     overflowY: "auto" as const,
     fontFamily: "inherit",
   },

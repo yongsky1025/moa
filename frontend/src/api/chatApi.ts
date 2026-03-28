@@ -52,14 +52,25 @@ export const chatApi = {
   getReadStatus: (roomId: number) =>
     api.get<{ userId: number; lastReadAt: string }[]>(`/api/chat/rooms/${roomId}/read-status`).then((r) => r.data),
 
-  // 파일 업로드
-  uploadFile: (file: File) => {
+  // 파일 업로드 (이미지: /api/images/upload-url, 일반파일: /api/files/upload-url)
+  uploadFile: async (file: File) => {
+    const isImage = file.type.startsWith("image/");
+    const urlEndpoint = isImage ? "/api/images/upload-url" : "/api/files/upload-url";
+
+    // 1단계: 업로드 URL + key 발급
+    const { data } = await api.post<{ uploadUrl: string; fileUrl: string; key: string }>(
+      urlEndpoint,
+      { domain: "CHAT", fileName: file.name, contentType: file.type }
+    );
+
+    // 2단계: 실제 파일 업로드
     const form = new FormData();
+    form.append("key", data.key);
     form.append("file", file);
-    return api
-      .post<{ fileUrl: string }>("/api/chat/files", form, {
-        headers: { "Content-Type": undefined },
-      })
-      .then((r) => r.data.fileUrl);
+    await api.post("/api/local-files/upload", form, { headers: { "Content-Type": undefined } });
+
+    // 상대경로로 정규화 (/uploads/...)
+    const idx = data.fileUrl.indexOf("/uploads/");
+    return idx >= 0 ? data.fileUrl.substring(idx) : data.fileUrl;
   },
 };

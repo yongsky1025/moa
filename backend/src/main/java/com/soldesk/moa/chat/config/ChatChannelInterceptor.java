@@ -40,14 +40,19 @@ public class ChatChannelInterceptor implements ChannelInterceptor {
 
         if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
             String bearerToken = accessor.getFirstNativeHeader("Authorization");
-            if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-                String token = bearerToken.substring(7);
-                if (jwtTokenProvider.isValidToken(token) && jwtTokenProvider.isAccessToken(token)) {
-                    String email = jwtTokenProvider.getEmailFromToken(token);
-                    AuthUserDTO userDetails = (AuthUserDTO) userDetailsService.loadUserByUsername(email);
-                    accessor.setUser(new UserPrincipal(userDetails.getUserId()));
-                }
+            if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+                System.err.println("[ChatChannelInterceptor] Authorization 헤더 없음");
+                return message;
             }
+            String token = bearerToken.substring(7);
+            if (!jwtTokenProvider.isValidToken(token) || !jwtTokenProvider.isAccessToken(token)) {
+                System.err.println("[ChatChannelInterceptor] JWT 유효하지 않음: " + token.substring(0, Math.min(20, token.length())) + "...");
+                return message;
+            }
+            String email = jwtTokenProvider.getEmailFromToken(token);
+            AuthUserDTO userDetails = (AuthUserDTO) userDetailsService.loadUserByUsername(email);
+            accessor.setUser(new UserPrincipal(userDetails.getUserId()));
+            System.out.println("[ChatChannelInterceptor] 인증 성공 userId=" + userDetails.getUserId());
         }
         return message;
     }

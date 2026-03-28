@@ -35,14 +35,14 @@ public class ChatMessageService {
 
     /** 메시지 저장 후 응답 반환 (WebSocket / REST 공통) */
     @Transactional
-    public ChatMessageResponse send(Long roomId, Long senderId, String content) {
+    public ChatMessageResponse send(Long roomId, Long senderId, String content, Long replyToId) {
         if (content == null || content.isBlank()) {
             throw new ChatException(ChatErrorCode.MESSAGE_EMPTY, "메시지를 입력해주세요.");
         }
         roomService.getRoomOrThrow(roomId);
         roomService.assertMember(roomId, senderId);
 
-        ChatMessage saved = messageRepo.save(ChatMessage.of(roomId, senderId, content));
+        ChatMessage saved = messageRepo.save(ChatMessage.of(roomId, senderId, content, replyToId));
         ChatMessageResponse response = toResponse(saved);
 
         // 트랜잭션 커밋 전에 브로드캐스트 → 수신자에게 즉시 전달 (@SendTo 대체)
@@ -113,7 +113,16 @@ public class ChatMessageService {
         String nickname = usersRepository.findById(m.getSenderId())
                 .map(u -> u.getNickname())
                 .orElse("알 수 없음");
+        String replyToContent = null;
+        String replyToNickname = null;
+        if (m.getReplyToId() != null) {
+            var orig = messageRepo.findById(m.getReplyToId());
+            replyToContent = orig.map(o -> o.isDeleted() ? "삭제된 메시지" : o.getContent()).orElse(null);
+            replyToNickname = orig.flatMap(o -> usersRepository.findById(o.getSenderId()))
+                    .map(u -> u.getNickname()).orElse(null);
+        }
         return new ChatMessageResponse(m.getId(), m.getRoomId(), m.getSenderId(), nickname,
-                m.getContent(), m.getCreatedAt(), m.getUpdatedAt(), m.isDeleted());
+                m.getContent(), m.getCreatedAt(), m.getUpdatedAt(), m.isDeleted(),
+                m.getReplyToId(), replyToContent, replyToNickname);
     }
 }

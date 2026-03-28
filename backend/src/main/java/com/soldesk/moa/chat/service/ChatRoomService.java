@@ -14,10 +14,13 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.users.repository.UsersRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ChatRoomService {
@@ -27,15 +30,17 @@ public class ChatRoomService {
     private final ChatMessageRepository messageRepo;
     private final UsersRepository usersRepo;
     private final CircleMemberRepository circleMemberRepo;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ChatRoomService(ChatRoomRepository roomRepo, ChatRoomMemberRepository memberRepo,
             ChatMessageRepository messageRepo, UsersRepository usersRepo,
-            CircleMemberRepository circleMemberRepo) {
+            CircleMemberRepository circleMemberRepo, SimpMessagingTemplate messagingTemplate) {
         this.roomRepo = roomRepo;
         this.memberRepo = memberRepo;
         this.messageRepo = messageRepo;
         this.usersRepo = usersRepo;
         this.circleMemberRepo = circleMemberRepo;
+        this.messagingTemplate = messagingTemplate;
     }
 
     /**
@@ -217,11 +222,18 @@ public class ChatRoomService {
     @Transactional
     public void leaveRoom(Long roomId, Long userId) {
         ChatRoomMember member = getMemberOrThrow(roomId, userId);
+        String nickname = usersRepo.findById(userId)
+                .map(u -> u.getNickname()).orElse("알 수 없음");
         memberRepo.delete(member);
 
-        // 남은 멤버가 없으면 방 삭제
-        if (memberRepo.findByRoomId(roomId).isEmpty()) {
+        List<ChatRoomMember> remaining = memberRepo.findByRoomId(roomId);
+        if (remaining.isEmpty()) {
             roomRepo.deleteById(roomId);
+        } else {
+            // 남은 멤버에게만 퇴장 시스템 메시지 브로드캐스트 (DB 저장 없음 — 알림 미발생)
+            messagingTemplate.convertAndSend(
+                    "/topic/room/" + roomId + "/system",
+                    Map.of("type", "LEAVE", "nickname", nickname, "createdAt", LocalDateTime.now().toString()));
         }
     }
 

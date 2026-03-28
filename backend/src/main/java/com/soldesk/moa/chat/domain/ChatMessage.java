@@ -30,9 +30,15 @@ public class ChatMessage {
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
+    @Column(name = "reply_to_id")
+    private Long replyToId;
+
+    @Column(name = "is_pinned", nullable = false)
+    private boolean isPinned = false;
+
     protected ChatMessage() {}
 
-    public static ChatMessage of(Long roomId, Long senderId, String content) {
+    public static ChatMessage of(Long roomId, Long senderId, String content, Long replyToId) {
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("메시지는 비어있을 수 없습니다.");
         }
@@ -42,6 +48,7 @@ public class ChatMessage {
         m.content = content.trim();
         m.createdAt = LocalDateTime.now();
         m.isDeleted = false;
+        m.replyToId = replyToId;
         return m;
     }
 
@@ -65,4 +72,5 @@ public class ChatMessage {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public boolean isDeleted() { return isDeleted; }
+    public Long getReplyToId() { return replyToId; }
 }

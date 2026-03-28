@@ -21,6 +21,10 @@ export interface ChatMessage {
   createdAt: string;
   updatedAt: string | null;
   isDeleted: boolean;
+  replyToId?: number | null;
+  replyToContent?: string | null;
+  replyToNickname?: string | null;
+  messageType?: 'NORMAL' | 'SYSTEM';
 }
 
 export interface SendMessageRequest {

@@ -10,5 +10,8 @@ public record ChatMessageResponse(
         String content,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        boolean isDeleted
+        boolean isDeleted,
+        Long replyToId,
+        String replyToContent,
+        String replyToNickname
 ) {}

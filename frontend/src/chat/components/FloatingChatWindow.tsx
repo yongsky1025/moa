@@ -11,8 +11,21 @@ import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
 
 const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
-function renderMsgContent(content: string, mine: boolean) {
-  if (content.startsWith('/api/chat/files/')) {
+const isFileUrl = (c: string) => c.startsWith('/uploads/') || c.startsWith('/api/chat/files/');
+
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase()
+      ? <mark key={i} style={{ background: '#FFE58F', borderRadius: 2, padding: '0 1px', color: '#1a1a1a' }}>{part}</mark>
+      : part
+  );
+}
+
+function renderMsgContent(content: string, mine: boolean, searchQuery = "") {
+  if (isFileUrl(content)) {
     if (IMAGE_EXTS.test(content)) {
       return (
         <img
@@ -30,7 +43,11 @@ function renderMsgContent(content: string, mine: boolean) {
       </a>
     );
   }
-  return content;
+  return content.split('\n').map((line, i, arr) =>
+    i < arr.length - 1
+      ? <span key={i}>{highlightText(line, searchQuery)}<br /></span>
+      : <span key={i}>{highlightText(line, searchQuery)}</span>
+  );
 }
 
 const MIN_W = 520;
@@ -70,6 +87,9 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const resizeDir = useRef("");
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0 });
 
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
+
   const [showEmoji, setShowEmoji] = useState(false);
   const [roomCtxMenu, setRoomCtxMenu] = useState<{ x: number; y: number; room: ChatRoomSummary } | null>(null);
   const [renaming, setRenaming] = useState<{ roomId: number; value: string } | null>(null);
@@ -80,9 +100,14 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [reportModal, setReportModal] = useState<{ messageId: number } | null>(null);
   const [reportCategory, setReportCategory] = useState<ReportCategory>('ABUSE');
   const [reportDesc, setReportDesc] = useState("");
+  const [replyTo, setReplyTo] = useState<{ messageId: number; content: string; nickname: string } | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const loadRooms = useCallback(async () => {
     try {
@@ -129,6 +154,9 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
   useEffect(() => {
     if (!activeRoomId) return;
+    setReplyTo(null);
+    setSearchQuery("");
+    setShowSearch(false);
     setRooms((prev) => prev.map((r) => r.roomId === activeRoomId ? { ...r, unreadCount: 0 } : r));
     setLoadingMsg(true);
     chatApi
@@ -148,8 +176,8 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   }, [activeRoomId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!searchQuery) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, searchQuery]);
 
   const handleNewMessage = useCallback(
     (msg: ChatMessage) => {
@@ -184,7 +212,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
   const handleNotification = useCallback((noti: Notification) => {
     setNotifications((prev) => {
-      if (prev.some((n) => n.id === noti.id)) return prev;
+      if (noti.id != null && prev.some((n) => n.id === noti.id)) return prev;
       return [noti, ...prev];
     });
     if (noti.type === 'CHAT_MESSAGE' && noti.referenceId && noti.referenceId !== activeRoomId) {
@@ -194,12 +222,29 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     }
   }, [activeRoomId]);
 
+  const handleSystemEvent = useCallback((event: { type: string; nickname: string; createdAt: string }) => {
+    const text = event.type === 'LEAVE' ? `${event.nickname}님이 퇴장했습니다.` : `${event.nickname}님이 입장했습니다.`;
+    const systemMsg: import('../types/chat').ChatMessage = {
+      messageId: -Date.now(),
+      roomId: activeRoomId ?? 0,
+      senderId: 0,
+      senderNickname: '',
+      content: text,
+      createdAt: event.createdAt,
+      updatedAt: null,
+      isDeleted: false,
+      messageType: 'SYSTEM',
+    };
+    setMessages((prev) => [...prev, systemMsg]);
+  }, [activeRoomId]);
+
   const { sendMessage } = useWebSocket({
     roomId: activeRoomId ?? 0,
     userId: userId ?? undefined,
     onMessage: handleNewMessage,
     onReadEvent: handleReadEvent,
     onNotification: handleNotification,
+    onSystemEvent: handleSystemEvent,
   });
 
   const navigate = useNavigate();
@@ -224,54 +269,78 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     }
   };
 
-  const handleSend = () => {
-    const content = input.trim();
-    if (!content || !activeRoomId) return;
-    const tempMsg: ChatMessage = {
-      messageId: -Date.now(),
-      roomId: activeRoomId,
-      senderId: userId!,
-      senderNickname: user?.nickname ?? '?',
-      content,
-      createdAt: new Date().toISOString(),
-      updatedAt: null,
-      isDeleted: false,
-    };
-    setMessages((prev) => [...prev, tempMsg]);
-    setRooms((prev) => prev.map((r) =>
-      r.roomId === activeRoomId
-        ? { ...r, lastMessage: content, lastMessageAt: tempMsg.createdAt }
-        : r
-    ));
-    setInput("");
-    sendMessage(content);
+  const cancelPendingFile = () => {
+    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+    setPendingFile(null);
+    setPendingPreviewUrl(null);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !activeRoomId) return;
-    try {
-      const fileUrl = await chatApi.uploadFile(file);
+  const handleSend = async () => {
+    const content = input.trim();
+    if (!content && !pendingFile) return;
+    if (!activeRoomId) return;
+
+    if (pendingFile) {
+      try {
+        const fileUrl = await chatApi.uploadFile(pendingFile);
+        const tempMsg: ChatMessage = {
+          messageId: -Date.now(),
+          roomId: activeRoomId,
+          senderId: userId!,
+          senderNickname: user?.nickname ?? '?',
+          content: fileUrl,
+          createdAt: new Date().toISOString(),
+          updatedAt: null,
+          isDeleted: false,
+        };
+        setMessages((prev) => [...prev, tempMsg]);
+        setRooms((prev) => prev.map((r) =>
+          r.roomId === activeRoomId
+            ? { ...r, lastMessage: fileUrl, lastMessageAt: tempMsg.createdAt }
+            : r
+        ));
+        sendMessage(fileUrl);
+        cancelPendingFile();
+      } catch {
+        alert("업로드 실패");
+        return;
+      }
+    }
+
+    if (content) {
       const tempMsg: ChatMessage = {
         messageId: -Date.now(),
         roomId: activeRoomId,
         senderId: userId!,
         senderNickname: user?.nickname ?? '?',
-        content: fileUrl,
+        content,
         createdAt: new Date().toISOString(),
         updatedAt: null,
         isDeleted: false,
+        replyToId: replyTo?.messageId ?? null,
+        replyToContent: replyTo?.content ?? null,
+        replyToNickname: replyTo?.nickname ?? null,
       };
       setMessages((prev) => [...prev, tempMsg]);
       setRooms((prev) => prev.map((r) =>
         r.roomId === activeRoomId
-          ? { ...r, lastMessage: fileUrl, lastMessageAt: tempMsg.createdAt }
+          ? { ...r, lastMessage: content, lastMessageAt: tempMsg.createdAt }
           : r
       ));
-      sendMessage(fileUrl);
-    } catch {
-      alert("업로드 실패");
+      setInput("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+      sendMessage(content, replyTo?.messageId);
+      setReplyTo(null);
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+    setPendingFile(file);
+    setPendingPreviewUrl(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
   };
 
   // ─── 드래그 ───────────────────────────────────────────
@@ -431,6 +500,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     }
     setRenaming(null);
   };
+
 
   const openPopup = () => {
     window.open(
@@ -633,6 +703,16 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                 </div>
               )}
             </div>
+            {/* 메시지 검색 */}
+            {activeRoomId && (
+              <button
+                onClick={() => { setShowSearch(v => !v); if (!showSearch) setTimeout(() => searchInputRef.current?.focus(), 50); else setSearchQuery(""); }}
+                style={{ ...s.titleBtn, background: showSearch ? 'rgba(255,255,255,0.2)' : 'none' }}
+                title="메시지 검색"
+              >
+                🔍
+              </button>
+            )}
             {/* 별도 창으로 분리 (브라우저 독립 창) */}
             <button
               style={s.titleBtn}
@@ -694,8 +774,39 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                 <div style={s.noRoom}>불러오는 중...</div>
               ) : (
                 <>
+                  {/* 검색 바 */}
+                  {showSearch && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderBottom: '1px solid #E5E7EB', background: '#F9FAFB', flexShrink: 0 }}>
+                      <span style={{ fontSize: 13, color: '#6B7280' }}>🔍</span>
+                      <input
+                        ref={searchInputRef}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="메시지 검색..."
+                        style={{ flex: 1, border: '1px solid #D1D5DB', borderRadius: 6, padding: '4px 8px', fontSize: 13, outline: 'none' }}
+                        onKeyDown={(e) => { if (e.key === 'Escape') { setShowSearch(false); setSearchQuery(""); } }}
+                        autoFocus
+                      />
+                      {searchQuery && (
+                        <span style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap' }}>
+                          {messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase())).length}건
+                        </span>
+                      )}
+                      <button onClick={() => { setShowSearch(false); setSearchQuery(""); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 14, padding: '0 2px' }}>✕</button>
+                    </div>
+                  )}
                   <div style={s.msgArea}>
-                    {messages.map((msg) => {
+                    {(searchQuery.trim()
+                      ? messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+                      : messages
+                    ).map((msg) => {
+                      if (msg.messageType === 'SYSTEM') {
+                        return (
+                          <div key={msg.messageId} style={{ textAlign: 'center', margin: '8px 0', fontSize: 12, color: '#9CA3AF' }}>
+                            {msg.content}
+                          </div>
+                        );
+                      }
                       const mine = msg.senderId === userId;
                       const initial = (msg.senderNickname ?? '?')[0].toUpperCase();
                       const avatarColor = `hsl(${(msg.senderId * 47) % 360}, 55%, 55%)`;
@@ -729,20 +840,36 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                                   style={{
                                     ...s.bubble,
                                     position: 'relative',
-                                    background: msg.isDeleted ? '#e0e0e0' : !msg.content.startsWith('/api/chat/files/') ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
+                                    background: msg.isDeleted ? '#e0e0e0' : !isFileUrl(msg.content) ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
                                     color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1a1a1a',
                                     fontStyle: msg.isDeleted ? 'italic' : 'normal',
-                                    borderRadius: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 8 : 18,
-                                    padding: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 0 : undefined,
-                                    boxShadow: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
-                                    border: !msg.content.startsWith('/api/chat/files/') && !mine && !msg.isDeleted ? '1px solid #E5E7EB' : 'none',
+                                    borderRadius: isFileUrl(msg.content) && !msg.isDeleted ? 8 : 18,
+                                    padding: (isFileUrl(msg.content) && !msg.isDeleted) ? 0 : msg.replyToId ? 0 : undefined,
+                                    overflow: msg.replyToId ? 'hidden' : undefined,
+                                    boxShadow: isFileUrl(msg.content) && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
+                                    border: !isFileUrl(msg.content) && !mine && !msg.isDeleted ? '1px solid #E5E7EB' : 'none',
                                   }}
                                   onContextMenu={!msg.isDeleted ? (e) => { e.preventDefault(); e.stopPropagation(); setMenuId(menuId === msg.messageId ? null : msg.messageId); } : undefined}
                                 >
-                                  {msg.isDeleted ? '삭제된 메시지' : renderMsgContent(msg.content, mine)}
+                                  {/* 답장 인용 - overflow hidden으로 버블 radius에 자연스럽게 클리핑 */}
+                                  {msg.replyToId && (
+                                    <div style={{ background: mine ? 'rgba(0,0,0,0.18)' : '#EDF0F3', padding: '7px 12px 6px', borderBottom: '1px solid ' + (mine ? 'rgba(0,0,0,0.12)' : '#DDE1E6') }}>
+                                      <div style={{ fontSize: 11, fontWeight: 700, color: mine ? 'rgba(255,255,255,0.95)' : '#5F8F7B', marginBottom: 2 }}>{msg.replyToNickname}에게 답장</div>
+                                      <div style={{ fontSize: 11, color: mine ? 'rgba(255,255,255,0.72)' : '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{msg.replyToContent}</div>
+                                    </div>
+                                  )}
+                                  <div style={msg.replyToId ? { padding: '8px 12px' } : undefined}>
+                                  {msg.isDeleted ? '삭제된 메시지' : renderMsgContent(msg.content, mine, searchQuery)}
                                   {msg.updatedAt && !msg.isDeleted && <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 4 }}>(수정됨)</span>}
+                                  </div>
                                   {menuId === msg.messageId && (
-                                    <div style={{ position: 'absolute', right: mine ? 0 : undefined, left: mine ? undefined : 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 90, overflow: 'hidden' }}>
+                                    <div style={{ position: 'absolute', right: mine ? 0 : undefined, left: mine ? undefined : 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 110, overflow: 'hidden' }}>
+                                      {/* 답장 */}
+                                      <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { setReplyTo({ messageId: msg.messageId, content: isFileUrl(msg.content) ? '📎 파일' : msg.content, nickname: msg.senderNickname }); setMenuId(null); textareaRef.current?.focus(); }}>답장</button>
+                                      {/* 복사 (텍스트 메시지만) */}
+                                      {!isFileUrl(msg.content) && (
+                                        <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { navigator.clipboard.writeText(msg.content); setMenuId(null); }}>복사</button>
+                                      )}
                                       {mine ? (
                                         <>
                                           <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { setMenuId(null); startEditMsg(msg); }}>수정</button>
@@ -769,27 +896,68 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                   })}
                   <div ref={bottomRef} />
                 </div>
-                <div style={s.inputArea}>
-                  <button onClick={() => fileInputRef.current?.click()} style={s.iconBtn}>
-                    📎
-                  </button>
-                  <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileUpload} />
-                  <button ref={emojiBtnRef} style={s.iconBtn} onClick={() => setShowEmoji((v) => !v)}>
-                    😊
-                  </button>
-                  {showEmoji && (
-                    <EmojiPicker anchorRef={emojiBtnRef} onSelect={(emoji) => setInput((prev) => prev + emoji)} onClose={() => setShowEmoji(false)} />
+                <div style={{ ...s.inputArea, flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
+                  {/* 답장 미리보기 */}
+                  {replyTo && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#F0F7F4', borderBottom: '1px solid #D1E8DF', borderLeft: '3px solid #5F8F7B' }}>
+                      <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <div style={{ fontSize: 11, color: '#5F8F7B', fontWeight: 600 }}>{replyTo.nickname}에게 답장</div>
+                        <div style={{ fontSize: 12, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{replyTo.content}</div>
+                      </div>
+                      <button onClick={() => setReplyTo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 14, padding: '0 2px', flexShrink: 0 }}>✕</button>
+                    </div>
                   )}
-                  <input
-                    style={s.textInput}
-                    placeholder="메시지 입력..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                  />
-                  <button onClick={handleSend} style={s.sendBtn} disabled={!input.trim()}>
-                    전송
-                  </button>
+                  {/* 파일 미리보기 */}
+                  {pendingFile && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8, borderBottom: '1px solid #e5e7eb', marginBottom: 6 }}>
+                      {pendingPreviewUrl ? (
+                        <img src={pendingPreviewUrl} alt="미리보기" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid #E5E7EB' }} />
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F3F4F6', borderRadius: 8, padding: '6px 10px', fontSize: 13, color: '#374151' }}>
+                          📎 {pendingFile.name}
+                        </div>
+                      )}
+                      <button
+                        onClick={cancelPendingFile}
+                        style={{ background: '#e5e7eb', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', flexShrink: 0 }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button onClick={() => fileInputRef.current?.click()} style={s.iconBtn}>
+                      📎
+                    </button>
+                    <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileSelect} />
+                    <button ref={emojiBtnRef} style={s.iconBtn} onClick={() => setShowEmoji((v) => !v)}>
+                      😊
+                    </button>
+                    {showEmoji && (
+                      <EmojiPicker anchorRef={emojiBtnRef} onSelect={(emoji) => setInput((prev) => prev + emoji)} onClose={() => setShowEmoji(false)} />
+                    )}
+                    <textarea
+                      ref={textareaRef}
+                      style={s.textInput}
+                      placeholder="메시지 입력..."
+                      value={input}
+                      rows={1}
+                      onChange={(e) => {
+                        setInput(e.target.value);
+                        e.target.style.height = "auto";
+                        e.target.style.height = e.target.scrollHeight + "px";
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                    />
+                    <button onClick={handleSend} style={s.sendBtn} disabled={!input.trim() && !pendingFile}>
+                      전송
+                    </button>
+                  </div>
                 </div>
               </>
             )}
@@ -934,7 +1102,7 @@ const s: Record<string, React.CSSProperties> = {
   unreadCount: { fontSize: 11, color: '#E9C46A', fontWeight: 'bold', flexShrink: 0, marginBottom: 2, lineHeight: 1 },
   inputArea: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderTop: '1px solid #eee', background: '#EAF5DC', flexShrink: 0 },
   iconBtn: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '0 2px' },
-  textInput: { flex: 1, padding: '8px 12px', border: '1px solid #ddd', borderRadius: 20, fontSize: 13, outline: 'none' },
+  textInput: { flex: 1, padding: '8px 12px', border: '1px solid #ddd', borderRadius: 20, fontSize: 13, outline: 'none', resize: 'none' as const, lineHeight: 1.5, maxHeight: 120, overflowY: 'auto' as const, fontFamily: 'inherit' },
   sendBtn: { background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 16, padding: '8px 14px', fontWeight: 'bold', cursor: 'pointer', fontSize: 12 },
 
   rHandle: { position: "absolute", zIndex: 10001 },
