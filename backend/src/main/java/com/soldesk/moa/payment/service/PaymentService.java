@@ -1,7 +1,5 @@
 package com.soldesk.moa.payment.service;
 
-import com.soldesk.moa.users.controller.AccountRestController;
-import com.soldesk.moa.users.service.AccountService;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -19,6 +17,7 @@ import com.soldesk.moa.payment.entity.constant.PaymentStatus;
 import com.soldesk.moa.payment.repository.PaymentRepository;
 import com.soldesk.moa.place.entity.Reservation;
 import com.soldesk.moa.place.entity.constant.ReservationStatus;
+import com.soldesk.moa.place.repository.PlaceRepository;
 import com.soldesk.moa.place.repository.ReservationRepository;
 import com.soldesk.moa.schedule.repository.ScheduleRepository;
 import com.soldesk.moa.users.entity.Users;
@@ -32,20 +31,32 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class PaymentService {
 
-    private final AccountService accountService;
-    private final AccountRestController accountRestController;
     private final ReservationRepository reservationRepository;
     private final PaymentRepository paymentRepository;
     private final ScheduleRepository scheduleRepository;
     private final TossPaymentClient tossPaymentClient;
     private final UsersRepository usersRepository;
+    private final PlaceRepository placeRepository;
 
     // 1. 시간대를 선점, 결제창 열기전에 호출
     public ReservationHoldResponse hold(Long userId, ReservationHoldRequest request) {
 
         // 장소 조회
-        var place = reservationRepository.findById(request.placeId())
-                .map(Reservation::getPlace).orElseThrow(() -> new EntityNotFoundException("장소를 찾을 수 없습니다."));
+        var place = placeRepository.findById(request.placeId())
+            .orElseThrow(() -> new EntityNotFoundException("장소를 찾을 수 없습니다."));
+
+        long minutes = ChronoUnit.MINUTES.between(request.startTime(), request.endTime());
+
+        // 시간 유효성 검증
+        if (minutes <= 0) {
+            throw new IllegalArgumentException("시작 시간이 종료 시간보다 늦습니다.");
+        }
+        if (minutes < place.getMinReservationMinutes()) {
+            throw new IllegalArgumentException("최소 예약 시간은 " + place.getMinReservationMinutes() + "분입니다.");
+        }
+        if (minutes > place.getMaxReservationMinutes()) {
+            throw new IllegalArgumentException("최대 예약 시간은 " + place.getMaxReservationMinutes() + "분입니다.");
+        }
 
         // 시간대 중복 검증
         if (reservationRepository.existsOverlapping(place.getId(), request.startTime(), request.endTime())) {
@@ -53,7 +64,6 @@ public class PaymentService {
         }
 
         // 금액 계산(분단위로 하래)
-        long minutes = ChronoUnit.MINUTES.between(request.startTime(), request.endTime());
         int totalPrice = (int) (place.getPricePerHour() * minutes / 60.0);
 
         // orderId 주문번호는 서버에서 uuid로 생성해주기
@@ -81,12 +91,17 @@ public class PaymentService {
         return new ReservationHoldResponse(reservation.getId(), orderId, totalPrice, orderName);
     }
 
-    // 1. 결제 승인 확정, 프론트에서 토스 결제창을 완료 -> paymentKey를 받아서 서버에서 최종 검증 및 승인;
+    // 2. 결제 승인 확정, 프론트에서 토스 결제창을 완료 -> paymentKey를 받아서 서버에서 최종 검증 및 승인;
     public void confirm(Long userId, PaymentConfirmRequest request) {
 
         // 예약 조회
         Reservation reservation = reservationRepository.findById(request.reservationId())
                 .orElseThrow(() -> new EntityNotFoundException("예약을 찾을 수 없습니다."));
+
+        // 예약자 본인이 맞는지 확인
+        if (!reservation.getReservedBy().getUserId().equals(userId)) {
+            throw new IllegalStateException("본인의 예약만 승인할 수 있습니다.");
+        }
 
         // 선점(holding)중인지 확인해라.
         if (reservation.getReservationStatus() != ReservationStatus.HOLDING) {
@@ -120,13 +135,45 @@ public class PaymentService {
                 .orderId(tossConfirmResponse.getOrderId())
                 .amount(tossConfirmResponse.getTotalAmount())
                 .method(tossConfirmResponse.getMethod())
-                .status(PaymentStatus.PAID)
-                .approvedAt(tossConfirmResponse.getApprovedAt())
+                .status(PaymentStatus.DONE)
+                .approvedAt(tossConfirmResponse.getApprovedAt().toLocalDateTime())
                 .build();
 
         paymentRepository.save(payment);
 
-        // 예약 확정
+        // 예약 상태 확정
         reservation.setReservationStatus(ReservationStatus.RESERVED);
+    }
+
+    // 예약 취소 + 결제 환불
+    public void cancel(Long userId, Long reservationId, String cancelReason){
+        Reservation reservation = reservationRepository.findById(reservationId)
+            .orElseThrow(()->new EntityNotFoundException("예약을 찾을 수 없습니다."));
+
+        // 본인 예약인지 검증
+        if(!reservation.getReservedBy().getUserId().equals(userId)){
+            throw new IllegalStateException("본인의 예약만 취소할 수 있습니다.");
+        }
+
+        // reserved 상태만 취소 가능
+        if(reservation.getReservationStatus() != ReservationStatus.RESERVED){
+            throw new IllegalStateException("취소 가능한 예약이 아닙니다.");
+        }
+
+        // 조회 후 취소 api호출
+        Payment payment = paymentRepository.findByReservationId(reservationId)
+            .orElseThrow(()->new EntityNotFoundException("결제 정보를 찾을 수 없습니다."));
+
+        tossPaymentClient.cancel(payment.getPaymentKey(), cancelReason);
+
+        payment.cancel(cancelReason);
+        reservation.setReservationStatus(ReservationStatus.CANCELLED);
+    }
+
+    // 결제 대기 만료 메소드(스케줄러용)
+    @Transactional
+    public void expireHoldings(){
+        reservationRepository.findExpiredHoldings(LocalDateTime.now())
+            .forEach(r -> r.setReservationStatus(ReservationStatus.EXPIRED));
     }
 }

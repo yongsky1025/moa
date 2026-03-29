@@ -29,7 +29,7 @@ import lombok.ToString;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // 결제는 함부로 객체생성 못하게 막자
 @AllArgsConstructor
-@ToString
+@ToString(exclude = {"reservation", "user"})
 @Builder
 public class Payment extends BaseEntity {
 
@@ -38,7 +38,7 @@ public class Payment extends BaseEntity {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(nullable = false, unique = true)
+    @JoinColumn(name = "reservation_id" ,nullable = false, unique = true)
     private Reservation reservation;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -70,13 +70,13 @@ public class Payment extends BaseEntity {
 
     // 승인
     public void approve(LocalDateTime approvedAt) {
-        this.status = PaymentStatus.PAID;
+        this.status = PaymentStatus.DONE;
         this.approvedAt = approvedAt;
     }
 
     // 취소
     public void cancel(String reason) {
-        this.status = PaymentStatus.CANCELLED;
+        this.status = PaymentStatus.CANCELED;
         this.cancelReason = reason;
         this.cancelledAt = LocalDateTime.now();
     }

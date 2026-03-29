@@ -1,6 +1,6 @@
 package com.soldesk.moa.payment.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -14,8 +14,8 @@ public class TossConfirmResponse {
 
     private String paymentKey;
     private String orderId;
-    private String status; // PAID면 성공
+    private String status; // DONE이면 성공
     private Integer totalAmount;
     private String method; // 결제방법
-    private LocalDateTime approvedAt;
+    private OffsetDateTime approvedAt;
 }
