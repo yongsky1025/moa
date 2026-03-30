@@ -55,6 +55,9 @@ public interface CircleMemberRepository extends JpaRepository<CircleMember, Long
         // 서클의 특정 역할 멤버 조회 (리더 알림용)
         Optional<CircleMember> findByCircleAndRole(Circle circle, CircleRole role);
 
+        // LEADER 또는 SUB_LEADER 권한 확인용 (다중 역할 조회)
+        Optional<CircleMember> findByCircleAndUserAndRoleIn(Circle circle, Users user, List<CircleRole> roles);
+
         // 두 유저가 같은 서클에 ACTIVE 상태로 함께 속해 있는지 확인 (1:1 채팅 제한용)
         @Query("SELECT cm1 FROM CircleMember cm1, CircleMember cm2 " +
                "WHERE cm1.user.userId = :userId1 AND cm2.user.userId = :userId2 " +

@@ -113,4 +113,26 @@ public class CircleMemberContoller {
 
                 return ResponseEntity.ok().build();
         }
+
+        // 부리더 지정 (리더만)
+        @PostMapping("/{memberId}/sub-leader")
+        public ResponseEntity<Void> assignSubLeader(
+                        @PathVariable Long circleId,
+                        @PathVariable Long memberId,
+                        @AuthenticationPrincipal AuthUserDTO authUser) {
+
+                circleMemberService.assignSubLeader(circleId, memberId, authUser.getUserId());
+                return ResponseEntity.ok().build();
+        }
+
+        // 부리더 해제 (리더만)
+        @DeleteMapping("/{memberId}/sub-leader")
+        public ResponseEntity<Void> revokeSubLeader(
+                        @PathVariable Long circleId,
+                        @PathVariable Long memberId,
+                        @AuthenticationPrincipal AuthUserDTO authUser) {
+
+                circleMemberService.revokeSubLeader(circleId, memberId, authUser.getUserId());
+                return ResponseEntity.noContent().build();
+        }
 }
