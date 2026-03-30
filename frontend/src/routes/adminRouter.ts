@@ -21,6 +21,7 @@ import AdminNoticeEditPage from "../admin/pages/AdminNoticeEditPage";
 import AdminPlacesPage from "../admin/pages/AdminPlacesPage";
 import AdminPlaceRegisterPage from "../admin/pages/AdminPlaceRegisterPage";
 import AdminPlaceEditPage from "../admin/pages/AdminPlaceEditPage";
+import AdminPlaceDetailPage from "../admin/pages/AdminPlaceDetailPage";
 
 export const adminRouter = () => {
   return [
@@ -50,6 +51,7 @@ export const adminRouter = () => {
         { path: "circles/:id", Component: AdminCircleDetailPage },
         { path: "places", Component: AdminPlacesPage },
         { path: "places/register", Component: AdminPlaceRegisterPage },
+        { path: "places/:id", Component: AdminPlaceDetailPage },
         { path: "places/:id/edit", Component: AdminPlaceEditPage },
       ],
     },

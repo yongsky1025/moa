@@ -24,7 +24,16 @@ repositories {
 	mavenCentral()
 }
 
+dependencyManagement {
+	imports {
+		mavenBom 'org.springframework.ai:spring-ai-bom:1.0.0'
+	}
+}
+
 dependencies {
+	// Spring AI - OpenAI 임베딩
+	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+
 
 	// thymeleaf 레이아웃 상속
 	implementation 'nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect:3.4.0'

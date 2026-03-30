@@ -6,6 +6,7 @@ import type {
 } from '../types/adminTypes';
 import {
   cancelSanction,
+  fetchReportDetail,
   fetchSanctionDetail,
   liftSanction,
 } from '../api/adminReportAndSanctionApi';
@@ -13,6 +14,7 @@ import AdminSanctionStateBadge from '../component/sanction/AdminSanctionStateBad
 import AdminConfirmModal from '../component/AdminConfirmModal';
 import { useAdminToast } from '../hooks/useAdminToast';
 import AdminToast from '../component/AdminToast';
+import ReportEvidenceImages from '../component/report/ReportEvidenceImages';
 
 const formatDateTime = (date: string | null | undefined) => {
   if (!date) return '-';
@@ -34,6 +36,7 @@ export default function AdminSanctionDetailPage() {
   const [data, setData] = useState<SanctionResponseDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reportImagePaths, setReportImagePaths] = useState<string[] | null>(null);
   const [adminId, setAdminId] = useState(''); // security 붙으면 제거(토큰)
   const [cancelReason, setCancelReason] = useState('');
   const [saving, setSaving] = useState(false);
@@ -64,6 +67,13 @@ export default function AdminSanctionDetailPage() {
       alive = false;
     };
   }, [sanctionId]);
+
+  useEffect(() => {
+    if (!data?.reportId) return;
+    fetchReportDetail(data.reportId).then((r) => {
+      setReportImagePaths(r.imagePaths ?? null);
+    }).catch(() => {});
+  }, [data?.reportId]);
 
   // 버튼 활성화 조건
   const canLift = useMemo(
@@ -280,6 +290,9 @@ export default function AdminSanctionDetailPage() {
                     {data.reason}
                   </div>
                 </div>
+                {data.reportId && (
+                  <ReportEvidenceImages imagePaths={reportImagePaths} />
+                )}
                 {data.sanctionState === 'CANCELLED' && (
                   <div className="pt-2">
                     <div className="text-moa-subtle text-xs font-semibold">

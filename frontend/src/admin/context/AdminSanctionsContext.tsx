@@ -2,13 +2,12 @@ import type { PageResultDTO, SanctionFilterDTO, SanctionResponseDTO, ReportTarge
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchSanctionList } from '../api/adminReportAndSanctionApi';
+import { usePageSize } from '../hooks/usePageSize';
 
-const DEFAULT_SIZE = 20;
-
-function paramsToDTO(sp: URLSearchParams): SanctionFilterDTO {
+function paramsToDTO(sp: URLSearchParams, pageSize: number): SanctionFilterDTO {
   return {
     page: Number(sp.get('page')) || 1,
-    size: Number(sp.get('size')) || DEFAULT_SIZE,
+    size: pageSize,
     type: sp.get('type') || undefined,
     keyword: sp.get('keyword') || undefined,
     targetType: (sp.get('targetType') ?? undefined) as ReportTargetType | undefined,
@@ -20,7 +19,6 @@ function paramsToDTO(sp: URLSearchParams): SanctionFilterDTO {
 function dtoToParams(dto: SanctionFilterDTO): Record<string, string> {
   const r: Record<string, string> = {};
   if (dto.page > 1) r.page = String(dto.page);
-  if (dto.size && dto.size !== DEFAULT_SIZE) r.size = String(dto.size);
   if (dto.type) r.type = dto.type;
   if (dto.keyword) r.keyword = dto.keyword;
   if (dto.targetType) r.targetType = dto.targetType;
@@ -47,8 +45,9 @@ export function AdminSanctionsProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PageResultDTO<SanctionResponseDTO> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pageSize = usePageSize();
 
-  const params = paramsToDTO(searchParams);
+  const params = paramsToDTO(searchParams, pageSize);
 
   const load = useCallback(async (dto: SanctionFilterDTO) => {
     setLoading(true);
@@ -62,7 +61,7 @@ export function AdminSanctionsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { load(paramsToDTO(searchParams)); }, [searchParams, load]);
+  useEffect(() => { load(paramsToDTO(searchParams, pageSize)); }, [searchParams, pageSize, load]);
 
   const applyFilter = useCallback((partial: Partial<SanctionFilterDTO>) => {
     const next = { ...params, ...partial, page: 1 };
@@ -76,7 +75,7 @@ export function AdminSanctionsProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(() => load(params), [load, params]);
 
-  const actualTotalPage = data ? Math.ceil((data.totalCount ?? 0) / (params.size ?? DEFAULT_SIZE)) : 0;
+  const actualTotalPage = data ? Math.ceil((data.totalCount ?? 0) / (params.size ?? pageSize)) : 0;
 
   return (
     <AdminSanctionsContext.Provider

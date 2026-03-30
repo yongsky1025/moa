@@ -1,0 +1,68 @@
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    container_name: moa-meilisearch
+    environment:
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meili_data:/meili_data
+    restart: unless-stopped
+
+  meili-init:
+    image: curlimages/curl:8.10.1
+    depends_on:
+      - meilisearch
+    restart: "no"
+    environment:
+      MEILI_HOST: http://meilisearch:7700
+    command: >
+      sh -ec '
+      uid=$${MEILI_SEARCH_KEY_UID:-11111111-1111-4111-8111-111111111111};
+      if [ -z "$$MEILI_MASTER_KEY" ]; then
+        echo "[meili-init] MEILI_MASTER_KEY is required";
+        exit 1;
+      fi;
+      echo "[meili-init] waiting for meilisearch...";
+      for i in $$(seq 1 60); do
+        if curl -fsS -H "Authorization: Bearer $$MEILI_MASTER_KEY" "$$MEILI_HOST/health" | grep -q "\"available\""; then
+          break;
+        fi;
+        sleep 1;
+      done;
+
+      status=$$(curl -sS -o /tmp/key.json -w "%{http_code}" -H "Authorization: Bearer $$MEILI_MASTER_KEY" "$$MEILI_HOST/keys/$$uid");
+      if [ "$$status" = "200" ]; then
+        key=$$(sed -n "s/.*\"key\":\"\\([^\"]*\\)\".*/\\1/p" /tmp/key.json);
+        echo "[meili-init] search key already exists (uid=$$uid)";
+      elif [ "$$status" = "404" ]; then
+        payload="{\"uid\":\"$$uid\",\"description\":\"backend search-only key\",\"actions\":[\"search\"],\"indexes\":[\"*\"],\"expiresAt\":null}";
+        create_status=$$(curl -sS -o /tmp/create.json -w "%{http_code}" -X POST -H "Authorization: Bearer $$MEILI_MASTER_KEY" -H "Content-Type: application/json" -d "$$payload" "$$MEILI_HOST/keys");
+        if [ "$$create_status" != "201" ]; then
+          echo "[meili-init] key create failed (status=$$create_status):";
+          cat /tmp/create.json;
+          exit 1;
+        fi;
+        key=$$(sed -n "s/.*\"key\":\"\\([^\"]*\\)\".*/\\1/p" /tmp/create.json);
+        echo "[meili-init] search key created (uid=$$uid)";
+      else
+        echo "[meili-init] key lookup failed (status=$$status):";
+        cat /tmp/key.json;
+        exit 1;
+      fi;
+
+      if [ -z "$$key" ]; then
+        echo "[meili-init] failed to parse search key";
+        exit 1;
+      fi;
+
+      if [ -n "$$MEILISEARCH_SEARCH_API_KEY" ] && [ "$$MEILISEARCH_SEARCH_API_KEY" != "$$key" ]; then
+        echo "[meili-init] WARNING: MEILISEARCH_SEARCH_API_KEY does not match actual key for uid=$$uid";
+        echo "[meili-init] expected=$$MEILISEARCH_SEARCH_API_KEY";
+        echo "[meili-init] actual=$$key";
+      fi;
+
+      echo "[meili-init] resolved search key: $$key";
+      '
+
+volumes:
+  meili_data:

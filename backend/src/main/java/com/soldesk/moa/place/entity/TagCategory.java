@@ -30,4 +30,7 @@ public class TagCategory {
 
     @Builder.Default
     private Boolean isActive = true;
+
+    @Builder.Default
+    private Boolean scheduleEnabled = false; // true면 일정 생성 시에도 사용 가능
 }

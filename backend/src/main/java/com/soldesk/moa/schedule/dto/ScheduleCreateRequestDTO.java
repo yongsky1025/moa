@@ -1,6 +1,7 @@
 package com.soldesk.moa.schedule.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -33,4 +34,7 @@ public class ScheduleCreateRequestDTO {
     private String location;
     private Double latitude;
     private Double longitude;
+
+    // 태그 (선택)
+    private List<Long> tagIds;
 }

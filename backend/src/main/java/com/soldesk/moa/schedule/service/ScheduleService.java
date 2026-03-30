@@ -2,6 +2,7 @@ package com.soldesk.moa.schedule.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -13,15 +14,21 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.place.dto.TagResponseDTO;
+import com.soldesk.moa.place.entity.Tag;
+import com.soldesk.moa.place.repository.TagRepository;
 import com.soldesk.moa.schedule.dto.ScheduleCreateRequestDTO;
+import com.soldesk.moa.schedule.dto.ScheduleMemberResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleUpdateRequestDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.entity.ScheduleMember;
+import com.soldesk.moa.schedule.entity.ScheduleTag;
 import com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus;
 import com.soldesk.moa.schedule.repository.ScheduleMemberRepository;
 import com.soldesk.moa.schedule.repository.ScheduleRepository;
 import com.soldesk.moa.chat.service.ChatRoomService;
+import com.soldesk.moa.schedule.repository.ScheduleTagRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
@@ -34,9 +41,11 @@ public class ScheduleService {
 
         private final ScheduleRepository scheduleRepository;
         private final ScheduleMemberRepository scheduleMemberRepository;
+        private final ScheduleTagRepository scheduleTagRepository;
         private final CircleRepository circleRepository;
         private final CircleMemberRepository circleMemberRepository;
         private final UsersRepository usersRepository;
+        private final TagRepository tagRepository;
         private final ChatRoomService chatRoomService;
 
         // 일정 생성
@@ -90,11 +99,11 @@ public class ScheduleService {
                 scheduleMemberRepository.save(creatorMember);
                 saved.increaseCurrentMember();
 
+                List<TagResponseDTO> savedTags = saveTags(saved, request.getTagIds());
                 Long chatRoomId = chatRoomService
                                 .getOrCreateScheduleRoom(saved.getScheduleId(), saved.getTitle(), userId)
                                 .getId();
-
-                return new ScheduleResponseDTO(saved, chatRoomId);
+                return new ScheduleResponseDTO(saved, false, savedTags, chatRoomId);
         }
 
         // 일정 참여
@@ -185,9 +194,13 @@ public class ScheduleService {
                 scheduleRepository.delete(schedule);
         }
 
-        // 서클 일정 목록 조회 (서클 ACTIVE 멤버만)
+        // 서클 일정 목록 조회 (서클 ACTIVE 멤버만, 날짜 범위 필터 선택적)
         @Transactional(readOnly = true)
-        public List<ScheduleResponseDTO> getSchedules(Long circleId, Long userId) {
+        public List<ScheduleResponseDTO> getSchedules(
+                        Long circleId,
+                        Long userId,
+                        LocalDateTime from,
+                        LocalDateTime to) {
 
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
@@ -196,9 +209,17 @@ public class ScheduleService {
                                 .findByCircleAndUser_UserIdAndStatus(circle, userId, CircleMemberStatus.ACTIVE)
                                 .orElseThrow(() -> new AccessDeniedException("서클 멤버만 일정을 조회할 수 있습니다."));
 
-                return scheduleRepository.findByCircle_CircleId(circleId)
+                return scheduleRepository.findByCircleWithDateFilter(circleId, from, to)
                                 .stream()
-                                .map(ScheduleResponseDTO::new)
+                                .map(s -> {
+                                        List<TagResponseDTO> tags = scheduleTagRepository.findAllBySchedule(s).stream()
+                                                        .map(st -> TagResponseDTO.builder()
+                                                                        .id(st.getTag().getId())
+                                                                        .name(st.getTag().getName())
+                                                                        .build())
+                                                        .toList();
+                                        return new ScheduleResponseDTO(s, false, tags);
+                                })
                                 .toList();
         }
 
@@ -221,7 +242,13 @@ public class ScheduleService {
                 }
 
                 boolean joined = scheduleMemberRepository.existsByScheduleAndCircleMember(schedule, circleMember);
-                return new ScheduleResponseDTO(schedule, joined);
+                List<TagResponseDTO> tags = scheduleTagRepository.findAllBySchedule(schedule).stream()
+                                .map(st -> TagResponseDTO.builder()
+                                                .id(st.getTag().getId())
+                                                .name(st.getTag().getName())
+                                                .build())
+                                .toList();
+                return new ScheduleResponseDTO(schedule, joined, tags);
         }
 
         // 일정 수정 (생성자 또는 서클 리더)
@@ -275,7 +302,68 @@ public class ScheduleService {
                                 .longitude(request.getLongitude())
                                 .build();
 
-                return new ScheduleResponseDTO(scheduleRepository.save(updated));
+                Schedule savedUpdated = scheduleRepository.save(updated);
+                scheduleTagRepository.deleteAllBySchedule(savedUpdated);
+                List<TagResponseDTO> updatedTags = saveTags(savedUpdated, request.getTagIds());
+                return new ScheduleResponseDTO(savedUpdated, false, updatedTags);
+        }
+
+        // 일정 참여자 목록 조회 (서클 ACTIVE 멤버만)
+        @Transactional(readOnly = true)
+        public List<ScheduleMemberResponseDTO> getScheduleMembers(Long circleId, Long scheduleId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                circleMemberRepository
+                                .findByCircleAndUser_UserIdAndStatus(circle, userId, CircleMemberStatus.ACTIVE)
+                                .orElseThrow(() -> new AccessDeniedException("서클 멤버만 참여자 목록을 조회할 수 있습니다."));
+
+                Schedule schedule = scheduleRepository.findById(scheduleId)
+                                .orElseThrow(() -> new IllegalArgumentException("일정이 존재하지 않습니다."));
+
+                if (!schedule.getCircle().getCircleId().equals(circleId)) {
+                        throw new IllegalArgumentException("해당 서클의 일정이 아닙니다.");
+                }
+
+                return scheduleMemberRepository.findBySchedule(schedule)
+                                .stream()
+                                .map(ScheduleMemberResponseDTO::new)
+                                .collect(Collectors.toList());
+        }
+
+        // 내가 참석한 일정 목록 (날짜 범위 필터 선택적)
+        @Transactional(readOnly = true)
+        public List<ScheduleResponseDTO> getMySchedules(Long userId, LocalDateTime from, LocalDateTime to) {
+                return scheduleMemberRepository.findByUserIdWithDateFilter(userId, from, to)
+                                .stream()
+                                .map(sm -> {
+                                        Schedule s = sm.getSchedule();
+                                        List<TagResponseDTO> tags = scheduleTagRepository.findAllBySchedule(s).stream()
+                                                        .map(st -> TagResponseDTO.builder()
+                                                                        .id(st.getTag().getId())
+                                                                        .name(st.getTag().getName())
+                                                                        .build())
+                                                        .toList();
+                                        return new ScheduleResponseDTO(s, true, tags);
+                                })
+                                .toList();
+        }
+
+        // 태그 저장 헬퍼
+        private List<TagResponseDTO> saveTags(Schedule schedule, List<Long> tagIds) {
+                if (tagIds == null || tagIds.isEmpty()) return List.of();
+                List<Tag> tags = tagRepository.findAllById(tagIds).stream()
+                                .filter(Tag::getIsActive)
+                                .toList();
+                tags.forEach(tag -> scheduleTagRepository.save(
+                                ScheduleTag.builder().schedule(schedule).tag(tag).build()));
+                return tags.stream()
+                                .map(tag -> TagResponseDTO.builder()
+                                                .id(tag.getId())
+                                                .name(tag.getName())
+                                                .build())
+                                .toList();
         }
 
         // 일정 참여 취소 (일정 시작일 하루 전까지만 참여 취소가능)

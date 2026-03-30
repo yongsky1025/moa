@@ -1,4 +1,4 @@
-import type { UserCountDTO } from '../../types/adminTypes';
+import type { UserCountDTO } from "../../types/adminTypes";
 
 interface Props {
   data: UserCountDTO | null;
@@ -6,9 +6,9 @@ interface Props {
 }
 
 const COLORS = {
-  male: { stroke: '#4A90D9', dot: 'bg-[#4A90D9]' },
-  female: { stroke: '#E05C8A', dot: 'bg-[#E05C8A]' },
-  unspecified: { stroke: '#9E9E9E', dot: 'bg-[#9E9E9E]' },
+  male: { stroke: "#4A90D9", dot: "bg-[#4A90D9]" },
+  female: { stroke: "#E05C8A", dot: "bg-[#E05C8A]" },
+  unspecified: { stroke: "#9E9E9E", dot: "bg-[#9E9E9E]" },
 };
 
 interface Seg {
@@ -20,23 +20,24 @@ interface Seg {
 
 function buildSegments(d: UserCountDTO): Seg[] {
   const total = d.countTotalUser;
-  const unspec = d.unspecifiedUser ?? Math.max(total - d.maleUser - d.femaleUser, 0);
+  const unspec =
+    d.unspecifiedUser ?? Math.max(total - d.maleUser - d.femaleUser, 0);
   return [
     {
-      key: 'male' as const,
-      label: '남성',
+      key: "male" as const,
+      label: "남성",
       count: d.maleUser,
       ratio: d.maleRatio,
     },
     {
-      key: 'female' as const,
-      label: '여성',
+      key: "female" as const,
+      label: "여성",
       count: d.femaleUser,
       ratio: d.femaleRatio,
     },
     {
-      key: 'unspecified' as const,
-      label: '미지정',
+      key: "unspecified" as const,
+      label: "미지정",
       count: unspec,
       ratio: d.unspecifiedRatio,
     },
@@ -50,12 +51,13 @@ function DonutSVG({ segs, total }: { segs: Seg[]; total: number }) {
     sw = 14;
   const circ = 2 * Math.PI * r;
   let off = 0;
-  const totalRatio = segs.reduce((sum, s) => sum + (Number.isFinite(s.ratio) ? s.ratio : 0), 0);
+  const totalRatio = segs.reduce(
+    (sum, s) => sum + (Number.isFinite(s.ratio) ? s.ratio : 0),
+    0,
+  );
   const denom = totalRatio > 0 ? totalRatio : 100;
 
   const arcs = segs.map((s) => {
-    // 도넛 파이는 "퍼센트(ratio)" 기반으로 그림.
-    // ratio 합이 100에서 약간 어긋날 수 있으니 합 기준으로 정규화.
     const safeRatio = Number.isFinite(s.ratio) ? s.ratio : 0;
     const d = (safeRatio / denom) * circ;
     const a = { ...s, d, off };
@@ -98,7 +100,7 @@ function DonutSVG({ segs, total }: { segs: Seg[]; total: number }) {
         fontWeight="700"
         fill="#262626"
       >
-        {total.toLocaleString('ko-KR')}
+        {total.toLocaleString("ko-KR")}
       </text>
       <text x={cx} y={cy + 24} textAnchor="middle" fontSize="10" fill="#d1d5db">
         명
@@ -134,9 +136,11 @@ export default function GenderDonutCard({ data, loading }: Props) {
                   <span className="text-moa-subtle text-xs">{s.label}</span>
                 </div>
                 <p className="text-moa-text text-sm font-bold">
-                  {s.count.toLocaleString('ko-KR')}명
+                  {s.count.toLocaleString("ko-KR")}명
                 </p>
-                <p className="text-moa-subtle mt-0.5 text-[10px]">{(+s.ratio).toFixed(1)}%</p>
+                <p className="text-moa-subtle mt-0.5 text-[10px]">
+                  {(+s.ratio).toFixed(1)}%
+                </p>
               </div>
             ))}
           </div>

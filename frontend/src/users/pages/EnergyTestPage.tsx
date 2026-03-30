@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { energyProfileApi } from "../../api/usersApi";
 import type { EnergyProfileRequest } from "../../api/usersApi";
-import { setAuthFromOAuth } from "../reducers/authSlice";
 import { authApi } from "../../api/authApi";
-import type { AppDispatch } from "../reducers/store";
+import { useAuthStore } from "../../store/authStore";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import SignUpStepper from "../components/SignUpStepper";
 
@@ -62,7 +60,7 @@ const TOTAL_STEPS = questions.length;
 
 export default function EnergyTestPage() {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
+  const setAuth = useAuthStore((s) => s.setAuth);
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode"); // "onboarding" | "retest" | null
 
@@ -119,8 +117,7 @@ export default function EnergyTestPage() {
         }
         // auth 상태 갱신
         const refreshed = await authApi.refresh();
-        localStorage.setItem("accessToken", refreshed.data.accessToken);
-        dispatch(setAuthFromOAuth(refreshed.data.user));
+        setAuth(refreshed.data.accessToken, refreshed.data.user);
         navigate("/users/energy-test/result", { replace: true });
       } catch (e) {
         setError(getErrorMessage(e));

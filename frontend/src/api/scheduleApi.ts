@@ -1,36 +1,62 @@
-import api from '../users/utils/jwtUtil';
+import api from './axiosInstance';
 import type {
   ScheduleResponse,
   ScheduleCreateRequest,
   ScheduleUpdateRequest,
+  ScheduleMember,
 } from '../schedule/types/schedule';
+export type { ScheduleResponse };
+import type { TagCategoryGroup } from './placeApi';
+
+export interface TagSuggestResult {
+  id: number;
+  name: string;
+  categoryName: string;
+}
 
 export const scheduleApi = {
-  // 일정 목록 (서클 멤버만)
-  getSchedules: (circleId: number) =>
-    api.get<ScheduleResponse[]>(`/circles/${circleId}/schedules`),
+  // 일정 생성 시 사용할 태그 목록 (scheduleEnabled=true 카테고리만)
+  getScheduleTags: () =>
+    api.get<TagCategoryGroup[]>('/api/tags/grouped', { params: { scheduleEnabled: true } }),
+
+  // 일정 목록 (서클 멤버만, from/to 날짜 필터 선택적)
+  getSchedules: (circleId: number, params?: { from?: string; to?: string }) =>
+    api.get<ScheduleResponse[]>(`/api/circles/${circleId}/schedules`, { params }),
 
   // 일정 상세 (서클 멤버만)
   getSchedule: (circleId: number, scheduleId: number) =>
-    api.get<ScheduleResponse>(`/circles/${circleId}/schedules/${scheduleId}`),
+    api.get<ScheduleResponse>(`/api/circles/${circleId}/schedules/${scheduleId}`),
+
+  // 일정 참여자 목록
+  getScheduleMembers: (circleId: number, scheduleId: number) =>
+    api.get<ScheduleMember[]>(`/api/circles/${circleId}/schedules/${scheduleId}/members`),
 
   // 일정 생성
   createSchedule: (circleId: number, data: ScheduleCreateRequest) =>
-    api.post<ScheduleResponse>(`/circles/${circleId}/schedules`, data),
+    api.post<ScheduleResponse>(`/api/circles/${circleId}/schedules`, data),
 
   // 일정 수정 (생성자 또는 리더)
   updateSchedule: (circleId: number, scheduleId: number, data: ScheduleUpdateRequest) =>
-    api.put<ScheduleResponse>(`/circles/${circleId}/schedules/${scheduleId}`, data),
+    api.put<ScheduleResponse>(`/api/circles/${circleId}/schedules/${scheduleId}`, data),
 
   // 일정 삭제 (생성자 또는 리더)
   deleteSchedule: (circleId: number, scheduleId: number) =>
-    api.delete<void>(`/circles/${circleId}/schedules/${scheduleId}`),
+    api.delete<void>(`/api/circles/${circleId}/schedules/${scheduleId}`),
 
   // 일정 참여
   joinSchedule: (circleId: number, scheduleId: number) =>
-    api.post<void>(`/circles/${circleId}/schedules/${scheduleId}/join`),
+    api.post<void>(`/api/circles/${circleId}/schedules/${scheduleId}/join`),
 
   // 일정 참여 취소
   cancelSchedule: (circleId: number, scheduleId: number) =>
-    api.delete<void>(`/circles/${circleId}/schedules/${scheduleId}/join`),
+    api.delete<void>(`/api/circles/${circleId}/schedules/${scheduleId}/join`),
+
+  // 제목+설명 기반 태그 추천
+  suggestTags: (title: string, description: string) =>
+    api.post<TagSuggestResult[]>('/api/tags/suggest', { title, description }),
+
+  // 내가 참석한 일정 목록
+  getMySchedules: (params?: { from?: string; to?: string }) =>
+    api.get<ScheduleResponse[]>('/api/schedules/my', { params }),
 };
+

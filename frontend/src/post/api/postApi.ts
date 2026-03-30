@@ -1,8 +1,11 @@
-import api from "../../users/utils/jwtUtil";
+import api from "../../api/axiosInstance";
 import type {
   PostReactionSummary,
   PostRequest,
   PostResponse,
+  PostSearchHit,
+  PostSearchRequest,
+  SearchPage,
 } from "../types/postTypes";
 
 // 게시글(Post) 도메인의 백엔드 호출 모음
@@ -34,6 +37,9 @@ export const postApi = {
     api.put<number>(`/api/circle/${circleId}/boards/${boardId}/posts/${postId}`, data),
   deleteCirclePost: (circleId: number, boardId: number, postId: number) =>
     api.delete<void>(`/api/circle/${circleId}/boards/${boardId}/posts/${postId}`),
+
+  searchPosts: (params: PostSearchRequest) =>
+    api.get<SearchPage<PostSearchHit>>("/api/posts/search", { params }),
 
   reactToPost: (postId: number) =>
     api.post<PostReactionSummary>(`/api/posts/${postId}/reactions/like`),

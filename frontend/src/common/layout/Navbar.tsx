@@ -13,19 +13,15 @@ import {
   LogOut,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../../users/reducers/authSlice";
-import type { AppDispatch, RootState } from "../../users/reducers/store";
+import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
 import type { Notification } from "../../types/notification";
 import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
 import { useAlarmSocket } from "../../chat/hooks/useAlarmSocket";
-import { useAuthStore } from "../../store/authStore";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useSelector((s: RootState) => s.auth);
-  const { userId: alarmUserId } = useAuthStore();
+  const { isLoggedIn, user, logout, userId: alarmUserId } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
 
   const dropdownItems: Record<
@@ -43,8 +39,6 @@ export default function Navbar() {
       { label: "공지사항", href: "#", icon: <Megaphone size={15} /> },
     ],
   };
-
-  const dispatch = useDispatch<AppDispatch>();
 
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -67,7 +61,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
+      ) {
         setProfileOpen(false);
       }
     };
@@ -77,17 +74,26 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     setProfileOpen(false);
-    await dispatch(logout());
+    await logout();
     navigate("/main");
   };
 
   useEffect(() => {
-    if (!isLoggedIn) { setUnreadChatCount(0); setActivityNoti([]); return; }
+    if (!isLoggedIn) {
+      setUnreadChatCount(0);
+      setActivityNoti([]);
+      return;
+    }
     const fetch = () => {
-      notificationApi.getAll().then((list) => {
-        setUnreadChatCount(list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length);
-        setActivityNoti(list.filter((n) => n.type !== "CHAT_MESSAGE"));
-      }).catch(() => {});
+      notificationApi
+        .getAll()
+        .then((list) => {
+          setUnreadChatCount(
+            list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length,
+          );
+          setActivityNoti(list.filter((n) => n.type !== "CHAT_MESSAGE"));
+        })
+        .catch(() => {});
     };
     fetch();
     const id = setInterval(fetch, 30000);
@@ -96,21 +102,26 @@ export default function Navbar() {
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
-      if (activityNotiRef.current && !activityNotiRef.current.contains(e.target as Node)) {
+      if (
+        activityNotiRef.current &&
+        !activityNotiRef.current.contains(e.target as Node)
+      ) {
         setShowActivityNoti(false);
       }
     };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
   }, []);
 
   const handleActivityNotiClick = async (n: Notification) => {
     if (!n.isRead) {
       await notificationApi.readOne(n.id);
-      setActivityNoti((p) => p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
+      setActivityNoti((p) =>
+        p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)),
+      );
     }
     setShowActivityNoti(false);
-    navigate('/circle/my');
+    navigate("/circle/my");
   };
 
   const ACTIVITY_NOTI_ICONS: Record<string, string> = {
@@ -134,11 +145,11 @@ export default function Navbar() {
 
   const navLinks: Record<string, string> = {
     "모임 찾기": "/circle",
-    커뮤니티: "#",
+    커뮤니티: "/board",
     "에너지 테스트": isLoggedIn
       ? "/users/energy-test/result"
       : "/users/energy-test",
-    "장소 추천": "#",
+    "장소 추천": "/place/rental",
     "관리자 페이지": "/admin/maindashboard",
   };
 
@@ -195,6 +206,13 @@ export default function Navbar() {
                 >
                   <Link
                     to={navLinks[item] ?? "#"}
+                    onClick={(e) => {
+                      const target = navLinks[item];
+                      if (target && window.location.pathname === target) {
+                        e.preventDefault();
+                        navigate(0);
+                      }
+                    }}
                     style={{
                       fontSize: 15,
                       fontWeight: 500,
@@ -305,76 +323,182 @@ export default function Navbar() {
             )}
 
             {isLoggedIn && (
-              <div ref={activityNotiRef} style={{ position: "relative", marginRight: 16 }}>
+              <div
+                ref={activityNotiRef}
+                style={{ position: "relative", marginRight: 16 }}
+              >
                 <button
                   onClick={() => setShowActivityNoti((v) => !v)}
                   title="활동 알림"
                   style={{
-                    width: 32, height: 32, background: "none", border: "none",
-                    cursor: "pointer", display: "flex", alignItems: "center",
-                    justifyContent: "center", padding: 0, flexShrink: 0,
+                    width: 32,
+                    height: 32,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    flexShrink: 0,
                   }}
                 >
                   <Bell size={20} color="#374151" strokeWidth={1.8} />
                 </button>
                 {unreadActivityCount > 0 && (
-                  <span style={{
-                    position: "absolute", top: -3, right: -3,
-                    backgroundColor: "#ef4444", color: "#fff",
-                    borderRadius: "50%", width: 16, height: 16,
-                    fontSize: 10, fontWeight: 700,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    pointerEvents: "none",
-                  }}>
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -3,
+                      right: -3,
+                      backgroundColor: "#ef4444",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: 16,
+                      height: 16,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      pointerEvents: "none",
+                    }}
+                  >
                     {unreadActivityCount > 99 ? "99+" : unreadActivityCount}
                   </span>
                 )}
                 {showActivityNoti && (
-                  <div style={{
-                    position: "absolute", top: "calc(100% + 8px)", right: 0,
-                    width: 300, background: "#fff", borderRadius: 12,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)", border: "1px solid #E5E7EB",
-                    zIndex: 200, overflow: "hidden",
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #F3F4F6" }}>
-                      <span style={{ fontWeight: 700, fontSize: 14, color: "#1F2937" }}>활동 알림</span>
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 8px)",
+                      right: 0,
+                      width: 300,
+                      background: "#fff",
+                      borderRadius: 12,
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                      border: "1px solid #E5E7EB",
+                      zIndex: 200,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "12px 16px",
+                        borderBottom: "1px solid #F3F4F6",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 14,
+                          color: "#1F2937",
+                        }}
+                      >
+                        활동 알림
+                      </span>
                       <button
                         onClick={async () => {
-                          const ids = activityNoti.filter((n) => !n.isRead).map((n) => n.id);
+                          const ids = activityNoti
+                            .filter((n) => !n.isRead)
+                            .map((n) => n.id);
                           if (ids.length === 0) return;
                           await notificationApi.readAll();
-                          setActivityNoti((p) => p.map((n) => ({ ...n, isRead: true })));
+                          setActivityNoti((p) =>
+                            p.map((n) => ({ ...n, isRead: true })),
+                          );
                         }}
-                        style={{ background: "none", border: "none", fontSize: 12, color: "#5F8F7B", cursor: "pointer", fontWeight: 600 }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          fontSize: 12,
+                          color: "#5F8F7B",
+                          cursor: "pointer",
+                          fontWeight: 600,
+                        }}
                       >
                         전체 읽음
                       </button>
                     </div>
                     <div style={{ maxHeight: 320, overflowY: "auto" }}>
                       {activityNoti.length === 0 ? (
-                        <p style={{ textAlign: "center", padding: "24px 0", color: "#9CA3AF", fontSize: 13 }}>알림 없음</p>
+                        <p
+                          style={{
+                            textAlign: "center",
+                            padding: "24px 0",
+                            color: "#9CA3AF",
+                            fontSize: 13,
+                          }}
+                        >
+                          알림 없음
+                        </p>
                       ) : (
                         activityNoti.map((n) => (
                           <div
                             key={n.id}
                             onClick={() => handleActivityNotiClick(n)}
                             style={{
-                              display: "flex", alignItems: "flex-start", gap: 10,
-                              padding: "10px 16px", cursor: "pointer",
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 10,
+                              padding: "10px 16px",
+                              cursor: "pointer",
                               background: n.isRead ? "#fff" : "#EAF4F0",
                               borderBottom: "1px solid #F3F4F6",
                             }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = n.isRead ? "#fff" : "#EAF4F0")}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.background = "#F9FAFB")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.background = n.isRead
+                                ? "#fff"
+                                : "#EAF4F0")
+                            }
                           >
-                            <span style={{ fontSize: 18, flexShrink: 0 }}>{ACTIVITY_NOTI_ICONS[n.type] ?? "🔔"}</span>
+                            <span style={{ fontSize: 18, flexShrink: 0 }}>
+                              {ACTIVITY_NOTI_ICONS[n.type] ?? "🔔"}
+                            </span>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ margin: 0, fontSize: 13, color: "#1F2937", lineHeight: 1.4 }}>{n.message}</p>
-                              <p style={{ margin: "3px 0 0", fontSize: 11, color: "#9CA3AF" }}>
-                                {new Date(n.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                              <p
+                                style={{
+                                  margin: 0,
+                                  fontSize: 13,
+                                  color: "#1F2937",
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {n.message}
+                              </p>
+                              <p
+                                style={{
+                                  margin: "3px 0 0",
+                                  fontSize: 11,
+                                  color: "#9CA3AF",
+                                }}
+                              >
+                                {new Date(n.createdAt).toLocaleString("ko-KR", {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
                               </p>
                             </div>
-                            {!n.isRead && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#5F8F7B", flexShrink: 0, marginTop: 4 }} />}
+                            {!n.isRead && (
+                              <span
+                                style={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  background: "#5F8F7B",
+                                  flexShrink: 0,
+                                  marginTop: 4,
+                                }}
+                              />
+                            )}
                           </div>
                         ))
                       )}

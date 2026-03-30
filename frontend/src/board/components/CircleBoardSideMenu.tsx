@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
-import { useSelector } from "react-redux";
+import { useAuthStore } from "../../store/authStore";
 import { Check, Pencil, Plus, RotateCcw, Settings, X } from "lucide-react";
 import { useCircleBoards } from "../hooks/useCircleBoards";
 import { postRoutes } from "../../post/routes/postRoutes";
 import { boardApi } from "../api/boardApi";
 import { circleApi } from "../../api/circleApi";
 import type { BoardResponse } from "../types/boardTypes";
-import type { RootState } from "../../users/reducers/store";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import { validateBoardName } from "../utils/boardValidators";
 import { BoardSideMenuSkeleton } from "../../common/components/BoardLoadingSkeletons";
@@ -37,7 +36,7 @@ export default function CircleBoardSideMenu({
     circleId,
     enabled: true,
   });
-  const { user, isLoggedIn } = useSelector((state: RootState) => state.auth);
+  const { user, isLoggedIn } = useAuthStore();
   const [isLeader, setIsLeader] = useState(false);
   const [isCheckingLeader, setIsCheckingLeader] = useState(false);
 

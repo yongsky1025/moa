@@ -29,6 +29,8 @@ import com.soldesk.moa.notification.service.NotificationService;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.common.entity.constant.LikeTargetType;
+import com.soldesk.moa.common.repository.LikesRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
 
@@ -46,6 +48,7 @@ public class CircleService {
         private final CircleImageService circleImageService;
         private final ChatRoomService chatRoomService;
         private final NotificationService notificationService;
+        private final LikesRepository likesRepository;
 
         // 서클 생성 (POST multipart - Tomcat이 POST multipart 정상 처리)
         @Transactional
@@ -247,7 +250,7 @@ public class CircleService {
         public List<CircleResponseDTO> getMyCircles(Long userId) {
                 return circleMemberRepository.findByUser_UserIdAndStatus(userId, CircleMemberStatus.ACTIVE)
                                 .stream()
-                                .map(cm -> CircleResponseDTO.from(cm.getCircle()))
+                                .map(cm -> new CircleResponseDTO(cm.getCircle(), cm.getRole()))
                                 .toList();
         }
 
@@ -343,18 +346,20 @@ public class CircleService {
         // 서클 리스트 조회
         @Transactional(readOnly = true)
         public PageResultDTO<CircleResponseDTO> getCircles(
-                        Long categoryId,
+                        List<Long> categoryIds,
                         PageRequestDTO pageRequestDTO) {
 
-                PageResultDTO<Circle> result = circleRepository.findByCategory_CategoryId(
-                                categoryId,
+                PageResultDTO<Circle> result = circleRepository.findByCategories(
+                                categoryIds,
                                 pageRequestDTO);
 
                 return PageResultDTO.<CircleResponseDTO>withAll()
                                 .dtoList(
                                                 result.getDtoList()
                                                                 .stream()
-                                                                .map(CircleResponseDTO::from)
+                                                                .map(c -> CircleResponseDTO.from(c,
+                                                                        likesRepository.countByTargetTypeAndTargetId(
+                                                                                LikeTargetType.CIRCLE, c.getCircleId())))
                                                                 .toList())
                                 .pageRequestDTO(pageRequestDTO)
                                 .totalCount(result.getTotalCount())

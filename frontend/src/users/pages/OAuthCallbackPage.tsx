@@ -1,14 +1,12 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { setAuthFromOAuth } from "../reducers/authSlice";
 import { authApi } from "../../api/authApi";
-import type { AppDispatch } from "../reducers/store";
+import { useAuthStore } from "../../store/authStore";
 
 export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
+  const setAuth = useAuthStore((s) => s.setAuth);
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -28,18 +26,17 @@ export default function OAuthCallbackPage() {
     localStorage.setItem("accessToken", token);
 
     if (isNew) {
-      navigate("/users/social-signup"); // 소셜 회원가입 -> 추가정보 페이지로 이동
+      navigate("/users/social-signup");
       return;
     }
 
-    // 기존 유저 → refresh로 유저 정보 조회 후 상태 반영
+    // 기존 유저 → accessToken만으로 유저 정보 조회 (refresh 쿠키 불필요)
     authApi
-      .refresh()
+      .getMe()
       .then((res) => {
-        localStorage.setItem("accessToken", res.data.accessToken);
-        dispatch(setAuthFromOAuth(res.data.user));
+        setAuth(token, res.data);
 
-        if (!res.data.user?.onboardingCompleted) {
+        if (!res.data.onboardingCompleted) {
           sessionStorage.removeItem("postLoginRedirect");
           navigate("/users/onboarding");
         } else {
@@ -49,10 +46,10 @@ export default function OAuthCallbackPage() {
         }
       })
       .catch((e) => {
-        console.error("[OAuthCallback] refresh 실패:", e);
+        console.error("[OAuthCallback] 유저 정보 조회 실패:", e);
         navigate("/users/login?error=" + encodeURIComponent("로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요."));
       });
-  }, [searchParams, navigate, dispatch]);
+  }, [searchParams, navigate, setAuth]);
 
   return (
     <div

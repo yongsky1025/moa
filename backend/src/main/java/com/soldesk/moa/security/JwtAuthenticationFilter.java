@@ -3,11 +3,14 @@ package com.soldesk.moa.security;
 import java.io.IOException;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.soldesk.moa.common.exception.UserNotActiveException;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -56,22 +59,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = jwtTokenProvider.extractBearerToken(request);
 
+        // if 토큰의 존재/형식 검사
         if (token != null
                 && jwtTokenProvider.isValidToken(token)
                 && jwtTokenProvider.isAccessToken(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            String email = jwtTokenProvider.getEmailFromToken(token);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            // try-catch 사용자 상태/인증 실패 처리
+            try {
+                String email = jwtTokenProvider.getEmailFromToken(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userDetails,
-                    null,
-                    userDetails.getAuthorities());
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities());
 
-            // Authentication 객체 설정 -> @AuthenticationPrincipal
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                // Authentication 객체 설정 -> @AuthenticationPrincipal
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            } catch (UserNotActiveException ex) {
+                SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write(
+                        "{\"status\":403,\"errorCode\":\"" + ex.getErrorCode()
+                                + "\",\"message\":\"" + ex.getMessage() + "\"}");
+                return;
+            } catch (AuthenticationException ex) {
+                SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write(
+                        "{\"status\":403,\"error\":\"Forbidden\",\"message\":\"" + ex.getMessage() + "\"}");
+                return;
+            }
+
         }
 
         // 다음 FilterChain 계속 실행

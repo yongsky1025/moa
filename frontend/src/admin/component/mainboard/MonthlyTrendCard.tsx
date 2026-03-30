@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import type { DashboardChartDTO } from '../../types/adminTypes';
+import { useState } from "react";
+import type { DashboardChartDTO } from "../../types/adminTypes";
 
 interface Props {
   data: DashboardChartDTO | null;
   loading: boolean;
 }
 
-const C_SIGNUP = '#5F8F7B';
-const C_WITHDRAWN = '#94A3B8';
+const C_SIGNUP = "#E3886D";
+const C_WITHDRAWN = "#94A3B8";
 
 const W = 580,
   H = 180;
@@ -50,8 +50,8 @@ export default function MonthlyTrendCard({ data, loading }: Props) {
         <h3 className="admin-card-title mb-0!">사용자 증감 추이</h3>
         <div className="flex items-center gap-4">
           {[
-            { color: C_SIGNUP, label: '신규 가입', dotClass: 'bg-moa-primary' },
-            { color: C_WITHDRAWN, label: '탈퇴', dotClass: 'bg-[#94A3B8]' },
+            { color: C_SIGNUP, label: "신규 가입", dotClass: "bg-[#E3886D]" },
+            { color: C_WITHDRAWN, label: "탈퇴", dotClass: "bg-[#94A3B8]" },
           ].map((l) => (
             <div key={l.label} className="flex items-center gap-1.5">
               <div className={`h-2.5 w-2.5 rounded-sm ${l.dotClass}`} />
@@ -59,10 +59,10 @@ export default function MonthlyTrendCard({ data, loading }: Props) {
             </div>
           ))}
           <span
-            className={`text-xs font-bold ${netGrowth >= 0 ? 'text-moa-primary' : 'text-red-600'}`}
+            className={`text-xs font-bold ${netGrowth >= 0 ? "text-moa-primary" : "text-red-600"}`}
           >
-            이번 달 순증 {netGrowth >= 0 ? '+' : ''}
-            {netGrowth.toLocaleString('ko-KR')}
+            이번 달 순증 {netGrowth >= 0 ? "+" : ""}
+            {netGrowth.toLocaleString("ko-KR")}
           </span>
         </div>
       </div>
@@ -74,7 +74,7 @@ export default function MonthlyTrendCard({ data, loading }: Props) {
           <svg
             className="chart-svg w-full"
             viewBox={`0 0 ${W} ${H}`}
-            style={{ overflow: 'visible' }}
+            style={{ overflow: "visible" }}
           >
             {yTicks.map((v, i) => {
               const y = PAD.top + yPos(v);
@@ -85,7 +85,7 @@ export default function MonthlyTrendCard({ data, loading }: Props) {
                     y1={y}
                     x2={PAD.left + CW}
                     y2={y}
-                    stroke={v === 0 ? '#E5E7EB' : '#EAF4F0'}
+                    stroke={v === 0 ? "#E5E7EB" : "#EAF4F0"}
                     strokeWidth="1"
                   />
                   <text
@@ -167,20 +167,20 @@ export default function MonthlyTrendCard({ data, loading }: Props) {
               style={{
                 left: `${(tooltip.x / W) * 100}%`,
                 top: `${(tooltip.y / H) * 100}%`,
-                transform: 'translate(-50%, -100%)',
+                transform: "translate(-50%, -100%)",
               }}
             >
               <p className="mb-0.5 font-bold">{tooltip.month}</p>
               <p>
-                신규{' '}
+                신규{" "}
                 <strong style={{ color: C_SIGNUP }}>
-                  {tooltip.signup.toLocaleString('ko-KR')}명
+                  {tooltip.signup.toLocaleString("ko-KR")}명
                 </strong>
               </p>
               <p>
-                탈퇴{' '}
+                탈퇴{" "}
                 <strong style={{ color: C_WITHDRAWN }}>
-                  {tooltip.withdrawn.toLocaleString('ko-KR')}명
+                  {tooltip.withdrawn.toLocaleString("ko-KR")}명
                 </strong>
               </p>
             </div>

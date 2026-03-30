@@ -263,14 +263,14 @@ export default function UserProfilePage() {
         {/* 나의 활동 */}
         <div style={s.sectionLabel}>나의 활동</div>
         <div style={s.card}>
-          <button style={s.row} onClick={() => navigate("/circle")}>
+          <button style={s.row} onClick={() => navigate("/circle/my")}>
             <PlusCircle size={20} color="#5F8F7B" />
             <span style={s.rowLabel}>가입한 모임</span>
             <span style={s.count}>{circleCount ?? "-"}</span>
             <ChevronRight size={18} color="#ccc" />
           </button>
           <div style={s.divider} />
-          <button style={s.row}>
+          <button style={s.row} onClick={() => navigate('/users/my-schedules')}>
             <Calendar size={20} color="#5F8F7B" />
             <span style={s.rowLabel}>참석한 일정</span>
             <span style={s.count}>-</span>

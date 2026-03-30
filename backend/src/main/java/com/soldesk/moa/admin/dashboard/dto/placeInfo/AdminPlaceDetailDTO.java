@@ -6,34 +6,37 @@ import lombok.Builder;
 
 @Builder
 public record AdminPlaceDetailDTO(
-        long id,
-        String name,
-        String address,
-        String city,
-        String district,
-        double latitude,
-        double longitude,
-        int capacity,
-        int pricePerHour,
-        String description,
-        int openTimeHour,
-        int openTimeMinute,
-        int closeTimeHour,
-        int closeTimeMinute,
-        int minReservationMinutes,
-        int maxReservationMinutes,
-        String status,
-        double avgRating,
-        int reviewCount,
-        List<Long> tagIds,
-        List<ClosedDayDTO> closedDays) {
+                long id,
+                String name,
+                String address,
+                String city,
+                String district,
+                String dong,
+                double latitude,
+                double longitude,
+                int capacity,
+                int pricePerHour,
+                String description,
+                int openTimeHour,
+                int openTimeMinute,
+                int closeTimeHour,
+                int closeTimeMinute,
+                int minReservationMinutes,
+                int maxReservationMinutes,
+                String status,
+                double avgRating,
+                int reviewCount,
+                List<Long> tagIds,
+                List<ClosedDayDTO> closedDays,
+                List<String> imagePaths // 이미지 url
+) {
 
-    @Builder
-    public record ClosedDayDTO(
-            Long id,
-            String dayOfWeek,
-            String date,
-            String reason,
-            String closedType) {
-    }
+        @Builder
+        public record ClosedDayDTO(
+                        Long id,
+                        String dayOfWeek,
+                        String date,
+                        String reason,
+                        String closedType) {
+        }
 }

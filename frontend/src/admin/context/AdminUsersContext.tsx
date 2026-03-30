@@ -16,30 +16,30 @@ import {
 } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchAdminUserList } from '../api/adminUserApi';
+import { usePageSize } from '../hooks/usePageSize';
 
-const DEFAULT_SIZE = 20;
-
-function paramsToDTO(sp: URLSearchParams): AdminUserSearchDTO {
+function paramsToDTO(sp: URLSearchParams, pageSize: number): AdminUserSearchDTO {
   return {
     page: Number(sp.get('page')) || 1,
-    size: Number(sp.get('size')) || DEFAULT_SIZE,
+    size: pageSize,
     keyword: sp.get('keyword') || undefined,
     type: sp.get('type') || undefined,
     gender: (sp.get('gender') ?? undefined) as UserGender | undefined,
     status: (sp.get('status') ?? undefined) as UserStatus | undefined,
     role: (sp.get('role') ?? undefined) as UserRole | undefined,
+    sort: sp.get('sort') || undefined,
   };
 }
 
 function dtoToParams(dto: AdminUserSearchDTO): Record<string, string> {
   const r: Record<string, string> = {};
   if (dto.page > 1) r.page = String(dto.page);
-  if (dto.size && dto.size !== DEFAULT_SIZE) r.size = String(dto.size);
   if (dto.keyword) r.keyword = dto.keyword;
   if (dto.type) r.type = dto.type;
   if (dto.gender) r.gender = dto.gender;
   if (dto.status) r.status = dto.status;
   if (dto.role) r.role = dto.role;
+  if (dto.sort) r.sort = dto.sort;
   return r;
 }
 
@@ -63,8 +63,9 @@ export function AdminUsersProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PageResultDTO<AdminUserResponseDTO> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pageSize = usePageSize();
 
-  const params = paramsToDTO(searchParams);
+  const params = paramsToDTO(searchParams, pageSize);
 
   const load = useCallback(async (dto: AdminUserSearchDTO) => {
     setLoading(true);
@@ -80,7 +81,7 @@ export function AdminUsersProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { load(paramsToDTO(searchParams)); }, [searchParams, load]);
+  useEffect(() => { load(paramsToDTO(searchParams, pageSize)); }, [searchParams, pageSize, load]);
 
   const applyFilter = useCallback((partial: Partial<AdminUserSearchDTO>) => {
     const next = { ...params, ...partial, page: 1 };
@@ -95,7 +96,7 @@ export function AdminUsersProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(() => load(params), [load, params]);
 
   const actualTotalPage = data
-    ? Math.ceil(data.totalCount / (params.size ?? DEFAULT_SIZE))
+    ? Math.ceil(data.totalCount / (params.size ?? pageSize))
     : 0;
 
   return (

@@ -90,10 +90,13 @@ export default function PlaceOperationForm({ value, onChange }: Props) {
           <div className="flex gap-1">
             <select
               value={value.closeTimeHour}
-              onChange={(e) => update({ closeTimeHour: Number(e.target.value) })}
+              onChange={(e) => {
+                const h = Number(e.target.value);
+                update({ closeTimeHour: h, ...(h === 24 ? { closeTimeMinute: 0 } : {}) });
+              }}
               className="flex-1 rounded-lg border border-gray-200 px-2 py-2 text-sm"
             >
-              {Array.from({ length: 24 }, (_, i) => (
+              {Array.from({ length: 25 }, (_, i) => (
                 <option key={i} value={i}>
                   {String(i).padStart(2, "0")}시
                 </option>
@@ -102,7 +105,8 @@ export default function PlaceOperationForm({ value, onChange }: Props) {
             <select
               value={value.closeTimeMinute}
               onChange={(e) => update({ closeTimeMinute: Number(e.target.value) })}
-              className="flex-1 rounded-lg border border-gray-200 px-2 py-2 text-sm"
+              disabled={value.closeTimeHour === 24}
+              className="flex-1 rounded-lg border border-gray-200 px-2 py-2 text-sm disabled:opacity-50"
             >
               {[0, 30].map((m) => (
                 <option key={m} value={m}>

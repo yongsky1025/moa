@@ -89,7 +89,7 @@ public class Users extends BaseEntity {
     @Builder.Default
     private UserStatus userStatus = UserStatus.ACTIVE;
 
-    // === 추가된 필드 (회원가입, 프로필 관련) ===
+    // === 프로필 관련 ===
 
     // 개인정보 동의 시점 (가입 시 필수, 소셜은 추가정보 입력 시 설정)
     @Column(nullable = true)
@@ -106,7 +106,7 @@ public class Users extends BaseEntity {
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
 
-    // 프로필 이미지
+    // 로컬 유저 프로필 이미지
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profile_image_id")
     private Image userProfileImage;
@@ -131,7 +131,62 @@ public class Users extends BaseEntity {
     @Builder.Default
     private int sanctionCount = 0;
 
-    // === 메서드 ===
+    // === 탈퇴/재가입 메서드 ==
+
+    // 탈퇴 이후 6개월 이내 재가입 불가
+    // withdrawnAt이 null이면 탈퇴 시점을 알 수 없으므로 안전하게 6개월 이내로 간주
+    public boolean isNewSignupBlockedWithinReactive(LocalDateTime now) {
+        if (this.userStatus != UserStatus.WITHDRAWN) return false;
+        if (this.withdrawnAt == null) return true;
+        return now.isBefore(this.withdrawnAt.plusMonths(6));
+    }
+
+    public LocalDateTime getRejoinAvailableAt() {
+        return this.withdrawnAt == null ? null : this.withdrawnAt.plusMonths(6);
+    }
+
+    public void reactivateLocal(String name, String nickname, String encodePassword, LocalDate birthDate,
+            UserGender userGender) {
+        this.name = name;
+        this.nickname = nickname;
+        this.password = encodePassword;
+        this.birthDate = birthDate;
+        this.userGender = userGender;
+        this.provider = AuthProvider.LOCAL;
+        this.providerId = null;
+        this.userStatus = UserStatus.ACTIVE;
+        this.withdrawnAt = null;
+        this.privacyAgreedAt = LocalDateTime.now();
+    }
+
+    // 6개월 이내 재가입 소셜
+    public void reactivateSocial(String name, String profileImageUrl, String providerId, AuthProvider provider) {
+        this.name = name;
+        this.profileImageUrl = profileImageUrl;
+        this.provider = provider;
+        this.providerId = providerId;
+        this.userStatus = UserStatus.ACTIVE;
+        this.withdrawnAt = null;
+    }
+
+    // 탈퇴 6개월 이후 유저
+    public void anonymizeForReSignup() {
+        String suffix = this.userId + "_" + System.currentTimeMillis();
+
+        this.name = "deleted_user";
+        this.email = "deleted_" + suffix + "@deleted.local";
+        this.password = null;
+        this.nickname = "deleted_" + suffix;
+        this.birthDate = null;
+        this.userGender = UserGender.UNSPECIFIED;
+        this.statusMessage = null;
+        this.profileImageUrl = null;
+        this.userProfileImage = null;
+        this.provider = null;
+        this.providerId = null;
+        this.privacyAgreedAt = null;
+        this.onboardingCompletedAt = null;
+    }
 
     public void changeNickname(String nickname) {
         this.nickname = nickname;
@@ -189,19 +244,25 @@ public class Users extends BaseEntity {
     public void completeSocialSignUp(LocalDate birthDate, UserGender userGender) {
         this.birthDate = birthDate;
         this.userGender = userGender;
-        this.privacyAgreedAt = LocalDateTime.now();
+        agreePrivacy();
+    }
+
+    public void agreePrivacy() {
+        if (this.privacyAgreedAt == null) {
+            this.privacyAgreedAt = LocalDateTime.now();
+        }
+    }
+
+    public boolean needsSocialSignUp() {
+        return this.privacyAgreedAt == null
+                || this.birthDate == null
+                || this.userGender == null
+                || this.userGender == UserGender.UNSPECIFIED;
     }
 
     @PrePersist
     @PreUpdate
     public void addAge() {
-        // publicId 초기화 (최초 저장 시에만 생성)
-        if (this.publicId == null) {
-            this.publicId = UUID.randomUUID().toString();
-        }
-        if (birthDate == null) {
-            return;
-        }
         // publicId 초기화 (최초 저장 시에만 생성)
         if (this.publicId == null) {
             this.publicId = UUID.randomUUID().toString();

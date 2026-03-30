@@ -1,5 +1,4 @@
 import api from './axiosInstance';
-import authApi from '../users/utils/jwtUtil';
 
 export interface UserProfile {
   name: string;
@@ -58,16 +57,16 @@ export const profileApi = {
 
 export const energyProfileApi = {
   create: (data: EnergyProfileRequest) =>
-    authApi.post<EnergyProfileResponse>('/api/users/me/energy-profile/create', data),
+    api.post<EnergyProfileResponse>('/api/users/me/energy-profile/create', data),
 
   update: (data: EnergyProfileRequest) =>
-    authApi.put<EnergyProfileResponse>('/api/users/me/energy-profile/update', data),
+    api.put<EnergyProfileResponse>('/api/users/me/energy-profile/update', data),
 
   check: () =>
-    authApi.get<EnergyProfileResponse>('/api/users/me/energy-profile/check'),
+    api.get<EnergyProfileResponse>('/api/users/me/energy-profile/check'),
 
   recommend: (limit: number = 5) =>
-    authApi.post<RecommendationResponse[]>(
+    api.post<RecommendationResponse[]>(
       `/api/users/me/energy-profile/recommend?limit=${limit}`,
     ),
 };

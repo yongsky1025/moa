@@ -17,4 +17,7 @@ import lombok.experimental.SuperBuilder;
 public class AdminCircleSearchDTO extends PageRequestDTO {
     private CircleStatus status;
     private String categoryName;
+
+    // 정렬 (newest|oldest|name|member_desc|member_asc)
+    private String sort;
 }

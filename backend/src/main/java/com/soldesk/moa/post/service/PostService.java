@@ -62,6 +62,7 @@ public class PostService {
         private final PostViewLogRepository postViewLogRepository;
         private final ProfanityFilterService profanityFilterService;
         private final PostReactionRepository postReactionRepository;
+        private final PostSearchService postSearchService;
 
         // ===== Global =====
 
@@ -104,6 +105,7 @@ public class PostService {
 
                 Post saved = postRepository.save(post);
                 syncPostImages(saved, user, req.getContent());
+                postSearchService.queueUpsertAfterCommit(saved.getPostId());
                 return saved.getPostId();
         }
 
@@ -116,6 +118,7 @@ public class PostService {
                 post.changeTitle(req.getTitle());
                 post.changeContent(req.getContent());
                 syncPostImages(post, post.getUserId(), req.getContent());
+                postSearchService.queueUpsertAfterCommit(post.getPostId());
                 return post.getPostId();
         }
 
@@ -124,6 +127,7 @@ public class PostService {
                 Post post = postRepository.findGlobalPost(type, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
                 deletePostWithReplies(post);
+                postSearchService.queueDeleteAfterCommit(post.getPostId());
         }
 
         // ===== FREE (작성자 검증) =====
@@ -142,6 +146,7 @@ public class PostService {
                 post.changeTitle(req.getTitle());
                 post.changeContent(req.getContent());
                 syncPostImages(post, post.getUserId(), req.getContent());
+                postSearchService.queueUpsertAfterCommit(post.getPostId());
                 return post.getPostId();
         }
 
@@ -155,6 +160,7 @@ public class PostService {
                 }
 
                 deletePostWithReplies(post);
+                postSearchService.queueDeleteAfterCommit(post.getPostId());
         }
 
         // ===== Circle =====
@@ -222,6 +228,7 @@ public class PostService {
 
                 Post saved = postRepository.save(post);
                 syncPostImages(saved, user, req.getContent());
+                postSearchService.queueUpsertAfterCommit(saved.getPostId());
                 return saved.getPostId();
         }
 
@@ -240,6 +247,7 @@ public class PostService {
                 post.changeTitle(req.getTitle());
                 post.changeContent(req.getContent());
                 syncPostImages(post, post.getUserId(), req.getContent());
+                postSearchService.queueUpsertAfterCommit(post.getPostId());
                 return post.getPostId();
         }
 
@@ -256,6 +264,7 @@ public class PostService {
                 }
 
                 deletePostWithReplies(post);
+                postSearchService.queueDeleteAfterCommit(post.getPostId());
         }
 
         // IP 기준 조회수 증가
@@ -397,8 +406,16 @@ public class PostService {
                 if (trimmed.startsWith("/uploads/post/")) {
                         return trimmed;
                 }
+                if (trimmed.startsWith("/uploads/images/post/")) {
+                        return trimmed;
+                }
 
                 int idx = trimmed.indexOf("/uploads/post/");
+                if (idx >= 0) {
+                        return trimmed.substring(idx);
+                }
+
+                idx = trimmed.indexOf("/uploads/images/post/");
                 if (idx >= 0) {
                         return trimmed.substring(idx);
                 }

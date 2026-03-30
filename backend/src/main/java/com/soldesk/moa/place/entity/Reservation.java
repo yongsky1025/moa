@@ -63,7 +63,7 @@ public class Reservation extends BaseEntity {
     private Users reservedBy;
 
     @Column
-    private LocalDateTime holdExpiredAt; // holding 상태 만료 시각(결제 대기)
+    private LocalDateTime holdExpiredAt; // holding 상태 만료 시각(결제 대기) 30분으로 할거임
 
     @Version
     private Integer version; // 동시 예약 방지 낙관적락 사용 version

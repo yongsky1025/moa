@@ -169,6 +169,8 @@ dist
 
 # SvelteKit build / generate output
 .svelte-kit
+.vite/
+frontend/.vite/
 
 ### react ###
 .DS_*
@@ -270,16 +272,18 @@ gradle-app.setting
 
 src/main/resources/application.properties
 
-bin/main/application-oauth2.yml
-src/main/resources/application-oauth2.yml
-backend/src/main/resources/application.yml
-backend/src/main/resources/application-oauth2.yml
-backend/src/test/resources/application.yml
-backend/src/test/resources/application-local.yml
-
 # Claude Code
 .claude/
 
 # Uploaded files
 /uploads/**
 /backend/uploads/**
+
+# Meilisearch local data
+data.ms/
+
+# Ignore all files under any test directory
+**/test/**
+
+# Seed data directory
+seed/

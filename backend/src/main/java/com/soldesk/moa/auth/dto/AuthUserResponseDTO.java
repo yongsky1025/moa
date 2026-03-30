@@ -20,6 +20,7 @@ public class AuthUserResponseDTO {
     private UserRole userRole;
     private UserStatus userStatus;
     private boolean onboardingCompleted;
+    private boolean privacyAgreed;
     private String profileImageUrl;
 
     // User entity -> AuthUserResponseDTO
@@ -30,6 +31,7 @@ public class AuthUserResponseDTO {
                 users.getUserRole(),
                 users.getUserStatus(),
                 users.getOnboardingCompletedAt() != null,
+                users.getPrivacyAgreedAt() != null,
                 users.getProfileImageUrl());
     }
 }

@@ -17,11 +17,6 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      "/circles": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
-        secure: false,
-      },
       "/images": {
         target: "http://localhost:8080",
         changeOrigin: true,

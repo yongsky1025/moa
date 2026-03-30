@@ -14,17 +14,7 @@ if (typeof window !== 'undefined') {
   window.history.scrollRestoration = 'manual';
 }
 
-interface AdminLayoutProps {
-  isLoggedIn?: boolean;
-  isAdmin?:    boolean;
-  userName?:   string;
-}
-
-export default function AdminLayout({
-  isLoggedIn = true,
-  isAdmin    = true,
-  userName   = '',
-}: AdminLayoutProps) {
+export default function AdminLayout() {
   const { pathname } = useLocation();
 
   // 라우트 변경 및 새로고침 시 window 스크롤을 최상단으로
@@ -36,7 +26,7 @@ export default function AdminLayout({
     <div className="flex min-h-screen flex-col" style={{ background: '#F5FAF8' }}>
 
       {/* 상단 Navbar — 기존 컴포넌트 그대로 */}
-      <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} userName={userName} />
+      <Navbar />
 
       <div className="flex flex-1">
         {/* 사이드바 — 추출한 컴포넌트 */}

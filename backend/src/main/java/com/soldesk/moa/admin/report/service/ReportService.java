@@ -20,7 +20,11 @@ import com.soldesk.moa.admin.report.dto.ReportTargetContentDTO.UserRecentActivit
 import com.soldesk.moa.admin.report.entity.Report;
 import com.soldesk.moa.admin.report.entity.constant.ReportStatus;
 import com.soldesk.moa.admin.report.entity.constant.ReportTargetType;
+import com.soldesk.moa.admin.report.repository.ReportImageRepository;
 import com.soldesk.moa.admin.report.repository.ReportRepository;
+import com.soldesk.moa.common.entity.constant.ImageDomain;
+import com.soldesk.moa.common.entity.constant.ImageStatus;
+import com.soldesk.moa.common.repository.ImageRepository;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageResultDTO;
@@ -44,6 +48,8 @@ public class ReportService {
         private final PostRepository postRepository;
         private final ReplyRepository replyRepository;
         private final CircleRepository circleRepository;
+        private final ReportImageRepository reportImageRepository;
+        private final ImageRepository imageRepository;
 
         // 신고접수
         public void submitReport(Long reporterId, ReportRequestDTO dto) {
@@ -57,13 +63,19 @@ public class ReportService {
                         throw new IllegalStateException("이미 신고한 대상입니다.");
                 }
 
-                reportRepository.save(Report.builder()
+                Report report = reportRepository.save(Report.builder()
                                 .reporter(reporter)
                                 .targetType(dto.targetType())
                                 .targetId(dto.targetId())
                                 .category(dto.category())
                                 .description(dto.description())
                                 .build());
+
+                // 증거 이미지 연결 (TEMP → USED, domain=REPORT, ownerId=reportId)
+                if (dto.imagePaths() != null && !dto.imagePaths().isEmpty()) {
+                        imageRepository.updateStatusAndOwnerByUserAndPaths(reporterId, dto.imagePaths(),
+                                        ImageStatus.TEMP, ImageStatus.USED, ImageDomain.REPORT, report.getId());
+                }
         }
 
         // 신고리스트
@@ -97,11 +109,15 @@ public class ReportService {
                 ReportTargetContentDTO targetContent = fetchTargetContent(
                                 report.getTargetType(), report.getTargetId());
 
+                List<String> imagePaths = reportImageRepository
+                                .findByDomainAndOwnerIdAndDeletedFalse(ImageDomain.REPORT, reportId)
+                                .stream().map(com.soldesk.moa.common.entity.Image::getPath).toList();
+
                 ReportResponseDTO dto = entityToDto(report);
                 return new ReportResponseDTO(
                                 dto.reportId(), dto.reporterName(), dto.targetType(), dto.targetId(),
                                 dto.category(), dto.description(), dto.status(), dto.adminNote(),
-                                dto.createdAt(), targetContent);
+                                dto.createdAt(), targetContent, imagePaths);
         }
 
         // 신고 상태 변경(status 변경, adminNote추가)

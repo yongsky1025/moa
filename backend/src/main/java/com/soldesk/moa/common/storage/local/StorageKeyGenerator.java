@@ -18,7 +18,8 @@ public final class StorageKeyGenerator {
         String datePath = LocalDate.now().format(DATE_PATH_FORMATTER);
         String uuid = UUID.randomUUID().toString().replace("-", "");
 
-        return safeResourceType + "/" + safeDomain + "/" + datePath + "/" + uuid + (extension.isEmpty() ? "" : "." + extension);
+        return safeResourceType + "/" + safeDomain + "/" + datePath + "/" + uuid
+                + (extension.isEmpty() ? "" : "." + extension);
     }
 
     private static String sanitizeResourceType(String resourceType) {

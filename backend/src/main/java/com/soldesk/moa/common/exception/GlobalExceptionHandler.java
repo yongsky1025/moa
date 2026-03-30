@@ -41,7 +41,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserNotActiveException.class)
     public ResponseEntity<ErrorResponseDTO> handleUserNotActive(UserNotActiveException ex) {
-        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+        ErrorResponseDTO body = new ErrorResponseDTO(
+                HttpStatus.FORBIDDEN.value(),
+                HttpStatus.FORBIDDEN.getReasonPhrase(),
+                ex.getMessage(),
+                ex.getErrorCode());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

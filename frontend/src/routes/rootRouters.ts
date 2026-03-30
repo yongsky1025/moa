@@ -8,11 +8,16 @@ import { boardRouter } from "./boardRouter";
 import { adminRouter } from "./adminRouter";
 import { placeRouter } from "./placeRouter";
 import { chatRouter } from "./chatRouter";
+import ReportFormPage from "../admin/pages/ReportFormPage";
 
 const rootRouter = createBrowserRouter([
   {
     path: "/",
     Component: LandingPage,
+  },
+  {
+    path: "/report-form",
+    Component: ReportFormPage,
   },
   {
     path: "/login",

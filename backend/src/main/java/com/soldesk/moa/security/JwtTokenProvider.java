@@ -102,11 +102,10 @@ public class JwtTokenProvider {
         }
     }
 
-    // 구버전 토큰(type Claim 없음)과 호환을 위해 null도 access 허용
     public boolean isAccessToken(String token) {
         try {
             String tokenType = parseClaims(token).get("type", String.class);
-            return tokenType == null || "access".equals(tokenType);
+            return "access".equals(tokenType);
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
