@@ -13,6 +13,7 @@ import { scheduleApi } from "../../api/scheduleApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import type { CircleResponse, CircleMember } from "../types/circle";
 import type { ScheduleResponse, ScheduleReview } from "../../schedule/types/schedule";
+import AdminConfirmModal from "../../admin/component/AdminConfirmModal";
 
 const STATUS_LABEL: Record<
   string,
@@ -65,6 +66,14 @@ export default function CircleDetailPage() {
   const [scheduleTab, setScheduleTab] = useState<'upcoming' | 'past'>('upcoming');
   const [circleReviews, setCircleReviews] = useState<ScheduleReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean; title: string; message: string;
+    confirmLabel?: string; confirmColor?: 'green' | 'red'; onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, confirmColor: 'green' | 'red' = 'red', confirmLabel = '확인') =>
+    setConfirmModal({ open: true, title, message, confirmLabel, confirmColor, onConfirm });
+
   const [msg, setMsg] = useState("");
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -220,10 +229,10 @@ export default function CircleDetailPage() {
       () => circleApi.joinCircle(cid),
       "가입 신청이 완료됐습니다. 리더의 승인을 기다려주세요.",
     );
-  const handleLeave = () => {
-    if (!confirm("서클에서 탈퇴하시겠습니까?")) return;
-    action(() => circleApi.leaveCircle(cid), "탈퇴했습니다.");
-  };
+  const handleLeave = () =>
+    openConfirm('서클 탈퇴', '서클에서 탈퇴하시겠습니까?', () =>
+      action(() => circleApi.leaveCircle(cid), '탈퇴했습니다.')
+    );
   const handleLike = async () => {
     if (!isLoggedIn || likeLoading) return;
     setLikeLoading(true);
@@ -1222,6 +1231,15 @@ export default function CircleDetailPage() {
         </div>
       </main>
       <Footer />
+      <AdminConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        confirmColor={confirmModal.confirmColor}
+        onConfirm={() => { setConfirmModal(m => ({ ...m, open: false })); confirmModal.onConfirm(); }}
+        onCancel={() => setConfirmModal(m => ({ ...m, open: false }))}
+      />
     </div>
   );
 }

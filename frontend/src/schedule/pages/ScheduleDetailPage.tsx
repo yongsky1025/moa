@@ -9,6 +9,7 @@ import { getErrorMessage } from '../../common/utils/errorMessage';
 import { useAuthStore } from '../../store/authStore';
 import type { ScheduleResponse, ScheduleMember, ScheduleReview } from '../types/schedule';
 import ScheduleReviewCkEditor from '../components/ScheduleReviewCkEditor';
+import AdminConfirmModal from '../../admin/component/AdminConfirmModal';
 
 const STATUS_LABEL = {
   UPCOMING:    { text: '예정',   color: '#2563eb', bg: '#dbeafe' },
@@ -43,6 +44,13 @@ export default function ScheduleDetailPage() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewMsg, setReviewMsg] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean; title: string; message: string;
+    confirmLabel?: string; confirmColor?: 'green' | 'red'; onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, confirmColor: 'green' | 'red' = 'red', confirmLabel = '확인') =>
+    setConfirmModal({ open: true, title, message, confirmLabel, confirmColor, onConfirm });
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -118,18 +126,18 @@ export default function ScheduleDetailPage() {
   const handleJoin = () =>
     action(() => scheduleApi.joinSchedule(cid, sid), '일정에 참여했습니다.');
 
-  const handleCancel = () => {
-    if (!confirm('참여를 취소하시겠습니까?')) return;
-    action(() => scheduleApi.cancelSchedule(cid, sid), '참여를 취소했습니다.');
-  };
+  const handleCancel = () =>
+    openConfirm('참여 취소', '일정 참여를 취소하시겠습니까?', () =>
+      action(() => scheduleApi.cancelSchedule(cid, sid), '참여를 취소했습니다.')
+    );
 
-  const handleDelete = () => {
-    if (!confirm('일정을 삭제하시겠습니까? 복구할 수 없습니다.')) return;
-    action(async () => {
-      await scheduleApi.deleteSchedule(cid, sid);
-      navigate(`/circle/${cid}/schedules`);
-    }, '삭제됐습니다.');
-  };
+  const handleDelete = () =>
+    openConfirm('일정 삭제', '일정을 삭제하시겠습니까? 복구할 수 없습니다.', () =>
+      action(async () => {
+        await scheduleApi.deleteSchedule(cid, sid);
+        navigate(`/circle/${cid}/schedules`);
+      }, '삭제됐습니다.')
+    );
 
   const handleReviewSubmit = async () => {
     if (!reviewContent.trim()) {
@@ -151,15 +159,15 @@ export default function ScheduleDetailPage() {
     }
   };
 
-  const handleReviewDelete = async (reviewId: number) => {
-    if (!confirm('후기를 삭제하시겠습니까?')) return;
-    try {
-      await scheduleApi.deleteReview(cid, sid, reviewId);
-      fetchReviews();
-    } catch (e) {
-      setReviewMsg(`오류: ${getErrorMessage(e)}`);
-    }
-  };
+  const handleReviewDelete = (reviewId: number) =>
+    openConfirm('후기 삭제', '후기를 삭제하시겠습니까?', async () => {
+      try {
+        await scheduleApi.deleteReview(cid, sid, reviewId);
+        fetchReviews();
+      } catch (e) {
+        setReviewMsg(`오류: ${getErrorMessage(e)}`);
+      }
+    });
 
   if (loading) return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
@@ -476,6 +484,15 @@ export default function ScheduleDetailPage() {
 
       </main>
       <Footer />
+      <AdminConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        confirmColor={confirmModal.confirmColor}
+        onConfirm={() => { setConfirmModal(m => ({ ...m, open: false })); confirmModal.onConfirm(); }}
+        onCancel={() => setConfirmModal(m => ({ ...m, open: false }))}
+      />
     </div>
   );
 }

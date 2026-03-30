@@ -9,6 +9,7 @@ import { scheduleApi } from '../../api/scheduleApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
 import type { CircleResponse, CircleMember } from '../types/circle';
 import type { ScheduleResponse } from '../../schedule/types/schedule';
+import AdminConfirmModal from '../../admin/component/AdminConfirmModal';
 
 type Menu = 'edit' | 'delete' | 'members' | 'schedules';
 
@@ -32,6 +33,13 @@ export default function CircleManagePage() {
   const [schedules, setSchedules] = useState<ScheduleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean; title: string; message: string;
+    confirmLabel?: string; confirmColor?: 'green' | 'red'; onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, confirmColor: 'green' | 'red' = 'red', confirmLabel = '확인') =>
+    setConfirmModal({ open: true, title, message, confirmLabel, confirmColor, onConfirm });
 
   // 서클 수정 폼
   const [editForm, setEditForm] = useState({ name: '', description: '', maxMember: 10 });
@@ -109,28 +117,29 @@ export default function CircleManagePage() {
   };
 
   // 서클 삭제
-  const handleDelete = () => {
-    if (!confirm('서클을 삭제하시겠습니까? 모든 데이터가 사라지며 복구할 수 없습니다.')) return;
-    action(async () => { await circleApi.deleteCircle(cid); navigate('/circle'); }, '삭제됐습니다.');
-  };
+  const handleDelete = () =>
+    openConfirm('서클 삭제', '서클을 삭제하시겠습니까? 모든 데이터가 사라지며 복구할 수 없습니다.', () =>
+      action(async () => { await circleApi.deleteCircle(cid); navigate('/circle'); }, '삭제됐습니다.')
+    );
 
   // 멤버 관련
   const handleApprove = (id: number) => action(() => circleApi.updateMemberStatus(cid, id, 'ACTIVE'), '승인했습니다.');
   const handleRejectMember = (id: number) => action(() => circleApi.updateMemberStatus(cid, id, 'REJECTED'), '거절했습니다.');
-  const handleKick = (id: number, nickname: string) => {
-    if (!confirm(`${nickname}님을 강퇴하시겠습니까?`)) return;
-    action(() => circleApi.kickMember(cid, id), '강퇴했습니다.');
-  };
-  const handleDelegate = (id: number, nickname: string) => {
-    if (!confirm(`${nickname}님에게 리더를 위임하시겠습니까?`)) return;
-    action(() => circleApi.delegateLeader(cid, id), '리더를 위임했습니다.');
-  };
+  const handleKick = (id: number, nickname: string) =>
+    openConfirm('멤버 강퇴', `${nickname}님을 강퇴하시겠습니까?`, () =>
+      action(() => circleApi.kickMember(cid, id), '강퇴했습니다.')
+    );
+  const handleDelegate = (id: number, nickname: string) =>
+    openConfirm('리더 위임', `${nickname}님에게 리더를 위임하시겠습니까?`, () =>
+      action(() => circleApi.delegateLeader(cid, id), '리더를 위임했습니다.'),
+      'green', '위임하기'
+    );
 
   // 일정 삭제
-  const handleDeleteSchedule = (sid: number, title: string) => {
-    if (!confirm(`"${title}" 일정을 삭제하시겠습니까?`)) return;
-    action(() => scheduleApi.deleteSchedule(cid, sid), '일정이 삭제됐습니다.');
-  };
+  const handleDeleteSchedule = (sid: number, title: string) =>
+    openConfirm('일정 삭제', `"${title}" 일정을 삭제하시겠습니까?`, () =>
+      action(() => scheduleApi.deleteSchedule(cid, sid), '일정이 삭제됐습니다.')
+    );
 
   if (loading) return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
@@ -432,6 +441,15 @@ export default function CircleManagePage() {
         </div>
       </main>
       <Footer />
+      <AdminConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        confirmColor={confirmModal.confirmColor}
+        onConfirm={() => { setConfirmModal(m => ({ ...m, open: false })); confirmModal.onConfirm(); }}
+        onCancel={() => setConfirmModal(m => ({ ...m, open: false }))}
+      />
     </div>
   );
 }
