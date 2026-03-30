@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { ClipboardList, MessageSquareText, Inbox } from "lucide-react";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
@@ -11,6 +11,7 @@ import type { MyPlaceReviewDTO, PendingReviewDTO } from "../types/placeTypes";
 type Tab = "pending" | "written";
 
 export default function MyPlaceReviewPage() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab: Tab =
     searchParams.get("tab") === "written" ? "written" : "pending";
@@ -50,6 +51,12 @@ export default function MyPlaceReviewPage() {
       <Navbar />
 
       <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-10">
+        <button
+          onClick={() => navigate('/users/profile')}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#888', marginBottom: 6, padding: 0 }}
+        >
+          ← 마이페이지로 돌아가기
+        </button>
         <h1 className="mb-8 text-2xl font-extrabold text-gray-900">
           장소 이용 후기 관리
         </h1>

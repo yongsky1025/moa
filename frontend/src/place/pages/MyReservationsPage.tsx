@@ -134,6 +134,12 @@ export default function MyReservationsPage() {
       <Navbar />
 
       <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-10">
+        <button
+          onClick={() => navigate('/users/profile')}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#888', marginBottom: 6, padding: 0 }}
+        >
+          ← 마이페이지로 돌아가기
+        </button>
         <h1 className="mb-8 text-2xl font-extrabold text-gray-900">
           내 예약 목록
         </h1>

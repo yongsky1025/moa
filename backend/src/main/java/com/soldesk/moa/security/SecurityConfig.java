@@ -134,8 +134,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/chat/**").authenticated()
 
                                                 // ---------- 관리자----------
-                                                .requestMatchers("/api/admin/popular-circles").permitAll() // 메인페이지에
-                                                                                                           // 써야할수있으니 허용
+                                                .requestMatchers("/api/admin/circles/popular-circles").permitAll() // 메인페이지에
+                                                // 써야할수있으니 허용
                                                 .requestMatchers(HttpMethod.POST, "/api/admin/reports")
                                                 .authenticated() // 신고 접수는 일반 유저도 가능
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 security 적용
@@ -144,8 +144,6 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/places/**").permitAll()
                                                 .requestMatchers("/api/tags/**").permitAll() // 장소&일정 태그 다 열어야함
                                                 .requestMatchers("/api/place-reviews/**").authenticated() // 장소 후기
-                                                .requestMatchers("/api/place/my-reservations").authenticated() // 장소 예약
-                                                                                                               // 목록
                                                 // ------------------- 예약+결제(payment) -----------
                                                 .requestMatchers("/api/reservations/**").authenticated()
                                                 // ----------------------------------
