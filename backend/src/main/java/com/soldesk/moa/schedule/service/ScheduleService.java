@@ -28,6 +28,7 @@ import com.soldesk.moa.schedule.entity.ScheduleTag;
 import com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus;
 import com.soldesk.moa.schedule.repository.ScheduleMemberRepository;
 import com.soldesk.moa.schedule.repository.ScheduleRepository;
+import com.soldesk.moa.schedule.repository.ScheduleReviewRepository;
 import com.soldesk.moa.chat.service.ChatRoomService;
 import com.soldesk.moa.schedule.repository.ScheduleTagRepository;
 import com.soldesk.moa.users.entity.Users;
@@ -43,6 +44,7 @@ public class ScheduleService {
         private final ScheduleRepository scheduleRepository;
         private final ScheduleMemberRepository scheduleMemberRepository;
         private final ScheduleTagRepository scheduleTagRepository;
+        private final ScheduleReviewRepository scheduleReviewRepository;
         private final CircleRepository circleRepository;
         private final CircleMemberRepository circleMemberRepository;
         private final UsersRepository usersRepository;
@@ -198,6 +200,8 @@ public class ScheduleService {
                         paymentService.detachReservationsFromSchedule(scheduleId);
                 }
 
+                // 일정 후기 삭제
+                scheduleReviewRepository.deleteAllBySchedule(schedule);
                 // 일정 참여자 삭제
                 scheduleMemberRepository.deleteAllBySchedule(schedule);
                 // 일정 삭제

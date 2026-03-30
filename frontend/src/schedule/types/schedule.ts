@@ -42,3 +42,19 @@ export interface ScheduleMember {
   nickname: string;
   role: 'LEADER' | 'MEMBER';
 }
+
+export interface ScheduleReview {
+  reviewId: number;
+  scheduleId: number;
+  scheduleTitle?: string;
+  userId: number;
+  nickname: string;
+  content: string;
+  rating: number;
+  createdAt: string;
+}
+
+export interface ScheduleReviewCreateRequest {
+  content: string;
+  rating: number;
+}

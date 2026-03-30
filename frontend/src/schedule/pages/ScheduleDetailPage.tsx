@@ -1,11 +1,14 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, Users, MapPin } from 'lucide-react';
+import { Clock, Users, MapPin, Star, Trash2 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { scheduleApi } from '../../api/scheduleApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
-import type { ScheduleResponse, ScheduleMember } from '../types/schedule';
+import { useAuthStore } from '../../store/authStore';
+import type { ScheduleResponse, ScheduleMember, ScheduleReview } from '../types/schedule';
+import ScheduleReviewCkEditor from '../components/ScheduleReviewCkEditor';
 
 const STATUS_LABEL = {
   UPCOMING:    { text: '예정',   color: '#2563eb', bg: '#dbeafe' },
@@ -34,6 +37,13 @@ export default function ScheduleDetailPage() {
   const [members, setMembers] = useState<ScheduleMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
 
+  const currentUser = useAuthStore(s => s.user);
+  const [reviews, setReviews] = useState<ScheduleReview[]>([]);
+  const [reviewContent, setReviewContent] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewMsg, setReviewMsg] = useState('');
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
 
@@ -43,6 +53,12 @@ export default function ScheduleDetailPage() {
       .then(res => setMembers(res.data))
       .catch(() => {})
       .finally(() => setMembersLoading(false));
+  };
+
+  const fetchReviews = () => {
+    scheduleApi.getReviews(cid, sid)
+      .then(res => setReviews(res.data))
+      .catch(() => {});
   };
 
   // Kakao Maps SDK 대기
@@ -67,6 +83,7 @@ export default function ScheduleDetailPage() {
       .finally(() => setLoading(false));
 
     fetchMembers();
+    fetchReviews();
   }, [cid, sid]);
 
   // 카카오맵 초기화
@@ -112,6 +129,36 @@ export default function ScheduleDetailPage() {
       await scheduleApi.deleteSchedule(cid, sid);
       navigate(`/circle/${cid}/schedules`);
     }, '삭제됐습니다.');
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!reviewContent.trim()) {
+      setReviewMsg('후기 내용을 입력해주세요.');
+      return;
+    }
+    setReviewSubmitting(true);
+    setReviewMsg('');
+    try {
+      await scheduleApi.createReview(cid, sid, { content: reviewContent, rating: reviewRating });
+      setReviewContent('');
+      setReviewRating(5);
+      fetchReviews();
+      setReviewMsg('후기가 등록되었습니다.');
+    } catch (e) {
+      setReviewMsg(`오류: ${getErrorMessage(e)}`);
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const handleReviewDelete = async (reviewId: number) => {
+    if (!confirm('후기를 삭제하시겠습니까?')) return;
+    try {
+      await scheduleApi.deleteReview(cid, sid, reviewId);
+      fetchReviews();
+    } catch (e) {
+      setReviewMsg(`오류: ${getErrorMessage(e)}`);
+    }
   };
 
   if (loading) return (
@@ -314,6 +361,118 @@ export default function ScheduleDetailPage() {
             </div>
           )}
         </div>
+
+        {/* 후기 섹션 (완료된 일정만) */}
+        {schedule.status === 'COMPLETED' && (
+          <div style={{ marginTop: 20, backgroundColor: 'white', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+              <Star size={16} style={{ color: '#f59e0b' }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>후기</span>
+              <span style={{ fontSize: 13, color: '#888' }}>{reviews.length}개</span>
+            </div>
+
+            {/* 후기 작성 폼 */}
+            {schedule.joined && !reviews.find(r => r.userId === currentUser?.userId) && (
+              <div style={{ marginBottom: 28, padding: 20, backgroundColor: '#f9fafb', borderRadius: 12, border: '1px solid #f0f0f0' }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#333', marginBottom: 12 }}>후기 작성</p>
+
+                {/* 별점 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+                  <span style={{ fontSize: 13, color: '#555', marginRight: 4 }}>별점</span>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setReviewRating(n)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: 22, color: n <= reviewRating ? '#f59e0b' : '#d1d5db' }}
+                    >
+                      ★
+                    </button>
+                  ))}
+                  <span style={{ fontSize: 13, color: '#888' }}>{reviewRating}점</span>
+                </div>
+
+                {/* CKEditor */}
+                <div style={{ marginBottom: 14 }}>
+                  <ScheduleReviewCkEditor
+                    value={reviewContent}
+                    onChange={setReviewContent}
+                    onError={setReviewMsg}
+                  />
+                </div>
+
+                {reviewMsg && (
+                  <p style={{ fontSize: 13, color: reviewMsg.startsWith('오류') ? '#dc2626' : '#16a34a', marginBottom: 10 }}>
+                    {reviewMsg}
+                  </p>
+                )}
+
+                <button
+                  onClick={handleReviewSubmit}
+                  disabled={reviewSubmitting}
+                  style={{
+                    padding: '9px 20px', borderRadius: 8, border: 'none',
+                    backgroundColor: reviewSubmitting ? '#9ca3af' : '#111',
+                    color: 'white', fontSize: 13, fontWeight: 600, cursor: reviewSubmitting ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {reviewSubmitting ? '등록 중...' : '후기 등록'}
+                </button>
+              </div>
+            )}
+
+            {/* 후기 목록 */}
+            {reviews.length === 0 ? (
+              <p style={{ color: '#aaa', fontSize: 13 }}>아직 후기가 없습니다.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {reviews.map(review => (
+                  <div key={review.reviewId} style={{
+                    padding: 18, borderRadius: 12, border: '1px solid #f0f0f0', backgroundColor: '#fafafa',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '50%', backgroundColor: '#f3f4f6',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 13, fontWeight: 700, color: '#555', flexShrink: 0,
+                        }}>
+                          {review.nickname.charAt(0)}
+                        </div>
+                        <div>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{review.nickname}</span>
+                          <div style={{ display: 'flex', gap: 1, marginTop: 2 }}>
+                            {[1, 2, 3, 4, 5].map(n => (
+                              <span key={n} style={{ fontSize: 13, color: n <= review.rating ? '#f59e0b' : '#d1d5db' }}>★</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 12, color: '#aaa' }}>
+                          {new Date(review.createdAt).toLocaleDateString('ko-KR')}
+                        </span>
+                        {(review.userId === currentUser?.userId) && (
+                          <button
+                            onClick={() => handleReviewDelete(review.reviewId)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#aaa', display: 'flex', alignItems: 'center' }}
+                            title="삭제"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div
+                      className="ck-content"
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(review.content) }}
+                      style={{ fontSize: 14, color: '#444', lineHeight: 1.7 }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
       </main>
       <Footer />

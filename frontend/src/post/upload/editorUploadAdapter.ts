@@ -74,4 +74,5 @@ export function createEditorUploadAdapterPlugin(domain: string) {
 export const EDITOR_UPLOAD_DOMAINS = {
   POST: "post",
   PLACE: "place",
+  SCHEDULE_REVIEW: "schedule_review",
 } as const;

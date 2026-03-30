@@ -20,7 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.soldesk.moa.schedule.dto.ScheduleCreateRequestDTO;
 import com.soldesk.moa.schedule.dto.ScheduleMemberResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleResponseDTO;
+import com.soldesk.moa.schedule.dto.ScheduleReviewCreateRequestDTO;
+import com.soldesk.moa.schedule.dto.ScheduleReviewResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleUpdateRequestDTO;
+import com.soldesk.moa.schedule.service.ScheduleReviewService;
 import com.soldesk.moa.schedule.service.ScheduleService;
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 
@@ -33,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
+    private final ScheduleReviewService scheduleReviewService;
 
     // 서클 일정 목록 조회 (서클 멤버만, from/to 날짜 필터 선택적)
     @GetMapping
@@ -139,5 +143,52 @@ public class ScheduleController {
             @AuthenticationPrincipal AuthUserDTO authUserDTO) {
         boolean hasReservation = scheduleService.hasActiveReservation(scheduleId);
         return ResponseEntity.ok(Map.of("hasActiveReservation", hasReservation));
+    }
+
+    // 후기 작성 (완료된 일정 참여자만)
+    @PostMapping("/{scheduleId}/reviews")
+    public ResponseEntity<ScheduleReviewResponseDTO> createReview(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @RequestBody @Valid ScheduleReviewCreateRequestDTO request,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(
+                scheduleReviewService.createReview(circleId, scheduleId, request, authUserDTO.getUserId()));
+    }
+
+    // 후기 목록 조회 (서클 멤버만)
+    @GetMapping("/{scheduleId}/reviews")
+    public ResponseEntity<List<ScheduleReviewResponseDTO>> getReviews(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(
+                scheduleReviewService.getReviews(circleId, scheduleId, authUserDTO.getUserId()));
+    }
+
+    // 서클 전체 후기 목록 조회 (page/size 파라미터, 기본값: 0/6)
+    @GetMapping("/reviews")
+    public ResponseEntity<List<ScheduleReviewResponseDTO>> getCircleReviews(
+            @PathVariable Long circleId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(
+                scheduleReviewService.getCircleReviews(circleId, authUserDTO.getUserId(), page, size));
+    }
+
+    // 후기 삭제 (작성자 본인 또는 리더/부리더)
+    @DeleteMapping("/{scheduleId}/reviews/{reviewId}")
+    public ResponseEntity<Void> deleteReview(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @PathVariable Long reviewId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        scheduleReviewService.deleteReview(circleId, scheduleId, reviewId, authUserDTO.getUserId());
+        return ResponseEntity.noContent().build();
     }
 }

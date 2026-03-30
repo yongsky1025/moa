@@ -4,6 +4,8 @@ import type {
   ScheduleCreateRequest,
   ScheduleUpdateRequest,
   ScheduleMember,
+  ScheduleReview,
+  ScheduleReviewCreateRequest,
 } from '../schedule/types/schedule';
 export type { ScheduleResponse };
 import type { TagCategoryGroup } from './placeApi';
@@ -58,5 +60,21 @@ export const scheduleApi = {
   // 내가 참석한 일정 목록
   getMySchedules: (params?: { from?: string; to?: string }) =>
     api.get<ScheduleResponse[]>('/api/schedules/my', { params }),
+
+  // 후기 작성
+  createReview: (circleId: number, scheduleId: number, data: ScheduleReviewCreateRequest) =>
+    api.post<ScheduleReview>(`/api/circles/${circleId}/schedules/${scheduleId}/reviews`, data),
+
+  // 후기 목록 조회
+  getReviews: (circleId: number, scheduleId: number) =>
+    api.get<ScheduleReview[]>(`/api/circles/${circleId}/schedules/${scheduleId}/reviews`),
+
+  // 후기 삭제
+  deleteReview: (circleId: number, scheduleId: number, reviewId: number) =>
+    api.delete<void>(`/api/circles/${circleId}/schedules/${scheduleId}/reviews/${reviewId}`),
+
+  // 서클 후기 조회 (page/size 옵션)
+  getCircleReviews: (circleId: number, params?: { page?: number; size?: number }) =>
+    api.get<ScheduleReview[]>(`/api/circles/${circleId}/schedules/reviews`, { params }),
 };
 
