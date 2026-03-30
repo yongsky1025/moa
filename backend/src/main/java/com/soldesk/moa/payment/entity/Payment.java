@@ -80,4 +80,11 @@ public class Payment extends BaseEntity {
         this.cancelReason = reason;
         this.cancelledAt = LocalDateTime.now();
     }
+
+    // 환불 없이 취소 처리 (24시간 이내 취소)
+    public void cancelNoRefund(String reason) {
+        this.status = PaymentStatus.CANCELED;
+        this.cancelReason = reason + " (환불 불가)";
+        this.cancelledAt = LocalDateTime.now();
+    }
 }

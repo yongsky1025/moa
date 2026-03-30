@@ -7,7 +7,7 @@ export type CircleMemberRole = "LEADER" | "MEMBER";
 
 export type BoardType = "NOTICE" | "FREE" | "SUPPORT" | "CIRCLE";
 
-export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE";
+export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE" | "PLACE_REVIEW";
 export type ReportStatus = "PENDING" | "REVIEWING" | "RESOLVED" | "REJECTED";
 export type SanctionState = "ACTIVE" | "LIFTED" | "CANCELLED";
 
@@ -384,6 +384,13 @@ export interface ReportTargetContentDTO {
   userStatus?: string | null;
   userSanctionCount?: number | null;
   userRecentActivities?: UserRecentActivityDTO[] | null;
+  // PLACE_REVIEW
+  placeReviewContent?: string | null;
+  placeReviewRating?: number | null;
+  placeReviewAuthorName?: string | null;
+  placeReviewPlaceName?: string | null;
+  placeReviewPlaceId?: number | null;
+  placeReviewCreatedAt?: string | null;
 }
 
 export interface ReportResponseDTO {

@@ -13,11 +13,16 @@ import com.soldesk.moa.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import com.soldesk.moa.payment.dto.MyReservationDTO;
 
 
 @RestController
@@ -59,6 +64,22 @@ public class PaymentController {
 
         return ResponseEntity.ok().build();
     }
-    
-    
+
+    // 결제 실패/취소 시 HOLDING 예약 즉시 해제
+    @PostMapping("/{reservationId}/release")
+    public ResponseEntity<Void> release(
+        @AuthenticationPrincipal AuthUserDTO authUserDTO,
+        @PathVariable Long reservationId) {
+
+        paymentService.releaseHolding(authUserDTO.getUserId(), reservationId);
+        return ResponseEntity.ok().build();
+    }
+
+    // 내 예약 목록 조회
+    @GetMapping("/my")
+    public ResponseEntity<List<MyReservationDTO>> getMyReservations(
+        @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(paymentService.getMyReservations(authUserDTO.getUserId()));
+    }
 }

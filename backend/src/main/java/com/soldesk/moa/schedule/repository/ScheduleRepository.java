@@ -22,4 +22,15 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
             @Param("circleId") Long circleId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
+
+    // 내가 생성한 앞으로의 일정 목록 (장소 예약 패널용)
+    @Query("""
+            SELECT s FROM Schedule s
+            WHERE s.creator.user.userId = :userId
+            AND s.startAt > :now
+            ORDER BY s.startAt ASC
+            """)
+    List<Schedule> findMyCreatedUpcoming(
+            @Param("userId") Long userId,
+            @Param("now") LocalDateTime now);
 }

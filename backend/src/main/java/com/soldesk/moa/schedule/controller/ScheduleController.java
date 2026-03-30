@@ -2,6 +2,7 @@ package com.soldesk.moa.schedule.controller;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -113,18 +114,30 @@ public class ScheduleController {
         return ResponseEntity.noContent().build();
     }
 
-    // 일정 삭제 (생성자만 가능)
+    // 일정 삭제 (생성자 또는 서클 리더)
     @DeleteMapping("/{scheduleId}")
     public ResponseEntity<Void> deleteSchedule(
             @PathVariable Long circleId,
             @PathVariable Long scheduleId,
+            @RequestParam(defaultValue = "false") boolean cancelReservation,
             @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
         scheduleService.deleteSchedule(
                 circleId,
                 scheduleId,
-                authUserDTO.getUserId());
+                authUserDTO.getUserId(),
+                cancelReservation);
 
         return ResponseEntity.noContent().build();
+    }
+
+    // 일정에 활성 예약이 있는지 확인 (삭제 전 프론트 팝업용)
+    @GetMapping("/{scheduleId}/has-reservation")
+    public ResponseEntity<Map<String, Boolean>> hasActiveReservation(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+        boolean hasReservation = scheduleService.hasActiveReservation(scheduleId);
+        return ResponseEntity.ok(Map.of("hasActiveReservation", hasReservation));
     }
 }

@@ -14,6 +14,7 @@ import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.entity.constant.CircleRole;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.payment.dto.MyUpcomingScheduleDTO;
 import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.place.entity.Tag;
 import com.soldesk.moa.place.repository.TagRepository;
@@ -47,6 +48,7 @@ public class ScheduleService {
         private final UsersRepository usersRepository;
         private final TagRepository tagRepository;
         private final ChatRoomService chatRoomService;
+        private final com.soldesk.moa.payment.service.PaymentService paymentService;
 
         // 일정 생성
         public ScheduleResponseDTO createSchedule(
@@ -159,7 +161,8 @@ public class ScheduleService {
         public void deleteSchedule(
                         Long circleId,
                         Long scheduleId,
-                        Long userId) {
+                        Long userId,
+                        boolean cancelReservation) {
 
                 Schedule schedule = scheduleRepository.findById(scheduleId)
                                 .orElseThrow(() -> new IllegalArgumentException("일정이 존재하지 않습니다."));
@@ -186,6 +189,13 @@ public class ScheduleService {
                 // 권한 체크
                 if (!isCreator && !isLeader) {
                         throw new AccessDeniedException("일정 생성자 또는 서클 리더만 삭제할 수 있습니다.");
+                }
+
+                // 연결된 활성 예약 처리
+                if (cancelReservation) {
+                        paymentService.cancelReservationsForSchedule(scheduleId);
+                } else {
+                        paymentService.detachReservationsFromSchedule(scheduleId);
                 }
 
                 // 일정 참여자 삭제
@@ -271,7 +281,8 @@ public class ScheduleService {
                                 .findByCircleAndUserAndRole(
                                                 schedule.getCircle(),
                                                 usersRepository.findById(userId)
-                                                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다.")),
+                                                                .orElseThrow(() -> new IllegalArgumentException(
+                                                                                "사용자가 존재하지 않습니다.")),
                                                 CircleRole.LEADER)
                                 .isPresent();
 
@@ -350,9 +361,31 @@ public class ScheduleService {
                                 .toList();
         }
 
+        // 장소관련! 내가 생성한 앞으로의 일정 목록 (장소 예약 패널 일정 연결용)
+        @Transactional(readOnly = true)
+        public List<MyUpcomingScheduleDTO> getMyCreatedUpcomingSchedules(Long userId) {
+                return scheduleRepository.findMyCreatedUpcoming(userId, LocalDateTime.now())
+                                .stream()
+                                .map(s -> new MyUpcomingScheduleDTO(
+                                                s.getScheduleId(),
+                                                s.getTitle(),
+                                                s.getStartAt(),
+                                                s.getEndAt(),
+                                                s.getCircle().getCircleId(),
+                                                s.getCircle().getName()))
+                                .toList();
+        }
+
+        // 장소관련! 일정에 활성 예약이 있는지 확인 (삭제 전 프론트 팝업용)
+        @Transactional(readOnly = true)
+        public boolean hasActiveReservation(Long scheduleId) {
+                return paymentService.hasActiveReservation(scheduleId);
+        }
+
         // 태그 저장 헬퍼
         private List<TagResponseDTO> saveTags(Schedule schedule, List<Long> tagIds) {
-                if (tagIds == null || tagIds.isEmpty()) return List.of();
+                if (tagIds == null || tagIds.isEmpty())
+                        return List.of();
                 List<Tag> tags = tagRepository.findAllById(tagIds).stream()
                                 .filter(Tag::getIsActive)
                                 .toList();

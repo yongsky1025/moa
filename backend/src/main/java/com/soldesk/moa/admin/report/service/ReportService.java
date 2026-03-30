@@ -25,9 +25,12 @@ import com.soldesk.moa.admin.report.repository.ReportRepository;
 import com.soldesk.moa.common.entity.constant.ImageDomain;
 import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.common.repository.ImageRepository;
+import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.place.entity.PlaceReview;
+import com.soldesk.moa.place.repository.PlaceReviewRepository;
 import com.soldesk.moa.post.entity.Post;
 import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.reply.entity.Reply;
@@ -48,6 +51,7 @@ public class ReportService {
         private final PostRepository postRepository;
         private final ReplyRepository replyRepository;
         private final CircleRepository circleRepository;
+        private final PlaceReviewRepository placeReviewRepository;
         private final ReportImageRepository reportImageRepository;
         private final ImageRepository imageRepository;
 
@@ -154,6 +158,7 @@ public class ReportService {
                                 case REPLY -> fetchReplyContent(targetId);
                                 case CIRCLE -> fetchCircleContent(targetId);
                                 case USER -> fetchUserContent(targetId);
+                                case PLACE_REVIEW -> fetchPlaceReviewContent(targetId);
                         };
                 } catch (Exception e) {
                         log.warn("신고 대상 콘텐츠 조회 실패: type={}, id={}, error={}", targetType, targetId, e.getMessage());
@@ -165,6 +170,17 @@ public class ReportService {
                 }
         }
 
+        private String buildPostLinkUrl(Post post) {
+                Board board = post.getBoardId();
+                return switch (board.getBoardType()) {
+                        case FREE -> "/board/free/" + post.getPostId();
+                        case NOTICE -> "/board/notice/" + post.getPostId();
+                        case CIRCLE -> "/board/circle/" + board.getCircleId().getCircleId()
+                                        + "/boards/" + board.getBoardId()
+                                        + "/posts/" + post.getPostId();
+                };
+        }
+
         private ReportTargetContentDTO fetchPostContent(Long postId) {
                 Post post = postRepository.findById(postId)
                                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
@@ -172,7 +188,7 @@ public class ReportService {
                                 .targetType(ReportTargetType.POST)
                                 .targetId(postId)
                                 .deleted(post.isDeleted())
-                                .linkUrl("/board/" + post.getBoardId().getBoardId() + "/post/" + postId)
+                                .linkUrl(buildPostLinkUrl(post))
                                 .postTitle(post.getTitle())
                                 .postContent(post.getContent().length() > 300
                                                 ? post.getContent().substring(0, 300) + "..."
@@ -191,8 +207,7 @@ public class ReportService {
                                 .targetType(ReportTargetType.REPLY)
                                 .targetId(replyId)
                                 .deleted(reply.isDeleted())
-                                .linkUrl("/board/" + parentPost.getBoardId().getBoardId()
-                                                + "/post/" + parentPost.getPostId())
+                                .linkUrl(buildPostLinkUrl(parentPost))
                                 .replyContent(reply.getContent())
                                 .replyAuthorName(reply.getUserId().getName())
                                 .replyPostId(parentPost.getPostId())
@@ -215,6 +230,23 @@ public class ReportService {
                                 .circleMaxMember(circle.getMaxMember())
                                 .circleCurrentMember(circle.getCurrentMember())
                                 .circleCreatedAt(circle.getCreateDate())
+                                .build();
+        }
+
+        private ReportTargetContentDTO fetchPlaceReviewContent(Long reviewId) {
+                PlaceReview review = placeReviewRepository.findById(reviewId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
+                return ReportTargetContentDTO.builder()
+                                .targetType(ReportTargetType.PLACE_REVIEW)
+                                .targetId(reviewId)
+                                .deleted(false)
+                                .linkUrl("/place/" + review.getPlace().getId())
+                                .placeReviewContent(review.getComment())
+                                .placeReviewRating(review.getRating())
+                                .placeReviewAuthorName(review.getReviewer().getNickname())
+                                .placeReviewPlaceName(review.getPlace().getName())
+                                .placeReviewPlaceId(review.getPlace().getId())
+                                .placeReviewCreatedAt(review.getCreateDate())
                                 .build();
         }
 

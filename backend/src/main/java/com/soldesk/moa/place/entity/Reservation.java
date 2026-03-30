@@ -76,4 +76,9 @@ public class Reservation extends BaseEntity {
     public void setReservationStatus(ReservationStatus reservationStatus) {
         this.reservationStatus = reservationStatus;
     }
+
+    // 일정 삭제하나 장소는 취소 안할때
+    public void detachSchedule() {
+        this.schedule = null;
+    }
 }

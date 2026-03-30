@@ -1,5 +1,6 @@
 package com.soldesk.moa.place.repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -78,4 +79,37 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             AND r.holdExpiredAt < :now
             """)
     List<Reservation> findExpiredHoldings(@Param("now") LocalDateTime now);
+
+    // 날짜별 점유 시간대 조회 (슬롯 표시용)
+    @Query("""
+            SELECT r FROM Reservation r
+            WHERE r.place.id = :placeId
+            AND r.reservationStatus IN ('HOLDING', 'RESERVED')
+            AND CAST(r.startTime AS date) = :date
+            """)
+    List<Reservation> findOccupiedSlots(
+            @Param("placeId") Long placeId,
+            @Param("date") LocalDate date);
+
+    // 내 예약 목록 (HOLDING 제외, 최신순)
+    @Query("""
+            SELECT r FROM Reservation r
+            JOIN FETCH r.place p
+            WHERE r.reservedBy.userId = :userId
+            AND r.reservationStatus IN (
+                com.soldesk.moa.place.entity.constant.ReservationStatus.RESERVED,
+                com.soldesk.moa.place.entity.constant.ReservationStatus.COMPLETED,
+                com.soldesk.moa.place.entity.constant.ReservationStatus.CANCELLED
+            )
+            ORDER BY r.startTime DESC
+            """)
+    List<Reservation> findMyReservations(@Param("userId") Long userId);
+
+    // 일정에 연결된 활성 예약 조회 (일정 삭제 전 확인용)
+    @Query("""
+            SELECT r FROM Reservation r
+            WHERE r.schedule.scheduleId = :scheduleId
+            AND r.reservationStatus IN ('HOLDING', 'RESERVED')
+            """)
+    List<Reservation> findActiveByScheduleId(@Param("scheduleId") Long scheduleId);
 }
