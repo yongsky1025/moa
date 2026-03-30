@@ -15,7 +15,7 @@ import com.soldesk.moa.circle.service.CircleLikeService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/circles/{circleId}/like")
+@RequestMapping("/api/circles/{circleId}/like")
 @RequiredArgsConstructor
 public class CircleLikeController {
 

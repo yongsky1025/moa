@@ -14,6 +14,7 @@ import { getErrorMessage } from "../../common/utils/errorMessage";
 import type { CircleResponse, CircleMember } from "../types/circle";
 import type { ScheduleResponse, ScheduleReview } from "../../schedule/types/schedule";
 import AdminConfirmModal from "../../admin/component/AdminConfirmModal";
+import ReportButton from "../../common/components/ReportButton";
 
 const STATUS_LABEL: Record<
   string,
@@ -410,7 +411,8 @@ export default function CircleDetailPage() {
               alt={circle.name}
               style={{
                 width: "100%",
-                height: 220,
+                aspectRatio: "16/9",
+                maxHeight: 340,
                 objectFit: "cover",
                 display: "block",
               }}
@@ -577,6 +579,9 @@ export default function CircleDetailPage() {
                 >
                   로그인 후 가입 신청
                 </button>
+              )}
+              {isLoggedIn && !isLeader && (
+                <ReportButton targetType="CIRCLE" targetId={cid} />
               )}
             </div>
           </div>
