@@ -19,80 +19,53 @@ function formatMinutes(m: number) {
 
 export default function PlaceReservationPanel({ place }: Props) {
   return (
-    <div
-      style={{
-        backgroundColor: "white",
-        border: "1.5px solid #e5e5e5",
-        borderRadius: 16,
-        padding: "24px 22px",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-      }}
-    >
+    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-md">
       {/* 가격 */}
-      <div style={{ marginBottom: 20 }}>
-        <span style={{ fontSize: 26, fontWeight: 800, color: "#111" }}>
+      <div className="mb-5">
+        <span className="text-[26px] font-extrabold text-gray-900">
           {place.pricePerHour.toLocaleString()}원
         </span>
-        <span style={{ fontSize: 14, color: "#888", marginLeft: 4 }}>/ 시간</span>
+        <span className="ml-1 text-sm text-gray-400">/ 시간</span>
       </div>
 
       {/* 운영 정보 */}
-      <div
-        style={{
-          backgroundColor: "#f8faf9",
-          borderRadius: 10,
-          padding: "14px 16px",
-          marginBottom: 20,
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-          <span style={{ color: "#888" }}>운영 시간</span>
-          <span style={{ fontWeight: 600, color: "#111" }}>
+      <div className="mb-5 flex flex-col gap-2.5 rounded-xl bg-gray-50 p-4">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">운영 시간</span>
+          <span className="font-semibold text-gray-900">
             {formatTime(place.openTime)} ~ {formatTime(place.closeTime)}
           </span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-          <span style={{ color: "#888" }}>최소 예약</span>
-          <span style={{ fontWeight: 600, color: "#111" }}>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">최소 예약</span>
+          <span className="font-semibold text-gray-900">
             {formatMinutes(place.minReservationMinutes)}
           </span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-          <span style={{ color: "#888" }}>최대 예약</span>
-          <span style={{ fontWeight: 600, color: "#111" }}>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">최대 예약</span>
+          <span className="font-semibold text-gray-900">
             {formatMinutes(place.maxReservationMinutes)}
           </span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-          <span style={{ color: "#888" }}>수용 인원</span>
-          <span style={{ fontWeight: 600, color: "#111" }}>최대 {place.capacity}명</span>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">수용 인원</span>
+          <span className="font-semibold text-gray-900">
+            최대 {place.capacity}명
+          </span>
         </div>
       </div>
 
       {/* 예약 서비스 준비 중 안내 */}
-      <div
-        style={{
-          backgroundColor: "#f0fdf4",
-          border: "1px solid #bbf7d0",
-          borderRadius: 10,
-          padding: "14px 16px",
-          marginBottom: 20,
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 10,
-        }}
-      >
-        <CalendarClock style={{ width: 18, height: 18, color: "#5F8F7B", marginTop: 1, flexShrink: 0 }} />
+      <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-green-200 bg-green-50 p-4">
+        <CalendarClock className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[#5F8F7B]" />
         <div>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#15803d", marginBottom: 3 }}>
+          <p className="mb-1 text-sm font-semibold text-green-700">
             예약/결제 서비스 준비 중
           </p>
-          <p style={{ fontSize: 12, color: "#4ade80", lineHeight: 1.6, color: "#166534" }}>
-            현재 예약·결제 시스템을 준비하고 있습니다.
-            오픈 시 알림을 받으시려면 좋아요를 눌러주세요.
+          <p className="text-xs leading-relaxed text-green-900">
+            현재 예약·결제 시스템을 준비하고 있습니다. 오픈 시 알림을 받으시려면
+            좋아요를 눌러주세요.
           </p>
         </div>
       </div>
@@ -100,22 +73,12 @@ export default function PlaceReservationPanel({ place }: Props) {
       {/* 예약 버튼 (비활성) */}
       <button
         disabled
-        style={{
-          width: "100%",
-          padding: "14px 0",
-          borderRadius: 10,
-          border: "none",
-          backgroundColor: "#d1d5db",
-          color: "#9ca3af",
-          fontSize: 15,
-          fontWeight: 700,
-          cursor: "not-allowed",
-        }}
+        className="w-full cursor-not-allowed rounded-xl bg-gray-200 py-3.5 text-sm font-bold text-gray-400"
       >
         예약하기 (준비 중)
       </button>
 
-      <p style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginTop: 10 }}>
+      <p className="mt-2.5 text-center text-[11px] text-gray-300">
         예약 전 이용 규정을 확인해 주세요
       </p>
     </div>

@@ -1,5 +1,6 @@
 package com.soldesk.moa.place.entity;
 
+import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.users.entity.Users;
 
 import jakarta.persistence.Column;
@@ -28,14 +29,14 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @ToString(exclude = { "place", "reviewer" })
-public class PlaceReview {
+public class PlaceReview extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private Integer rating; // 평점
+    private Integer rating;
 
     @Column(nullable = false)
     @Lob
@@ -52,4 +53,9 @@ public class PlaceReview {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reservation_id")
     private Reservation reservation;
+
+    public void update(int rating, String comment) {
+        this.rating = rating;
+        this.comment = comment;
+    }
 }

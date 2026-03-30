@@ -1,5 +1,7 @@
 package com.soldesk.moa.admin.dashboard.dto.maindashboard;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,4 +26,8 @@ public class AdminMainDTO {
 
     private DashboardChartDTO dashboardChartDTO;
 
+    // 장소 관련
+    private List<PopularPlaceDTO> popularPlaceDTOs;
+    private ReservationCountDTO reservationCountDTO;
+    private Double placeUtilizationRateDTO;
 }

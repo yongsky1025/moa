@@ -4,9 +4,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.admin.dashboard.dto.statistic.ActivityHeatmapDTO;
+import com.soldesk.moa.admin.dashboard.dto.statistic.AdminPlaceStatisticDTO;
 import com.soldesk.moa.admin.dashboard.dto.statistic.AgeCategoryRetentionDTO;
 import com.soldesk.moa.admin.dashboard.dto.statistic.AgeGroupDTO;
 import com.soldesk.moa.admin.dashboard.dto.statistic.CircleSurvivalDTO;
+import com.soldesk.moa.admin.dashboard.dto.statistic.DistrictDistDTO;
 import com.soldesk.moa.admin.dashboard.service.AdminStatisticsService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,6 +20,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequiredArgsConstructor
@@ -56,6 +59,25 @@ public class AdminStatsController {
     public ResponseEntity<List<AgeCategoryRetentionDTO>> getAgeCategoryRetention() {
         log.info("연령대 + 카테고리별 모임 유지율");
         return ResponseEntity.ok(adminStatisticsService.getAgeCategoryRetention());
+    }
+
+    // ──────────────────────────────────────────────
+    // 장소 통계 리포트
+    // ──────────────────────────────────────────────
+
+    /** 장소 통계 리포트 전체 (연계율 + 지역분포 + 카테고리별 사용률) */
+    @GetMapping("/place-stats")
+    public ResponseEntity<AdminPlaceStatisticDTO> getAdminPlaceStatistic() {
+        log.info("장소 통계 리포트");
+        return ResponseEntity.ok(adminStatisticsService.getAdminPlaceStatistic());
+    }
+
+    /** 구/군 드릴다운 (시/도 클릭 시 호출) */
+    @GetMapping("/place/region")
+    public ResponseEntity<List<DistrictDistDTO>> getDistrictDistribution(
+            @RequestParam String city) {
+        log.info("지역 드릴다운 city={}", city);
+        return ResponseEntity.ok(adminStatisticsService.getDistrictDistribution(city));
     }
 
 }

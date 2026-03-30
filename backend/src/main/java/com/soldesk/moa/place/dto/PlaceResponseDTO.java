@@ -16,6 +16,8 @@ public record PlaceResponseDTO(
                 int pricePerHour,
                 double avgRating,
                 int reviewCount,
-                String representativeImagePath) {
+                String representativeImagePath,
+                int minReservationMinutes,
+                boolean liked) {
 
 }

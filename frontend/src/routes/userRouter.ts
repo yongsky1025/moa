@@ -9,6 +9,7 @@ import UserProfilePage from "../users/pages/UserProfilePage";
 import AccountPage from "../users/pages/AccountPage";
 import AccountStatusPage from "../users/pages/AccountStatusPage";
 import MySchedulesPage from "../schedule/pages/MySchedulesPage";
+import MyPlaceReviewPage from "../place/pages/MyPlaceReviewPage";
 
 export const userRouter = () => [
   { path: "login", Component: LoginPage },
@@ -22,4 +23,5 @@ export const userRouter = () => [
   { path: "account", Component: AccountPage },
   { path: "account-status", Component: AccountStatusPage },
   { path: "my-schedules", Component: MySchedulesPage },
+  { path: "my-place-reviews", Component: MyPlaceReviewPage },
 ];

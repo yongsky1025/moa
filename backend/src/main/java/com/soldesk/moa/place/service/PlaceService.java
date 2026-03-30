@@ -1,6 +1,7 @@
 package com.soldesk.moa.place.service;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +16,10 @@ import com.soldesk.moa.place.dto.PlaceDetailResponseDTO;
 import com.soldesk.moa.place.dto.PlaceLikiResponseDTO;
 import com.soldesk.moa.place.dto.PlaceListResponseDTO;
 import com.soldesk.moa.place.dto.PlaceResponseDTO;
-import com.soldesk.moa.place.dto.PlaceReviewDTO;
 import com.soldesk.moa.place.dto.PlaceSearchDTO;
 import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.place.entity.Place;
 import com.soldesk.moa.place.repository.PlaceRepository;
-import com.soldesk.moa.place.repository.PlaceReviewRepository;
 import com.soldesk.moa.users.entity.Users;
 
 import lombok.RequiredArgsConstructor;
@@ -35,12 +34,11 @@ public class PlaceService {
         private final PlaceRepository placeRepository;
         private final LikesRepository likesRepository;
         private final AdminUsersRepository usersRepository;
-        private final PlaceReviewRepository placeReviewRepository;
         private final PlaceImageService placeImageService;
 
         // 장소 단건 상세 조회
         @Transactional(readOnly = true)
-        public PlaceDetailResponseDTO getPlace(Long id) {
+        public PlaceDetailResponseDTO getPlace(Long id, Long userId) {
 
                 Place place = placeRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("place not found"));
@@ -66,6 +64,11 @@ public class PlaceService {
 
                 long likeCount = likesRepository.countByTargetTypeAndTargetId(
                                 com.soldesk.moa.common.entity.constant.LikeTargetType.PLACE, id);
+
+                boolean liked = userId != null && usersRepository.findById(userId)
+                                .map(user -> likesRepository.existsByUserAndTargetTypeAndTargetId(
+                                                user, LikeTargetType.PLACE, id))
+                                .orElse(false);
 
                 String openTime = place.getOpenTime() != null
                                 ? place.getOpenTime().toString()
@@ -97,27 +100,29 @@ public class PlaceService {
                                 .closedDays(closedDays)
                                 .images(images)
                                 .likeCount(likeCount)
+                                .liked(liked)
                                 .build();
-        }
-
-        // 장소 리뷰 목록 조회
-        @Transactional(readOnly = true)
-        public List<PlaceReviewDTO> getPlaceReviews(Long id) {
-                return placeReviewRepository.findByPlaceIdOrderByIdDesc(id).stream()
-                                .map(r -> PlaceReviewDTO.builder()
-                                                .id(r.getId())
-                                                .rating(r.getRating())
-                                                .comment(r.getComment())
-                                                .reviewerNickname(r.getReviewer().getNickname())
-                                                .build())
-                                .toList();
         }
 
         // 장소 목록 검색/필터 (무한스크롤)
         @Transactional(readOnly = true)
-        public PlaceListResponseDTO searchPlaces(PlaceSearchDTO searchDTO) {
+        public PlaceListResponseDTO searchPlaces(PlaceSearchDTO searchDTO, Long userId) {
 
                 List<Place> places = placeRepository.searchPlaces(searchDTO);
+
+                List<Long> placeIds = places.stream().map(Place::getId).toList();
+                Map<Long, String> repImages = placeImageService.getRepresentativeImages(placeIds);
+
+                java.util.Set<Long> likedIds = java.util.Set.of();
+                if (userId != null) {
+                        likedIds = usersRepository.findById(userId)
+                                        .map(user -> likesRepository.findByUserAndTargetType(user, LikeTargetType.PLACE)
+                                                        .stream()
+                                                        .map(com.soldesk.moa.common.entity.Likes::getTargetId)
+                                                        .collect(java.util.stream.Collectors.toSet()))
+                                        .orElse(java.util.Set.of());
+                }
+                final java.util.Set<Long> finalLikedIds = likedIds;
 
                 List<PlaceResponseDTO> dtoList = places.stream()
                                 .map(place -> PlaceResponseDTO.builder()
@@ -135,6 +140,9 @@ public class PlaceService {
                                                                 : 0.0)
                                                 .reviewCount(place.getReviewCount() != null ? place.getReviewCount()
                                                                 : 0)
+                                                .representativeImagePath(repImages.get(place.getId()))
+                                                .minReservationMinutes(place.getMinReservationMinutes())
+                                                .liked(finalLikedIds.contains(place.getId()))
                                                 .build())
                                 .toList();
 

@@ -4,7 +4,10 @@ export type NotificationType =
   | "JOIN_APPROVED"
   | "JOIN_REJECTED"
   | "KICKED"
-  | "CIRCLE_DISBANDED";
+  | "CIRCLE_DISBANDED"
+  | "REPLY"
+  | "CHILD_REPLY"
+  | "POST_LIKE";
 
 export interface Notification {
   id: number;

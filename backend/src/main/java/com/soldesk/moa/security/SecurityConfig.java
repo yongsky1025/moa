@@ -116,6 +116,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/notice/**", "/free/**", "/support/**").permitAll()
                                                 .requestMatchers("/api/notice/**", "/api/free/**", "/api/support/**")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/search").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/posts/*/replies").permitAll()
                                                 // board 써클 회원만 열람?(예정)
                                                 // .requestMatchers("/circle/**").permitAll()
@@ -136,9 +137,11 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/admin/popular-circles").permitAll() // 메인페이지에
                                                                                                            // 써야할수있으니 허용
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 security 적용
+                                                // .requestMatchers("/api/admin/**").permitAll() // 개발중에만 허용
                                                 // ---------------- 장소(place) -----------------
                                                 .requestMatchers("/api/places/**").permitAll()
                                                 .requestMatchers("/api/tags/**").permitAll() // 장소&일정 태그 다 열어야함
+                                                .requestMatchers("/api/place-reviews/**").authenticated() // 장소 후기
                                                 // ----------------------------------
                                                 // swagger 임시 허용(개발중)
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",

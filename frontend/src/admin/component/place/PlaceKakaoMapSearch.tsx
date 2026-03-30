@@ -17,7 +17,9 @@ interface Props {
 
 export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
   const [placeQuery, setPlaceQuery] = useState("");
-  const [placeResults, setPlaceResults] = useState<kakao.maps.services.PlaceItem[]>([]);
+  const [placeResults, setPlaceResults] = useState<
+    kakao.maps.services.PlaceItem[]
+  >([]);
   const [kakaoReady, setKakaoReady] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -45,25 +47,86 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
       level: 5,
     });
 
-    const handler = (mouseEvent: { latLng: { getLat: () => number; getLng: () => number } }) => {
+    const handler = (mouseEvent: {
+      latLng: { getLat: () => number; getLng: () => number };
+    }) => {
       const lat = mouseEvent.latLng.getLat();
       const lng = mouseEvent.latLng.getLng();
-      const geocoder = new (kakao.maps.services as unknown as { Geocoder: new () => { coord2Address: (lng: number, lat: number, cb: (result: { address: { address_name: string; region_1depth_name: string; region_2depth_name: string; region_3depth_name: string } }[], status: string) => void) => void } }).Geocoder();
+      const geocoder = new (
+        kakao.maps.services as unknown as {
+          Geocoder: new () => {
+            coord2Address: (
+              lng: number,
+              lat: number,
+              cb: (
+                result: {
+                  address: {
+                    address_name: string;
+                    region_1depth_name: string;
+                    region_2depth_name: string;
+                    region_3depth_name: string;
+                  };
+                }[],
+                status: string,
+              ) => void,
+            ) => void;
+          };
+        }
+      ).Geocoder();
       geocoder.coord2Address(lng, lat, (result, status) => {
-        if (status === (kakao.maps.services as unknown as { Status: { OK: string } }).Status.OK && result?.[0]?.address) {
+        if (
+          status ===
+            (kakao.maps.services as unknown as { Status: { OK: string } })
+              .Status.OK &&
+          result?.[0]?.address
+        ) {
           const addr = result[0].address;
           const addressName = addr.address_name;
           const city = addr.region_1depth_name || "";
           const district = addr.region_2depth_name || "";
           const dong = addr.region_3depth_name || "";
-          onChangeRef.current({ address: addressName, city, district, dong, latitude: lat, longitude: lng });
+          onChangeRef.current({
+            address: addressName,
+            city,
+            district,
+            dong,
+            latitude: lat,
+            longitude: lng,
+          });
         }
       });
     };
-    kakao.maps.event.addListener(mapRef.current, "click", handler);
+    kakao.maps.event.addListener(
+      mapRef.current,
+      "click",
+      handler as unknown as () => void,
+    );
     return () => {
-      if (mapRef.current && (kakao.maps.event as { removeListener?: (target: unknown, type: string, handler: () => void) => void }).removeListener) {
-        (kakao.maps.event as { removeListener: (target: unknown, type: string, handler: () => void) => void }).removeListener(mapRef.current, "click", handler);
+      if (
+        mapRef.current &&
+        (
+          kakao.maps.event as unknown as {
+            removeListener?: (
+              target: unknown,
+              type: string,
+              handler: () => void,
+            ) => void;
+          }
+        ).removeListener
+      ) {
+        (
+          kakao.maps.event as unknown as {
+            removeListener: (
+              target: unknown,
+              type: string,
+              handler: () => void,
+            ) => void;
+          }
+        ).removeListener(
+          mapRef.current,
+          "click",
+          handler as unknown as () => void,
+        );
       }
     };
   }, [kakaoReady]);
@@ -82,7 +145,11 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
 
   const parseCityDistrictDong = (addr: string) => {
     const parts = addr.split(" ");
-    return { city: parts[0] || "", district: parts[1] || "", dong: parts[2] || "" };
+    return {
+      city: parts[0] || "",
+      district: parts[1] || "",
+      dong: parts[2] || "",
+    };
   };
 
   const handleSearch = () => {
@@ -103,7 +170,14 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
     const addr = place.road_address_name || place.address_name;
     const { city, district, dong } = parseCityDistrictDong(addr);
 
-    onChange({ address: addr, city, district, dong, latitude: lat, longitude: lng });
+    onChange({
+      address: addr,
+      city,
+      district,
+      dong,
+      latitude: lat,
+      longitude: lng,
+    });
     setPlaceResults([]);
     setPlaceQuery("");
   };
@@ -127,13 +201,18 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
       {value ? (
         <div className="mb-4 flex items-center justify-between rounded-lg bg-[#EAF4F0] px-4 py-3">
           <div>
-            <p className="text-sm font-semibold text-[#4E7C69]">{value.address}</p>
+            <p className="text-sm font-semibold text-[#4E7C69]">
+              {value.address}
+            </p>
             <p className="text-xs text-gray-500">
-              {value.city} {value.district} {value.dong} · 위도 {value.latitude.toFixed(4)}, 경도{" "}
-              {value.longitude.toFixed(4)}
+              {value.city} {value.district} {value.dong} · 위도{" "}
+              {value.latitude.toFixed(4)}, 경도 {value.longitude.toFixed(4)}
             </p>
           </div>
-          <button onClick={handleClear} className="rounded-full p-1 transition hover:bg-[#d4ebe2]">
+          <button
+            onClick={handleClear}
+            className="rounded-full p-1 transition hover:bg-[#d4ebe2]"
+          >
             <X className="h-4 w-4 text-[#4E7C69]" />
           </button>
         </div>
@@ -167,7 +246,9 @@ export default function PlaceKakaoMapSearch({ value, onChange }: Props) {
               onClick={() => handleSelect(p)}
               className="flex w-full cursor-pointer flex-col border-b border-gray-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-[#EAF4F0]"
             >
-              <span className="text-sm font-medium text-gray-800">{p.place_name}</span>
+              <span className="text-sm font-medium text-gray-800">
+                {p.place_name}
+              </span>
               <span className="text-xs text-gray-500">
                 {p.road_address_name || p.address_name}
               </span>

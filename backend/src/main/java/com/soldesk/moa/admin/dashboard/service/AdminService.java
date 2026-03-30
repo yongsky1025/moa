@@ -33,6 +33,8 @@ import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.PopularCircleDTO;
 import com.soldesk.moa.admin.dashboard.dto.maindashboard.AdminMainDTO;
 import com.soldesk.moa.admin.dashboard.dto.maindashboard.CircleDataDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.PopularPlaceDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.ReservationCountDTO;
 import com.soldesk.moa.admin.dashboard.dto.maindashboard.CircleSummaryDTO;
 import com.soldesk.moa.admin.dashboard.dto.maindashboard.DailyCountDTO;
 import com.soldesk.moa.admin.dashboard.dto.maindashboard.DashboardChartDTO;
@@ -213,6 +215,9 @@ public class AdminService {
                                 .userStatusDTO(userStatusDTO)
                                 .circleSummaryDTO(circleSummaryDTO)
                                 .dashboardChartDTO(dashboardChartDTO)
+                                .reservationCountDTO(getPlaceReservationCounts())
+                                .popularPlaceDTOs(getPopularPlaces())
+                                .placeUtilizationRateDTO(getPlaceUtilizationRate())
                                 .build();
 
                 return dto;
@@ -980,6 +985,27 @@ public class AdminService {
                 }
 
                 placeClosedDayRepository.delete(closedDay);
+        }
+
+        // ──────────────────────────────────────────────
+        // 장소 대시보드 메서드
+        // ──────────────────────────────────────────────
+
+        @Transactional(readOnly = true)
+        public ReservationCountDTO getPlaceReservationCounts() {
+                return placeRepository.getReservationCounts();
+        }
+
+        @Transactional(readOnly = true)
+        public List<PopularPlaceDTO> getPopularPlaces() {
+                return placeRepository.findTop5PopularPlaces(
+                                LocalDateTime.now().minusDays(30));
+        }
+
+        @Transactional(readOnly = true)
+        public Double getPlaceUtilizationRate() {
+                return placeRepository.calculateUtilizationRate(
+                                LocalDateTime.now().minusDays(30));
         }
 
         // 변환 전용 메소드

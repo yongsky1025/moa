@@ -1,4 +1,4 @@
-import type { CircleSummaryDTO, UserCountDTO } from '../../types/adminTypes';
+import type { CircleSummaryDTO, UserCountDTO } from "../../types/adminTypes";
 
 interface Props {
   circleData: CircleSummaryDTO | null;
@@ -7,18 +7,18 @@ interface Props {
 }
 
 const ACCENT_TOP = [
-  'border-t-moa-primary',
-  'border-t-moa-muted',
-  'border-t-[#C8DDD6]',
+  "border-t-moa-primary",
+  "border-t-moa-muted",
+  "border-t-[#C8DDD6]",
 ];
 const BAR_COLORS = [
-  '#5F8F7B',
-  '#14B8A6',
-  '#F59E0B',
-  '#8B5CF6',
-  '#6366F1',
-  '#F43F5E',
-  '#22C55E',
+  "#5F8F7B",
+  "#14B8A6",
+  "#F59E0B",
+  "#8B5CF6",
+  "#6366F1",
+  "#F43F5E",
+  "#22C55E",
 ];
 
 export default function CircleStatusCard({
@@ -42,26 +42,26 @@ export default function CircleStatusCard({
 
   const list =
     otherCount > 0
-      ? [...top5, { categoryName: '기타', countPerCategory: otherCount }]
+      ? [...top5, { categoryName: "기타", countPerCategory: otherCount }]
       : top5;
 
   const maxCount = Math.max(...list.map((d) => d.countPerCategory), 1);
 
   const summaries = [
     {
-      label: '총 모임 수',
-      value: circleData ? circleData.circleCount.toLocaleString('ko-KR') : '-',
-      unit: '개',
+      label: "총 모임 수",
+      value: circleData ? circleData.circleCount.toLocaleString("ko-KR") : "-",
+      unit: "개",
     },
     {
-      label: '참여 중인 사용자',
-      value: userData ? userData.countJoinUser.toLocaleString('ko-KR') : '-',
-      unit: '명',
+      label: "참여 중인 사용자",
+      value: userData ? userData.countJoinUser.toLocaleString("ko-KR") : "-",
+      unit: "명",
     },
     {
-      label: '모임 참여율',
-      value: userData ? `${joinRate}` : '-',
-      unit: '%',
+      label: "모임 참여율",
+      value: userData ? `${joinRate}` : "-",
+      unit: "%",
     },
   ];
 
@@ -128,7 +128,6 @@ export default function CircleStatusCard({
             const color = BAR_COLORS[i % BAR_COLORS.length];
             return (
               <div key={d.categoryName} className="flex items-center gap-3">
-                {/* 왼쪽: 카테고리명 */}
                 <div className="flex min-w-0 flex-1 items-center gap-1.5">
                   <div
                     className="h-2 w-2 shrink-0 rounded-full"
@@ -138,8 +137,6 @@ export default function CircleStatusCard({
                     {d.categoryName}
                   </span>
                 </div>
-
-                {/* 오른쪽: 바 + 숫자 */}
                 <div className="flex shrink items-center gap-2">
                   <div className="h-1.5 w-xl overflow-hidden rounded-full bg-gray-100">
                     <div

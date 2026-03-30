@@ -13,9 +13,17 @@ export default function PlaceMapView({ places }: Props) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const overlayBtnRef = useRef<Map<number, { btn: HTMLButtonElement; arrow: HTMLDivElement }>>(new Map());
+  const placesRef = useRef<PlaceCardDTO[]>(places); // 최신 places를 클로저 없이 참조
   const [kakaoReady, setKakaoReady] = useState(false);
   const [selected, setSelected] = useState<PlaceCardDTO | null>(null);
+  const [visiblePlaces, setVisiblePlaces] = useState<PlaceCardDTO[]>(places);
   const navigate = useNavigate();
+
+  // placesRef 항상 최신 유지
+  useEffect(() => {
+    placesRef.current = places;
+  }, [places]);
 
   // Kakao Maps SDK 초기화
   useEffect(() => {
@@ -28,24 +36,50 @@ export default function PlaceMapView({ places }: Props) {
     return () => clearInterval(timer);
   }, []);
 
-  // 지도 생성
+  // 지도 생성 (한 번만) — bounds_changed 리스너도 여기서만 등록
   useEffect(() => {
     if (!kakaoReady || !mapContainerRef.current || mapRef.current) return;
     mapRef.current = new kakao.maps.Map(mapContainerRef.current, {
       center: new kakao.maps.LatLng(37.5665, 126.978),
       level: 8,
     });
+
+    // bounds_changed: placesRef로 항상 최신 places 참조
+    kakao.maps.event.addListener(mapRef.current, "bounds_changed", () => {
+      if (!mapRef.current) return;
+      const bounds = mapRef.current.getBounds();
+      setVisiblePlaces(
+        placesRef.current.filter((p) =>
+          bounds.contain(new kakao.maps.LatLng(p.latitude, p.longitude)),
+        ),
+      );
+    });
   }, [kakaoReady]);
 
-  // places가 바뀔 때마다 마커 재렌더링
+  // selected 변경 시 말풍선 색상 업데이트
+  useEffect(() => {
+    overlayBtnRef.current.forEach(({ btn, arrow }, placeId) => {
+      const isSelected = selected?.id === placeId;
+      btn.style.background = isSelected ? "#ffffff" : "#5F8F7B";
+      btn.style.color = isSelected ? "#5F8F7B" : "#ffffff";
+      btn.style.border = isSelected ? "1.5px solid #5F8F7B" : "none";
+      arrow.style.background = isSelected ? "#ffffff" : "#5F8F7B";
+    });
+  }, [selected]);
+
+  // places가 바뀔 때 마커만 재렌더링
   useEffect(() => {
     if (!kakaoReady || !mapRef.current) return;
 
     // 기존 마커 제거
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
+    overlayBtnRef.current.clear();
 
-    if (places.length === 0) return;
+    if (places.length === 0) {
+      setVisiblePlaces([]);
+      return;
+    }
 
     const bounds = new kakao.maps.LatLngBounds();
 
@@ -75,13 +109,14 @@ export default function PlaceMapView({ places }: Props) {
         "></div>
       `;
       content.style.cssText = "display:flex;flex-direction:column;align-items:center;cursor:pointer;";
+      const btn = content.querySelector("button") as HTMLButtonElement;
+      const arrow = content.querySelector("div") as HTMLDivElement;
+      overlayBtnRef.current.set(place.id, { btn, arrow });
       content.addEventListener("click", () => {
         setSelected(place);
-        mapRef.current.setCenter(position);
-        mapRef.current.setLevel(4);
       });
 
-      const overlay = new kakao.maps.CustomOverlay({
+      const overlay = new (kakao.maps as any).CustomOverlay({
         position,
         content,
         yAnchor: 1.2,
@@ -90,7 +125,7 @@ export default function PlaceMapView({ places }: Props) {
       markersRef.current.push(overlay);
     });
 
-    // 모든 마커가 보이도록 범위 조정 (단 1개면 setCenter)
+    // 모든 마커가 보이도록 범위 조정
     if (places.length === 1) {
       mapRef.current.setCenter(
         new kakao.maps.LatLng(places[0].latitude, places[0].longitude),
@@ -99,10 +134,13 @@ export default function PlaceMapView({ places }: Props) {
     } else {
       mapRef.current.setBounds(bounds);
     }
+
+    // 초기 visiblePlaces 설정
+    setVisiblePlaces(places);
   }, [kakaoReady, places]);
 
   return (
-    <div className="relative h-[calc(100vh-280px)] min-h-[520px] overflow-hidden rounded-2xl border border-gray-200">
+    <div className="relative h-[calc(100vh-280px)] min-h-130 overflow-hidden rounded-2xl border border-gray-200">
       {/* 카카오 지도 */}
       <div ref={mapContainerRef} className="h-full w-full" />
 
@@ -114,21 +152,17 @@ export default function PlaceMapView({ places }: Props) {
         </div>
       )}
 
-      {/* 좌측 장소 목록 패널 */}
+      {/* 좌측 장소 목록 패널 — z-10으로 지도 위에 표시 */}
       {places.length > 0 && (
-        <div className="absolute left-3 top-3 flex max-h-[calc(100%-24px)] w-60 flex-col gap-1.5 overflow-y-auto rounded-xl bg-white/95 p-2 shadow-lg backdrop-blur-sm">
+        <div className="absolute left-3 top-3 z-10 flex max-h-[calc(100%-24px)] w-60 flex-col gap-1.5 overflow-y-auto rounded-xl bg-white/95 p-2 shadow-lg backdrop-blur-sm">
           <p className="px-2 py-1 text-xs font-semibold text-gray-400">
-            장소 목록 ({places.length})
+            현재 화면 내 장소 ({visiblePlaces.length})
           </p>
-          {places.map((p) => (
+          {visiblePlaces.map((p) => (
             <button
               key={p.id}
               onClick={() => {
                 setSelected(p);
-                if (mapRef.current) {
-                  mapRef.current.setCenter(new kakao.maps.LatLng(p.latitude, p.longitude));
-                  mapRef.current.setLevel(4);
-                }
               }}
               className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors ${
                 selected?.id === p.id
@@ -164,7 +198,7 @@ export default function PlaceMapView({ places }: Props) {
 
       {/* 선택된 장소 상세 팝업 */}
       {selected && (
-        <div className="absolute bottom-4 right-4 w-68 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+        <div className="absolute bottom-4 right-4 z-10 w-68 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
           <button
             onClick={() => setSelected(null)}
             className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50"
@@ -220,7 +254,7 @@ export default function PlaceMapView({ places }: Props) {
       )}
 
       {/* 좌측 하단 — 총 장소 수 뱃지 */}
-      <div className="absolute bottom-4 left-3 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-600 shadow">
+      <div className="absolute bottom-4 left-3 z-10 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-600 shadow">
         총 {places.length}개 장소
       </div>
     </div>

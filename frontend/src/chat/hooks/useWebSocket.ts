@@ -10,28 +10,51 @@ interface ReadEvent {
   lastReadAt: string;
 }
 
+interface SystemEvent {
+  type: 'LEAVE';
+  nickname: string;
+  createdAt: string;
+}
+
+export interface TypingEvent {
+  userId: number;
+  nickname: string;
+}
+
 interface UseWebSocketOptions {
   roomId: number;
   userId?: number;
   onMessage: (message: ChatMessage) => void;
   onReadEvent?: (event: ReadEvent) => void;
   onNotification?: (notification: Notification) => void;
+  onSystemEvent?: (event: SystemEvent) => void;
+  onTyping?: (event: TypingEvent) => void;
+  onReaction?: (msg: ChatMessage) => void;
 }
 
-export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotification }: UseWebSocketOptions) {
+export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotification, onSystemEvent, onTyping, onReaction }: UseWebSocketOptions) {
   const clientRef = useRef<Client | null>(null);
   const subMsgRef = useRef<StompSubscription | null>(null);
   const subReadRef = useRef<StompSubscription | null>(null);
+  const subSystemRef = useRef<StompSubscription | null>(null);
   const subAlarmRef = useRef<StompSubscription | null>(null);
+  const subTypingRef = useRef<StompSubscription | null>(null);
+  const subReactionRef = useRef<StompSubscription | null>(null);
   const roomIdRef = useRef(roomId);
   const userIdRef = useRef(userId);
   const onMessageRef = useRef(onMessage);
   const onReadEventRef = useRef(onReadEvent);
   const onNotificationRef = useRef(onNotification);
+  const onSystemEventRef = useRef(onSystemEvent);
+  const onTypingRef = useRef(onTyping);
+  const onReactionRef = useRef(onReaction);
 
   onMessageRef.current = onMessage;
   onReadEventRef.current = onReadEvent;
   onNotificationRef.current = onNotification;
+  onSystemEventRef.current = onSystemEvent;
+  onTypingRef.current = onTyping;
+  onReactionRef.current = onReaction;
   roomIdRef.current = roomId;
   userIdRef.current = userId;
 
@@ -42,6 +65,8 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
     // 새 구독 먼저 등록 후 이전 구독 해제 → 전환 중 메시지 유실 방지
     const prevMsg = subMsgRef.current;
     const prevRead = subReadRef.current;
+    const prevSystem = subSystemRef.current;
+    const prevTyping = subTypingRef.current;
 
     subMsgRef.current = client.subscribe(`/topic/room/${rid}`, (frame) => {
       onMessageRef.current(JSON.parse(frame.body));
@@ -49,9 +74,23 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
     subReadRef.current = client.subscribe(`/topic/room/${rid}/read`, (frame) => {
       onReadEventRef.current?.(JSON.parse(frame.body));
     });
+    subSystemRef.current = client.subscribe(`/topic/room/${rid}/system`, (frame) => {
+      onSystemEventRef.current?.(JSON.parse(frame.body));
+    });
+    subTypingRef.current = client.subscribe(`/topic/room/${rid}/typing`, (frame) => {
+      onTypingRef.current?.(JSON.parse(frame.body));
+    });
+
+    const prevReaction = subReactionRef.current;
+    subReactionRef.current = client.subscribe(`/topic/room/${rid}/reaction`, (frame) => {
+      onReactionRef.current?.(JSON.parse(frame.body));
+    });
+    prevReaction?.unsubscribe();
 
     prevMsg?.unsubscribe();
     prevRead?.unsubscribe();
+    prevSystem?.unsubscribe();
+    prevTyping?.unsubscribe();
   }, []);
 
   const subscribeToAlarm = useCallback((uid: number) => {
@@ -66,9 +105,9 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
       const dedupeKey = noti.id != null
         ? `moa_alarm_${noti.id}`
         : `moa_alarm_${noti.type}_${noti.referenceId ?? ''}_${Math.floor(Date.now() / 2000)}`;
-      if (localStorage.getItem(dedupeKey)) return;
-      localStorage.setItem(dedupeKey, '1');
-      setTimeout(() => localStorage.removeItem(dedupeKey), 10_000);
+      if (sessionStorage.getItem(dedupeKey)) return;
+      sessionStorage.setItem(dedupeKey, '1');
+      setTimeout(() => sessionStorage.removeItem(dedupeKey), 10_000);
       onNotificationRef.current?.(noti);
     });
   }, []);
@@ -82,6 +121,11 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
       webSocketFactory: () => new SockJS('/ws/chat'),
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 5000,
+      beforeConnect: () => {
+        // 재연결 시 항상 최신 토큰 사용 (만료 토큰 문제 방지)
+        const freshToken = localStorage.getItem('accessToken');
+        if (freshToken) client.connectHeaders = { Authorization: `Bearer ${freshToken}` };
+      },
       onConnect: () => {
         subscribeToRoom(roomIdRef.current);
         if (userIdRef.current) subscribeToAlarm(userIdRef.current);
@@ -105,13 +149,21 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
     if (roomId) subscribeToRoom(roomId);
   }, [roomId, subscribeToRoom]);
 
-  const sendMessage = useCallback((content: string) => {
+  const sendMessage = useCallback((content: string, replyToId?: number | null) => {
     if (!clientRef.current?.connected) return;
     clientRef.current.publish({
       destination: `/app/chat/${roomIdRef.current}`,
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, replyToId: replyToId ?? null }),
     });
   }, []);
 
-  return { sendMessage };
+  const sendTyping = useCallback((nickname: string) => {
+    if (!clientRef.current?.connected || !roomIdRef.current) return;
+    clientRef.current.publish({
+      destination: `/app/chat/${roomIdRef.current}/typing`,
+      body: JSON.stringify({ nickname }),
+    });
+  }, []);
+
+  return { sendMessage, sendTyping };
 }

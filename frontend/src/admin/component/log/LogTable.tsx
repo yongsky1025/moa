@@ -1,20 +1,29 @@
-import type { AdminActionLog } from '../../types/adminTypes';
-import ActionTypeBadge from './ActionTypeBadge';
-import MoaPaginate from '../Moapaginate';
+import type { AdminActionLog } from "../../types/adminTypes";
+import ActionTypeBadge from "./ActionTypeBadge";
+import MoaPaginate from "../Moapaginate";
 
 const fmtTs = (ts: string | null) => {
-  if (!ts) return '-';
+  if (!ts) return "-";
   const d = new Date(ts);
-  const pad = (n: number) => String(n).padStart(2, '0');
+  const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 };
 
 const truncate = (str: string | null, n: number) => {
-  if (!str) return '-';
-  return str.length > n ? str.slice(0, n) + '…' : str;
+  if (!str) return "-";
+  return str.length > n ? str.slice(0, n) + "…" : str;
 };
 
-const HEADERS = ['#', '발생시각', '액션', '대상', '경로', '메서드', 'IP', '유저 ID'];
+const HEADERS = [
+  "#",
+  "발생시각",
+  "액션",
+  "대상",
+  "경로",
+  "메서드",
+  "IP",
+  "유저 ID",
+];
 
 interface Props {
   logs: AdminActionLog[];
@@ -62,12 +71,12 @@ export default function LogTable({
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr style={{ background: '#0F172A' }}>
+            <tr style={{ background: "#0F172A" }}>
               {HEADERS.map((h) => (
                 <th
                   key={h}
                   className="px-4 py-3 text-left font-semibold tracking-wider whitespace-nowrap uppercase"
-                  style={{ color: '#94A3B8' }}
+                  style={{ color: "#94A3B8" }}
                 >
                   {h}
                 </th>
@@ -89,7 +98,7 @@ export default function LogTable({
                 <tr
                   key={log.id}
                   className="border-b border-slate-100 transition-colors hover:bg-slate-50"
-                  style={{ background: i % 2 === 0 ? '#ffffff' : '#FAFBFC' }}
+                  style={{ background: i % 2 === 0 ? "#ffffff" : "#FAFBFC" }}
                 >
                   <td className="px-4 py-2.5 text-slate-400">{startNo + i}</td>
                   <td className="px-4 py-2.5 font-mono text-slate-600 whitespace-nowrap">
@@ -99,14 +108,16 @@ export default function LogTable({
                     <ActionTypeBadge type={log.actionType} />
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap text-slate-600">
-                    {log.targetType ?? '-'}
+                    {log.targetType ?? "-"}
                     {log.targetId != null && (
-                      <span className="ml-1 text-slate-400">#{log.targetId}</span>
+                      <span className="ml-1 text-slate-400">
+                        #{log.targetId}
+                      </span>
                     )}
                   </td>
                   <td
-                    className="max-w-[200px] px-4 py-2.5 font-mono text-slate-500"
-                    title={log.requestUrl ?? ''}
+                    className="max-w-50 px-4 py-2.5 font-mono text-slate-500"
+                    title={log.requestUrl ?? ""}
                   >
                     {truncate(log.requestUrl, 35)}
                   </td>
@@ -114,10 +125,10 @@ export default function LogTable({
                     {truncate(log.methodName, 24)}
                   </td>
                   <td className="px-4 py-2.5 font-mono text-slate-400 whitespace-nowrap">
-                    {log.ipAddress ?? '-'}
+                    {log.ipAddress ?? "-"}
                   </td>
                   <td className="px-4 py-2.5 font-mono text-slate-500">
-                    {log.actorId ?? '-'}
+                    {log.actorId ?? "-"}
                   </td>
                 </tr>
               ))
@@ -128,8 +139,11 @@ export default function LogTable({
 
       <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3">
         <span className="text-xs text-slate-400">
-          전체{' '}
-          <span className="font-bold text-slate-600">{totalCount.toLocaleString()}</span>건
+          전체{" "}
+          <span className="font-bold text-slate-600">
+            {totalCount.toLocaleString()}
+          </span>
+          건
         </span>
         {actualTotalPage > 1 && (
           <MoaPaginate

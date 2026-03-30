@@ -5,10 +5,11 @@ import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
 import type { Notification } from "../../types/notification";
 import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
+import { useAlarmSocket } from "../../chat/hooks/useAlarmSocket";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const { isLoggedIn, user, logout } = useAuthStore();
+  const { isLoggedIn, user, logout, userId: alarmUserId } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
 
   const dropdownItems: Record<string, { label: string; href: string; icon: React.ReactNode }[]> = {
@@ -34,6 +35,14 @@ export default function Navbar() {
   const profileRef = useRef<HTMLDivElement>(null);
 
   const unreadActivityCount = activityNoti.filter((n) => !n.isRead).length;
+
+  useAlarmSocket(isLoggedIn ? alarmUserId : null, (noti) => {
+    if (noti.type === 'CHAT_MESSAGE') {
+      setUnreadChatCount((c) => c + 1);
+    } else {
+      setActivityNoti((prev) => [noti, ...prev]);
+    }
+  });
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -91,11 +100,14 @@ export default function Navbar() {
   };
 
   const ACTIVITY_NOTI_ICONS: Record<string, string> = {
-    JOIN_REQUEST: "📨",
-    JOIN_APPROVED: "✅",
-    JOIN_REJECTED: "❌",
-    KICKED: "🚫",
-    CIRCLE_DISBANDED: "💔",
+    JOIN_REQUEST: '📨',
+    JOIN_APPROVED: '✅',
+    JOIN_REJECTED: '❌',
+    KICKED: '🚫',
+    CIRCLE_DISBANDED: '💔',
+    REPLY: '💬',
+    CHILD_REPLY: '↩️',
+    POST_LIKE: '👍',
   };
 
   const navItems = ["관리자 페이지", "모임", "커뮤니티", "에너지", "플레이스"];
@@ -157,6 +169,13 @@ export default function Navbar() {
                 <div key={item} style={{ position: "relative" }} onMouseEnter={() => setHoveredItem(item)} onMouseLeave={() => setHoveredItem(null)}>
                   <Link
                     to={navLinks[item] ?? "#"}
+                    onClick={(e) => {
+                      const target = navLinks[item];
+                      if (target && window.location.pathname === target) {
+                        e.preventDefault();
+                        navigate(0);
+                      }
+                    }}
                     style={{
                       fontSize: 15,
                       fontWeight: 500,
@@ -419,7 +438,11 @@ export default function Navbar() {
             {isLoggedIn && (
               <div style={{ position: "relative", marginRight: 20 }}>
                 <button
-                  onClick={() => setChatOpen((v) => !v)}
+                  onClick={() => {
+                    const next = !chatOpen;
+                    setChatOpen(next);
+                    if (next) setUnreadChatCount(0);
+                  }}
                   title="채팅"
                   style={{
                     width: 32,

@@ -8,6 +8,9 @@ export default function ChatListPage() {
   const [loading, setLoading] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; room: ChatRoomSummary } | null>(null);
   const [renaming, setRenaming] = useState<{ roomId: number; value: string } | null>(null);
+  const [mutedRooms, setMutedRooms] = useState<Set<number>>(() =>
+    new Set(JSON.parse(localStorage.getItem('moa_muted_rooms') ?? '[]'))
+  );
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -22,6 +25,17 @@ export default function ChatListPage() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  // 팝업창에서 뮤트 변경 시 동기화
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'moa_muted_rooms') {
+        setMutedRooms(new Set(JSON.parse(e.newValue ?? '[]')));
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   useEffect(() => {
@@ -52,6 +66,15 @@ export default function ChatListPage() {
     } finally {
       setRenaming(null);
     }
+  };
+
+  const toggleMute = (roomId: number) => {
+    setMutedRooms((prev) => {
+      const next = new Set(prev);
+      if (next.has(roomId)) { next.delete(roomId); } else { next.add(roomId); }
+      localStorage.setItem('moa_muted_rooms', JSON.stringify([...next]));
+      return next;
+    });
   };
 
   const handleLeave = async (roomId: number) => {
@@ -108,7 +131,10 @@ export default function ChatListPage() {
               </div>
               <div style={styles.row}>
                 <span style={styles.last}>{room.lastMessage ?? "메시지 없음"}</span>
-                {room.unreadCount > 0 && <span style={styles.badge}>{room.unreadCount}</span>}
+                {mutedRooms.has(room.roomId)
+                  ? <span style={{ fontSize: 13, color: '#9CA3AF' }}>🔕</span>
+                  : room.unreadCount > 0 && <span style={styles.badge}>{room.unreadCount}</span>
+                }
               </div>
             </div>
           </div>
@@ -129,6 +155,9 @@ export default function ChatListPage() {
               ✏️ 방 이름 변경
             </button>
           )}
+          <button style={styles.ctxItem} onClick={() => { toggleMute(contextMenu.room.roomId); setContextMenu(null); }}>
+            {mutedRooms.has(contextMenu.room.roomId) ? '🔔 알림 켜기' : '🔕 알림 끄기'}
+          </button>
           <button style={{ ...styles.ctxItem, color: "#c62828" }} onClick={() => handleLeave(contextMenu.room.roomId)}>
             🚪 채팅방 나가기
           </button>

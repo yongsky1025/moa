@@ -25,6 +25,8 @@ export interface PlaceCardDTO {
   avgRating: number;
   reviewCount: number;
   representativeImagePath?: string;
+  minReservationMinutes?: number;
+  liked?: boolean;
 }
 
 // ── 장소 상세 ────────────────────────────────
@@ -45,28 +47,53 @@ export interface PlaceDetailDTO {
   description: string;
   minReservationMinutes: number;
   maxReservationMinutes: number;
-  openTime: string;   // "HH:mm:ss"
-  closeTime: string;  // "HH:mm:ss"
+  openTime: string; // "HH:mm:ss"
+  closeTime: string; // "HH:mm:ss"
   tags: TagDTO[];
   closedDays: PlaceClosedDayDTO[];
   images: string[];
   likeCount: number;
+  liked?: boolean;
 }
 
 // ── 휴무일 ────────────────────────────────────
 export interface PlaceClosedDayDTO {
-  dayOfWeek?: string;  // MONDAY ~ SUNDAY
-  date?: string;       // yyyy-MM-dd
+  dayOfWeek?: string; // MONDAY ~ SUNDAY
+  date?: string; // yyyy-MM-dd
   reason: string;
-  closedType: string;  // WEEKLY | HOLIDAY
+  closedType: string; // WEEKLY | HOLIDAY
 }
 
-// ── 리뷰 ─────────────────────────────────────
+// ── 리뷰 (장소 상세 페이지) ──────────────────
 export interface PlaceReviewDTO {
   id: number;
   rating: number;
   comment: string;
   reviewerNickname: string;
+  createdAt?: string;
+  images?: string[];
+}
+
+// ── 마이페이지 - 내가 쓴 후기 ─────────────────
+export interface MyPlaceReviewDTO {
+  reviewId: number;
+  placeId: number;
+  placeName: string;
+  reservationStartTime: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  images: string[];
+}
+
+// ── 마이페이지 - 작성 가능한 후기 ─────────────
+export interface PendingReviewDTO {
+  reservationId: number;
+  placeId: number;
+  placeName: string;
+  startTime: string;
+  endTime: string;
+  reviewDeadline: string;
 }
 
 // ── 검색 파라미터 ────────────────────────────
@@ -80,7 +107,7 @@ export interface PlaceSearchParams {
     | "reviews"
     | "capacity";
   city?: string;
-  districts?: string[];   // 구/시 복수 선택
+  districts?: string[]; // 구/시 복수 선택
   dong?: string;
   minPrice?: number;
   maxPrice?: number;
