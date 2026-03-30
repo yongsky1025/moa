@@ -29,15 +29,17 @@ interface UseWebSocketOptions {
   onNotification?: (notification: Notification) => void;
   onSystemEvent?: (event: SystemEvent) => void;
   onTyping?: (event: TypingEvent) => void;
+  onReaction?: (msg: ChatMessage) => void;
 }
 
-export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotification, onSystemEvent, onTyping }: UseWebSocketOptions) {
+export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotification, onSystemEvent, onTyping, onReaction }: UseWebSocketOptions) {
   const clientRef = useRef<Client | null>(null);
   const subMsgRef = useRef<StompSubscription | null>(null);
   const subReadRef = useRef<StompSubscription | null>(null);
   const subSystemRef = useRef<StompSubscription | null>(null);
   const subAlarmRef = useRef<StompSubscription | null>(null);
   const subTypingRef = useRef<StompSubscription | null>(null);
+  const subReactionRef = useRef<StompSubscription | null>(null);
   const roomIdRef = useRef(roomId);
   const userIdRef = useRef(userId);
   const onMessageRef = useRef(onMessage);
@@ -45,12 +47,14 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
   const onNotificationRef = useRef(onNotification);
   const onSystemEventRef = useRef(onSystemEvent);
   const onTypingRef = useRef(onTyping);
+  const onReactionRef = useRef(onReaction);
 
   onMessageRef.current = onMessage;
   onReadEventRef.current = onReadEvent;
   onNotificationRef.current = onNotification;
   onSystemEventRef.current = onSystemEvent;
   onTypingRef.current = onTyping;
+  onReactionRef.current = onReaction;
   roomIdRef.current = roomId;
   userIdRef.current = userId;
 
@@ -76,6 +80,12 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
     subTypingRef.current = client.subscribe(`/topic/room/${rid}/typing`, (frame) => {
       onTypingRef.current?.(JSON.parse(frame.body));
     });
+
+    const prevReaction = subReactionRef.current;
+    subReactionRef.current = client.subscribe(`/topic/room/${rid}/reaction`, (frame) => {
+      onReactionRef.current?.(JSON.parse(frame.body));
+    });
+    prevReaction?.unsubscribe();
 
     prevMsg?.unsubscribe();
     prevRead?.unsubscribe();

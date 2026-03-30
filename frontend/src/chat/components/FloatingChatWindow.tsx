@@ -1,7 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { chatApi } from "../../api/chatApi";
-import { useWebSocket } from "../hooks/useWebSocket";
+import { circleApi } from "../../api/circleApi";
+import { useWebSocket, type TypingEvent } from "../hooks/useWebSocket";
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
 import { reportApi, CATEGORY_LABELS } from "../../api/reportApi";
@@ -9,6 +11,7 @@ import type { ReportCategory } from "../../api/reportApi";
 import EmojiPicker from "./EmojiPicker";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
+import type { CircleMember } from "../../circle/types/circle";
 
 const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
 const isFileUrl = (c: string) => c.startsWith('/uploads/') || c.startsWith('/api/chat/files/');
@@ -50,6 +53,10 @@ function renderMsgContent(content: string, mine: boolean, searchQuery = "") {
   );
 }
 
+const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
+const avatarColor = (id: number) => AVATAR_COLORS[id % AVATAR_COLORS.length];
+const nickColor = (nick: string) => AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
+
 const MIN_W = 520;
 const MIN_H = 400;
 const INIT_W = 700;
@@ -71,6 +78,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loadingMsg, setLoadingMsg] = useState(false);
+  const [search, setSearch] = useState("");
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNoti, setShowNoti] = useState(false);
@@ -108,11 +116,37 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [replyTo, setReplyTo] = useState<{ messageId: number; content: string; nickname: string } | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ChatPopupPage 동기화 기능
+  const [members, setMembers] = useState<CircleMember[]>([]);
+  const [showMembers, setShowMembers] = useState(false);
+  const [editingRoomName, setEditingRoomName] = useState(false);
+  const [roomNameInput, setRoomNameInput] = useState("");
+  const [profileModal, setProfileModal] = useState<{ nickname: string; senderId: number } | null>(null);
+  const [profileChatError, setProfileChatError] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
+  const typingTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const typingCooldownRef = useRef(false);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const roomsRef = useRef(rooms);
+  roomsRef.current = rooms;
+
+  const roomLabel = (r: ChatRoomSummary) => {
+    if (r.roomType === 'GROUP') return r.name ?? `모임 #${r.circleId}`;
+    if (r.roomType === 'SCHEDULE') return r.name ?? `일정 채팅 #${r.scheduleId}`;
+    return r.otherUserNickname ?? `1:1 채팅 #${r.roomId}`;
+  };
+
+  // 파생 값
+  const activeRoom = rooms.find(r => r.roomId === activeRoomId) ?? null;
+  const filteredRooms = rooms.filter(r => roomLabel(r).includes(search) || (r.lastMessage ?? '').includes(search));
+  const totalUnread = rooms.reduce((s, r) => s + r.unreadCount, 0);
 
   const loadRooms = useCallback(async () => {
     try {
@@ -147,6 +181,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
       if (e.key === "Escape") {
         setShowNoti(false);
         setRoomCtxMenu(null);
+        setProfileModal(null);
       }
     };
     document.addEventListener("click", close);
@@ -157,8 +192,46 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     };
   }, []);
 
+  // #room-{roomId} 또는 #direct-{userId} 처리
+  const handleRoomHash = useCallback(async () => {
+    const hash = window.location.hash;
+    const roomMatch = hash.match(/^#room-(\d+)$/);
+    const directMatch = hash.match(/^#direct-(\d+)$/);
+    if (!roomMatch && !directMatch) return;
+    window.location.hash = "";
+    try {
+      let roomId: number;
+      if (directMatch) {
+        roomId = await chatApi.getOrCreateDirectRoom(Number(directMatch[1]));
+      } else {
+        roomId = Number(roomMatch![1]);
+      }
+      let updated = await chatApi.getMyRooms();
+      let found = updated.find((r) => r.roomId === roomId);
+      if (!found) {
+        await new Promise((res) => setTimeout(res, 500));
+        updated = await chatApi.getMyRooms();
+        found = updated.find((r) => r.roomId === roomId);
+      }
+      setRooms(updated);
+      if (found) setActiveRoomId(found.roomId);
+    } catch (e) {
+      console.error("[handleRoomHash] 에러:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    handleRoomHash();
+    window.addEventListener("hashchange", handleRoomHash);
+    return () => window.removeEventListener("hashchange", handleRoomHash);
+  }, [handleRoomHash]);
+
   useEffect(() => {
     if (!activeRoomId) return;
+    // 타이핑 초기화
+    setTypingUsers({});
+    Object.values(typingTimersRef.current).forEach(clearTimeout);
+    typingTimersRef.current = {};
     setReplyTo(null);
     setSearchQuery("");
     setShowSearch(false);
@@ -178,6 +251,18 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
         setReadStatus(map);
       })
       .catch(() => {});
+    // 모임방이면 멤버 로드
+    const room = roomsRef.current.find(r => r.roomId === activeRoomId);
+    if (room?.roomType === "GROUP" && room?.circleId) {
+      circleApi
+        .getActiveMembers(room.circleId, { size: 100 })
+        .then((res) => setMembers(res.data.dtoList ?? []))
+        .catch(() => setMembers([]));
+    } else {
+      setMembers([]);
+    }
+    setShowMembers(false);
+    setEditingRoomName(false);
   }, [activeRoomId]);
 
   useEffect(() => {
@@ -203,6 +288,15 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
+
+  const handleTyping = useCallback((event: TypingEvent) => {
+    if (event.userId === userId) return;
+    setTypingUsers((prev) => ({ ...prev, [event.userId]: event.nickname }));
+    if (typingTimersRef.current[event.userId]) clearTimeout(typingTimersRef.current[event.userId]);
+    typingTimersRef.current[event.userId] = setTimeout(() => {
+      setTypingUsers((prev) => { const next = { ...prev }; delete next[event.userId]; return next; });
+    }, 3000);
+  }, [userId]);
 
   const handleNewMessage = useCallback(
     (msg: ChatMessage) => {
@@ -249,7 +343,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
   const handleSystemEvent = useCallback((event: { type: string; nickname: string; createdAt: string }) => {
     const text = event.type === 'LEAVE' ? `${event.nickname}님이 퇴장했습니다.` : `${event.nickname}님이 입장했습니다.`;
-    const systemMsg: import('../types/chat').ChatMessage = {
+    const systemMsg: ChatMessage = {
       messageId: -Date.now(),
       roomId: activeRoomId ?? 0,
       senderId: 0,
@@ -263,13 +357,27 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     setMessages((prev) => [...prev, systemMsg]);
   }, [activeRoomId]);
 
-  const { sendMessage } = useWebSocket({
+  const handleReaction = useCallback((msg: ChatMessage) => {
+    setMessages(prev => prev.map(m => m.messageId === msg.messageId ? { ...m, reactions: msg.reactions } : m));
+  }, []);
+
+  const handleToggleReaction = async (messageId: number, emoji: string) => {
+    setMenuId(null);
+    try {
+      const updated = await chatApi.toggleReaction(messageId, emoji);
+      setMessages(prev => prev.map(m => m.messageId === messageId ? { ...m, reactions: updated.reactions } : m));
+    } catch {}
+  };
+
+  const { sendMessage, sendTyping } = useWebSocket({
     roomId: activeRoomId ?? 0,
     userId: userId ?? undefined,
     onMessage: handleNewMessage,
     onReadEvent: handleReadEvent,
     onNotification: handleNotification,
     onSystemEvent: handleSystemEvent,
+    onTyping: handleTyping,
+    onReaction: handleReaction,
   });
 
   const navigate = useNavigate();
@@ -368,6 +476,38 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     setPendingPreviewUrl(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
   };
 
+  const startDirectChat = async (targetUserId: number) => {
+    if (targetUserId === userId) return;
+    try {
+      const roomId = await chatApi.getOrCreateDirectRoom(targetUserId);
+      let updatedRooms = await chatApi.getMyRooms();
+      let found = updatedRooms.find((r) => r.roomId === roomId);
+      if (!found) {
+        await new Promise((res) => setTimeout(res, 500));
+        updatedRooms = await chatApi.getMyRooms();
+        found = updatedRooms.find((r) => r.roomId === roomId);
+      }
+      setRooms(updatedRooms);
+      if (found) setActiveRoomId(found.roomId);
+      setProfileModal(null);
+      setProfileChatError(null);
+    } catch {
+      setProfileChatError("채팅방 생성 실패");
+    }
+  };
+
+  const handleRoomNameSave = async () => {
+    if (!activeRoom || !roomNameInput.trim()) return;
+    try {
+      await chatApi.updateRoomName(activeRoom.roomId, roomNameInput.trim());
+      const newName = roomNameInput.trim();
+      setRooms((prev) => prev.map((r) => (r.roomId === activeRoom.roomId ? { ...r, name: newName } : r)));
+    } catch {
+      alert("이름 변경 실패");
+    }
+    setEditingRoomName(false);
+  };
+
   // ─── 드래그 ───────────────────────────────────────────
   const onDragMouseDown = (e: React.MouseEvent) => {
     dragging.current = true;
@@ -379,7 +519,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      // 클램핑 없음 → 멀티모니터에서 자유롭게 이동 가능
       setPos({
         x: e.clientX - dragOffset.current.x,
         y: e.clientY - dragOffset.current.y,
@@ -414,28 +553,17 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
       const dy = e.clientY - y;
       const dir = resizeDir.current;
 
-      let nw = w,
-        nh = h,
-        nx = px,
-        ny = py;
+      let nw = w, nh = h, nx = px, ny = py;
 
       if (dir.includes("e")) nw = Math.max(MIN_W, w + dx);
       if (dir.includes("s")) nh = Math.max(MIN_H, h + dy);
-      if (dir.includes("w")) {
-        nw = Math.max(MIN_W, w - dx);
-        nx = px + (w - nw);
-      }
-      if (dir.includes("n")) {
-        nh = Math.max(MIN_H, h - dy);
-        ny = py + (h - nh);
-      }
+      if (dir.includes("w")) { nw = Math.max(MIN_W, w - dx); nx = px + (w - nw); }
+      if (dir.includes("n")) { nh = Math.max(MIN_H, h - dy); ny = py + (h - nh); }
 
       setSize({ w: nw, h: nh });
       setPos({ x: nx, y: ny });
     };
-    const onUp = () => {
-      resizing.current = false;
-    };
+    const onUp = () => { resizing.current = false; };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
@@ -450,12 +578,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     const now = new Date();
     if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
     return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
-  };
-
-  const roomLabel = (r: ChatRoomSummary) => {
-    if (r.roomType === 'GROUP') return r.name ?? `모임 #${r.circleId}`;
-    if (r.roomType === 'SCHEDULE') return r.name ?? `일정 채팅 #${r.scheduleId}`;
-    return r.otherUserNickname ?? `1:1 채팅 #${r.roomId}`;
   };
 
   const handleRoomContextMenu = (e: React.MouseEvent, room: ChatRoomSummary) => {
@@ -526,7 +648,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     setRenaming(null);
   };
 
-
   const openPopup = () => {
     window.open(
       "/chat/popup",
@@ -543,37 +664,13 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
       {/* 우클릭 컨텍스트 메뉴 */}
       {roomCtxMenu && (
         <div
-          style={{
-            position: "fixed",
-            top: roomCtxMenu.y,
-            left: roomCtxMenu.x,
-            background: "#fff",
-            borderRadius: 8,
-            boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-            zIndex: 10002,
-            minWidth: 140,
-            border: "1px solid #E5E7EB",
-            overflow: "hidden",
-          }}
+          style={{ position: "fixed", top: roomCtxMenu.y, left: roomCtxMenu.x, background: "#fff", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", zIndex: 10002, minWidth: 140, border: "1px solid #E5E7EB", overflow: "hidden" }}
           onClick={(e) => e.stopPropagation()}
         >
           {roomCtxMenu.room.roomType === "GROUP" && (
             <button
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "10px 14px",
-                background: "none",
-                border: "none",
-                textAlign: "left",
-                cursor: "pointer",
-                fontSize: 13,
-                color: "#262626",
-              }}
-              onClick={() => {
-                setRenaming({ roomId: roomCtxMenu.room.roomId, value: roomCtxMenu.room.name ?? roomLabel(roomCtxMenu.room) });
-                setRoomCtxMenu(null);
-              }}
+              style={{ display: "block", width: "100%", padding: "10px 14px", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: 13, color: "#262626" }}
+              onClick={() => { setRenaming({ roomId: roomCtxMenu.room.roomId, value: roomCtxMenu.room.name ?? roomLabel(roomCtxMenu.room) }); setRoomCtxMenu(null); }}
             >
               ✏️ 방 이름 변경
             </button>
@@ -585,17 +682,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             {mutedRooms.has(roomCtxMenu.room.roomId) ? '🔔 알림 켜기' : '🔕 알림 끄기'}
           </button>
           <button
-            style={{
-              display: "block",
-              width: "100%",
-              padding: "10px 14px",
-              background: "none",
-              border: "none",
-              textAlign: "left",
-              cursor: "pointer",
-              fontSize: 13,
-              color: "#c62828",
-            }}
+            style={{ display: "block", width: "100%", padding: "10px 14px", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: 13, color: "#c62828" }}
             onClick={() => handleRoomLeave(roomCtxMenu.room.roomId)}
           >
             🚪 채팅방 나가기
@@ -605,100 +692,120 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
       {/* 이름 변경 모달 */}
       {renaming && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10003,
-          }}
-          onClick={() => setRenaming(null)}
-        >
-          <div
-            style={{ background: "#fff", borderRadius: 12, padding: "22px 22px 18px", width: 280, boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10003 }} onClick={() => setRenaming(null)}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: "22px 22px 18px", width: 280, boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontWeight: "bold", fontSize: 14, color: "#262626", marginBottom: 12 }}>방 이름 변경</div>
             <input
-              style={{
-                width: "100%",
-                padding: "9px 12px",
-                border: "1px solid #5F8F7B",
-                borderRadius: 8,
-                fontSize: 13,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
+              style={{ width: "100%", padding: "9px 12px", border: "1px solid #5F8F7B", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }}
               value={renaming.value}
               onChange={(e) => setRenaming({ ...renaming, value: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRenameConfirm();
-                if (e.key === "Escape") setRenaming(null);
-              }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleRenameConfirm(); if (e.key === "Escape") setRenaming(null); }}
               autoFocus
               maxLength={50}
             />
             <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
-              <button
-                style={{
-                  padding: "7px 14px",
-                  background: "#EAF4F0",
-                  color: "#262626",
-                  border: "none",
-                  borderRadius: 7,
-                  cursor: "pointer",
-                  fontSize: 12,
-                }}
-                onClick={() => setRenaming(null)}
-              >
-                취소
-              </button>
-              <button
-                style={{
-                  padding: "7px 14px",
-                  background: "#5F8F7B",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 7,
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: "bold",
-                }}
-                onClick={handleRenameConfirm}
-              >
-                변경
-              </button>
+              <button style={{ padding: "7px 14px", background: "#EAF4F0", color: "#262626", border: "none", borderRadius: 7, cursor: "pointer", fontSize: 12 }} onClick={() => setRenaming(null)}>취소</button>
+              <button style={{ padding: "7px 14px", background: "#5F8F7B", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontSize: 12, fontWeight: "bold" }} onClick={handleRenameConfirm}>변경</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 드래그 중 다른 요소가 마우스 이벤트 가로채지 못하도록 오버레이 */}
+      {/* 프로필 모달 */}
+      {profileModal && createPortal(
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}
+          onClick={() => { setProfileModal(null); setProfileChatError(null); }}
+        >
+          <div style={{ background: "#fff", borderRadius: 20, width: 280, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ background: nickColor(profileModal.nickname), height: 90, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+              <div style={{ width: 68, height: 68, borderRadius: "50%", background: nickColor(profileModal.nickname), border: "4px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, color: "#fff", marginBottom: -34 }}>
+                {profileModal.nickname.charAt(0)}
+              </div>
+            </div>
+            <div style={{ paddingTop: 42, paddingBottom: 20, textAlign: "center" }}>
+              <div style={{ fontWeight: 700, fontSize: 17, color: "#262626" }}>{profileModal.nickname}</div>
+            </div>
+            {profileChatError && (
+              <div style={{ margin: '0 20px 12px', padding: '10px 14px', background: '#fff3f3', border: '1px solid #f5c6c6', borderRadius: 8, fontSize: 13, color: '#c62828', textAlign: 'center' }}>
+                {profileChatError}
+              </div>
+            )}
+            <div style={{ borderTop: "1px solid #E5E7EB", padding: "12px 20px" }}>
+              <button
+                style={{ width: "100%", padding: "11px 0", background: "#5F8F7B", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+                onClick={(e) => { e.stopPropagation(); startDirectChat(profileModal.senderId); }}
+              >
+                💬 1:1 채팅하기
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 신고 모달 */}
+      {reportModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }} onClick={() => setReportModal(null)}>
+          <div style={{ background: '#fff', borderRadius: 14, padding: '24px', width: 320, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: '#1F2937', marginBottom: 16 }}>메시지 신고</div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>신고 유형</div>
+              <select value={reportCategory} onChange={(e) => setReportCategory(e.target.value as ReportCategory)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none' }}>
+                {(Object.entries(CATEGORY_LABELS) as [ReportCategory, string][]).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>상세 내용 (선택)</div>
+              <textarea value={reportDesc} onChange={(e) => setReportDesc(e.target.value)} placeholder="신고 내용을 입력하세요" maxLength={500} rows={3} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setReportModal(null)} style={{ padding: '8px 16px', background: '#EAF4F0', color: '#1F2937', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>취소</button>
+              <button onClick={handleReportSubmit} style={{ padding: '8px 16px', background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>신고하기</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 드래그 중 오버레이 */}
       {isDragging && <div style={{ position: "fixed", inset: 0, zIndex: 9998, cursor: "grabbing" }} />}
 
       <div style={{ ...s.window, left: pos.x, top: pos.y, width: size.w, height: size.h }}>
-        {/* 리사이즈 핸들 */}
-        {
-          <>
-            <div style={{ ...s.rHandle, ...s.rN }} onMouseDown={onResizeMouseDown("n")} />
-            <div style={{ ...s.rHandle, ...s.rS }} onMouseDown={onResizeMouseDown("s")} />
-            <div style={{ ...s.rHandle, ...s.rE }} onMouseDown={onResizeMouseDown("e")} />
-            <div style={{ ...s.rHandle, ...s.rW }} onMouseDown={onResizeMouseDown("w")} />
-            <div style={{ ...s.rHandle, ...s.rNE }} onMouseDown={onResizeMouseDown("ne")} />
-            <div style={{ ...s.rHandle, ...s.rNW }} onMouseDown={onResizeMouseDown("nw")} />
-            <div style={{ ...s.rHandle, ...s.rSE }} onMouseDown={onResizeMouseDown("se")} />
-            <div style={{ ...s.rHandle, ...s.rSW }} onMouseDown={onResizeMouseDown("sw")} />
-          </>
-        }
+        <style>{`
+          @keyframes typing-bounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-5px); opacity: 1; }
+          }
+          .typing-dots { display: flex; gap: 4px; align-items: center; height: 14px; }
+          .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: #9CA3AF; animation: typing-bounce 1.2s infinite; display: inline-block; }
+          .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+          .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        `}</style>
 
-        {/* 타이틀바 (드래그 핸들) */}
+        {/* 리사이즈 핸들 */}
+        <div style={{ ...s.rHandle, ...s.rN }} onMouseDown={onResizeMouseDown("n")} />
+        <div style={{ ...s.rHandle, ...s.rS }} onMouseDown={onResizeMouseDown("s")} />
+        <div style={{ ...s.rHandle, ...s.rE }} onMouseDown={onResizeMouseDown("e")} />
+        <div style={{ ...s.rHandle, ...s.rW }} onMouseDown={onResizeMouseDown("w")} />
+        <div style={{ ...s.rHandle, ...s.rNE }} onMouseDown={onResizeMouseDown("ne")} />
+        <div style={{ ...s.rHandle, ...s.rNW }} onMouseDown={onResizeMouseDown("nw")} />
+        <div style={{ ...s.rHandle, ...s.rSE }} onMouseDown={onResizeMouseDown("se")} />
+        <div style={{ ...s.rHandle, ...s.rSW }} onMouseDown={onResizeMouseDown("sw")} />
+
+        {/* 타이틀바 */}
         <div style={s.titleBar} onMouseDown={onDragMouseDown}>
           <span style={s.title}>💬 MOA 채팅</span>
           <div style={{ display: "flex", gap: 6 }} onClick={(e) => e.stopPropagation()}>
-            {/* 알림 버튼 */}
+            {/* 에러 토스트 */}
+            {errorMsg && (
+              <div style={{ position: 'absolute', top: 48, left: '50%', transform: 'translateX(-50%)', background: '#c62828', color: '#fff', borderRadius: 8, padding: '8px 16px', fontSize: 13, zIndex: 10004, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
+                {errorMsg}
+                <button onClick={() => setErrorMsg(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, padding: 0 }}>✕</button>
+              </div>
+            )}
+            {/* 알림 */}
             <div style={{ position: "relative" }}>
               <button style={s.titleBtn} onClick={() => setShowNoti((v) => !v)}>
                 🔔{unreadNoti > 0 && <span style={s.nBadge}>{unreadNoti}</span>}
@@ -707,25 +814,13 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                 <div style={s.notiBox}>
                   <div style={s.notiHeader}>
                     <span>알림</span>
-                    <button
-                      style={s.notiReadAll}
-                      onClick={async () => {
-                        await notificationApi.readAll();
-                        setNotifications((p) => p.map((n) => ({ ...n, isRead: true })));
-                      }}
-                    >
-                      전체 읽음
-                    </button>
+                    <button style={s.notiReadAll} onClick={async () => { await notificationApi.readAll(); setNotifications((p) => p.map((n) => ({ ...n, isRead: true }))); }}>전체 읽음</button>
                   </div>
                   {chatNotifications.length === 0 ? (
                     <div style={s.notiEmpty}>알림 없음</div>
                   ) : (
                     chatNotifications.map((n) => (
-                      <div
-                        key={n.id}
-                        style={{ ...s.notiItem, background: n.isRead ? "#f9f9f9" : "#eaf4ff" }}
-                        onClick={() => handleNotiClick(n)}
-                      >
+                      <div key={n.id} style={{ ...s.notiItem, background: n.isRead ? "#f9f9f9" : "#eaf4ff" }} onClick={() => handleNotiClick(n)}>
                         <span style={s.notiMsg}>{n.message}</span>
                         <span style={s.notiTime}>{formatTime(n.createdAt)}</span>
                       </div>
@@ -744,37 +839,29 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                 🔍
               </button>
             )}
-            {/* 별도 창으로 분리 (브라우저 독립 창) */}
-            <button
-              style={s.titleBtn}
-              onClick={() => {
-                openPopup();
-                onClose();
-                setActiveRoomId(null);
-              }}
-              title="별도 창으로 분리"
-            >
-              ▼
-            </button>
-            <button
-              style={s.titleBtn}
-              onClick={() => {
-                onClose();
-                setActiveRoomId(null);
-              }}
-            >
-              ✕
-            </button>
+            {/* 별도 창으로 분리 */}
+            <button style={s.titleBtn} onClick={() => { openPopup(); onClose(); setActiveRoomId(null); }} title="별도 창으로 분리">▼</button>
+            <button style={s.titleBtn} onClick={() => { onClose(); setActiveRoomId(null); }}>✕</button>
           </div>
         </div>
 
         <div style={s.body}>
-            {/* 왼쪽: 채팅 목록 */}
-            <div style={s.sidebar}>
-              <div style={s.sidebarTitle}>채팅</div>
-              {rooms.length === 0
+          {/* 왼쪽: 채팅 목록 */}
+          <div style={s.sidebar}>
+            <div style={s.sidebarTitle}>채팅</div>
+            {/* 채팅방 검색 */}
+            <div style={{ padding: '6px 10px', borderBottom: '1px solid #eee', flexShrink: 0 }}>
+              <input
+                style={{ width: '100%', padding: '6px 10px', border: '1px solid #E5E7EB', borderRadius: 16, background: '#EAF4F0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+                placeholder="🔍 채팅방 검색"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {filteredRooms.length === 0
                 ? <div style={s.sideEmpty}>채팅방 없음</div>
-                : rooms.map((r) => (
+                : filteredRooms.map((r) => (
                   <div key={r.roomId}
                     style={{ ...s.roomItem, background: r.roomId === activeRoomId ? '#e3f2fd' : 'transparent' }}
                     onClick={() => setActiveRoomId(r.roomId)}
@@ -794,140 +881,236 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                       </div>
                     </div>
                   </div>
-              ))
-            }
+                ))
+              }
+            </div>
+            {/* 전체 미읽음 */}
+            {totalUnread > 0 && (
+              <div style={{ padding: '8px 12px', background: '#EAF4F0', fontSize: 11, color: '#5F8F7B', textAlign: 'center', borderTop: '1px solid #eee', flexShrink: 0 }}>
+                읽지 않은 메시지 {totalUnread}개
+              </div>
+            )}
           </div>
 
-            {/* 오른쪽: 채팅방 */}
-            <div style={s.chatArea}>
-              {!activeRoomId ? (
-                <div style={s.noRoom}>채팅방을 선택하세요</div>
-              ) : loadingMsg ? (
-                <div style={s.noRoom}>불러오는 중...</div>
-              ) : (
-                <>
-                  {/* 검색 바 */}
-                  {showSearch && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderBottom: '1px solid #E5E7EB', background: '#F9FAFB', flexShrink: 0 }}>
-                      <span style={{ fontSize: 13, color: '#6B7280' }}>🔍</span>
-                      <input
-                        ref={searchInputRef}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="메시지 검색..."
-                        style={{ flex: 1, border: '1px solid #D1D5DB', borderRadius: 6, padding: '4px 8px', fontSize: 13, outline: 'none' }}
-                        onKeyDown={(e) => { if (e.key === 'Escape') { setShowSearch(false); setSearchQuery(""); } }}
-                        autoFocus
-                      />
-                      {searchQuery && (
-                        <span style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap' }}>
-                          {messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase())).length}건
+          {/* 오른쪽: 채팅방 */}
+          <div style={s.chatArea}>
+            {!activeRoomId ? (
+              <div style={s.noRoom}>채팅방을 선택하세요</div>
+            ) : loadingMsg ? (
+              <div style={s.noRoom}>불러오는 중...</div>
+            ) : (
+              <>
+                {/* 채팅 헤더 */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #eee', background: '#fff', flexShrink: 0 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {editingRoomName && activeRoom?.roomType === "GROUP" ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input
+                          style={{ flex: 1, padding: '4px 8px', border: '1px solid #5F8F7B', borderRadius: 6, fontSize: 13, outline: 'none' }}
+                          value={roomNameInput}
+                          onChange={(e) => setRoomNameInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleRoomNameSave(); if (e.key === "Escape") setEditingRoomName(false); }}
+                          autoFocus
+                          maxLength={100}
+                        />
+                        <button style={{ padding: '4px 8px', background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={handleRoomNameSave}>확인</button>
+                        <button style={{ padding: '4px 8px', background: '#EAF4F0', color: '#262626', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => setEditingRoomName(false)}>취소</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#1F2937' }}>
+                          {activeRoom ? roomLabel(activeRoom) : ''}
                         </span>
-                      )}
-                      <button onClick={() => { setShowSearch(false); setSearchQuery(""); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 14, padding: '0 2px' }}>✕</button>
-                    </div>
+                        {activeRoom?.roomType === "GROUP" && (
+                          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#9CA3AF', padding: '2px 4px' }} onClick={() => { setRoomNameInput(activeRoom.name ?? roomLabel(activeRoom)); setEditingRoomName(true); }}>✏️</button>
+                        )}
+                      </div>
+                    )}
+                    {activeRoom?.roomType === "GROUP" && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{members.length}명 참여 중</div>}
+                  </div>
+                  {activeRoom?.roomType === "GROUP" && (
+                    <button style={{ background: 'none', border: '1px solid #E5E7EB', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#374151' }} onClick={() => setShowMembers((v) => !v)}>
+                      👥 멤버
+                    </button>
                   )}
-                  <div style={s.msgArea}>
-                    {(searchQuery.trim()
-                      ? messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase()))
-                      : messages
-                    ).map((msg) => {
-                      if (msg.messageType === 'SYSTEM') {
-                        return (
-                          <div key={msg.messageId} style={{ textAlign: 'center', margin: '8px 0', fontSize: 12, color: '#9CA3AF' }}>
-                            {msg.content}
-                          </div>
-                        );
-                      }
-                      const mine = msg.senderId === userId;
-                      const initial = (msg.senderNickname ?? '?')[0].toUpperCase();
-                      const avatarColor = `hsl(${(msg.senderId * 47) % 360}, 55%, 55%)`;
+                </div>
+
+                {/* 멤버 패널 */}
+                {showMembers && (
+                  <div style={{ borderBottom: '1px solid #eee', background: '#F9FAFB', overflowY: 'auto', maxHeight: 140, flexShrink: 0 }}>
+                    {members.map((m) => (
+                      <div
+                        key={m.circleMemberId}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: m.userId !== userId ? 'pointer' : 'default' }}
+                        onClick={(e) => { if (m.userId === userId) return; e.stopPropagation(); setProfileModal({ nickname: m.nickname, senderId: m.userId }); }}
+                      >
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: avatarColor(m.userId), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 'bold', flexShrink: 0 }}>{m.nickname.charAt(0)}</div>
+                        <span style={{ fontSize: 13, color: '#1F2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.nickname}</span>
+                        {m.role === "LEADER" && <span style={{ fontSize: 10, background: '#5F8F7B', color: '#fff', borderRadius: 4, padding: '1px 5px', flexShrink: 0 }}>방장</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 검색 바 */}
+                {showSearch && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderBottom: '1px solid #E5E7EB', background: '#F9FAFB', flexShrink: 0 }}>
+                    <span style={{ fontSize: 13, color: '#6B7280' }}>🔍</span>
+                    <input
+                      ref={searchInputRef}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="메시지 검색..."
+                      style={{ flex: 1, border: '1px solid #D1D5DB', borderRadius: 6, padding: '4px 8px', fontSize: 13, outline: 'none' }}
+                      onKeyDown={(e) => { if (e.key === 'Escape') { setShowSearch(false); setSearchQuery(""); } }}
+                      autoFocus
+                    />
+                    {searchQuery && (
+                      <span style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap' }}>
+                        {messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase())).length}건
+                      </span>
+                    )}
+                    <button onClick={() => { setShowSearch(false); setSearchQuery(""); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 14, padding: '0 2px' }}>✕</button>
+                  </div>
+                )}
+
+                {/* 메시지 영역 */}
+                <div style={s.msgArea}>
+                  {(searchQuery.trim()
+                    ? messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+                    : messages
+                  ).map((msg) => {
+                    if (msg.messageType === 'SYSTEM') {
                       return (
-                        <div key={msg.messageId} style={{ ...s.msgRow, justifyContent: mine ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
-                          {/* 상대방 아바타 */}
-                          {!mine && (
-                            <div style={{ ...s.avatar, background: avatarColor, flexShrink: 0 }}>
-                              {initial}
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
-                            {!mine && <span style={s.nick}>{msg.senderNickname}</span>}
-                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, flexDirection: mine ? 'row-reverse' : 'row' }}>
-                              {editingMsgId === msg.messageId ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 200 }}>
-                                  <input
-                                    style={{ padding: '6px 10px', border: '1px solid #5F8F7B', borderRadius: 8, fontSize: 12, outline: 'none' }}
-                                    value={editMsgContent}
-                                    onChange={(e) => setEditMsgContent(e.target.value)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') confirmEditMsg(msg.messageId); if (e.key === 'Escape') setEditingMsgId(null); }}
-                                    autoFocus
-                                  />
-                                  <div style={{ display: 'flex', gap: 4 }}>
-                                    <button style={{ flex: 1, padding: '3px', background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => confirmEditMsg(msg.messageId)}>확인</button>
-                                    <button style={{ flex: 1, padding: '3px', background: '#EAF4F0', color: '#262626', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => setEditingMsgId(null)}>취소</button>
-                                  </div>
+                        <div key={msg.messageId} style={{ textAlign: 'center', margin: '8px 0', fontSize: 12, color: '#9CA3AF' }}>
+                          {msg.content}
+                        </div>
+                      );
+                    }
+                    const mine = msg.senderId === userId;
+                    const initial = (msg.senderNickname ?? '?')[0].toUpperCase();
+                    const aColor = `hsl(${(msg.senderId * 47) % 360}, 55%, 55%)`;
+                    return (
+                      <div key={msg.messageId} style={{ ...s.msgRow, justifyContent: mine ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
+                        {!mine && (
+                          <div
+                            style={{ ...s.avatar, background: aColor, flexShrink: 0, cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); setProfileModal({ nickname: msg.senderNickname ?? '?', senderId: msg.senderId }); }}
+                          >
+                            {initial}
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                          {!mine && <span style={s.nick}>{msg.senderNickname}</span>}
+                          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, flexDirection: mine ? 'row-reverse' : 'row' }}>
+                            {editingMsgId === msg.messageId ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 200 }}>
+                                <input
+                                  style={{ padding: '6px 10px', border: '1px solid #5F8F7B', borderRadius: 8, fontSize: 12, outline: 'none' }}
+                                  value={editMsgContent}
+                                  onChange={(e) => setEditMsgContent(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') confirmEditMsg(msg.messageId); if (e.key === 'Escape') setEditingMsgId(null); }}
+                                  autoFocus
+                                />
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  <button style={{ flex: 1, padding: '3px', background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => confirmEditMsg(msg.messageId)}>확인</button>
+                                  <button style={{ flex: 1, padding: '3px', background: '#EAF4F0', color: '#262626', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 11 }} onClick={() => setEditingMsgId(null)}>취소</button>
                                 </div>
-                              ) : (
-                                <div
-                                  style={{
-                                    ...s.bubble,
-                                    position: 'relative',
-                                    background: msg.isDeleted ? '#e0e0e0' : !isFileUrl(msg.content) ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
-                                    color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1a1a1a',
-                                    fontStyle: msg.isDeleted ? 'italic' : 'normal',
-                                    borderRadius: isFileUrl(msg.content) && !msg.isDeleted ? 8 : 18,
-                                    padding: (isFileUrl(msg.content) && !msg.isDeleted) ? 0 : msg.replyToId ? 0 : undefined,
-                                    overflow: msg.replyToId ? 'hidden' : undefined,
-                                    boxShadow: isFileUrl(msg.content) && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
-                                    border: !isFileUrl(msg.content) && !mine && !msg.isDeleted ? '1px solid #E5E7EB' : 'none',
-                                  }}
-                                  onContextMenu={!msg.isDeleted ? (e) => { e.preventDefault(); e.stopPropagation(); setMenuId(menuId === msg.messageId ? null : msg.messageId); } : undefined}
-                                >
-                                  {/* 답장 인용 - overflow hidden으로 버블 radius에 자연스럽게 클리핑 */}
-                                  {msg.replyToId && (
-                                    <div style={{ background: mine ? 'rgba(0,0,0,0.18)' : '#EDF0F3', padding: '7px 12px 6px', borderBottom: '1px solid ' + (mine ? 'rgba(0,0,0,0.12)' : '#DDE1E6') }}>
-                                      <div style={{ fontSize: 11, fontWeight: 700, color: mine ? 'rgba(255,255,255,0.95)' : '#5F8F7B', marginBottom: 2 }}>{msg.replyToNickname}에게 답장</div>
-                                      <div style={{ fontSize: 11, color: mine ? 'rgba(255,255,255,0.72)' : '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{msg.replyToContent}</div>
-                                    </div>
-                                  )}
-                                  <div style={msg.replyToId ? { padding: '8px 12px' } : undefined}>
+                              </div>
+                            ) : (
+                              <div
+                                style={{
+                                  ...s.bubble,
+                                  position: 'relative',
+                                  background: msg.isDeleted ? '#e0e0e0' : !isFileUrl(msg.content) ? (mine ? '#FEE500' : '#F0F0F0') : 'transparent',
+                                  color: msg.isDeleted ? '#999' : '#1A1A1A',
+                                  fontStyle: msg.isDeleted ? 'italic' : 'normal',
+                                  borderRadius: msg.isDeleted ? 18 : isFileUrl(msg.content) ? 8 : (mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px'),
+                                  padding: (isFileUrl(msg.content) && !msg.isDeleted) || msg.replyToId ? 0 : '8px 12px',
+                                  overflow: msg.replyToId ? 'hidden' : undefined,
+                                  boxShadow: isFileUrl(msg.content) && !msg.isDeleted ? 'none' : mine ? '0 1px 3px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.12)',
+                                  border: !isFileUrl(msg.content) && !mine && !msg.isDeleted ? '1px solid rgba(0,0,0,0.08)' : 'none',
+                                }}
+                                onContextMenu={!msg.isDeleted ? (e) => { e.preventDefault(); e.stopPropagation(); setMenuId(menuId === msg.messageId ? null : msg.messageId); } : undefined}
+                              >
+                                {/* 답장 인용 */}
+                                {msg.replyToId && (
+                                  <div style={{ background: mine ? 'rgba(0,0,0,0.1)' : '#F0F0F0', padding: '7px 12px 6px', borderBottom: '1px solid ' + (mine ? 'rgba(0,0,0,0.08)' : '#DDE1E6') }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: mine ? 'rgba(0,0,0,0.7)' : '#5F8F7B', marginBottom: 2 }}>{msg.replyToNickname}에게 답장</div>
+                                    <div style={{ fontSize: 11, color: mine ? 'rgba(0,0,0,0.5)' : '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{msg.replyToContent}</div>
+                                  </div>
+                                )}
+                                <div style={msg.replyToId ? { padding: '8px 12px' } : undefined}>
                                   {msg.isDeleted ? '삭제된 메시지' : renderMsgContent(msg.content, mine, searchQuery)}
                                   {msg.updatedAt && !msg.isDeleted && <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 4 }}>(수정됨)</span>}
-                                  </div>
-                                  {menuId === msg.messageId && (
-                                    <div style={{ position: 'absolute', right: mine ? 0 : undefined, left: mine ? undefined : 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 110, overflow: 'hidden' }}>
-                                      {/* 답장 */}
-                                      <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { setReplyTo({ messageId: msg.messageId, content: isFileUrl(msg.content) ? '📎 파일' : msg.content, nickname: msg.senderNickname }); setMenuId(null); textareaRef.current?.focus(); }}>답장</button>
-                                      {/* 복사 (텍스트 메시지만) */}
-                                      {!isFileUrl(msg.content) && (
-                                        <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { navigator.clipboard.writeText(msg.content); setMenuId(null); }}>복사</button>
-                                      )}
-                                      {mine ? (
-                                        <>
-                                          <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { setMenuId(null); startEditMsg(msg); }}>수정</button>
-                                          <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); handleDeleteMsg(msg.messageId); }}>삭제</button>
-                                        </>
-                                      ) : (
-                                        <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); setReportCategory('ABUSE'); setReportDesc(''); setReportModal({ messageId: msg.messageId }); }}>신고</button>
-                                      )}
-                                    </div>
-                                  )}
                                 </div>
-                              )}
-                              {mine && !msg.isDeleted && (() => {
-                                const unread = Object.entries(readStatus).filter(
-                                  ([uid, time]) => Number(uid) !== msg.senderId && new Date(time) < new Date(msg.createdAt)
-                                ).length;
-                                return unread > 0 ? <span style={s.unreadCount}>{unread}</span> : null;
-                              })()}
-                              <span style={s.msgTime}>{formatTime(msg.createdAt)}</span>
-                            </div>
+                                {menuId === msg.messageId && (
+                                  <div style={{ position: 'absolute', right: mine ? 0 : undefined, left: mine ? undefined : 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 110, overflow: 'hidden' }}>
+                                    {/* 리액션 */}
+                                    <div style={{ display: 'flex', gap: 4, padding: '8px 10px', borderBottom: '1px solid #f0f0f0' }}>
+                                      {['👍', '❤️'].map(emoji => {
+                                        const r = msg.reactions?.find(x => x.emoji === emoji);
+                                        return (
+                                          <button key={emoji} onClick={() => handleToggleReaction(msg.messageId, emoji)} style={{ background: r?.myReaction ? '#EAF4F0' : 'none', border: '1px solid #e5e7eb', borderRadius: 16, padding: '4px 8px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                            {emoji}{r && r.count > 0 ? <span style={{ fontSize: 11, color: '#374151' }}>{r.count}</span> : null}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                    <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { setReplyTo({ messageId: msg.messageId, content: isFileUrl(msg.content) ? '📎 파일' : msg.content, nickname: msg.senderNickname }); setMenuId(null); textareaRef.current?.focus(); }}>답장</button>
+                                    {!isFileUrl(msg.content) && (
+                                      <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { navigator.clipboard.writeText(msg.content); setMenuId(null); }}>복사</button>
+                                    )}
+                                    {mine ? (
+                                      <>
+                                        <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { setMenuId(null); startEditMsg(msg); }}>수정</button>
+                                        <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); handleDeleteMsg(msg.messageId); }}>삭제</button>
+                                      </>
+                                    ) : (
+                                      <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); setReportCategory('ABUSE'); setReportDesc(''); setReportModal({ messageId: msg.messageId }); }}>신고</button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {mine && !msg.isDeleted && (() => {
+                              const unread = Object.entries(readStatus).filter(
+                                ([uid, time]) => Number(uid) !== msg.senderId && new Date(time) < new Date(msg.createdAt)
+                              ).length;
+                              return unread > 0 ? <span style={s.unreadCount}>{unread}</span> : null;
+                            })()}
+                            <span style={s.msgTime}>{formatTime(msg.createdAt)}</span>
                           </div>
+                          {/* 리액션 표시 */}
+                          {msg.reactions && msg.reactions.length > 0 && (
+                            <div style={{ display: 'flex', gap: 4, marginTop: 3, flexWrap: 'wrap', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                              {msg.reactions.map(r => (
+                                <button key={r.emoji} onClick={() => handleToggleReaction(msg.messageId, r.emoji)} style={{ background: r.myReaction ? '#EAF4F0' : '#F3F4F6', border: '1px solid ' + (r.myReaction ? '#5F8F7B' : '#E5E7EB'), borderRadius: 16, padding: '3px 8px', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 3, color: '#374151' }}>
+                                  {r.emoji} <span style={{ fontSize: 11 }}>{r.count}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
+                      </div>
                     );
                   })}
+                  {/* 타이핑 인디케이터 */}
+                  {Object.entries(typingUsers).map(([uid, nickname]) => (
+                    <div key={uid} style={{ display: 'flex', alignItems: 'flex-end', gap: 6, justifyContent: 'flex-start' }}>
+                      <div style={{ ...s.avatar, background: `hsl(${(Number(uid) * 47) % 360}, 55%, 55%)`, flexShrink: 0 }}>{nickname.charAt(0)}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <span style={s.nick}>{nickname}</span>
+                        <div style={{ ...s.bubble, background: '#fff', border: '1px solid #E5E7EB', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', padding: '12px 16px' }}>
+                          <div className="typing-dots"><span /><span /><span /></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                   <div ref={bottomRef} />
                 </div>
+
+                {/* 입력 영역 */}
                 <div style={{ ...s.inputArea, flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
                   {/* 답장 미리보기 */}
                   {replyTo && (
@@ -941,30 +1124,21 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                   )}
                   {/* 파일 미리보기 */}
                   {pendingFile && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8, borderBottom: '1px solid #e5e7eb', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderBottom: '1px solid #e5e7eb' }}>
                       {pendingPreviewUrl ? (
-                        <img src={pendingPreviewUrl} alt="미리보기" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid #E5E7EB' }} />
+                        <img src={pendingPreviewUrl} alt="미리보기" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, border: '1px solid #E5E7EB' }} />
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F3F4F6', borderRadius: 8, padding: '6px 10px', fontSize: 13, color: '#374151' }}>
                           📎 {pendingFile.name}
                         </div>
                       )}
-                      <button
-                        onClick={cancelPendingFile}
-                        style={{ background: '#e5e7eb', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', flexShrink: 0 }}
-                      >
-                        ✕
-                      </button>
+                      <button onClick={cancelPendingFile} style={{ background: '#e5e7eb', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', flexShrink: 0 }}>✕</button>
                     </div>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <button onClick={() => fileInputRef.current?.click()} style={s.iconBtn}>
-                      📎
-                    </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px' }}>
+                    <button onClick={() => fileInputRef.current?.click()} style={s.iconBtn}>📎</button>
                     <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileSelect} />
-                    <button ref={emojiBtnRef} style={s.iconBtn} onClick={() => setShowEmoji((v) => !v)}>
-                      😊
-                    </button>
+                    <button ref={emojiBtnRef} style={s.iconBtn} onClick={() => setShowEmoji((v) => !v)}>😊</button>
                     {showEmoji && (
                       <EmojiPicker anchorRef={emojiBtnRef} onSelect={(emoji) => setInput((prev) => prev + emoji)} onClose={() => setShowEmoji(false)} />
                     )}
@@ -978,6 +1152,11 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                         setInput(e.target.value);
                         e.target.style.height = "auto";
                         e.target.style.height = e.target.scrollHeight + "px";
+                        if (!typingCooldownRef.current && e.target.value.trim()) {
+                          sendTyping(user?.nickname ?? '');
+                          typingCooldownRef.current = true;
+                          setTimeout(() => { typingCooldownRef.current = false; }, 2000);
+                        }
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
@@ -986,9 +1165,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                         }
                       }}
                     />
-                    <button onClick={handleSend} style={s.sendBtn} disabled={!input.trim() && !pendingFile}>
-                      전송
-                    </button>
+                    <button onClick={handleSend} style={s.sendBtn} disabled={!input.trim() && !pendingFile}>전송</button>
                   </div>
                 </div>
               </>
@@ -996,42 +1173,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
           </div>
         </div>
       </div>
-
-      {/* 신고 모달 */}
-      {reportModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }} onClick={() => setReportModal(null)}>
-          <div style={{ background: '#fff', borderRadius: 14, padding: '24px', width: 320, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#1F2937', marginBottom: 16 }}>메시지 신고</div>
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>신고 유형</div>
-              <select
-                value={reportCategory}
-                onChange={(e) => setReportCategory(e.target.value as ReportCategory)}
-                style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none' }}
-              >
-                {(Object.entries(CATEGORY_LABELS) as [ReportCategory, string][]).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>상세 내용 (선택)</div>
-              <textarea
-                value={reportDesc}
-                onChange={(e) => setReportDesc(e.target.value)}
-                placeholder="신고 내용을 입력하세요"
-                maxLength={500}
-                rows={3}
-                style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setReportModal(null)} style={{ padding: '8px 16px', background: '#EAF4F0', color: '#1F2937', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>취소</button>
-              <button onClick={handleReportSubmit} style={{ padding: '8px 16px', background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>신고하기</button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
@@ -1058,6 +1199,7 @@ const s: Record<string, React.CSSProperties> = {
     background: "#2E7A62",
     cursor: "grab",
     flexShrink: 0,
+    position: "relative",
   },
   title: { color: "#fff", fontWeight: "bold", fontSize: 14 },
   titleBtn: {
@@ -1111,8 +1253,8 @@ const s: Record<string, React.CSSProperties> = {
 
   body: { display: "flex", flex: 1, overflow: "hidden" },
 
-  sidebar: { width: 200, borderRight: "1px solid #eee", display: "flex", flexDirection: "column", overflowY: "auto", flexShrink: 0, background: '#EAF5DC' },
-  sidebarTitle: { padding: "12px 14px", fontWeight: "bold", fontSize: 13, color: "#555", borderBottom: "1px solid #eee" },
+  sidebar: { width: 200, borderRight: "1px solid #eee", display: "flex", flexDirection: "column", flexShrink: 0, background: '#EAF5DC' },
+  sidebarTitle: { padding: "10px 12px", fontWeight: "bold", fontSize: 13, color: "#555", borderBottom: "1px solid #eee", flexShrink: 0 },
   sideEmpty: { padding: 16, textAlign: "center", color: "#aaa", fontSize: 12 },
   roomItem: { display: "flex", alignItems: "center", padding: "10px 12px", cursor: "pointer", gap: 10, borderBottom: "1px solid #EAF4F0" },
   roomAvatar: { fontSize: 22, flexShrink: 0 },
@@ -1127,15 +1269,15 @@ const s: Record<string, React.CSSProperties> = {
   noRoom: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#bbb', fontSize: 14, background: '#EAF5DC' },
   msgArea: { flex: 1, overflowY: 'auto', padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 10, background: '#EAF5DC' },
   msgRow: { display: 'flex', alignItems: 'flex-end', gap: 6 },
-  avatar: { width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 'bold', flexShrink: 0, alignSelf: 'flex-start' },
-  nick: { fontSize: 11, color: '#666', fontWeight: 600, marginBottom: 4 },
-  bubble: { padding: '8px 12px', borderRadius: 18, fontSize: 13, lineHeight: 1.45, wordBreak: 'break-word', width: 'fit-content', maxWidth: 240, textAlign: 'left' as const },
-  msgTime: { fontSize: 10, color: '#bbb', flexShrink: 0, marginBottom: 2 },
+  avatar: { width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 'bold', flexShrink: 0, alignSelf: 'flex-start' },
+  nick: { fontSize: 12, color: '#333', fontWeight: 600, marginBottom: 4 },
+  bubble: { padding: '8px 12px', borderRadius: 18, fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word', width: 'fit-content', maxWidth: 240, textAlign: 'left' as const },
+  msgTime: { fontSize: 11, color: '#999', flexShrink: 0, marginBottom: 2 },
   unreadCount: { fontSize: 11, color: '#E9C46A', fontWeight: 'bold', flexShrink: 0, marginBottom: 2, lineHeight: 1 },
-  inputArea: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderTop: '1px solid #eee', background: '#EAF5DC', flexShrink: 0 },
-  iconBtn: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '0 2px' },
+  inputArea: { display: 'flex', alignItems: 'center', borderTop: '1px solid #eee', background: '#EAF5DC', flexShrink: 0 },
+  iconBtn: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '0 2px', flexShrink: 0 },
   textInput: { flex: 1, padding: '8px 12px', border: '1px solid #ddd', borderRadius: 20, fontSize: 13, outline: 'none', resize: 'none' as const, lineHeight: 1.5, maxHeight: 120, overflowY: 'auto' as const, fontFamily: 'inherit' },
-  sendBtn: { background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 16, padding: '8px 14px', fontWeight: 'bold', cursor: 'pointer', fontSize: 12 },
+  sendBtn: { background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 16, padding: '8px 14px', fontWeight: 'bold', cursor: 'pointer', fontSize: 12, flexShrink: 0 },
 
   rHandle: { position: "absolute", zIndex: 10001 },
   rN: { top: 0, left: 8, right: 8, height: 5, cursor: "n-resize" },

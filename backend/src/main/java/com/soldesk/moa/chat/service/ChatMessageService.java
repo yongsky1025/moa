@@ -1,10 +1,12 @@
 package com.soldesk.moa.chat.service;
 
 import com.soldesk.moa.chat.domain.ChatMessage;
+import com.soldesk.moa.chat.domain.ChatMessageReaction;
 import com.soldesk.moa.chat.dto.response.ChatMessageResponse;
 import com.soldesk.moa.chat.dto.response.UnreadCountResponse;
 import com.soldesk.moa.chat.exception.ChatErrorCode;
 import com.soldesk.moa.chat.exception.ChatException;
+import com.soldesk.moa.chat.repository.ChatMessageReactionRepository;
 import com.soldesk.moa.chat.repository.ChatMessageRepository;
 import com.soldesk.moa.users.repository.UsersRepository;
 import org.springframework.data.domain.Page;
@@ -12,6 +14,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatMessageService {
@@ -21,16 +26,19 @@ public class ChatMessageService {
     private final UsersRepository usersRepository;
     private final ChatNotificationDispatcher notificationDispatcher;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatMessageReactionRepository reactionRepo;
 
     public ChatMessageService(ChatRoomService roomService, ChatMessageRepository messageRepo,
                               UsersRepository usersRepository,
                               ChatNotificationDispatcher notificationDispatcher,
-                              SimpMessagingTemplate messagingTemplate) {
+                              SimpMessagingTemplate messagingTemplate,
+                              ChatMessageReactionRepository reactionRepo) {
         this.roomService = roomService;
         this.messageRepo = messageRepo;
         this.usersRepository = usersRepository;
         this.notificationDispatcher = notificationDispatcher;
         this.messagingTemplate = messagingTemplate;
+        this.reactionRepo = reactionRepo;
     }
 
     /** 메시지 저장 후 응답 반환 (WebSocket / REST 공통) */
@@ -43,7 +51,7 @@ public class ChatMessageService {
         roomService.assertMember(roomId, senderId);
 
         ChatMessage saved = messageRepo.save(ChatMessage.of(roomId, senderId, content, replyToId));
-        ChatMessageResponse response = toResponse(saved);
+        ChatMessageResponse response = toResponse(saved, senderId, List.of());
 
         // 트랜잭션 커밋 전에 브로드캐스트 → 수신자에게 즉시 전달 (@SendTo 대체)
         messagingTemplate.convertAndSend("/topic/room/" + roomId, response);
@@ -63,8 +71,11 @@ public class ChatMessageService {
         roomService.getRoomOrThrow(roomId);
         roomService.assertMember(roomId, userId);
 
-        return messageRepo.findByRoomIdOrderByCreatedAtDesc(roomId, PageRequest.of(page, size))
-                .map(this::toResponse);
+        Page<ChatMessage> msgPage = messageRepo.findByRoomIdOrderByCreatedAtDesc(roomId, PageRequest.of(page, size));
+        List<Long> ids = msgPage.getContent().stream().map(ChatMessage::getId).collect(Collectors.toList());
+        Map<Long, List<ChatMessageReaction>> reactionMap = ids.isEmpty() ? Map.of()
+                : reactionRepo.findByMessageIdIn(ids).stream().collect(Collectors.groupingBy(ChatMessageReaction::getMessageId));
+        return msgPage.map(m -> toResponse(m, userId, reactionMap.getOrDefault(m.getId(), List.of())));
     }
 
     /** 안읽은 메시지 수 조회 */
@@ -90,7 +101,8 @@ public class ChatMessageService {
         }
 
         message.edit(newContent);
-        return toResponse(message);
+        List<ChatMessageReaction> reactions = reactionRepo.findByMessageId(messageId);
+        return toResponse(message, userId, reactions);
     }
 
     /** 메시지 삭제 (본인만 가능, 소프트 삭제) */
@@ -104,12 +116,44 @@ public class ChatMessageService {
         }
 
         message.softDelete();
-        return toResponse(message);
+        List<ChatMessageReaction> reactions = reactionRepo.findByMessageId(messageId);
+        return toResponse(message, userId, reactions);
+    }
+
+    /** 리액션 토글 (추가/변경/취소) */
+    @Transactional
+    public ChatMessageResponse toggleReaction(Long messageId, Long userId, String emoji) {
+        if (!emoji.equals("👍") && !emoji.equals("❤️")) {
+            throw new ChatException(ChatErrorCode.INVALID_REQUEST, "지원하지 않는 리액션입니다.");
+        }
+        ChatMessage message = messageRepo.findById(messageId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.INVALID_REQUEST, "메시지를 찾을 수 없습니다."));
+        if (message.isDeleted()) {
+            throw new ChatException(ChatErrorCode.INVALID_REQUEST, "삭제된 메시지에는 리액션할 수 없습니다.");
+        }
+        roomService.assertMember(message.getRoomId(), userId);
+
+        reactionRepo.findByMessageIdAndUserId(messageId, userId).ifPresentOrElse(
+                existing -> {
+                    if (existing.getEmoji().equals(emoji)) {
+                        reactionRepo.delete(existing);
+                    } else {
+                        reactionRepo.delete(existing);
+                        reactionRepo.save(ChatMessageReaction.of(messageId, userId, emoji));
+                    }
+                },
+                () -> reactionRepo.save(ChatMessageReaction.of(messageId, userId, emoji))
+        );
+
+        List<ChatMessageReaction> reactions = reactionRepo.findByMessageId(messageId);
+        ChatMessageResponse response = toResponse(message, userId, reactions);
+        messagingTemplate.convertAndSend("/topic/room/" + message.getRoomId() + "/reaction", response);
+        return response;
     }
 
     // ─── private ──────────────────────────────────────────────
 
-    private ChatMessageResponse toResponse(ChatMessage m) {
+    private ChatMessageResponse toResponse(ChatMessage m, Long currentUserId, List<ChatMessageReaction> reactions) {
         String nickname = usersRepository.findById(m.getSenderId())
                 .map(u -> u.getNickname())
                 .orElse("알 수 없음");
@@ -121,8 +165,17 @@ public class ChatMessageService {
             replyToNickname = orig.flatMap(o -> usersRepository.findById(o.getSenderId()))
                     .map(u -> u.getNickname()).orElse(null);
         }
+        Map<String, List<ChatMessageReaction>> grouped = reactions.stream()
+                .collect(Collectors.groupingBy(ChatMessageReaction::getEmoji));
+        List<ChatMessageResponse.ReactionSummary> reactionSummaries = grouped.entrySet().stream()
+                .map(e -> new ChatMessageResponse.ReactionSummary(
+                        e.getKey(),
+                        e.getValue().size(),
+                        currentUserId != null && e.getValue().stream().anyMatch(r -> r.getUserId().equals(currentUserId))
+                ))
+                .collect(Collectors.toList());
         return new ChatMessageResponse(m.getId(), m.getRoomId(), m.getSenderId(), nickname,
                 m.getContent(), m.getCreatedAt(), m.getUpdatedAt(), m.isDeleted(),
-                m.getReplyToId(), replyToContent, replyToNickname);
+                m.getReplyToId(), replyToContent, replyToNickname, reactionSummaries);
     }
 }

@@ -1,6 +1,7 @@
 package com.soldesk.moa.chat.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ChatMessageResponse(
         Long messageId,
@@ -13,5 +14,8 @@ public record ChatMessageResponse(
         boolean isDeleted,
         Long replyToId,
         String replyToContent,
-        String replyToNickname
-) {}
+        String replyToNickname,
+        List<ReactionSummary> reactions
+) {
+    public record ReactionSummary(String emoji, int count, boolean myReaction) {}
+}

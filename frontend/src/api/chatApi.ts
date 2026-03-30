@@ -52,6 +52,10 @@ export const chatApi = {
   getReadStatus: (roomId: number) =>
     api.get<{ userId: number; lastReadAt: string }[]>(`/api/chat/rooms/${roomId}/read-status`).then((r) => r.data),
 
+  // 리액션 토글
+  toggleReaction: (messageId: number, emoji: string) =>
+    api.post<import('../chat/types/chat').ChatMessage>(`/api/chat/messages/${messageId}/reactions`, null, { params: { emoji } }).then(r => r.data),
+
   // 파일 업로드 (이미지: /api/images/upload-url, 일반파일: /api/files/upload-url)
   uploadFile: async (file: File) => {
     const isImage = file.type.startsWith("image/");

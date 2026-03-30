@@ -25,6 +25,13 @@ export interface ChatMessage {
   replyToContent?: string | null;
   replyToNickname?: string | null;
   messageType?: 'NORMAL' | 'SYSTEM';
+  reactions?: ReactionSummary[];
+}
+
+export interface ReactionSummary {
+  emoji: string;
+  count: number;
+  myReaction: boolean;
 }
 
 export interface SendMessageRequest {
