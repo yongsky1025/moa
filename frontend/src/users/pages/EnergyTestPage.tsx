@@ -137,9 +137,9 @@ export default function EnergyTestPage() {
     <div style={containerStyle}>
       <div style={{ width: "100%", maxWidth: 480 }}>
         {/* 로고 */}
-        <div style={{ textAlign: "center", marginBottom: 20 }}>
+        <div style={{ textAlign: "center", marginBottom: 16 }}>
           <span style={{ fontSize: 28, fontWeight: 900, color: "#111", letterSpacing: -1 }}>moa</span>
-          <p style={{ marginTop: 4, fontSize: 13, color: "#888" }}>
+          <p style={{ marginTop: 6, fontSize: 12, color: "#9CA3AF" }}>
             {mode === "retest" ? "에너지 프로필을 다시 설정해요" : "나에게 맞는 모임을 찾아볼게요"}
           </p>
         </div>
@@ -154,16 +154,19 @@ export default function EnergyTestPage() {
 
         {/* 카드 */}
         <div style={cardStyle}>
-          <div style={{ marginBottom: 24 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "#888", marginBottom: 6 }}>
-              {step + 1} / {TOTAL_STEPS}
-            </p>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#111", marginBottom: 2 }}>{currentQuestion.title}</p>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#6B7280" }}>
+                {step + 1} / {TOTAL_STEPS}
+              </span>
+              <span style={{ width: 3, height: 3, borderRadius: "50%", backgroundColor: "#A9C8BB" }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#0F6E56" }}>{currentQuestion.title}</span>
+            </div>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: "#111", lineHeight: 1.4 }}>{currentQuestion.question}</h2>
           </div>
 
           {/* 선택지 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 20 }}>
             {currentQuestion.options.map((label, idx) => {
               const value = idx + 1;
               const selected = currentValue === value;
@@ -173,13 +176,12 @@ export default function EnergyTestPage() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 12,
-                    padding: "14px 16px",
-                    borderRadius: 12,
+                    gap: 10,
+                    padding: "10px 12px",
+                    borderRadius: 6,
                     cursor: "pointer",
-                    border: `1.5px solid ${selected ? "#111" : "#e5e5e5"}`,
-                    backgroundColor: selected ? "#f5f5f5" : "white",
-                    transition: "all 0.15s",
+                    backgroundColor: selected ? "#E1F5EE" : "transparent",
+                    transition: "all 0.15s ease",
                   }}
                 >
                   <input
@@ -188,9 +190,40 @@ export default function EnergyTestPage() {
                     value={value}
                     checked={selected}
                     onChange={() => handleSelect(value)}
-                    style={{ accentColor: "#111", width: 18, height: 18, flexShrink: 0 }}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      pointerEvents: "none",
+                    }}
                   />
-                  <span style={{ fontSize: 14, color: selected ? "#111" : "#555", fontWeight: selected ? 600 : 400 }}>{label}</span>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      border: `1.5px solid ${selected ? "#0F6E56" : "#9CA3AF"}`,
+                      backgroundColor: selected ? "#D7EFE7" : "#FFFFFF",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        backgroundColor: "#0F6E56",
+                        transform: selected ? "scale(1)" : "scale(0)",
+                        opacity: selected ? 1 : 0,
+                        transition: "all 0.15s ease",
+                      }}
+                    />
+                  </span>
+                  <span style={{ fontSize: 14, color: selected ? "#0F6E56" : "#4B5563", fontWeight: selected ? 600 : 400 }}>{label}</span>
                 </label>
               );
             })}
@@ -211,7 +244,8 @@ export default function EnergyTestPage() {
               style={{
                 ...primaryBtnStyle,
                 flex: 1,
-                opacity: currentValue === 0 || loading ? 0.4 : 1,
+                backgroundColor: currentValue === 0 || loading ? "#D1D5DB" : "#0F6E56",
+                color: currentValue === 0 || loading ? "#6B7280" : "#FFFFFF",
                 cursor: currentValue === 0 || loading ? "not-allowed" : "pointer",
               }}
             >
@@ -239,34 +273,35 @@ const progressContainerStyle: React.CSSProperties = {
   height: 4,
   backgroundColor: "#e5e5e5",
   borderRadius: 2,
-  marginBottom: 20,
+  marginBottom: 16,
   overflow: "hidden",
 };
 
 const progressBarStyle: React.CSSProperties = {
   height: "100%",
-  backgroundColor: "#111",
+  backgroundColor: "#0F6E56",
   borderRadius: 2,
   transition: "width 0.3s ease",
 };
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: "white",
-  borderRadius: 16,
-  padding: "32px 28px",
-  boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
+  backgroundColor: "transparent",
+  borderRadius: 0,
+  padding: 0,
+  boxShadow: "none",
 };
 
 const primaryBtnStyle: React.CSSProperties = {
   width: "100%",
   height: 48,
-  backgroundColor: "#111",
+  backgroundColor: "#0F6E56",
   color: "white",
   border: "none",
   borderRadius: 12,
   fontSize: 15,
   fontWeight: 700,
   cursor: "pointer",
+  transition: "background-color 0.15s ease, color 0.15s ease",
 };
 
 const secondaryBtnStyle: React.CSSProperties = {

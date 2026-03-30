@@ -98,14 +98,14 @@ export default function Navbar() {
     CIRCLE_DISBANDED: "💔",
   };
 
-  const navItems = ["관리자 페이지", "모임 찾기", "커뮤니티", "에너지 테스트", "장소 추천"];
+  const navItems = ["관리자 페이지", "모임", "커뮤니티", "에너지", "플레이스"];
   const visibleNavItems = navItems.filter((item) => item !== "관리자 페이지" || isAdmin);
 
   const navLinks: Record<string, string> = {
-    "모임 찾기": "/circle",
+    모임: "/circle",
     커뮤니티: "/board",
-    "에너지 테스트": isLoggedIn ? "/users/energy-test/result" : "/users/energy-test",
-    "장소 추천": "/place/rental",
+    에너지: isLoggedIn ? "/users/energy-test/result" : "/users/energy-test",
+    플레이스: "/place/rental",
     "관리자 페이지": "/admin/maindashboard",
   };
 

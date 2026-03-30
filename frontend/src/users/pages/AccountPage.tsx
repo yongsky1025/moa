@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { isAxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, KeyRound, ShieldCheck, LogOut } from "lucide-react";
 import { accountApi, profileApi, type UserProfile } from "../../api/usersApi";
+import { getErrorMessage } from "../../common/utils/errorMessage";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
 import { useAuthStore } from "../../store/authStore";
+import SectionCard from "../components/SectionCard";
+import RowDivider from "../components/RowDivider";
+import ModalOverlay from "../components/ModalOverlay";
+import CenterMessage from "../components/CenterMessage";
 
 const PROVIDER_ICON: Record<string, string> = {
   GOOGLE: "https://www.svgrepo.com/show/475656/google-color.svg",
@@ -112,7 +116,7 @@ export default function AccountPage() {
       closePasswordModal();
       setPasswordNotice("비밀번호가 변경되었습니다.");
     } catch (error) {
-      setPasswordError(getApiErrorMessage(error, "비밀번호 변경에 실패했습니다."));
+      setPasswordError(getErrorMessage(error));
     } finally {
       setPasswordSaving(false);
     }
@@ -145,7 +149,7 @@ export default function AccountPage() {
       clearAuth();
       navigate("/users/account-status?code=ACCOUNT_WITHDRAWN", { replace: true });
     } catch (error) {
-      setWithdrawError(getApiErrorMessage(error, "탈퇴 처리에 실패했습니다."));
+      setWithdrawError(getErrorMessage(error));
     } finally {
       setWithdrawing(false);
     }
@@ -155,7 +159,7 @@ export default function AccountPage() {
     return (
       <>
         <Navbar />
-        <div style={s.center}>불러오는 중...</div>
+        <CenterMessage>불러오는 중...</CenterMessage>
       </>
     );
   }
@@ -164,18 +168,10 @@ export default function AccountPage() {
     return (
       <>
         <Navbar />
-        <div style={s.center}>계정 정보를 불러올 수 없습니다.</div>
+        <CenterMessage>계정 정보를 불러올 수 없습니다.</CenterMessage>
       </>
     );
   }
-
-  const getApiErrorMessage = (error: unknown, fallback: string) => {
-    if (!isAxiosError(error)) return fallback;
-    const data = error.response?.data;
-    if (typeof data === "string" && data.trim()) return data;
-    if (typeof data === "object" && data !== null && "message" in data && typeof data.message === "string" && data.message.trim()) return data.message;
-    return fallback;
-  };
 
   return (
     <div style={s.page}>
@@ -193,7 +189,7 @@ export default function AccountPage() {
 
         {/* 계정 정보 */}
         <div style={s.sectionTitle}>계정 정보</div>
-        <div style={s.card}>
+        <SectionCard marginBottom={20}>
           <div style={s.infoRow}>
             <span style={s.infoLabel}>로그인 방식</span>
             <span style={s.infoValue}>
@@ -203,17 +199,17 @@ export default function AccountPage() {
               {isLocalAccount ? "이메일 로그인" : providerLabel}
             </span>
           </div>
-          <div style={s.rowBorder} />
+          <RowDivider />
           <div style={s.infoRow}>
             <span style={s.infoLabel}>이메일</span>
             <span style={s.infoValue}>{maskEmail(profile.email)}</span>
           </div>
-        </div>
+        </SectionCard>
 
         {/* 보안 */}
         <div style={s.sectionTitle}>보안</div>
         {passwordNotice && <div style={s.notice}>{passwordNotice}</div>}
-        <div style={s.card}>
+        <SectionCard marginBottom={20}>
           {isLocalAccount && (
             <>
               <button type="button" className="acct-row" style={s.actionRow} onClick={openPasswordModal}>
@@ -221,7 +217,7 @@ export default function AccountPage() {
                 <span style={s.actionLabel}>비밀번호 변경</span>
                 <ChevronRight size={18} color="#ccc" />
               </button>
-              <div style={s.rowBorder} />
+              <RowDivider />
             </>
           )}
           <button type="button" className="acct-row" style={s.actionRow} onClick={() => {}}>
@@ -232,145 +228,141 @@ export default function AccountPage() {
             </span>
             <ChevronRight size={18} color="#ccc" />
           </button>
-        </div>
+        </SectionCard>
 
         {/* 계정 관리 — 탈퇴 분리 */}
         <div style={s.sectionTitle}>계정 관리</div>
-        <div style={s.card}>
+        <SectionCard marginBottom={20}>
           <button type="button" className="acct-danger" style={s.dangerRow} onClick={openWithdrawModal}>
             <LogOut size={18} color="#DC2626" />
             <span style={s.dangerLabel}>회원 탈퇴</span>
             <ChevronRight size={18} color="#ccc" />
           </button>
-        </div>
+        </SectionCard>
       </div>
 
       <Footer />
 
       {showPasswordModal && (
-        <div style={s.overlay}>
-          <div style={s.modal}>
-            <h3 style={s.modalTitle}>비밀번호 변경</h3>
+        <ModalOverlay onClose={closePasswordModal}>
+          <h3 style={s.modalTitle}>비밀번호 변경</h3>
 
-            <div style={s.modalField}>
-              <label style={s.fieldLabel}>현재 비밀번호</label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => {
-                  setCurrentPassword(e.target.value);
-                  setPasswordError("");
-                }}
-                style={s.input}
-                disabled={passwordSaving}
-                autoFocus
-              />
-            </div>
-
-            <div style={s.modalField}>
-              <label style={s.fieldLabel}>새 비밀번호</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => {
-                  setNewPassword(e.target.value);
-                  setPasswordError("");
-                }}
-                style={s.input}
-                disabled={passwordSaving}
-                placeholder="8~20자, 영문/숫자/특수문자 포함"
-              />
-            </div>
-
-            <div style={s.modalField}>
-              <label style={s.fieldLabel}>새 비밀번호 확인</label>
-              <input
-                type="password"
-                value={newPasswordConfirm}
-                onChange={(e) => {
-                  setNewPasswordConfirm(e.target.value);
-                  setPasswordError("");
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !passwordSaving) {
-                    void handleChangePassword();
-                  }
-                }}
-                style={s.input}
-                disabled={passwordSaving}
-              />
-            </div>
-
-            {passwordError && <p style={s.errorText}>{passwordError}</p>}
-
-            <div style={s.modalBtns}>
-              <button type="button" style={s.cancelBtn} onClick={closePasswordModal} disabled={passwordSaving}>
-                취소
-              </button>
-              <button type="button" style={s.saveBtn} onClick={handleChangePassword} disabled={passwordSaving}>
-                {passwordSaving ? "처리 중..." : "변경"}
-              </button>
-            </div>
+          <div style={s.modalField}>
+            <label style={s.fieldLabel}>현재 비밀번호</label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => {
+                setCurrentPassword(e.target.value);
+                setPasswordError("");
+              }}
+              style={s.input}
+              disabled={passwordSaving}
+              autoFocus
+            />
           </div>
-        </div>
+
+          <div style={s.modalField}>
+            <label style={s.fieldLabel}>새 비밀번호</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                setPasswordError("");
+              }}
+              style={s.input}
+              disabled={passwordSaving}
+              placeholder="8~20자, 영문/숫자/특수문자 포함"
+            />
+          </div>
+
+          <div style={s.modalField}>
+            <label style={s.fieldLabel}>새 비밀번호 확인</label>
+            <input
+              type="password"
+              value={newPasswordConfirm}
+              onChange={(e) => {
+                setNewPasswordConfirm(e.target.value);
+                setPasswordError("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !passwordSaving) {
+                  void handleChangePassword();
+                }
+              }}
+              style={s.input}
+              disabled={passwordSaving}
+            />
+          </div>
+
+          {passwordError && <p style={s.errorText}>{passwordError}</p>}
+
+          <div style={s.modalBtns}>
+            <button type="button" style={s.cancelBtn} onClick={closePasswordModal} disabled={passwordSaving}>
+              취소
+            </button>
+            <button type="button" style={s.saveBtn} onClick={handleChangePassword} disabled={passwordSaving}>
+              {passwordSaving ? "처리 중..." : "변경"}
+            </button>
+          </div>
+        </ModalOverlay>
       )}
 
       {showWithdrawModal && (
-        <div style={s.overlay}>
-          <div style={s.modal}>
-            <h3 style={{ ...s.modalTitle, color: "#DC2626" }}>회원 탈퇴</h3>
-            <p style={s.withdrawCopy}>
-              {isLocalAccount ? (
-                <>
-                  탈퇴하면 일부 데이터가 영구 삭제되어
-                  <br />
-                  복구할 수 없습니다. 비밀번호를 입력한 뒤 진행해주세요.
-                </>
-              ) : (
-                <>
-                  탈퇴하면 일부 데이터가 영구 삭제되어
-                  <br />
-                  복구할 수 없습니다. 소셜 로그인 계정은 확인 후 바로 탈퇴됩니다.
-                </>
-              )}
-            </p>
-
+        <ModalOverlay onClose={closeWithdrawModal}>
+          <h3 style={{ ...s.modalTitle, color: "#DC2626" }}>회원 탈퇴</h3>
+          <p style={s.withdrawCopy}>
             {isLocalAccount ? (
-              <div style={s.modalField}>
-                <label style={s.fieldLabel}>비밀번호 확인</label>
-                <input
-                  type="password"
-                  value={withdrawPassword}
-                  onChange={(e) => {
-                    setWithdrawPassword(e.target.value);
-                    setWithdrawError("");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !withdrawing) {
-                      void handleWithdraw();
-                    }
-                  }}
-                  style={s.input}
-                  disabled={withdrawing}
-                  autoFocus
-                />
-              </div>
+              <>
+                탈퇴하면 일부 데이터가 영구 삭제되어
+                <br />
+                복구할 수 없습니다. 비밀번호를 입력한 뒤 진행해주세요.
+              </>
             ) : (
-              <div style={s.socialWithdrawNotice}>{providerLabel} 계정으로 가입한 회원입니다. 확인을 누르면 계정 탈퇴가 진행됩니다.</div>
+              <>
+                탈퇴하면 일부 데이터가 영구 삭제되어
+                <br />
+                복구할 수 없습니다. 소셜 로그인 계정은 확인 후 바로 탈퇴됩니다.
+              </>
             )}
+          </p>
 
-            {withdrawError && <p style={s.errorText}>{withdrawError}</p>}
-
-            <div style={s.modalBtns}>
-              <button type="button" style={s.cancelBtn} onClick={closeWithdrawModal} disabled={withdrawing}>
-                취소
-              </button>
-              <button type="button" style={{ ...s.saveBtn, background: "#DC2626" }} onClick={handleWithdraw} disabled={withdrawing}>
-                {withdrawing ? "처리 중..." : "탈퇴"}
-              </button>
+          {isLocalAccount ? (
+            <div style={s.modalField}>
+              <label style={s.fieldLabel}>비밀번호 확인</label>
+              <input
+                type="password"
+                value={withdrawPassword}
+                onChange={(e) => {
+                  setWithdrawPassword(e.target.value);
+                  setWithdrawError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !withdrawing) {
+                    void handleWithdraw();
+                  }
+                }}
+                style={s.input}
+                disabled={withdrawing}
+                autoFocus
+              />
             </div>
+          ) : (
+            <div style={s.socialWithdrawNotice}>{providerLabel} 계정으로 가입한 회원입니다. 확인을 누르면 계정 탈퇴가 진행됩니다.</div>
+          )}
+
+          {withdrawError && <p style={s.errorText}>{withdrawError}</p>}
+
+          <div style={s.modalBtns}>
+            <button type="button" style={s.cancelBtn} onClick={closeWithdrawModal} disabled={withdrawing}>
+              취소
+            </button>
+            <button type="button" style={{ ...s.saveBtn, background: "#DC2626" }} onClick={handleWithdraw} disabled={withdrawing}>
+              {withdrawing ? "처리 중..." : "탈퇴"}
+            </button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -378,13 +370,6 @@ export default function AccountPage() {
 
 const s: Record<string, React.CSSProperties> = {
   page: { minHeight: "100vh", background: "#f7f7f8" },
-  center: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "60vh",
-    color: "#6B7280",
-  },
 
   container: {
     maxWidth: 720,
@@ -423,15 +408,6 @@ const s: Record<string, React.CSSProperties> = {
     paddingLeft: 20,
   },
 
-  /* ── 카드 ── */
-  card: {
-    background: "#fff",
-    border: "1px solid #E5E7EB",
-    borderRadius: 18,
-    margin: "0 16px 20px",
-    overflow: "hidden",
-  },
-
   /* ── 정보 row ── */
   infoRow: {
     display: "flex",
@@ -457,7 +433,6 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: "50%",
     objectFit: "cover",
   },
-  rowBorder: { height: 1, background: "#E5E7EB", margin: "0 20px" },
 
   /* ── 액션 row ── */
   actionRow: {
@@ -517,24 +492,6 @@ const s: Record<string, React.CSSProperties> = {
   },
 
   /* ── 모달 ── */
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(15, 23, 42, 0.38)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 200,
-    padding: "0 20px",
-  },
-  modal: {
-    width: "100%",
-    maxWidth: 420,
-    background: "#fff",
-    borderRadius: 18,
-    padding: "26px 22px",
-    boxShadow: "0 18px 48px rgba(0,0,0,0.16)",
-  },
   modalTitle: {
     margin: "0 0 18px",
     fontSize: 20,

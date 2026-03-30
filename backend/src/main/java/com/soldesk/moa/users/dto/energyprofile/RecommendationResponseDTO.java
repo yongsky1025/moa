@@ -16,8 +16,6 @@ public class RecommendationResponseDTO {
     private int maxMember;
     private int currentMember;
     private String coverImageUrl;
-    // 나중에 LLM 추천 이유 추가
-    private String reason;
 
     public RecommendationResponseDTO(Circle circle, double similarity) {
         this.circleId = circle.getCircleId();

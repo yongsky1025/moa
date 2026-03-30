@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { isAxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { profileApi, energyProfileApi, type UserProfile, type EnergyProfileResponse } from "../../api/usersApi";
 import { useAuthStore } from "../../store/authStore";
 import { circleApi } from "../../api/circleApi";
+import { getErrorMessage } from "../../common/utils/errorMessage";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
+import SectionCard from "../components/SectionCard";
+import RowDivider from "../components/RowDivider";
+import ModalOverlay from "../components/ModalOverlay";
+import CenterMessage from "../components/CenterMessage";
 import {
   Zap,
   PlusCircle,
@@ -21,6 +25,7 @@ import {
   Star,
   Bookmark,
   LogOut,
+  CalendarDays,
 } from "lucide-react";
 
 const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
@@ -110,7 +115,7 @@ export default function UserProfilePage() {
       setNickAvailable(true);
     } catch (error) {
       setNickAvailable(false);
-      setNickError(getApiErrorMessage(error, "닉네임 확인에 실패했습니다."));
+      setNickError(getErrorMessage(error));
     } finally {
       setNickChecking(false);
     }
@@ -144,11 +149,11 @@ export default function UserProfilePage() {
               ...(nickChanged && nick !== "" ? { nickname: nick } : {}),
               ...(statusChanged ? { statusMessage: status || null } : {}),
             }
-          : p
+          : p,
       );
       closeModal();
     } catch (error) {
-      setNickError(getApiErrorMessage(error, "저장에 실패했습니다."));
+      setNickError(getErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -163,7 +168,7 @@ export default function UserProfilePage() {
     return (
       <>
         <Navbar />
-        <div style={s.center}>불러오는 중...</div>
+        <CenterMessage>불러오는 중...</CenterMessage>
       </>
     );
   }
@@ -172,21 +177,12 @@ export default function UserProfilePage() {
     return (
       <>
         <Navbar />
-        <div style={s.center}>프로필을 불러올 수 없습니다.</div>
+        <CenterMessage>프로필을 불러올 수 없습니다.</CenterMessage>
       </>
     );
   }
 
   const avatarBg = nickColor(profile.nickname);
-
-  const getApiErrorMessage = (error: unknown, fallback: string) => {
-    if (!isAxiosError(error)) return fallback;
-    const data = error.response?.data;
-    if (typeof data === "string" && data.trim()) return data;
-    if (typeof data === "object" && data !== null && "message" in data && typeof data.message === "string" && data.message.trim())
-      return data.message;
-    return fallback;
-  };
 
   return (
     <div style={s.page}>
@@ -195,57 +191,55 @@ export default function UserProfilePage() {
 
       {/* 프로필 수정 모달 */}
       {modalOpen && (
-        <div style={s.modalOverlay} onClick={closeModal}>
-          <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
-            <p style={s.modalTitle}>프로필 수정</p>
+        <ModalOverlay onClose={closeModal}>
+          <p style={s.modalTitle}>프로필 수정</p>
 
-            {/* 닉네임 */}
-            <label style={s.modalLabel}>닉네임</label>
-            <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-              <div style={{ position: "relative", flex: 1 }}>
-                <input
-                  style={s.modalInput}
-                  value={modalNick}
-                  onChange={(e) => {
-                    setModalNick(e.target.value);
-                    setNickAvailable(null);
-                    setNickError("");
-                  }}
-                  maxLength={10}
-                  placeholder="닉네임 입력"
-                  autoFocus
-                />
-              </div>
-              <button style={s.modalCheckBtn} onClick={handleCheckNickname} disabled={nickChecking}>
-                {nickChecking ? "확인 중" : "중복 확인"}
-              </button>
+          {/* 닉네임 */}
+          <label style={s.modalLabel}>닉네임</label>
+          <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+            <div style={{ position: "relative", flex: 1 }}>
+              <input
+                style={s.modalInput}
+                value={modalNick}
+                onChange={(e) => {
+                  setModalNick(e.target.value);
+                  setNickAvailable(null);
+                  setNickError("");
+                }}
+                maxLength={10}
+                placeholder="닉네임 입력"
+                autoFocus
+              />
             </div>
-            {nickError && <p style={s.modalFeedback}>{nickError}</p>}
-            {!nickError && nickAvailable === true && <p style={{ ...s.modalFeedback, color: "#5F8F7B" }}>사용 가능합니다.</p>}
-            {!nickError && nickAvailable === false && <p style={s.modalFeedback}>이미 사용 중입니다.</p>}
-            {!nickError && nickAvailable === null && <div style={{ height: 18 }} />}
-
-            {/* 상태 메시지 */}
-            <label style={{ ...s.modalLabel, marginTop: 14 }}>상태 메시지</label>
-            <input
-              style={{ ...s.modalInput, marginBottom: 24 }}
-              value={modalStatus}
-              onChange={(e) => setModalStatus(e.target.value)}
-              placeholder="상태 메시지를 입력하세요"
-              maxLength={100}
-            />
-
-            {/* 버튼 */}
-            <div style={s.modalActions}>
-              <button style={s.modalCancelBtn} onClick={closeModal}>
-                취소
-              </button>
-              <button style={s.modalSaveBtn} onClick={handleModalSave} disabled={saving}>
-                {saving ? "저장 중..." : "저장"}
-              </button>
-            </div>
+            <button style={s.modalCheckBtn} onClick={handleCheckNickname} disabled={nickChecking}>
+              {nickChecking ? "확인 중" : "중복 확인"}
+            </button>
           </div>
-        </div>
+          {nickError && <p style={s.modalFeedback}>{nickError}</p>}
+          {!nickError && nickAvailable === true && <p style={{ ...s.modalFeedback, color: "#5F8F7B" }}>사용 가능합니다.</p>}
+          {!nickError && nickAvailable === false && <p style={s.modalFeedback}>이미 사용 중입니다.</p>}
+          {!nickError && nickAvailable === null && <div style={{ height: 18 }} />}
+
+          {/* 상태 메시지 */}
+          <label style={{ ...s.modalLabel, marginTop: 14 }}>상태 메시지</label>
+          <input
+            style={{ ...s.modalInput, marginBottom: 24 }}
+            value={modalStatus}
+            onChange={(e) => setModalStatus(e.target.value)}
+            placeholder="상태 메시지를 입력하세요"
+            maxLength={100}
+          />
+
+          {/* 버튼 */}
+          <div style={s.modalActions}>
+            <button style={s.modalCancelBtn} onClick={closeModal}>
+              취소
+            </button>
+            <button style={s.modalSaveBtn} onClick={handleModalSave} disabled={saving}>
+              {saving ? "저장 중..." : "저장"}
+            </button>
+          </div>
+        </ModalOverlay>
       )}
 
       <div style={s.container}>
@@ -295,49 +289,49 @@ export default function UserProfilePage() {
 
         {/* 에너지 프로필 */}
         <div style={s.sectionTitle}>에너지 프로필</div>
-        <div style={s.card}>
+        <SectionCard>
           <button className="mp-row mp-row-hero" style={s.row} onClick={() => navigate("/users/energy-test/result")}>
             <Zap size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>{energy?.energyTypeName ?? "에너지 프로필 없음"}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
-        </div>
+        </SectionCard>
 
         {/* 나의 활동 */}
         <div style={s.sectionTitle}>나의 활동</div>
-        <div style={s.card}>
+        <SectionCard>
           <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/circle/my")}>
             <PlusCircle size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>가입한 모임</span>
             <span style={s.rowCount}>{circleCount ?? 0}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
-          <div style={s.rowBorder} />
+          <RowDivider />
           <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/my-schedules")}>
             <Calendar size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>참석한 일정</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
-          <div style={s.rowBorder} />
+          <RowDivider />
           <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/account")}>
             <Heart size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>찜한 모임</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
-        </div>
+        </SectionCard>
 
         {/* 나의 장소 */}
         <div style={s.sectionTitle}>나의 장소</div>
-        <div style={s.card}>
+        <SectionCard>
           <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/places/my")}>
             <MapPin size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>이용한 장소</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
-          <div style={s.rowBorder} />
+          <RowDivider />
           <button className="mp-row mp-row-list" style={s.row} onClick={() => setReviewOpen((prev) => !prev)}>
             <Star size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>장소 후기</span>
@@ -366,47 +360,54 @@ export default function UserProfilePage() {
               <ChevronRight size={16} color="#c0c0c0" />
             </button>
           </div>
-          <div style={s.rowBorder} />
+          <RowDivider />
           <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/places/liked")}>
             <Bookmark size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>찜한 장소</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
-        </div>
+          <RowDivider />
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/places/")}>
+            <CalendarDays size={18} color="#5F8F7B" />
+            <span style={s.rowLabel}>예약 내역</span>
+            <span style={s.rowCount}>0</span>
+            <ChevronRight size={18} color="#c0c0c0" />
+          </button>
+        </SectionCard>
 
         {/* 나의 글 */}
         <div style={s.sectionTitle}>나의 글</div>
-        <div style={s.card}>
+        <SectionCard>
           <button className="mp-row mp-row-list" style={s.row}>
             <PenLine size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>내가 쓴 게시글</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
-          <div style={s.rowBorder} />
+          <RowDivider />
           <button className="mp-row mp-row-list" style={s.row}>
             <MessageSquare size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>내가 쓴 댓글</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
-        </div>
+        </SectionCard>
 
         {/* 설정 */}
         <div style={s.sectionTitle}>설정</div>
-        <div style={s.card}>
+        <SectionCard>
           <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/account")}>
             <Settings size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>계정 설정</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
-          <div style={s.rowBorder} />
+          <RowDivider />
           <button className="mp-row mp-row-list" style={s.row} onClick={handleLogout}>
             <LogOut size={18} color="#DC2626" />
             <span style={{ ...s.rowLabel, color: "#DC2626" }}>로그아웃</span>
           </button>
-        </div>
+        </SectionCard>
       </div>
 
       <Footer />
@@ -417,13 +418,6 @@ export default function UserProfilePage() {
 /* ── moa 토큰 기반 스타일 ── */
 const s: Record<string, React.CSSProperties> = {
   page: { minHeight: "100vh", background: "#F8FAF9" },
-  center: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "60vh",
-    color: "#6B7280",
-  },
 
   container: {
     maxWidth: 720,
@@ -432,25 +426,6 @@ const s: Record<string, React.CSSProperties> = {
   },
 
   /* ── 모달 ── */
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.35)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-  },
-  modalBox: {
-    background: "#fff",
-    borderRadius: 20,
-    padding: "28px 28px 24px",
-    width: "100%",
-    maxWidth: 420,
-    boxShadow: "0 8px 32px rgba(0,0,0,0.14)",
-    display: "flex",
-    flexDirection: "column",
-  },
   modalTitle: {
     margin: "0 0 20px",
     fontSize: 18,
@@ -607,13 +582,6 @@ const s: Record<string, React.CSSProperties> = {
     marginBottom: 8,
     paddingLeft: 16,
   },
-  card: {
-    background: "#fff",
-    border: "1px solid #E5E7EB",
-    borderRadius: 18,
-    margin: "0 16px 16px",
-    overflow: "hidden",
-  },
 
   /* ── row ── */
   row: {
@@ -629,7 +597,6 @@ const s: Record<string, React.CSSProperties> = {
   },
   rowLabel: { flex: 1, fontSize: 16, fontWeight: 500, color: "#1F2937" },
   rowCount: { fontSize: 15, fontWeight: 600, color: "#6B7280", marginRight: 4 },
-  rowBorder: { height: 1, background: "#E5E7EB", margin: "0 20px" },
 
   subRow: {
     width: "100%",
