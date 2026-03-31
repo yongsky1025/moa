@@ -112,4 +112,14 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             AND r.reservationStatus IN ('HOLDING', 'RESERVED')
             """)
     List<Reservation> findActiveByScheduleId(@Param("scheduleId") Long scheduleId);
+
+    // 일정 상세 조회 시 연결된 예약 단건 조회 (place fetch join)
+    @Query("""
+            SELECT r FROM Reservation r
+            JOIN FETCH r.place
+            WHERE r.schedule.scheduleId = :scheduleId
+            AND r.reservationStatus IN ('HOLDING', 'RESERVED')
+            ORDER BY r.startTime ASC
+            """)
+    List<Reservation> findActiveByScheduleIdWithPlace(@Param("scheduleId") Long scheduleId);
 }

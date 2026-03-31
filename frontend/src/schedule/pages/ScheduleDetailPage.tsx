@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, Users, MapPin, Star, Trash2 } from 'lucide-react';
+import { Clock, Users, MapPin, Star, Trash2, Building2, ChevronRight } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { scheduleApi } from '../../api/scheduleApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
 import { useAuthStore } from '../../store/authStore';
-import type { ScheduleResponse, ScheduleMember, ScheduleReview } from '../types/schedule';
+import type { ScheduleResponse, ScheduleMember, ScheduleReview, ReservationStatus } from '../types/schedule';
 import ScheduleReviewCkEditor from '../components/ScheduleReviewCkEditor';
 import AdminConfirmModal from '../../admin/component/AdminConfirmModal';
 
@@ -15,6 +15,13 @@ const STATUS_LABEL = {
   UPCOMING:    { text: '예정',   color: '#2563eb', bg: '#dbeafe' },
   IN_PROGRESS: { text: '진행중', color: '#16a34a', bg: '#dcfce7' },
   COMPLETED:   { text: '완료',   color: '#6b7280', bg: '#f3f4f6' },
+};
+
+const RESERVATION_STATUS_LABEL: Record<ReservationStatus, { text: string; color: string; bg: string }> = {
+  HOLDING:   { text: '결제 대기', color: '#d97706', bg: '#fef3c7' },
+  RESERVED:  { text: '예약 완료', color: '#16a34a', bg: '#dcfce7' },
+  COMPLETED: { text: '이용 완료', color: '#6b7280', bg: '#f3f4f6' },
+  CANCELLED: { text: '취소됨',   color: '#dc2626', bg: '#fef2f2' },
 };
 
 function formatDate(dt: string) {
@@ -321,6 +328,59 @@ export default function ScheduleDetailPage() {
           )}
 
         </div>
+
+        {/* 예약 장소 카드 */}
+        {schedule.reservation && (
+          <div style={{ marginTop: 20, backgroundColor: 'white', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <Building2 size={16} style={{ color: '#888' }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>예약 장소</span>
+            </div>
+            <button
+              onClick={() => navigate('/places/my-reservations')}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                width: '100%', padding: '14px 16px', borderRadius: 12,
+                border: '1px solid #e5e7eb', backgroundColor: '#f9fafb',
+                cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>
+                    {schedule.reservation.placeName}
+                  </span>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                    backgroundColor: RESERVATION_STATUS_LABEL[schedule.reservation.status].bg,
+                    color: RESERVATION_STATUS_LABEL[schedule.reservation.status].color,
+                  }}>
+                    {RESERVATION_STATUS_LABEL[schedule.reservation.status].text}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#666' }}>
+                  <MapPin size={13} style={{ color: '#aaa', flexShrink: 0 }} />
+                  <span>{schedule.reservation.placeAddress}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#666' }}>
+                  <Clock size={13} style={{ color: '#aaa', flexShrink: 0 }} />
+                  <span>
+                    {new Date(schedule.reservation.startTime).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {' ~ '}
+                    {new Date(schedule.reservation.endTime).toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <div style={{ fontSize: 13, color: '#5F8F7B', fontWeight: 600 }}>
+                  {schedule.reservation.totalPrice.toLocaleString()}원
+                </div>
+              </div>
+              <ChevronRight size={18} style={{ color: '#aaa', flexShrink: 0 }} />
+            </button>
+            <p style={{ marginTop: 10, fontSize: 12, color: '#aaa' }}>
+              클릭하면 내 예약 페이지로 이동합니다.
+            </p>
+          </div>
+        )}
 
         {/* 참여자 목록 */}
         <div style={{ marginTop: 20, backgroundColor: 'white', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>

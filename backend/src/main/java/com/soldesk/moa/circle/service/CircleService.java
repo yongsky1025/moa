@@ -7,6 +7,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.soldesk.moa.circle.dto.CircleCategoryResponseDTO;
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
@@ -353,14 +355,22 @@ public class CircleService {
                                 categoryIds,
                                 pageRequestDTO);
 
+                List<Circle> circles = result.getDtoList();
+                List<Long> ids = circles.stream().map(Circle::getCircleId).toList();
+
+                // 좋아요 수 일괄 집계 (1 query) — 목록별 N회 호출 방지
+                Map<Long, Long> countMap = ids.isEmpty() ? Map.of()
+                                : likesRepository.countGroupByTargetIdIn(LikeTargetType.CIRCLE, ids)
+                                                .stream()
+                                                .collect(Collectors.toMap(
+                                                                row -> (Long) row[0],
+                                                                row -> (Long) row[1]));
+
                 return PageResultDTO.<CircleResponseDTO>withAll()
-                                .dtoList(
-                                                result.getDtoList()
-                                                                .stream()
-                                                                .map(c -> CircleResponseDTO.from(c,
-                                                                        likesRepository.countByTargetTypeAndTargetId(
-                                                                                LikeTargetType.CIRCLE, c.getCircleId())))
-                                                                .toList())
+                                .dtoList(circles.stream()
+                                                .map(c -> CircleResponseDTO.from(c,
+                                                                countMap.getOrDefault(c.getCircleId(), 0L)))
+                                                .toList())
                                 .pageRequestDTO(pageRequestDTO)
                                 .totalCount(result.getTotalCount())
                                 .build();

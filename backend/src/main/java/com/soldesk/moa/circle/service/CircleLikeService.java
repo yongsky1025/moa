@@ -4,9 +4,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.soldesk.moa.circle.dto.CircleLikeResponseDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
+import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.entity.Likes;
 import com.soldesk.moa.common.entity.constant.LikeTargetType;
@@ -60,15 +63,23 @@ public class CircleLikeService {
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        return likesRepository.findByUserAndTargetType(user, LikeTargetType.CIRCLE)
+        // 1) 좋아요한 circleId 목록 조회 (1 query)
+        List<Long> likedIds = likesRepository.findTargetIdsByUserAndTargetType(user, LikeTargetType.CIRCLE);
+        if (likedIds.isEmpty()) return List.of();
+
+        // 2) 서클 목록 일괄 조회 (1 query)
+        List<Circle> circles = circleRepository.findAllById(likedIds);
+
+        // 3) 좋아요 수 일괄 집계 (1 query)
+        Map<Long, Long> countMap = likesRepository
+                .countGroupByTargetIdIn(LikeTargetType.CIRCLE, likedIds)
                 .stream()
-                .flatMap(like -> circleRepository.findById(like.getTargetId())
-                        .map(circle -> {
-                            long likeCount = likesRepository.countByTargetTypeAndTargetId(
-                                    LikeTargetType.CIRCLE, circle.getCircleId());
-                            return CircleResponseDTO.from(circle, likeCount);
-                        })
-                        .stream())
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]));
+
+        return circles.stream()
+                .map(c -> CircleResponseDTO.from(c, countMap.getOrDefault(c.getCircleId(), 0L)))
                 .toList();
     }
 

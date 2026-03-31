@@ -1,5 +1,18 @@
 export type ScheduleStatus = 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
 
+export type ReservationStatus = 'HOLDING' | 'RESERVED' | 'COMPLETED' | 'CANCELLED';
+
+export interface ScheduleReservation {
+  reservationId: number;
+  placeId: number;
+  placeName: string;
+  placeAddress: string;
+  startTime: string;
+  endTime: string;
+  totalPrice: number;
+  status: ReservationStatus;
+}
+
 export interface ScheduleTagItem {
   id: number;
   name: string;
@@ -21,6 +34,7 @@ export interface ScheduleResponse {
   joined?: boolean;
   tags?: ScheduleTagItem[];
   chatRoomId?: number;
+  reservation?: ScheduleReservation | null;
 }
 
 export interface ScheduleCreateRequest {

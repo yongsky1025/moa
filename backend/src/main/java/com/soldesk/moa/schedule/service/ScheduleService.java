@@ -2,6 +2,7 @@ package com.soldesk.moa.schedule.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -17,9 +18,11 @@ import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.payment.dto.MyUpcomingScheduleDTO;
 import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.place.entity.Tag;
+import com.soldesk.moa.place.repository.ReservationRepository;
 import com.soldesk.moa.place.repository.TagRepository;
 import com.soldesk.moa.schedule.dto.ScheduleCreateRequestDTO;
 import com.soldesk.moa.schedule.dto.ScheduleMemberResponseDTO;
+import com.soldesk.moa.schedule.dto.ScheduleReservationDTO;
 import com.soldesk.moa.schedule.dto.ScheduleResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleUpdateRequestDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
@@ -49,6 +52,7 @@ public class ScheduleService {
         private final CircleMemberRepository circleMemberRepository;
         private final UsersRepository usersRepository;
         private final TagRepository tagRepository;
+        private final ReservationRepository reservationRepository;
         private final ChatRoomService chatRoomService;
         private final com.soldesk.moa.payment.service.PaymentService paymentService;
 
@@ -223,17 +227,25 @@ public class ScheduleService {
                                 .findByCircleAndUser_UserIdAndStatus(circle, userId, CircleMemberStatus.ACTIVE)
                                 .orElseThrow(() -> new AccessDeniedException("서클 멤버만 일정을 조회할 수 있습니다."));
 
-                return scheduleRepository.findByCircleWithDateFilter(circleId, from, to)
+                List<Schedule> schedules = scheduleRepository.findByCircleWithDateFilter(circleId, from, to);
+                if (schedules.isEmpty()) return List.of();
+
+                // 태그 일괄 조회 (1 query) — 일정별 N회 호출 방지
+                Map<Long, List<TagResponseDTO>> tagMap = scheduleTagRepository
+                                .findAllByScheduleIn(schedules)
                                 .stream()
-                                .map(s -> {
-                                        List<TagResponseDTO> tags = scheduleTagRepository.findAllBySchedule(s).stream()
-                                                        .map(st -> TagResponseDTO.builder()
-                                                                        .id(st.getTag().getId())
-                                                                        .name(st.getTag().getName())
-                                                                        .build())
-                                                        .toList();
-                                        return new ScheduleResponseDTO(s, false, tags);
-                                })
+                                .collect(Collectors.groupingBy(
+                                                st -> st.getSchedule().getScheduleId(),
+                                                Collectors.mapping(
+                                                                st -> TagResponseDTO.builder()
+                                                                                .id(st.getTag().getId())
+                                                                                .name(st.getTag().getName())
+                                                                                .build(),
+                                                                Collectors.toList())));
+
+                return schedules.stream()
+                                .map(s -> new ScheduleResponseDTO(s, false,
+                                                tagMap.getOrDefault(s.getScheduleId(), List.of())))
                                 .toList();
         }
 
@@ -262,7 +274,15 @@ public class ScheduleService {
                                                 .name(st.getTag().getName())
                                                 .build())
                                 .toList();
-                return new ScheduleResponseDTO(schedule, joined, tags);
+
+                ScheduleReservationDTO reservationDTO = reservationRepository
+                                .findActiveByScheduleIdWithPlace(scheduleId)
+                                .stream()
+                                .findFirst()
+                                .map(ScheduleReservationDTO::new)
+                                .orElse(null);
+
+                return new ScheduleResponseDTO(schedule, joined, tags, reservationDTO);
         }
 
         // 일정 수정 (생성자 또는 서클 리더)
@@ -350,18 +370,27 @@ public class ScheduleService {
         // 내가 참석한 일정 목록 (날짜 범위 필터 선택적)
         @Transactional(readOnly = true)
         public List<ScheduleResponseDTO> getMySchedules(Long userId, LocalDateTime from, LocalDateTime to) {
-                return scheduleMemberRepository.findByUserIdWithDateFilter(userId, from, to)
+                List<ScheduleMember> members = scheduleMemberRepository.findByUserIdWithDateFilter(userId, from, to);
+                if (members.isEmpty()) return List.of();
+
+                List<Schedule> schedules = members.stream().map(ScheduleMember::getSchedule).toList();
+
+                // 태그 일괄 조회 (1 query) — 일정별 N회 호출 방지
+                Map<Long, List<TagResponseDTO>> tagMap = scheduleTagRepository
+                                .findAllByScheduleIn(schedules)
                                 .stream()
-                                .map(sm -> {
-                                        Schedule s = sm.getSchedule();
-                                        List<TagResponseDTO> tags = scheduleTagRepository.findAllBySchedule(s).stream()
-                                                        .map(st -> TagResponseDTO.builder()
-                                                                        .id(st.getTag().getId())
-                                                                        .name(st.getTag().getName())
-                                                                        .build())
-                                                        .toList();
-                                        return new ScheduleResponseDTO(s, true, tags);
-                                })
+                                .collect(Collectors.groupingBy(
+                                                st -> st.getSchedule().getScheduleId(),
+                                                Collectors.mapping(
+                                                                st -> TagResponseDTO.builder()
+                                                                                .id(st.getTag().getId())
+                                                                                .name(st.getTag().getName())
+                                                                                .build(),
+                                                                Collectors.toList())));
+
+                return schedules.stream()
+                                .map(s -> new ScheduleResponseDTO(s, true,
+                                                tagMap.getOrDefault(s.getScheduleId(), List.of())))
                                 .toList();
         }
 

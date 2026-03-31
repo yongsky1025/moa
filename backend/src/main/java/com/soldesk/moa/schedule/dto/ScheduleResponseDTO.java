@@ -31,6 +31,7 @@ public class ScheduleResponseDTO {
     private boolean joined;
     private List<TagResponseDTO> tags;
     private Long chatRoomId;
+    private ScheduleReservationDTO reservation;
 
     public ScheduleResponseDTO(Schedule schedule) {
         this.scheduleId = schedule.getScheduleId();
@@ -66,5 +67,10 @@ public class ScheduleResponseDTO {
     public ScheduleResponseDTO(Schedule schedule, boolean joined, List<TagResponseDTO> tags, Long chatRoomId) {
         this(schedule, joined, tags);
         this.chatRoomId = chatRoomId;
+    }
+
+    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<TagResponseDTO> tags, ScheduleReservationDTO reservation) {
+        this(schedule, joined, tags);
+        this.reservation = reservation;
     }
 }
