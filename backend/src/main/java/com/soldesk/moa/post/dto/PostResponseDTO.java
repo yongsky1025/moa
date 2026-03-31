@@ -41,6 +41,12 @@ public class PostResponseDTO {
 
     private String authorPublicId;
 
+    private Long circleId;
+
+    private String circleName;
+
+    private boolean activityPublic;
+
     private int viewCount;
 
     private int likeCount;

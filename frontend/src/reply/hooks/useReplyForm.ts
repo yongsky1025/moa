@@ -25,6 +25,14 @@ export function useReplyForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  const invalidateRelatedBoardQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["communityPosts"] }),
+      queryClient.invalidateQueries({ queryKey: ["circleBoardPosts"] }),
+      queryClient.invalidateQueries({ queryKey: ["communitySidebar"] }),
+    ]);
+  };
+
   const create = async ({ postId, content, parentId }: CreateReplyOptions) => {
     setSubmitting(true);
     setError("");
@@ -32,10 +40,12 @@ export function useReplyForm() {
       if (parentId) {
         const createdReplyId = (await replyApi.createChildReply(postId, parentId, { content })).data;
         await queryClient.invalidateQueries({ queryKey: ["postReplies", postId] });
+        await invalidateRelatedBoardQueries();
         return createdReplyId;
       }
       const createdReplyId = (await replyApi.createReply(postId, { content })).data;
       await queryClient.invalidateQueries({ queryKey: ["postReplies", postId] });
+      await invalidateRelatedBoardQueries();
       return createdReplyId;
     } catch (e) {
       const message = getErrorMessage(e);
@@ -52,6 +62,7 @@ export function useReplyForm() {
     try {
       const updatedReplyId = (await replyApi.updateReply(postId, replyId, { content })).data;
       await queryClient.invalidateQueries({ queryKey: ["postReplies", postId] });
+      await invalidateRelatedBoardQueries();
       return updatedReplyId;
     } catch (e) {
       const message = getErrorMessage(e);
@@ -68,6 +79,7 @@ export function useReplyForm() {
     try {
       await replyApi.deleteReply(postId, replyId);
       await queryClient.invalidateQueries({ queryKey: ["postReplies", postId] });
+      await invalidateRelatedBoardQueries();
     } catch (e) {
       const message = getErrorMessage(e);
       setError(message);

@@ -14,6 +14,7 @@ public class PostSearchRequestDTO {
     private Integer size = 20;
     private PostSearchTarget target = PostSearchTarget.ALL;
     private BoardType boardType;
+    private Long boardId;
     private Long circleId;
 }
 

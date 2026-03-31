@@ -8,7 +8,7 @@ import {
   BoardPreviewSectionSkeleton,
   BoardSelectorSkeleton,
   BoardSideMenuSkeleton,
-  PostEditorSkeleton,
+  CommonEditorSkeleton,
   ReplyListSkeleton,
 } from "../../common/components/BoardLoadingSkeletons";
 
@@ -89,7 +89,7 @@ export default function BoardSkeletonPreviewPage() {
 
           <section style={sectionCardStyle}>
             <h2 style={sectionTitleStyle}>7) 글 작성/수정 에디터</h2>
-            <PostEditorSkeleton />
+            <CommonEditorSkeleton />
           </section>
         </div>
       </main>

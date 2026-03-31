@@ -45,9 +45,11 @@ public interface PostSearchRepository extends JpaRepository<PostSearchEntity, Lo
                )
           )
           and (
-               (:boardType is null and ps.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
-            or (:boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = :boardType)
-            or (:boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.circleId = :circleId)
+               (:boardId is not null and :boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardId = :boardId and ps.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.circleId = :circleId)
+            or (:boardId is not null and (:boardType is null or :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE) and ps.boardId = :boardId)
+            or (:boardId is null and :boardType is null and ps.boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE)
+            or (:boardId is null and :boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = :boardType)
+            or (:boardId is null and :boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.circleId = :circleId)
           )
         order by ps.createDate desc
         """,
@@ -84,15 +86,18 @@ public interface PostSearchRepository extends JpaRepository<PostSearchEntity, Lo
                )
           )
           and (
-               (:boardType is null and ps.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
-            or (:boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = :boardType)
-            or (:boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.circleId = :circleId)
+               (:boardId is not null and :boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardId = :boardId and ps.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.circleId = :circleId)
+            or (:boardId is not null and (:boardType is null or :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE) and ps.boardId = :boardId)
+            or (:boardId is null and :boardType is null and ps.boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE)
+            or (:boardId is null and :boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = :boardType)
+            or (:boardId is null and :boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.circleId = :circleId)
           )
         """)
     Page<PostSearchEntity> searchPostsForFallback(
             @Param("keyword") String keyword,
             @Param("target") String target,
             @Param("boardType") BoardType boardType,
+            @Param("boardId") Long boardId,
             @Param("circleId") Long circleId,
             Pageable pageable);
 

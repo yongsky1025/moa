@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
+import UserAvatar from "../../common/components/UserAvatar";
 
 export interface CommunityPostLineListItem {
   key: string | number;
@@ -47,9 +48,13 @@ export default function CommunityPostLineList({ items }: CommunityPostLineListPr
             </p>
             <span className="community-post-line-time">{item.dateText}</span>
             <span className="community-post-line-author">
-              <span className="community-post-author-icon" aria-hidden="true">
-                ◈
-              </span>
+              <UserAvatar
+                name={item.authorName}
+                size={20}
+                ariaHidden
+                className="community-post-author-icon"
+                initialMode="nickname"
+              />
               <span className="community-post-line-author-name">{item.authorName}</span>
             </span>
           </Link>

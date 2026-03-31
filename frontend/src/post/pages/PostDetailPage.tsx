@@ -1,7 +1,7 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CommentBubbleIcon from "../../common/components/CommentBubbleIcon";
 import { useAuthStore } from "../../store/authStore";
 import Footer from "../../common/layout/Footer";
@@ -79,6 +79,14 @@ function applyLocalBookmarkSummary(current: PostBookmarkSummary): PostBookmarkSu
   };
 }
 
+function parseFocusReplyId(value: unknown): number | null {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
+
 export default function PostDetailPage() {
   const queryClient = useQueryClient();
   const { postId } = useParams<{ postId: string }>();
@@ -124,6 +132,7 @@ export default function PostDetailPage() {
   const bookmarkCommitDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingPostLikeParityRef = useRef(0);
   const pendingBookmarkParityRef = useRef(0);
+  const hasAppliedInitialFocusRef = useRef(false);
   const showPostLoading = useDelayedLoading(loading, 180);
   const showReplyLoading = useDelayedLoading(replyLoading, 180);
   const liked = (localPostReaction?.myReaction ?? data?.myReaction) === "LIKE";
@@ -134,12 +143,7 @@ export default function PostDetailPage() {
     staleTime: 20_000,
   });
   const isBookmarked = localBookmarkState?.bookmarked ?? bookmarkQuery.data?.bookmarked ?? false;
-  const displayReplyCount =
-    data == null
-      ? totalReplyCount
-      : replyLoading
-        ? data.replyCount
-        : totalReplyCount;
+  const displayReplyCount = data?.replyCount ?? totalReplyCount;
 
   const refreshReplies = async (loadAll: boolean, keepScroll = true) => {
     const currentScrollY = keepScroll ? window.scrollY : 0;
@@ -157,7 +161,6 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     setAutoExpandParentId(null);
-    setFocusReplyId(null);
     pendingPostLikeParityRef.current = 0;
     pendingBookmarkParityRef.current = 0;
   }, [data?.postId]);
@@ -259,6 +262,11 @@ export default function PostDetailPage() {
       if (pendingBookmarkParityRef.current % 2 === 1) {
         scheduleBookmarkCommit();
       }
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["communityPosts"] }),
+        queryClient.invalidateQueries({ queryKey: ["circleBoardPosts"] }),
+        queryClient.invalidateQueries({ queryKey: ["communitySidebar"] }),
+      ]);
     },
   });
 
@@ -315,7 +323,9 @@ export default function PostDetailPage() {
 
   const backPath =
     kind === "notice" ? postRoutes.noticeBase : postRoutes.freeBase;
-  const stateFrom = (location.state as { from?: string } | null)?.from;
+  const locationState = location.state as { from?: string; focusReplyId?: number } | null;
+  const stateFrom = locationState?.from;
+  const initialFocusReplyId = parseFocusReplyId(locationState?.focusReplyId);
   const resolvedBackPath =
     typeof stateFrom === "string" && stateFrom.length > 0 ? stateFrom : backPath;
   const boardTitle = kind === "notice" ? "공지게시판" : "자유게시판";
@@ -382,12 +392,14 @@ export default function PostDetailPage() {
     nextView: "home" | "myPosts" | "myReplies" | "scrap",
   ) => {
     setSidebarView(nextView);
-    if (nextView !== "scrap") {
-      return;
-    }
     const params = new URLSearchParams();
-    params.set("view", "scrap");
-    navigate(`/board?${params.toString()}`);
+    if (nextView !== "home") {
+      params.set("view", nextView);
+    }
+    if (nextView !== "scrap" && sidebarBoard !== "all") {
+      params.set("board", String(sidebarBoard));
+    }
+    navigate(`/board${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
   const toggleBookmark = () => {
@@ -408,13 +420,32 @@ export default function PostDetailPage() {
     scheduleBookmarkCommit();
   };
 
+  useEffect(() => {
+    if (!initialFocusReplyId || hasAppliedInitialFocusRef.current) {
+      return;
+    }
+    hasAppliedInitialFocusRef.current = true;
+    setFocusReplyId(initialFocusReplyId);
+    void refreshReplies(true, false);
+  }, [initialFocusReplyId]);
+
+  useEffect(() => {
+    if (!focusReplyId) {
+      return;
+    }
+    const target = document.querySelector(`[data-reply-id="${focusReplyId}"]`);
+    if (!target) {
+      return;
+    }
+    (target as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
+    setFocusReplyId(null);
+  }, [focusReplyId, tree]);
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
       <BoardSectionHeader
         title={boardTitle}
-        backTo={resolvedBackPath}
-        backLabel="목록으로 이동"
       />
       <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
         <section className="board-community-layout">
@@ -433,6 +464,15 @@ export default function PostDetailPage() {
               <>
                 <PostDetailArticleCard
                   post={data}
+                  titleTop={
+                    <Link
+                      to={resolvedBackPath}
+                      aria-label="목록으로 돌아가기"
+                      className="post-detail-back-link"
+                    >
+                      ← 목록으로
+                    </Link>
+                  }
                   headerAction={
                     <PostActionMenu
                       canEdit={canEdit}

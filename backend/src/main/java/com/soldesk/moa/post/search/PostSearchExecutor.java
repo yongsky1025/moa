@@ -13,6 +13,7 @@ public interface PostSearchExecutor {
             String keyword,
             PostSearchTarget target,
             BoardType boardType,
+            Long boardId,
             Long circleId,
             int page,
             int size,

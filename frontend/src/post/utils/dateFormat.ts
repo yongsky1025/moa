@@ -25,3 +25,13 @@ export function formatDate(value: string): string {
     day: "2-digit",
   });
 }
+
+export function isEdited(createDate?: string, updateDate?: string): boolean {
+  if (!createDate || !updateDate) return false;
+
+  const created = new Date(createDate).getTime();
+  const updated = new Date(updateDate).getTime();
+
+  if (Number.isNaN(created) || Number.isNaN(updated)) return false;
+  return updated - created > 1000;
+}

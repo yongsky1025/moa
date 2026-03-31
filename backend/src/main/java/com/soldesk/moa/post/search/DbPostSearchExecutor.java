@@ -33,6 +33,7 @@ public class DbPostSearchExecutor implements PostSearchExecutor {
             String keyword,
             PostSearchTarget target,
             BoardType boardType,
+            Long boardId,
             Long circleId,
             int page,
             int size,
@@ -41,6 +42,7 @@ public class DbPostSearchExecutor implements PostSearchExecutor {
                 keyword,
                 target.name(),
                 boardType,
+                boardId,
                 circleId,
                 PageRequest.of(page - 1, size));
 

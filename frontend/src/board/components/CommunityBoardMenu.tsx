@@ -1,24 +1,51 @@
 import type { CommunityBoardFilter } from "./CommunityLeftSidebar";
+import { useMemo } from "react";
+import BoardAddDraftPanel from "./BoardAddDraftPanel";
 
 interface CommunityBoardMenuProps {
   selectedBoard: CommunityBoardFilter;
   isActive: boolean;
   onSelectBoard: (board: CommunityBoardFilter) => void;
+  noticeLabel?: string;
+  freeLabel?: string;
+  hasNoticeBoard?: boolean;
+  hasFreeBoard?: boolean;
+  noticeChanged?: boolean;
+  freeChanged?: boolean;
+  canAddBoard?: boolean;
+  onAddBoard?: (name: string) => void;
+  pendingAddedBoardNames?: string[];
+  extraBoards?: Array<{ boardId: number; label: string }>;
 }
-
-const BOARD_ITEMS: Array<{ value: CommunityBoardFilter; label: string }> = [
-  { value: "all", label: "전체게시판" },
-  { value: "notice", label: "공지사항" },
-  { value: "free", label: "자유게시판" },
-  { value: "review", label: "모임 후기" },
-  { value: "qna", label: "Q&A" },
-];
 
 export default function CommunityBoardMenu({
   selectedBoard,
   isActive,
   onSelectBoard,
+  noticeLabel = "공지사항",
+  freeLabel = "자유게시판",
+  hasNoticeBoard = true,
+  hasFreeBoard = true,
+  noticeChanged = false,
+  freeChanged = false,
+  canAddBoard = false,
+  onAddBoard,
+  pendingAddedBoardNames = [],
+  extraBoards = [],
 }: CommunityBoardMenuProps) {
+  const renderedItems: Array<{ value: CommunityBoardFilter; label: string }> = [
+    { value: "all", label: "전체게시판" },
+    ...(hasNoticeBoard ? [{ value: "notice" as const, label: noticeLabel }] : []),
+    ...(hasFreeBoard ? [{ value: "free" as const, label: freeLabel }] : []),
+    ...extraBoards.map((board) => ({ value: board.boardId, label: board.label })),
+  ];
+
+  const addTargetLabel = useMemo(() => {
+    if (!hasNoticeBoard) return "공지사항";
+    if (!hasFreeBoard) return "자유게시판";
+    return "게시판";
+  }, [hasFreeBoard, hasNoticeBoard]);
+
   return (
     <section
       style={{
@@ -40,7 +67,7 @@ export default function CommunityBoardMenu({
       >
         게시판
       </p>
-      {BOARD_ITEMS.map((item) => (
+      {renderedItems.map((item) => (
         <button
           key={item.value}
           type="button"
@@ -57,11 +84,46 @@ export default function CommunityBoardMenu({
             cursor: "pointer",
             backgroundColor:
               isActive && selectedBoard === item.value ? "#EAF4F0" : "#f9fafb",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
           }}
         >
           {item.label}
+          {(item.value === "notice" && noticeChanged) ||
+          (item.value === "free" && freeChanged) ? (
+            <span className="community-board-item-changed">(수정)</span>
+          ) : null}
         </button>
       ))}
+      {pendingAddedBoardNames.map((name, index) => (
+        <div
+          key={`pending-board-${name}-${index}`}
+          style={{
+            width: "100%",
+            color: "#4b5563",
+            fontSize: 14,
+            fontWeight: 600,
+            borderRadius: 8,
+            padding: "10px 12px",
+            textAlign: "left",
+            backgroundColor: "#f8fafc",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+          }}
+        >
+          <span>{name}</span>
+          <span className="community-board-item-changed">(추가)</span>
+        </div>
+      ))}
+      <BoardAddDraftPanel
+        enabled={canAddBoard}
+        placeholder={`${addTargetLabel} 이름 입력`}
+        onAdd={onAddBoard}
+      />
     </section>
   );
 }

@@ -1,4 +1,5 @@
 export type BoardType = "NOTICE" | "FREE" | "CIRCLE";
+export type BoardScope = "GLOBAL" | "CIRCLE";
 
 export interface BoardRequest {
   boardType: BoardType;
@@ -13,4 +14,11 @@ export interface BoardResponse {
   circleId: number | null;
   createDate: string;
   updateDate: string;
+}
+
+export interface BoardScopedCreateRequest {
+  scope: BoardScope;
+  name: string;
+  circleId?: number;
+  circleBoardKind?: "NOTICE" | "INTRO" | "ACTIVITY" | "CUSTOM";
 }

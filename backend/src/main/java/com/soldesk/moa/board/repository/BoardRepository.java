@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.entity.constant.CircleBoardKind;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
 
@@ -23,6 +24,14 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     Optional<Board> findByBoardIdAndCircleIdIsNullAndDeletedFalse(Long boardId);
 
     List<Board> findByBoardTypeAndCircleId_CircleIdAndDeletedFalse(BoardType boardType, Long circleId);
+    Optional<Board> findByBoardTypeAndCircleId_CircleIdAndCircleBoardKindAndDeletedFalse(
+            BoardType boardType,
+            Long circleId,
+            CircleBoardKind circleBoardKind);
+    boolean existsByBoardTypeAndCircleId_CircleIdAndCircleBoardKindAndDeletedFalse(
+            BoardType boardType,
+            Long circleId,
+            CircleBoardKind circleBoardKind);
 
     Optional<Board> findByBoardIdAndDeletedFalse(Long boardId);
 

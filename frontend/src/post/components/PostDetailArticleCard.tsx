@@ -1,14 +1,20 @@
 import type { ReactNode } from "react";
-import PostMeta from "./PostMeta";
+import { Eye, Heart } from "lucide-react";
 import PostContent from "./PostContent";
 import type { PostResponse } from "../types/postTypes";
-import { NOTICE_CATEGORY_LABEL } from "../constants/noticeCategory";
+import {
+  NOTICE_CATEGORY_BADGE_PALETTE,
+  NOTICE_CATEGORY_LABEL,
+} from "../constants/noticeCategory";
+import { formatDate, isEdited } from "../utils/dateFormat";
+import CommentBubbleIcon from "../../common/components/CommentBubbleIcon";
 
 interface PostDetailArticleCardProps {
   post: PostResponse;
   contentFooter?: ReactNode;
   actionSection?: ReactNode;
   headerAction?: ReactNode;
+  titleTop?: ReactNode;
   minContentHeight?: number;
   contentPadding?: number;
 }
@@ -18,13 +24,16 @@ export default function PostDetailArticleCard({
   contentFooter,
   actionSection,
   headerAction,
+  titleTop,
   minContentHeight = 380,
   contentPadding = 24,
 }: PostDetailArticleCardProps) {
+  const edited = isEdited(post.createDate, post.updateDate);
   const noticeCategoryLabel =
     post.noticeCategory != null
       ? NOTICE_CATEGORY_LABEL[post.noticeCategory] ?? "공지"
       : null;
+  const noticeCategoryStyle = NOTICE_CATEGORY_BADGE_PALETTE[post.noticeCategory ?? "ANNOUNCEMENT"];
 
   return (
     <section
@@ -36,8 +45,15 @@ export default function PostDetailArticleCard({
         overflow: "hidden",
       }}
     >
-      <div style={{ padding: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+      <div style={{ padding: "24px 24px 14px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 12,
+          }}
+        >
           <div style={{ display: "grid", gap: 10 }}>
             {noticeCategoryLabel && (
               <span
@@ -49,8 +65,9 @@ export default function PostDetailArticleCard({
                   padding: "4px 10px",
                   borderRadius: 999,
                   border: "1px solid #cfd8e3",
-                  backgroundColor: "#f8fbff",
-                  color: "#1d4ed8",
+                  backgroundColor: noticeCategoryStyle.backgroundColor,
+                  borderColor: noticeCategoryStyle.borderColor,
+                  color: noticeCategoryStyle.color,
                   fontSize: 12,
                   fontWeight: 700,
                 }}
@@ -58,6 +75,7 @@ export default function PostDetailArticleCard({
                 {noticeCategoryLabel}
               </span>
             )}
+            {titleTop}
             <h2
               style={{
                 margin: 0,
@@ -65,15 +83,43 @@ export default function PostDetailArticleCard({
                 color: "#111827",
                 fontWeight: 800,
                 lineHeight: 1.35,
+                whiteSpace: "normal",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
               }}
             >
               {post.title}
             </h2>
+            <div
+              style={{
+                display: "grid",
+                gap: 6,
+              }}
+            >
+              <span className="community-post-item-meta">
+                <span>{post.authorName}</span>
+                <span className="community-post-item-stat">
+                  <Eye size={14} />
+                  {post.viewCount}
+                </span>
+                <span className="community-post-item-stat">
+                  <CommentBubbleIcon size={14} strokeWidth={1.8} />
+                  {post.replyCount}
+                </span>
+                {post.boardType !== "NOTICE" && (
+                  <span className="community-post-item-stat">
+                    <Heart size={14} />
+                    {post.likeCount}
+                  </span>
+                )}
+                <span>
+                  {formatDate(post.createDate)}
+                  {edited ? " (수정됨)" : ""}
+                </span>
+              </span>
+            </div>
           </div>
-          {headerAction}
-        </div>
-        <div style={{ marginTop: 16 }}>
-          <PostMeta post={post} />
+          {headerAction && <div style={{ marginLeft: "auto" }}>{headerAction}</div>}
         </div>
       </div>
 

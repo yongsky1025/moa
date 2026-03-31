@@ -9,6 +9,7 @@ import com.soldesk.moa.board.dto.BoardRequestDTO;
 import com.soldesk.moa.board.dto.BoardResponseDTO;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.entity.constant.CircleBoardKind;
 import com.soldesk.moa.board.exception.BoardNotFoundException;
 import com.soldesk.moa.board.exception.CircleBoardCreationNotAllowedException;
 import com.soldesk.moa.board.exception.CircleNotFoundException;
@@ -31,6 +32,10 @@ import lombok.extern.log4j.Log4j2;
 @RequiredArgsConstructor
 @Transactional
 public class BoardService {
+
+    public static final String CIRCLE_NOTICE_BOARD_NAME = "공지사항";
+    public static final String CIRCLE_INTRO_BOARD_NAME = "자기소개";
+    public static final String CIRCLE_ACTIVITY_BOARD_NAME = "모임활동";
 
     private final BoardRepository boardRepository;
     private final CircleRepository circleRepository; // Circle board 생성 시 필요
@@ -78,6 +83,7 @@ public class BoardService {
 
         Board board = Board.builder()
                 .boardType(dto.getBoardType())
+                .circleBoardKind(null)
                 .name(dto.getName())
                 .circleId(null)
                 .build();
@@ -144,14 +150,27 @@ public class BoardService {
         Circle circle = circleRepository.findById(dto.getCircleId())
                 .orElseThrow(() -> new CircleNotFoundException(dto.getCircleId()));
 
+        CircleBoardKind circleBoardKind = dto.getCircleBoardKind() != null ? dto.getCircleBoardKind() : CircleBoardKind.CUSTOM;
+
         Board board = Board
                 .builder()
                 .boardType(BoardType.CIRCLE)
+                .circleBoardKind(circleBoardKind)
                 .name(dto.getName())
                 .circleId(circle)
                 .build();
 
         return boardRepository.save(board).getBoardId();
+    }
+
+    @Transactional
+    public void createDefaultCircleBoards(Long circleId) {
+        Circle circle = circleRepository.findById(circleId)
+                .orElseThrow(() -> new CircleNotFoundException(circleId));
+
+        createDefaultCircleBoardIfMissing(circle, CircleBoardKind.NOTICE, CIRCLE_NOTICE_BOARD_NAME);
+        createDefaultCircleBoardIfMissing(circle, CircleBoardKind.INTRO, CIRCLE_INTRO_BOARD_NAME);
+        createDefaultCircleBoardIfMissing(circle, CircleBoardKind.ACTIVITY, CIRCLE_ACTIVITY_BOARD_NAME);
     }
 
     @Transactional
@@ -186,12 +205,33 @@ public class BoardService {
                 .builder()
                 .boardId(b.getBoardId())
                 .boardType(b.getBoardType())
+                .circleBoardKind(b.getCircleBoardKind())
                 .name(b.getName())
                 .circleId(b.getCircleId() == null ? null : b.getCircleId().getCircleId()) // PK명 맞춰 수정
                 .createDate(b.getCreateDate())
                 .updateDate(b.getUpdateDate())
                 .build();
         return dto;
+    }
+
+    private void createDefaultCircleBoardIfMissing(
+            Circle circle,
+            CircleBoardKind kind,
+            String boardName) {
+        boolean exists = boardRepository.existsByBoardTypeAndCircleId_CircleIdAndCircleBoardKindAndDeletedFalse(
+                BoardType.CIRCLE,
+                circle.getCircleId(),
+                kind);
+        if (exists) {
+            return;
+        }
+
+        boardRepository.save(Board.builder()
+                .boardType(BoardType.CIRCLE)
+                .circleBoardKind(kind)
+                .name(boardName)
+                .circleId(circle)
+                .build());
     }
 
     private void validateBoardName(String name) {

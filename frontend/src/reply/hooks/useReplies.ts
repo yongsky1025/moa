@@ -14,7 +14,7 @@ interface UseRepliesParams {
   enabled?: boolean;
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
 
 export function useReplies({ postId, enabled = true }: UseRepliesParams) {
   const queryClient = useQueryClient();

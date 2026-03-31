@@ -31,4 +31,22 @@ public interface PostBookmarkRepository extends JpaRepository<PostBookmark, Long
     List<Post> findBookmarkedPostsByUserId(
             @Param("userId") Long userId,
             @Param("boardType") BoardType boardType);
+
+    @Query("""
+            select p
+            from PostBookmark pb
+            join pb.post p
+            join p.boardId b
+            where pb.user.userId = :userId
+              and b.deleted = false
+              and p.deleted = false
+              and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+              and b.circleId.circleId = :circleId
+              and (:boardId is null or b.boardId = :boardId)
+            order by p.createDate desc
+            """)
+    List<Post> findBookmarkedCirclePostsByUserId(
+            @Param("userId") Long userId,
+            @Param("circleId") Long circleId,
+            @Param("boardId") Long boardId);
 }

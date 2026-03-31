@@ -74,19 +74,36 @@ public class PostViewController {
 
     @GetMapping("/community")
     public List<PostResponseDTO> communityList(
-            @RequestParam(value = "board", required = false, defaultValue = "all") String board) {
+            @RequestParam(value = "board", required = false, defaultValue = "all") String board,
+            @RequestParam(value = "boardId", required = false) Long boardId) {
         String normalized = board == null ? "all" : board.trim().toLowerCase();
         BoardType boardType = switch (normalized) {
             case "notice" -> BoardType.NOTICE;
             case "free" -> BoardType.FREE;
             default -> null;
         };
-        return postService.listCommunity(boardType);
+        return postService.listCommunity(boardType, boardId);
+    }
+
+    @GetMapping("/community/page")
+    public SearchPage<PostResponseDTO> communityPagedList(
+            @RequestParam(value = "board", required = false, defaultValue = "all") String board,
+            @RequestParam(value = "boardId", required = false) Long boardId,
+            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+            @RequestParam(value = "size", required = false, defaultValue = "20") Integer size) {
+        String normalized = board == null ? "all" : board.trim().toLowerCase();
+        BoardType boardType = switch (normalized) {
+            case "notice" -> BoardType.NOTICE;
+            case "free" -> BoardType.FREE;
+            default -> null;
+        };
+        return postService.listCommunityPaged(boardType, boardId, page, size);
     }
 
     @GetMapping("/community/sidebar")
     public List<CommunitySidebarPostDTO> communitySidebar(
             @RequestParam(value = "board", required = false, defaultValue = "all") String board,
+            @RequestParam(value = "boardId", required = false) Long boardId,
             @RequestParam(value = "sort", required = false, defaultValue = "recent") String sort,
             @RequestParam(value = "limit", required = false, defaultValue = "12") Integer limit) {
         String normalized = board == null ? "all" : board.trim().toLowerCase();
@@ -95,13 +112,14 @@ public class PostViewController {
             case "free" -> BoardType.FREE;
             default -> null;
         };
-        return postService.listCommunitySidebar(boardType, sort, limit);
+        return postService.listCommunitySidebar(boardType, boardId, sort, limit);
     }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/community/bookmarks")
     public List<PostResponseDTO> myBookmarkedCommunityList(
             @RequestParam(value = "board", required = false, defaultValue = "all") String board,
+            @RequestParam(value = "boardId", required = false) Long boardId,
             @RequestParam(value = "q", required = false) String keyword,
             @RequestParam(value = "target", required = false, defaultValue = "ALL") String target,
             @AuthenticationPrincipal AuthUserDTO auth) {
@@ -111,13 +129,14 @@ public class PostViewController {
             case "free" -> BoardType.FREE;
             default -> null;
         };
-        return postService.listMyBookmarkedCommunity(auth.getUserId(), boardType, keyword, parseTarget(target));
+        return postService.listMyBookmarkedCommunity(auth.getUserId(), boardType, boardId, keyword, parseTarget(target));
     }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/community/my-posts")
     public List<PostResponseDTO> myCommunityPosts(
             @RequestParam(value = "board", required = false, defaultValue = "all") String board,
+            @RequestParam(value = "boardId", required = false) Long boardId,
             @RequestParam(value = "q", required = false) String keyword,
             @RequestParam(value = "target", required = false, defaultValue = "ALL") String target,
             @AuthenticationPrincipal AuthUserDTO auth) {
@@ -127,13 +146,14 @@ public class PostViewController {
             case "free" -> BoardType.FREE;
             default -> null;
         };
-        return postService.listMyCommunityPosts(auth.getUserId(), boardType, keyword, parseTarget(target));
+        return postService.listMyCommunityPosts(auth.getUserId(), boardType, boardId, keyword, parseTarget(target));
     }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/community/my-replies")
     public List<CommunityMyReplyDTO> myCommunityRepliedPosts(
             @RequestParam(value = "board", required = false, defaultValue = "all") String board,
+            @RequestParam(value = "boardId", required = false) Long boardId,
             @RequestParam(value = "q", required = false) String keyword,
             @RequestParam(value = "target", required = false, defaultValue = "ALL") String target,
             @AuthenticationPrincipal AuthUserDTO auth) {
@@ -143,7 +163,7 @@ public class PostViewController {
             case "free" -> BoardType.FREE;
             default -> null;
         };
-        return postService.listMyCommunityReplies(auth.getUserId(), boardType, keyword, parseTarget(target));
+        return postService.listMyCommunityReplies(auth.getUserId(), boardType, boardId, keyword, parseTarget(target));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

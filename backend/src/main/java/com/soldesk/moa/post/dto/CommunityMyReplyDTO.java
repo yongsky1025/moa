@@ -22,6 +22,7 @@ public class CommunityMyReplyDTO {
     private LocalDateTime createDate;
     private Long postId;
     private String postTitle;
+    private Long boardId;
+    private String boardName;
     private BoardType boardType;
 }
-

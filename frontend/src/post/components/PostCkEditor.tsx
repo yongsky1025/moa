@@ -40,7 +40,7 @@ export default function PostCkEditor({ value, onChange, onError }: PostCkEditorP
       data={value}
       config={{
         licenseKey: "GPL",
-        placeholder: "내용",
+        placeholder: "내용을 입력하세요",
         plugins: [
           Essentials,
           Paragraph,

@@ -42,6 +42,8 @@ export interface PostBookmarkSummary {
 
 export interface CommunitySidebarPost {
   postId: number;
+  boardId?: number;
+  boardName?: string;
   boardType: "FREE" | "NOTICE" | "CIRCLE";
   title: string;
   viewCount: number;
@@ -56,6 +58,8 @@ export interface CommunityMyReply {
   createDate: string;
   postId: number;
   postTitle: string;
+  boardId?: number;
+  boardName?: string;
   boardType: "FREE" | "NOTICE" | "CIRCLE";
 }
 
@@ -65,6 +69,7 @@ export interface PostSearchRequest {
   size?: number;
   target?: PostSearchTarget;
   boardType?: "FREE" | "NOTICE" | "CIRCLE";
+  boardId?: number;
   circleId?: number;
 }
 

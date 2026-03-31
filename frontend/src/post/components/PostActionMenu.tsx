@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bookmark } from "lucide-react";
 
 interface PostActionMenuProps {
@@ -104,22 +104,7 @@ export default function PostActionMenu({
         </button>
       )}
       {canOpenMenu && open && (
-        <div
-          style={{
-            position: "absolute",
-            top: 40,
-            right: 0,
-            minWidth: 108,
-            background: "#fff",
-            border: "1px solid #e5e7eb",
-            borderRadius: 10,
-            boxShadow: "0 8px 18px rgba(15, 23, 42, 0.12)",
-            padding: 6,
-            display: "grid",
-            gap: 4,
-            zIndex: 10,
-          }}
-        >
+        <div className="moa-dropdown-menu">
           {canEdit && (
             <button
               type="button"
@@ -127,7 +112,7 @@ export default function PostActionMenu({
                 setOpen(false);
                 onEdit?.();
               }}
-              style={menuButtonStyle}
+              className="moa-dropdown-item"
             >
               수정
             </button>
@@ -139,7 +124,7 @@ export default function PostActionMenu({
                 setOpen(false);
                 onTogglePin?.();
               }}
-              style={menuButtonStyle}
+              className="moa-dropdown-item"
             >
               {pinned ? "상단 고정 해제" : "상단 고정"}
             </button>
@@ -151,7 +136,7 @@ export default function PostActionMenu({
                 setOpen(false);
                 onDelete?.();
               }}
-              style={{ ...menuButtonStyle, color: "#b91c1c" }}
+              className="moa-dropdown-item moa-dropdown-item-danger"
             >
               삭제
             </button>
@@ -163,7 +148,7 @@ export default function PostActionMenu({
                 setOpen(false);
                 onReport?.();
               }}
-              style={menuButtonStyle}
+              className="moa-dropdown-item"
             >
               신고
             </button>
@@ -173,15 +158,3 @@ export default function PostActionMenu({
     </div>
   );
 }
-
-const menuButtonStyle: CSSProperties = {
-  width: "100%",
-  border: "none",
-  background: "transparent",
-  borderRadius: 8,
-  textAlign: "left",
-  padding: "8px 10px",
-  color: "#111827",
-  fontSize: 14,
-  cursor: "pointer",
-};
