@@ -92,6 +92,7 @@ export default function ChatPopupPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [noticeContent, setNoticeContent] = useState<string | null>(null);
   const [noticeMessageId, setNoticeMessageId] = useState<number | null>(null);
+  const [unreadOnEnter, setUnreadOnEnter] = useState(0);
   const [readStatus, setReadStatus] = useState<Record<number, string>>({});
   const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
   const typingTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
@@ -103,6 +104,9 @@ export default function ChatPopupPage() {
   mutedRoomsRef.current = mutedRooms;
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const msgAreaRef = useRef<HTMLDivElement>(null);
+  const firstUnreadMsgIdRef = useRef<number | null>(null);
+  const shouldScrollToUnreadRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -172,12 +176,21 @@ export default function ChatPopupPage() {
     setTypingUsers({});
     Object.values(typingTimersRef.current).forEach(clearTimeout);
     typingTimersRef.current = {};
+    const roomUnread = activeRoom.unreadCount;
+    setUnreadOnEnter(roomUnread);
+    firstUnreadMsgIdRef.current = null;
+    shouldScrollToUnreadRef.current = roomUnread > 0;
     setRooms((prev) => prev.map((r) => r.roomId === activeRoom.roomId ? { ...r, unreadCount: 0 } : r));
     setLoadingMsg(true);
     chatApi
       .getMessages(activeRoom.roomId)
       .then((data) => {
-        setMessages([...data].reverse());
+        const msgs = [...data].reverse();
+        if (roomUnread > 0 && msgs.length > 0) {
+          const idx = Math.max(0, msgs.length - roomUnread);
+          firstUnreadMsgIdRef.current = msgs[idx]?.messageId ?? null;
+        }
+        setMessages(msgs);
         chatApi.markAsRead(activeRoom.roomId).catch(() => {});
       })
       .finally(() => setLoadingMsg(false));
@@ -204,6 +217,11 @@ export default function ChatPopupPage() {
   }, [activeRoom]);
 
   useEffect(() => {
+    if (shouldScrollToUnreadRef.current) {
+      shouldScrollToUnreadRef.current = false;
+      const el = msgAreaRef.current?.querySelector<HTMLElement>('[data-first-unread]');
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    }
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -846,7 +864,7 @@ export default function ChatPopupPage() {
             )}
 
             {/* 메시지 영역 */}
-            <div style={s.msgArea}>
+            <div ref={msgAreaRef} style={s.msgArea}>
               {loadingMsg
                 ? <div style={s.placeholder}>불러오는 중...</div>
                 : messages.length === 0
@@ -854,7 +872,7 @@ export default function ChatPopupPage() {
                   : messages.map((msg) => {
                     const mine = msg.senderId === userId;
                     return (
-                      <div key={msg.messageId} style={{ ...s.msgRow, flexDirection: mine ? 'row-reverse' : 'row' }}>
+                      <div key={msg.messageId} {...(firstUnreadMsgIdRef.current === msg.messageId ? { 'data-first-unread': 'true' } : {})} style={{ ...s.msgRow, flexDirection: mine ? 'row-reverse' : 'row' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '65%', minWidth: 0 }}>
                           {!mine && <span style={s.senderName}>{msg.senderNickname ?? `사용자 #${msg.senderId}`}</span>}
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, flexDirection: mine ? 'row-reverse' : 'row' }}>
@@ -977,6 +995,23 @@ export default function ChatPopupPage() {
               ))}
               <div ref={bottomRef} />
             </div>
+
+            {/* 읽지 않은 메시지 이동 버튼 */}
+            {unreadOnEnter > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', background: '#fff', borderTop: '1px solid #EAF4F0', flexShrink: 0 }}>
+                <button
+                  onClick={() => {
+                    const el = msgAreaRef.current?.querySelector<HTMLElement>('[data-first-unread]');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setUnreadOnEnter(0);
+                    firstUnreadMsgIdRef.current = null;
+                  }}
+                  style={{ background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 16, padding: '5px 16px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
+                >
+                  {unreadOnEnter}개 안 읽은 메시지 ↓
+                </button>
+              </div>
+            )}
 
             {/* 이모티콘 피커 */}
             {showEmoji && (
