@@ -68,6 +68,10 @@ export const chatApi = {
   clearNotice: (roomId: number) =>
     api.delete(`/api/chat/rooms/${roomId}/notice`),
 
+  // AI 스마트 답변 제안
+  suggestReply: (roomId: number) =>
+    api.post<{ quickReplies: string[]; draft: string }>(`/api/ai/chat/rooms/${roomId}/suggest`).then(r => r.data),
+
   // 파일 업로드 (이미지: /api/images/upload-url, 일반파일: /api/files/upload-url)
   uploadFile: async (file: File) => {
     const isImage = file.type.startsWith("image/");

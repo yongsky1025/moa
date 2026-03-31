@@ -124,6 +124,8 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [profileChatError, setProfileChatError] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
+  const [aiSuggestions, setAiSuggestions] = useState<{ quickReplies: string[]; draft: string } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const typingTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const typingCooldownRef = useRef(false);
 
@@ -1188,10 +1190,50 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                       <button onClick={cancelPendingFile} style={{ background: '#e5e7eb', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', flexShrink: 0 }}>✕</button>
                     </div>
                   )}
+                  {/* AI 스마트 답변 제안 */}
+                  {aiSuggestions && (
+                    <div style={{ background: '#F0FAF5', borderTop: '1px solid #D1EAE0', padding: '6px 10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <span style={{ fontSize: 10, color: '#5F8F7B', fontWeight: 600 }}>✨ AI 스마트 답변</span>
+                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#aaa' }} onClick={() => setAiSuggestions(null)}>✕</button>
+                      </div>
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: aiSuggestions.draft ? 4 : 0 }}>
+                        {aiSuggestions.quickReplies.map((r, i) => (
+                          <button key={i} style={{ background: '#fff', border: '1px solid #5F8F7B', color: '#5F8F7B', borderRadius: 14, padding: '3px 10px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}
+                            onClick={() => { setInput(r); setAiSuggestions(null); textareaRef.current?.focus(); }}>
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                      {aiSuggestions.draft && (
+                        <button style={{ background: '#fff', border: '1px solid #D1EAE0', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', color: '#333', textAlign: 'left', width: '100%', display: 'flex', alignItems: 'center', gap: 4 }}
+                          onClick={() => { setInput(aiSuggestions.draft); setAiSuggestions(null); textareaRef.current?.focus(); }}>
+                          <span style={{ color: '#888', flexShrink: 0 }}>초안</span>{aiSuggestions.draft}
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px' }}>
                     <button onClick={() => fileInputRef.current?.click()} style={s.iconBtn}>📎</button>
                     <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileSelect} />
                     <button ref={emojiBtnRef} style={s.iconBtn} onClick={() => setShowEmoji((v) => !v)}>😊</button>
+                    <button
+                      style={{ ...s.iconBtn, color: aiLoading ? '#aaa' : '#5F8F7B', fontSize: 14 }}
+                      disabled={aiLoading || !activeRoomId}
+                      onClick={async () => {
+                        if (!activeRoomId) return;
+                        setAiLoading(true);
+                        try {
+                          const result = await chatApi.suggestReply(activeRoomId);
+                          setAiSuggestions(result);
+                        } finally {
+                          setAiLoading(false);
+                        }
+                      }}
+                      title="AI 스마트 답변"
+                    >
+                      {aiLoading ? '...' : '✨'}
+                    </button>
                     {showEmoji && (
                       <EmojiPicker anchorRef={emojiBtnRef} onSelect={(emoji) => setInput((prev) => prev + emoji)} onClose={() => setShowEmoji(false)} />
                     )}

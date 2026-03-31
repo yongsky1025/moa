@@ -94,6 +94,8 @@ export default function ChatPopupPage() {
   const [noticeMessageId, setNoticeMessageId] = useState<number | null>(null);
   const [unreadOnEnter, setUnreadOnEnter] = useState(0);
   const [readStatus, setReadStatus] = useState<Record<number, string>>({});
+  const [aiSuggestions, setAiSuggestions] = useState<{ quickReplies: string[]; draft: string } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
   const typingTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const typingCooldownRef = useRef(false);
@@ -1054,6 +1056,29 @@ export default function ChatPopupPage() {
               </div>
             )}
 
+            {/* AI 스마트 답변 제안 */}
+            {aiSuggestions && (
+              <div style={s.aiSuggestWrap}>
+                <div style={s.aiSuggestHeader}>
+                  <span style={{ fontSize: 11, color: '#5F8F7B', fontWeight: 600 }}>✨ AI 스마트 답변</span>
+                  <button style={s.aiCloseBtn} onClick={() => setAiSuggestions(null)}>✕</button>
+                </div>
+                <div style={s.aiQuickReplies}>
+                  {aiSuggestions.quickReplies.map((r, i) => (
+                    <button key={i} style={s.aiChip} onClick={() => { setInput(r); setAiSuggestions(null); textareaRef.current?.focus(); }}>
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                {aiSuggestions.draft && (
+                  <button style={s.aiDraftBtn} onClick={() => { setInput(aiSuggestions.draft); setAiSuggestions(null); textareaRef.current?.focus(); }}>
+                    <span style={{ fontSize: 11, color: '#888', marginRight: 4 }}>초안</span>
+                    {aiSuggestions.draft}
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* 입력 영역 */}
             <div style={s.inputWrap}>
               <div style={s.inputToolbar}>
@@ -1062,6 +1087,23 @@ export default function ChatPopupPage() {
                 </button>
                 <button style={s.toolBtn} onClick={() => setShowEmoji((v) => !v)}>
                   😊
+                </button>
+                <button
+                  style={{ ...s.toolBtn, color: aiLoading ? '#aaa' : '#5F8F7B', fontSize: 15 }}
+                  disabled={aiLoading || !activeRoom}
+                  onClick={async () => {
+                    if (!activeRoom) return;
+                    setAiLoading(true);
+                    try {
+                      const result = await chatApi.suggestReply(activeRoom.roomId);
+                      setAiSuggestions(result);
+                    } finally {
+                      setAiLoading(false);
+                    }
+                  }}
+                  title="AI 스마트 답변"
+                >
+                  {aiLoading ? '...' : '✨'}
                 </button>
                 <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFile} />
               </div>
@@ -1296,6 +1338,14 @@ const s: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   emojiBtn: { background: "none", border: "none", fontSize: 22, cursor: "pointer", padding: 2 },
+
+  // AI 스마트 답변
+  aiSuggestWrap: { background: "#F0FAF5", borderTop: "1px solid #D1EAE0", padding: "8px 12px 6px", flexShrink: 0 },
+  aiSuggestHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  aiCloseBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#aaa", padding: "0 2px" },
+  aiQuickReplies: { display: "flex", gap: 6, flexWrap: "wrap" as const, marginBottom: 4 },
+  aiChip: { background: "#fff", border: "1px solid #5F8F7B", color: "#5F8F7B", borderRadius: 16, padding: "4px 12px", fontSize: 12, cursor: "pointer", fontWeight: 500 },
+  aiDraftBtn: { background: "#fff", border: "1px solid #D1EAE0", borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer", color: "#333", textAlign: "left" as const, width: "100%", display: "flex", alignItems: "center" },
 
   // 입력창
   inputWrap: { background: "#fff", borderTop: "1px solid #E5E7EB", flexShrink: 0 },
