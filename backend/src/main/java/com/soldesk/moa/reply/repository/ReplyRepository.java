@@ -17,6 +17,7 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
     // 게시글별 댓글 목록 (작성일 순)
     List<Reply> findByPostId_PostIdOrderByCreateDateAsc(Long postId);
     Page<Reply> findByPostId_PostIdOrderByCreateDateAscReplyIdAsc(Long postId, Pageable pageable);
+    Page<Reply> findByPostId_PostIdAndParentIdIsNullOrderByCreateDateAscReplyIdAsc(Long postId, Pageable pageable);
 
     @Query("""
             select r.parentId.replyId, count(r)
@@ -104,5 +105,24 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
     List<Reply> findMyCommunityReplies(
             @Param("userId") Long userId,
             @Param("boardType") BoardType boardType);
+
+    @Query("""
+            select r
+            from Reply r
+            join fetch r.postId p
+            join fetch p.boardId b
+            where r.userId.userId = :userId
+              and r.deleted = false
+              and p.deleted = false
+              and b.deleted = false
+              and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+              and b.circleId.circleId = :circleId
+              and (:boardId is null or b.boardId = :boardId)
+            order by r.createDate desc, r.replyId desc
+            """)
+    List<Reply> findMyCircleReplies(
+            @Param("userId") Long userId,
+            @Param("circleId") Long circleId,
+            @Param("boardId") Long boardId);
 
 }

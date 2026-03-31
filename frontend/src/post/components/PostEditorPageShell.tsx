@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import PostForm from "./PostForm";
 import type { PostFormValues } from "../types/postTypes";
-import { PostEditorSkeleton } from "../../common/components/BoardLoadingSkeletons";
+import { CommonEditorSkeleton } from "../../common/components/BoardLoadingSkeletons";
 import "../styles/postEditor.css";
 
 interface PostEditorPageShellProps {
@@ -49,7 +49,7 @@ export default function PostEditorPageShell({
         </div>
         <div className="post-editor-divider" />
         {preFormSlot}
-        {mode === "edit" && detailLoading && <PostEditorSkeleton />}
+        {mode === "edit" && detailLoading && <CommonEditorSkeleton />}
         {mode === "edit" && detailError && (
           <p className="post-editor-message-error">{detailError}</p>
         )}

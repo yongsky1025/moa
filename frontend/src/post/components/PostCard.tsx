@@ -3,7 +3,10 @@ import type { PostResponse } from "../types/postTypes";
 import type { PostKind } from "../types/postTypes";
 import { postRoutes } from "../routes/postRoutes";
 import { formatDate } from "../utils/dateFormat";
-import { NOTICE_CATEGORY_LABEL } from "../constants/noticeCategory";
+import {
+  NOTICE_CATEGORY_BADGE_PALETTE,
+  NOTICE_CATEGORY_LABEL,
+} from "../constants/noticeCategory";
 
 interface PostCardProps {
   post: PostResponse;
@@ -24,6 +27,7 @@ export default function PostCard({ post, kind }: PostCardProps) {
     post.noticeCategory != null
       ? (NOTICE_CATEGORY_LABEL[post.noticeCategory] ?? "공지")
       : "공지";
+  const noticeCategoryStyle = NOTICE_CATEGORY_BADGE_PALETTE[post.noticeCategory ?? "ANNOUNCEMENT"];
 
   if (kind === "notice") {
     return (
@@ -48,9 +52,9 @@ export default function PostCard({ post, kind }: PostCardProps) {
               width: 66,
               height: 28,
               borderRadius: 999,
-              border: "1px solid #cfd8e3",
-              backgroundColor: "#f8fbff",
-              color: "#1d4ed8",
+              border: `1px solid ${noticeCategoryStyle.borderColor}`,
+              backgroundColor: noticeCategoryStyle.backgroundColor,
+              color: noticeCategoryStyle.color,
               fontSize: 12,
               fontWeight: 700,
             }}

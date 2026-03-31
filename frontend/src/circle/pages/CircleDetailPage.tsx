@@ -4,6 +4,7 @@ import { useAuthStore } from "../../store/authStore";
 import { Users, Clock, MapPin } from "lucide-react";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
+import CircleDetailTabs from "../../common/components/CircleDetailTabs";
 import { circleApi } from "../../api/circleApi";
 import { chatApi } from "../../api/chatApi";
 import { useDirectChat } from "../../chat/hooks/useDirectChat";
@@ -563,6 +564,8 @@ export default function CircleDetailPage() {
             </div>
           </div>
         </div>
+
+        <CircleDetailTabs circleId={cid} activeTab="home" />
 
         {/* 2컬럼 레이아웃 */}
         <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>

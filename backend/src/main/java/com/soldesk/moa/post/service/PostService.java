@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.Comparator;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.service.CirclePermissionService;
 import com.soldesk.moa.common.exception.InvalidRequestException;
+import com.soldesk.moa.common.search.dto.SearchPage;
 import com.soldesk.moa.common.entity.Image;
 import com.soldesk.moa.common.entity.constant.ImageDomain;
 import com.soldesk.moa.common.entity.constant.ImageStatus;
@@ -96,7 +98,22 @@ public class PostService {
                 return list;
         }
 
-        public List<PostResponseDTO> listCommunity(BoardType boardType) {
+        public List<PostResponseDTO> listGlobalByBoardId(Long boardId) {
+                Board board = getGlobalBoardOrThrow(boardId);
+                List<PostResponseDTO> list = postRepository.findGlobalPostsWithReplyCountByBoardId(board.getBoardId())
+                                .stream()
+                                .map(this::toPostResponseWithCount)
+                                .toList();
+                if (board.getBoardType() == BoardType.NOTICE) {
+                        return sortWithPinnedPriority(list);
+                }
+                return list;
+        }
+
+        public List<PostResponseDTO> listCommunity(BoardType boardType, Long globalBoardId) {
+                if (globalBoardId != null) {
+                        return listGlobalByBoardId(globalBoardId);
+                }
                 if (boardType == BoardType.NOTICE || boardType == BoardType.FREE) {
                         return listGlobal(boardType);
                 }
@@ -108,7 +125,48 @@ public class PostService {
                 return merged;
         }
 
-        public List<CommunitySidebarPostDTO> listCommunitySidebar(BoardType boardType, String sort, Integer limit) {
+        public List<PostResponseDTO> listCommunity(BoardType boardType) {
+                return listCommunity(boardType, null);
+        }
+
+        public SearchPage<PostResponseDTO> listCommunityPaged(
+                        BoardType boardType,
+                        Long globalBoardId,
+                        Integer page,
+                        Integer size) {
+                long startedAt = System.currentTimeMillis();
+                int safePage = safePage(page);
+                int safeSize = safeSize(size);
+                BoardType normalizedBoardType = normalizeSidebarBoardType(boardType);
+
+                Page<Object[]> result = postRepository.findCommunityPostsPaged(
+                                normalizedBoardType,
+                                globalBoardId,
+                                PageRequest.of(safePage - 1, safeSize));
+
+                List<PostResponseDTO> hits = result.getContent().stream()
+                                .map(this::toPostResponseWithCount)
+                                .toList();
+
+                return SearchPage.<PostResponseDTO>builder()
+                                .hits(hits)
+                                .totalHits((int) result.getTotalElements())
+                                .page(safePage)
+                                .totalPages(result.getTotalPages())
+                                .processingTimeMs(System.currentTimeMillis() - startedAt)
+                                .query("")
+                                .build();
+        }
+
+        public SearchPage<PostResponseDTO> listCommunityPaged(BoardType boardType, Integer page, Integer size) {
+                return listCommunityPaged(boardType, null, page, size);
+        }
+
+        public List<CommunitySidebarPostDTO> listCommunitySidebar(
+                        BoardType boardType,
+                        Long globalBoardId,
+                        String sort,
+                        Integer limit) {
                 int cappedLimit = safeSidebarLimit(limit);
                 String normalizedSort = normalizeSidebarSort(sort);
                 BoardType normalizedBoardType = normalizeSidebarBoardType(boardType);
@@ -116,12 +174,15 @@ public class PostService {
                 List<Object[]> rows = switch (normalizedSort) {
                         case "views" -> postRepository.findCommunityPostsByViews(
                                         normalizedBoardType,
+                                        globalBoardId,
                                         PageRequest.of(0, cappedLimit));
                         case "replies" -> postRepository.findCommunityPostsByReplies(
                                         normalizedBoardType,
+                                        globalBoardId,
                                         PageRequest.of(0, cappedLimit));
                         default -> postRepository.findCommunityPostsByRecent(
                                         normalizedBoardType,
+                                        globalBoardId,
                                         PageRequest.of(0, cappedLimit));
                 };
 
@@ -130,8 +191,19 @@ public class PostService {
                                 .toList();
         }
 
+        public List<CommunitySidebarPostDTO> listCommunitySidebar(BoardType boardType, String sort, Integer limit) {
+                return listCommunitySidebar(boardType, null, sort, limit);
+        }
+
         public PostResponseDTO readGlobal(BoardType type, Long postId, Long viewerUserId) {
                 Post post = postRepository.findGlobalPost(type, postId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
+                return toPostResponse(post, viewerUserId);
+        }
+
+        public PostResponseDTO readGlobalByBoardId(Long boardId, Long postId, Long viewerUserId) {
+                Board board = getGlobalBoardOrThrow(boardId);
+                Post post = postRepository.findGlobalPostByBoardId(board.getBoardId(), postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
                 return toPostResponse(post, viewerUserId);
         }
@@ -142,16 +214,30 @@ public class PostService {
 
                 Board board = boardRepository.findByBoardTypeAndCircleIdIsNullAndDeletedFalse(type)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 글로벌 게시판을 찾을 수 없습니다."));
+                return createGlobal(board, auth, req);
+        }
 
+        @Transactional
+        public Long createGlobalByBoardId(Long boardId, AuthUserDTO auth, PostRequestDTO req) {
+                validatePostText(req);
+                Board board = getGlobalBoardOrThrow(boardId);
+                return createGlobal(board, auth, req);
+        }
+
+        private Long createGlobal(Board board, AuthUserDTO auth, PostRequestDTO req) {
                 Users user = usersRepository.findById(auth.getUserId())
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 사용자를 찾을 수 없습니다."));
+
+                if (board.getBoardType() == BoardType.NOTICE && !isAdmin(auth)) {
+                        throw new PostForbiddenException("[#POST] 공지 게시판은 관리자만 작성할 수 있습니다.");
+                }
 
                 Post post = Post.builder()
                                 .boardId(board)
                                 .title(req.getTitle())
                                 .content(req.getContent())
                                 .userId(user)
-                                .noticeCategory(resolveNoticeCategory(type, req.getNoticeCategory()))
+                                .noticeCategory(resolveNoticeCategory(board.getBoardType(), req.getNoticeCategory()))
                                 .build();
 
                 Post saved = postRepository.save(post);
@@ -177,9 +263,52 @@ public class PostService {
         }
 
         @Transactional
+        public Long updateGlobalByBoardId(Long boardId, Long postId, AuthUserDTO auth, PostRequestDTO req) {
+                validatePostText(req);
+                Board board = getGlobalBoardOrThrow(boardId);
+                Post post = postRepository.findGlobalPostByBoardId(board.getBoardId(), postId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
+
+                if (board.getBoardType() == BoardType.NOTICE) {
+                        if (!isAdmin(auth)) {
+                                throw new PostForbiddenException("[#POST] 공지 게시판은 관리자만 수정할 수 있습니다.");
+                        }
+                } else if (!isOwner(post, auth.getUserId()) && !isAdmin(auth)) {
+                        throw new PostForbiddenException("[#POST] 작성자만 수정할 수 있습니다.");
+                }
+
+                post.changeTitle(req.getTitle());
+                post.changeContent(req.getContent());
+                if (board.getBoardType() == BoardType.NOTICE) {
+                        post.changeNoticeCategory(resolveNoticeCategory(board.getBoardType(), req.getNoticeCategory()));
+                }
+                syncPostImages(post, post.getUserId(), req.getContent());
+                postSearchService.queueUpsertAfterCommit(post.getPostId());
+                return post.getPostId();
+        }
+
+        @Transactional
         public void deleteGlobal(BoardType type, Long postId) {
                 Post post = postRepository.findGlobalPost(type, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
+                deletePostWithReplies(post);
+                postSearchService.queueDeleteAfterCommit(post.getPostId());
+        }
+
+        @Transactional
+        public void deleteGlobalByBoardId(Long boardId, Long postId, AuthUserDTO auth) {
+                Board board = getGlobalBoardOrThrow(boardId);
+                Post post = postRepository.findGlobalPostByBoardId(board.getBoardId(), postId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
+
+                if (board.getBoardType() == BoardType.NOTICE) {
+                        if (!isAdmin(auth)) {
+                                throw new PostForbiddenException("[#POST] 공지 게시판은 관리자만 삭제할 수 있습니다.");
+                        }
+                } else if (!isOwner(post, auth.getUserId()) && !isAdmin(auth)) {
+                        throw new PostForbiddenException("[#POST] 작성자만 삭제할 수 있습니다.");
+                }
+
                 deletePostWithReplies(post);
                 postSearchService.queueDeleteAfterCommit(post.getPostId());
         }
@@ -249,6 +378,19 @@ public class PostService {
                                 .toList();
         }
 
+        public List<PostResponseDTO> listPublicCircleActivities(Integer size) {
+                int limit = safeSize(size);
+                return postRepository.findPublicCircleActivityPostsWithReplyCount(PageRequest.of(0, limit)).stream()
+                                .map(this::toPostResponseWithCount)
+                                .toList();
+        }
+
+        public PostResponseDTO readPublicCircleActivity(Long postId, Long viewerUserId) {
+                Post post = postRepository.findPublicCircleActivityPost(postId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 공개 모임활동 게시글을 찾을 수 없습니다."));
+                return toPostResponse(post, viewerUserId);
+        }
+
         public PostResponseDTO readCircle(Long circleId, Long boardId, Long postId, Long userId) {
                 circlePermissionService.requireActiveMember(circleId, userId);
                 Post post = postRepository.findCirclePost(circleId, boardId, postId)
@@ -278,6 +420,7 @@ public class PostService {
                                 .title(req.getTitle())
                                 .content(req.getContent())
                                 .userId(user)
+                                .activityPublic(resolveActivityPublic(board, req.getActivityPublic()))
                                 .build();
 
                 Post saved = postRepository.save(post);
@@ -300,7 +443,35 @@ public class PostService {
 
                 post.changeTitle(req.getTitle());
                 post.changeContent(req.getContent());
+                if (req.getActivityPublic() != null) {
+                        post.changeActivityPublic(resolveActivityPublic(post.getBoardId(), req.getActivityPublic()));
+                }
                 syncPostImages(post, post.getUserId(), req.getContent());
+                postSearchService.queueUpsertAfterCommit(post.getPostId());
+                return post.getPostId();
+        }
+
+        @Transactional
+        public Long updateCircleActivityVisibility(
+                        Long circleId,
+                        Long boardId,
+                        Long postId,
+                        Long userId,
+                        Boolean activityPublic) {
+                circlePermissionService.requireActiveMember(circleId, userId);
+                Post post = postRepository.findCirclePost(circleId, boardId, postId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
+
+                if (post.getBoardId().getCircleBoardKind() != com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY) {
+                        throw new InvalidRequestException("[#POST] 모임활동 게시글만 공개/비공개를 설정할 수 있습니다.");
+                }
+
+                boolean owner = circlePermissionService.canEditOwnContent(post.getUserId().getUserId(), userId);
+                if (!owner) {
+                        circlePermissionService.requireLeader(circleId, userId);
+                }
+
+                post.changeActivityPublic(activityPublic);
                 postSearchService.queueUpsertAfterCommit(post.getPostId());
                 return post.getPostId();
         }
@@ -403,10 +574,35 @@ public class PostService {
         public List<PostResponseDTO> listMyBookmarkedCommunity(
                         Long userId,
                         BoardType boardType,
+                        Long globalBoardId,
                         String keyword,
                         PostSearchTarget target) {
                 BoardType normalizedBoardType = normalizeSidebarBoardType(boardType);
                 List<PostResponseDTO> list = postBookmarkRepository.findBookmarkedPostsByUserId(userId, normalizedBoardType)
+                                .stream()
+                                .filter(post -> globalBoardId == null
+                                                || Objects.equals(post.getBoardId().getBoardId(), globalBoardId))
+                                .map(post -> toPostResponse(post, userId))
+                                .toList();
+                return filterPostResponsesByKeyword(sortWithPinnedPriority(list), keyword, target);
+        }
+
+        public List<PostResponseDTO> listMyBookmarkedCommunity(
+                        Long userId,
+                        BoardType boardType,
+                        String keyword,
+                        PostSearchTarget target) {
+                return listMyBookmarkedCommunity(userId, boardType, null, keyword, target);
+        }
+
+        public List<PostResponseDTO> listMyCommunityPosts(
+                        Long userId,
+                        BoardType boardType,
+                        Long globalBoardId,
+                        String keyword,
+                        PostSearchTarget target) {
+                BoardType normalizedBoardType = normalizeSidebarBoardType(boardType);
+                List<PostResponseDTO> list = postRepository.findMyCommunityPosts(userId, normalizedBoardType, globalBoardId)
                                 .stream()
                                 .map(post -> toPostResponse(post, userId))
                                 .toList();
@@ -418,20 +614,20 @@ public class PostService {
                         BoardType boardType,
                         String keyword,
                         PostSearchTarget target) {
-                BoardType normalizedBoardType = normalizeSidebarBoardType(boardType);
-                List<PostResponseDTO> list = postRepository.findMyCommunityPosts(userId, normalizedBoardType).stream()
-                                .map(post -> toPostResponse(post, userId))
-                                .toList();
-                return filterPostResponsesByKeyword(sortWithPinnedPriority(list), keyword, target);
+                return listMyCommunityPosts(userId, boardType, null, keyword, target);
         }
 
         public List<CommunityMyReplyDTO> listMyCommunityReplies(
                         Long userId,
                         BoardType boardType,
+                        Long globalBoardId,
                         String keyword,
                         PostSearchTarget target) {
                 BoardType normalizedBoardType = normalizeSidebarBoardType(boardType);
-                List<CommunityMyReplyDTO> list = replyRepository.findMyCommunityReplies(userId, normalizedBoardType).stream()
+                List<CommunityMyReplyDTO> list = replyRepository.findMyCommunityReplies(userId, normalizedBoardType)
+                                .stream()
+                                .filter(reply -> globalBoardId == null
+                                                || Objects.equals(reply.getPostId().getBoardId().getBoardId(), globalBoardId))
                                 .map(reply -> CommunityMyReplyDTO.builder()
                                                 .replyId(reply.getReplyId())
                                                 .content(reply.getContent())
@@ -439,6 +635,68 @@ public class PostService {
                                                 .createDate(reply.getCreateDate())
                                                 .postId(reply.getPostId().getPostId())
                                                 .postTitle(reply.getPostId().getTitle())
+                                                .boardId(reply.getPostId().getBoardId().getBoardId())
+                                                .boardName(reply.getPostId().getBoardId().getName())
+                                                .boardType(reply.getPostId().getBoardId().getBoardType())
+                                                .build())
+                                .toList();
+                return filterMyRepliesByKeyword(list, keyword, target);
+        }
+
+        public List<CommunityMyReplyDTO> listMyCommunityReplies(
+                        Long userId,
+                        BoardType boardType,
+                        String keyword,
+                        PostSearchTarget target) {
+                return listMyCommunityReplies(userId, boardType, null, keyword, target);
+        }
+
+        public List<PostResponseDTO> listMyBookmarkedCircle(
+                        Long userId,
+                        Long circleId,
+                        Long boardId,
+                        String keyword,
+                        PostSearchTarget target) {
+                circlePermissionService.requireActiveMember(circleId, userId);
+                List<PostResponseDTO> list = postBookmarkRepository.findBookmarkedCirclePostsByUserId(userId, circleId, boardId)
+                                .stream()
+                                .map(post -> toPostResponse(post, userId))
+                                .toList();
+                return filterPostResponsesByKeyword(sortWithPinnedPriority(list), keyword, target);
+        }
+
+        public List<PostResponseDTO> listMyCirclePosts(
+                        Long userId,
+                        Long circleId,
+                        Long boardId,
+                        String keyword,
+                        PostSearchTarget target) {
+                circlePermissionService.requireActiveMember(circleId, userId);
+                List<PostResponseDTO> list = postRepository.findMyCirclePosts(userId, circleId, boardId)
+                                .stream()
+                                .map(post -> toPostResponse(post, userId))
+                                .toList();
+                return filterPostResponsesByKeyword(sortWithPinnedPriority(list), keyword, target);
+        }
+
+        public List<CommunityMyReplyDTO> listMyCircleReplies(
+                        Long userId,
+                        Long circleId,
+                        Long boardId,
+                        String keyword,
+                        PostSearchTarget target) {
+                circlePermissionService.requireActiveMember(circleId, userId);
+                List<CommunityMyReplyDTO> list = replyRepository.findMyCircleReplies(userId, circleId, boardId)
+                                .stream()
+                                .map(reply -> CommunityMyReplyDTO.builder()
+                                                .replyId(reply.getReplyId())
+                                                .content(reply.getContent())
+                                                .likeCount(reply.getLikeCount())
+                                                .createDate(reply.getCreateDate())
+                                                .postId(reply.getPostId().getPostId())
+                                                .postTitle(reply.getPostId().getTitle())
+                                                .boardId(reply.getPostId().getBoardId().getBoardId())
+                                                .boardName(reply.getPostId().getBoardId().getName())
                                                 .boardType(reply.getPostId().getBoardId().getBoardType())
                                                 .build())
                                 .toList();
@@ -458,6 +716,27 @@ public class PostService {
                         }
                 }
 
+                post.changePinned(!post.isPinned());
+                return post.isPinned();
+        }
+
+        @Transactional
+        public boolean toggleGlobalBoardPin(Long boardId, Long postId) {
+                Board board = getGlobalBoardOrThrow(boardId);
+                if (board.getBoardType() != BoardType.NOTICE) {
+                        throw new InvalidRequestException("[#POST] 공지 게시판에서만 상단 고정이 가능합니다.");
+                }
+
+                Post post = postRepository.findGlobalPostByBoardId(boardId, postId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
+
+                if (!post.isPinned()) {
+                        long pinnedCount = postRepository.countPinnedNoticePosts();
+                        if (pinnedCount >= MAX_PINNED_NOTICE_COUNT) {
+                                throw new InvalidRequestException(
+                                                "[#POST] 공지 상단 고정은 최대 " + MAX_PINNED_NOTICE_COUNT + "개까지 가능합니다.");
+                        }
+                }
                 post.changePinned(!post.isPinned());
                 return post.isPinned();
         }
@@ -590,6 +869,11 @@ public class PostService {
         }
 
         private void validatePostText(PostRequestDTO req) {
+                String normalizedTitle = req.getTitle() == null ? "" : req.getTitle().trim();
+                if (normalizedTitle.length() < 2 || normalizedTitle.length() > 80) {
+                        throw new InvalidRequestException("[#POST] 제목은 2자 이상 80자 이하여야 합니다.");
+                }
+                req.setTitle(normalizedTitle);
                 profanityFilterService.validateNoProfanity(
                                 req.getTitle(),
                                 "[#POST] 제목에 사용할 수 없는 표현이 포함되어 있습니다.");
@@ -611,8 +895,11 @@ public class PostService {
                                 .imagePaths(extractPostImagePaths(p.getContent()))
                                 .thumbnailImageId(p.getImage() != null ? p.getImage().getImageId() : null)
                                 .thumbnailUrl(p.getImage() != null ? p.getImage().getPath() : null)
-                                .authorName(p.getUserId().getName()) // Users PK명 맞춰 수정
+                                .authorName(p.getUserId().getNickname())
                                 .authorPublicId(p.getUserId().getPublicId())
+                                .circleId(p.getBoardId().getCircleId() != null ? p.getBoardId().getCircleId().getCircleId() : null)
+                                .circleName(p.getBoardId().getCircleId() != null ? p.getBoardId().getCircleId().getName() : null)
+                                .activityPublic(p.isPublicCircleActivityPost())
                                 .viewCount(p.getViewCount())
                                 .likeCount(p.getLikeCount())
                                 .myReaction(myReaction)
@@ -638,8 +925,11 @@ public class PostService {
                                 .imagePaths(extractPostImagePaths(p.getContent()))
                                 .thumbnailImageId(p.getImage() != null ? p.getImage().getImageId() : null)
                                 .thumbnailUrl(p.getImage() != null ? p.getImage().getPath() : null)
-                                .authorName(p.getUserId().getName())
+                                .authorName(p.getUserId().getNickname())
                                 .authorPublicId(p.getUserId().getPublicId())
+                                .circleId(p.getBoardId().getCircleId() != null ? p.getBoardId().getCircleId().getCircleId() : null)
+                                .circleName(p.getBoardId().getCircleId() != null ? p.getBoardId().getCircleId().getName() : null)
+                                .activityPublic(p.isPublicCircleActivityPost())
                                 .viewCount(p.getViewCount())
                                 .likeCount(p.getLikeCount())
                                 .noticeCategory(resolveNoticeCategory(p))
@@ -649,6 +939,15 @@ public class PostService {
                                 .updateDate(p.getUpdateDate())
                                 .replyCount(replyCount)
                                 .build();
+        }
+
+        private Board getGlobalBoardOrThrow(Long boardId) {
+                Board board = boardRepository.findByBoardIdAndCircleIdIsNullAndDeletedFalse(boardId)
+                                .orElseThrow(() -> new PostNotFoundException("[#POST] 글로벌 게시판을 찾을 수 없습니다."));
+                if (board.getBoardType() == BoardType.CIRCLE) {
+                        throw new InvalidRequestException("[#POST] 글로벌 게시판이 아닙니다.");
+                }
+                return board;
         }
 
         private NoticeCategory resolveNoticeCategory(BoardType boardType, NoticeCategory noticeCategory) {
@@ -663,6 +962,19 @@ public class PostService {
                         return null;
                 }
                 return post.getNoticeCategory() != null ? post.getNoticeCategory() : NoticeCategory.ANNOUNCEMENT;
+        }
+
+        private boolean resolveActivityPublic(Board board, Boolean requested) {
+                if (board.getBoardType() != BoardType.CIRCLE) {
+                        return false;
+                }
+                if (board.getCircleBoardKind() != com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY) {
+                        return false;
+                }
+                if (requested == null) {
+                        return true;
+                }
+                return Boolean.TRUE.equals(requested);
         }
 
         private Post requireActivePost(Long postId) {
@@ -715,6 +1027,8 @@ public class PostService {
                 long replyCount = ((Number) row[1]).longValue();
                 return CommunitySidebarPostDTO.builder()
                                 .postId(post.getPostId())
+                                .boardId(post.getBoardId().getBoardId())
+                                .boardName(post.getBoardId().getName())
                                 .boardType(post.getBoardId().getBoardType())
                                 .title(post.getTitle())
                                 .viewCount(post.getViewCount())
@@ -728,6 +1042,20 @@ public class PostService {
                         return 12;
                 }
                 return Math.min(limit, 50);
+        }
+
+        private int safePage(Integer page) {
+                if (page == null || page < 1) {
+                        return 1;
+                }
+                return page;
+        }
+
+        private int safeSize(Integer size) {
+                if (size == null || size < 1) {
+                        return 20;
+                }
+                return Math.min(size, 100);
         }
 
         private String normalizeSidebarSort(String sort) {
@@ -826,3 +1154,4 @@ public class PostService {
         }
 
 }
+

@@ -92,4 +92,5 @@ public class CircleBoardRestController {
 
         boardService.deleteCircleBoard(circleId, boardId, auth.getUserId());
     }
+
 }

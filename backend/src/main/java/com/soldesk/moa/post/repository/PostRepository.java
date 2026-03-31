@@ -62,17 +62,47 @@ public interface PostRepository extends JpaRepository<Post, Long> {
           select p, count(r)
           from Post p
           left join Reply r on r.postId = p and r.deleted = false
+          where p.boardId.boardId = :boardId
+            and p.boardId.circleId is null
+            and p.boardId.deleted = false
+            and p.deleted = false
+          group by p
+          order by p.postId desc
+      """)
+  List<Object[]> findGlobalPostsWithReplyCountByBoardId(@Param("boardId") Long boardId);
+
+  @Query("""
+        select p
+        from Post p
+        join p.boardId b
+        where p.postId = :postId
+          and b.boardId = :boardId
+          and b.circleId is null
+          and b.deleted = false
+          and p.deleted = false
+      """)
+  Optional<Post> findGlobalPostByBoardId(
+      @Param("boardId") Long boardId,
+      @Param("postId") Long postId);
+
+  @Query("""
+          select p, count(r)
+          from Post p
+          left join Reply r on r.postId = p and r.deleted = false
           where p.boardId.deleted = false
             and p.deleted = false
+            and p.boardId.circleId is null
             and (
-                 (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
-              or (:boardType is not null and p.boardId.boardType = :boardType)
+                 (:globalBoardId is null and (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE)))
+              or (:globalBoardId is null and (:boardType is not null and p.boardId.boardType = :boardType))
+              or (:globalBoardId is not null and p.boardId.boardId = :globalBoardId)
             )
           group by p
           order by p.createDate desc
       """)
   List<Object[]> findCommunityPostsByRecent(
       @Param("boardType") BoardType boardType,
+      @Param("globalBoardId") Long globalBoardId,
       Pageable pageable);
 
   @Query("""
@@ -81,15 +111,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
           left join Reply r on r.postId = p and r.deleted = false
           where p.boardId.deleted = false
             and p.deleted = false
+            and p.boardId.circleId is null
             and (
-                 (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
-              or (:boardType is not null and p.boardId.boardType = :boardType)
+                 (:globalBoardId is null and (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE)))
+              or (:globalBoardId is null and (:boardType is not null and p.boardId.boardType = :boardType))
+              or (:globalBoardId is not null and p.boardId.boardId = :globalBoardId)
             )
           group by p
           order by p.viewCount desc, p.createDate desc
       """)
   List<Object[]> findCommunityPostsByViews(
       @Param("boardType") BoardType boardType,
+      @Param("globalBoardId") Long globalBoardId,
       Pageable pageable);
 
   @Query("""
@@ -98,15 +131,56 @@ public interface PostRepository extends JpaRepository<Post, Long> {
           left join Reply r on r.postId = p and r.deleted = false
           where p.boardId.deleted = false
             and p.deleted = false
+            and p.boardId.circleId is null
             and (
-                 (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
-              or (:boardType is not null and p.boardId.boardType = :boardType)
+                 (:globalBoardId is null and (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE)))
+              or (:globalBoardId is null and (:boardType is not null and p.boardId.boardType = :boardType))
+              or (:globalBoardId is not null and p.boardId.boardId = :globalBoardId)
             )
           group by p
           order by count(r) desc, p.createDate desc
       """)
   List<Object[]> findCommunityPostsByReplies(
       @Param("boardType") BoardType boardType,
+      @Param("globalBoardId") Long globalBoardId,
+      Pageable pageable);
+
+  @Query(
+      value = """
+          select p, count(r)
+          from Post p
+          left join Reply r on r.postId = p and r.deleted = false
+          where p.boardId.deleted = false
+            and p.deleted = false
+            and p.boardId.circleId is null
+            and (
+                 (:globalBoardId is null and (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE)))
+              or (:globalBoardId is null and (:boardType is not null and p.boardId.boardType = :boardType))
+              or (:globalBoardId is not null and p.boardId.boardId = :globalBoardId)
+            )
+          group by p
+          order by case
+              when p.boardId.boardType = com.soldesk.moa.board.entity.constant.BoardType.NOTICE and p.pinned = true then 0
+              else 1
+            end asc,
+            p.pinnedAt desc,
+            p.createDate desc
+          """,
+      countQuery = """
+          select count(p)
+          from Post p
+          where p.boardId.deleted = false
+            and p.deleted = false
+            and p.boardId.circleId is null
+            and (
+                 (:globalBoardId is null and (:boardType is null and p.boardId.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE)))
+              or (:globalBoardId is null and (:boardType is not null and p.boardId.boardType = :boardType))
+              or (:globalBoardId is not null and p.boardId.boardId = :globalBoardId)
+            )
+          """)
+  Page<Object[]> findCommunityPostsPaged(
+      @Param("boardType") BoardType boardType,
+      @Param("globalBoardId") Long globalBoardId,
       Pageable pageable);
 
   @Query("""
@@ -116,15 +190,35 @@ public interface PostRepository extends JpaRepository<Post, Long> {
           where p.userId.userId = :userId
             and b.deleted = false
             and p.deleted = false
+            and b.circleId is null
             and (
-                 (:boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
-              or (:boardType is not null and b.boardType = :boardType)
+                 (:globalBoardId is null and (:boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE)))
+              or (:globalBoardId is null and (:boardType is not null and b.boardType = :boardType))
+              or (:globalBoardId is not null and b.boardId = :globalBoardId)
             )
           order by p.createDate desc
       """)
   List<Post> findMyCommunityPosts(
       @Param("userId") Long userId,
-      @Param("boardType") BoardType boardType);
+      @Param("boardType") BoardType boardType,
+      @Param("globalBoardId") Long globalBoardId);
+
+  @Query("""
+          select p
+          from Post p
+          join p.boardId b
+          where p.userId.userId = :userId
+            and b.deleted = false
+            and p.deleted = false
+            and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+            and b.circleId.circleId = :circleId
+            and (:boardId is null or b.boardId = :boardId)
+          order by p.createDate desc
+      """)
+  List<Post> findMyCirclePosts(
+      @Param("userId") Long userId,
+      @Param("circleId") Long circleId,
+      @Param("boardId") Long boardId);
 
   @Query("""
           select distinct p
@@ -135,15 +229,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             and r.deleted = false
             and b.deleted = false
             and p.deleted = false
+            and b.circleId is null
             and (
-                 (:boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
-              or (:boardType is not null and b.boardType = :boardType)
+                 (:globalBoardId is null and (:boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE)))
+              or (:globalBoardId is null and (:boardType is not null and b.boardType = :boardType))
+              or (:globalBoardId is not null and b.boardId = :globalBoardId)
             )
           order by p.createDate desc
       """)
   List<Post> findMyRepliedCommunityPosts(
       @Param("userId") Long userId,
-      @Param("boardType") BoardType boardType);
+      @Param("boardType") BoardType boardType,
+      @Param("globalBoardId") Long globalBoardId);
 
   @Query("""
       select count(p)
@@ -219,6 +316,34 @@ public interface PostRepository extends JpaRepository<Post, Long> {
       """)
   List<Object[]> findCirclePostsAllBoardsWithReplyCount(@Param("circleId") Long circleId);
 
+  @Query("""
+          select p, count(r)
+          from Post p
+          join p.boardId b
+          left join Reply r on r.postId = p and r.deleted = false
+          where b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+            and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+            and p.activityPublic = true
+            and b.deleted = false
+            and p.deleted = false
+          group by p
+          order by p.createDate desc
+      """)
+  List<Object[]> findPublicCircleActivityPostsWithReplyCount(Pageable pageable);
+
+  @Query("""
+          select p
+          from Post p
+          join p.boardId b
+          where p.postId = :postId
+            and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+            and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+            and p.activityPublic = true
+            and b.deleted = false
+            and p.deleted = false
+      """)
+  Optional<Post> findPublicCircleActivityPost(@Param("postId") Long postId);
+
   Optional<Post> findByPostIdAndDeletedFalseAndBoardId_DeletedFalse(Long postId);
 
   @Query("""
@@ -261,18 +386,20 @@ public interface PostRepository extends JpaRepository<Post, Long> {
         and b.deleted = false
         and (:keyword = '' or
              lower(p.title) like lower(concat('%', :keyword, '%')) or
-             lower(p.content) like lower(concat('%', :keyword, '%')) or
+             p.content like concat('%', :keyword, '%') or
              lower(u.name) like lower(concat('%', :keyword, '%')))
         and (
-             (:boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
-          or (:boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and b.boardType = :boardType)
-          or (:boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and b.circleId.circleId = :circleId)
+             (:boardId is not null and b.boardId = :boardId)
+          or (:boardId is null and :boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
+          or (:boardId is null and :boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and b.boardType = :boardType)
+          or (:boardId is null and :boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and b.circleId.circleId = :circleId)
         )
       order by p.createDate desc
       """)
   Page<Post> searchPostsForFallback(
       @Param("keyword") String keyword,
       @Param("boardType") BoardType boardType,
+      @Param("boardId") Long boardId,
       @Param("circleId") Long circleId,
       Pageable pageable);
 

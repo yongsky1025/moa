@@ -28,6 +28,7 @@ public class MeiliPostSearchExecutor implements PostSearchExecutor {
             String keyword,
             PostSearchTarget target,
             BoardType boardType,
+            Long boardId,
             Long circleId,
             int page,
             int size,

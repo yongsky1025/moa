@@ -32,6 +32,7 @@ export function usePostForm() {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["communityPosts"] }),
           queryClient.invalidateQueries({ queryKey: ["communitySidebar"] }),
+          queryClient.invalidateQueries({ queryKey: ["postDetail", kind, savedPostId] }),
         ]);
         return savedPostId;
       }
@@ -43,6 +44,7 @@ export function usePostForm() {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["communityPosts"] }),
           queryClient.invalidateQueries({ queryKey: ["communitySidebar"] }),
+          queryClient.invalidateQueries({ queryKey: ["postDetail", kind, savedPostId] }),
         ]);
         return savedPostId;
       }
@@ -70,6 +72,7 @@ export function usePostForm() {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["communityPosts"] }),
           queryClient.invalidateQueries({ queryKey: ["communitySidebar"] }),
+          queryClient.invalidateQueries({ queryKey: ["postDetail", kind, postId] }),
         ]);
         return;
       }
@@ -79,6 +82,7 @@ export function usePostForm() {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["communityPosts"] }),
           queryClient.invalidateQueries({ queryKey: ["communitySidebar"] }),
+          queryClient.invalidateQueries({ queryKey: ["postDetail", kind, postId] }),
         ]);
         return;
       }

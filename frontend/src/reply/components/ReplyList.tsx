@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { ReplyListSkeleton } from "../../common/components/BoardLoadingSkeletons";
 import type { ReplyTreeNode } from "../types/replyTypes";
 import ReplyItem from "./ReplyItem";
 import "../styles/replySection.css";
@@ -45,6 +47,31 @@ export default function ReplyList({
   onFocusReplyHandled,
   onRequireLogin,
 }: ReplyListProps) {
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!hasMore) return;
+    const target = loadMoreSentinelRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry?.isIntersecting) return;
+        if (loadingMore) return;
+        void onLoadMore();
+      },
+      {
+        root: null,
+        rootMargin: "240px 0px",
+        threshold: 0.01,
+      },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, onLoadMore]);
+
   if (tree.length === 0) {
     return (
       <div className="reply-empty-card">
@@ -79,15 +106,8 @@ export default function ReplyList({
         ))}
       </ul>
       {hasMore && (
-        <div className="reply-load-more-wrap">
-          <button
-            type="button"
-            className="reply-load-more-btn"
-            onClick={() => void onLoadMore()}
-            disabled={loadingMore}
-          >
-            {loadingMore ? "불러오는 중..." : "댓글 더보기"}
-          </button>
+        <div className="reply-load-more-wrap" ref={loadMoreSentinelRef} aria-live="polite">
+          {loadingMore && <ReplyListSkeleton count={2} withTopMargin={false} />}
         </div>
       )}
     </>

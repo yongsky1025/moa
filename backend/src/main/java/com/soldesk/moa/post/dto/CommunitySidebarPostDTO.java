@@ -12,6 +12,8 @@ import lombok.Getter;
 public class CommunitySidebarPostDTO {
 
     private Long postId;
+    private Long boardId;
+    private String boardName;
     private BoardType boardType;
     private String title;
     private int viewCount;

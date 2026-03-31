@@ -17,6 +17,9 @@ import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.service.BoardService;
 import com.soldesk.moa.post.dto.PostRequestDTO;
 import com.soldesk.moa.post.dto.PostResponseDTO;
+import com.soldesk.moa.post.dto.CommunityMyReplyDTO;
+import com.soldesk.moa.post.dto.PostSearchTarget;
+import com.soldesk.moa.post.dto.PostVisibilityRequestDTO;
 import com.soldesk.moa.post.entity.Post;
 import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.post.service.PostService;
@@ -60,6 +63,54 @@ public class CirclePostRestController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @GetMapping("/bookmarks")
+    public List<PostResponseDTO> myBookmarkedPosts(
+            @PathVariable("circleId") Long circleId,
+            @RequestParam(value = "boardId", required = false) Long boardId,
+            @RequestParam(value = "q", required = false) String keyword,
+            @RequestParam(value = "target", required = false, defaultValue = "ALL") String target,
+            @AuthenticationPrincipal AuthUserDTO auth) {
+        return postService.listMyBookmarkedCircle(
+                auth.getUserId(),
+                circleId,
+                boardId,
+                keyword,
+                parseTarget(target));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/my-posts")
+    public List<PostResponseDTO> myPosts(
+            @PathVariable("circleId") Long circleId,
+            @RequestParam(value = "boardId", required = false) Long boardId,
+            @RequestParam(value = "q", required = false) String keyword,
+            @RequestParam(value = "target", required = false, defaultValue = "ALL") String target,
+            @AuthenticationPrincipal AuthUserDTO auth) {
+        return postService.listMyCirclePosts(
+                auth.getUserId(),
+                circleId,
+                boardId,
+                keyword,
+                parseTarget(target));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/my-replies")
+    public List<CommunityMyReplyDTO> myReplies(
+            @PathVariable("circleId") Long circleId,
+            @RequestParam(value = "boardId", required = false) Long boardId,
+            @RequestParam(value = "q", required = false) String keyword,
+            @RequestParam(value = "target", required = false, defaultValue = "ALL") String target,
+            @AuthenticationPrincipal AuthUserDTO auth) {
+        return postService.listMyCircleReplies(
+                auth.getUserId(),
+                circleId,
+                boardId,
+                keyword,
+                parseTarget(target));
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/boards/{boardId}/posts/{postId}")
     public PostResponseDTO read(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
@@ -97,5 +148,31 @@ public class CirclePostRestController {
             @PathVariable("postId") Long postId,
             @AuthenticationPrincipal AuthUserDTO auth) {
         postService.deleteCircleAsOwner(circleId, boardId, postId, auth);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/boards/{boardId}/posts/{postId}/activity-visibility")
+    public Long updateActivityVisibility(@PathVariable("circleId") Long circleId,
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("postId") Long postId,
+            @RequestBody @Valid PostVisibilityRequestDTO req,
+            @AuthenticationPrincipal AuthUserDTO auth) {
+        return postService.updateCircleActivityVisibility(
+                circleId,
+                boardId,
+                postId,
+                auth.getUserId(),
+                req.getActivityPublic());
+    }
+
+    private PostSearchTarget parseTarget(String target) {
+        if (target == null || target.isBlank()) {
+            return PostSearchTarget.ALL;
+        }
+        try {
+            return PostSearchTarget.valueOf(target.trim().toUpperCase());
+        } catch (IllegalArgumentException ignored) {
+            return PostSearchTarget.ALL;
+        }
     }
 }

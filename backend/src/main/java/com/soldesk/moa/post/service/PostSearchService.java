@@ -142,19 +142,23 @@ public class PostSearchService {
         int size = safeSize(request.getSize());
         PostSearchTarget target = request.getTarget() == null ? PostSearchTarget.ALL : request.getTarget();
         BoardType boardType = request.getBoardType();
+        Long boardId = request.getBoardId();
         Long circleId = request.getCircleId();
-        String filter = buildFilter(boardType, circleId, userId);
+        String filter = buildFilter(boardType, boardId, circleId, userId);
 
         PostSearchEngineType primaryEngine = resolvePrimaryEngine();
         if (primaryEngine == PostSearchEngineType.DB) {
-            return dbPostSearchExecutor.search(normalizedKeyword, target, boardType, circleId, page, size, filter);
+            return dbPostSearchExecutor.search(normalizedKeyword, target, boardType, boardId, circleId, page, size,
+                    filter);
         }
 
         try {
-            return meiliPostSearchExecutor.search(normalizedKeyword, target, boardType, circleId, page, size, filter);
+            return meiliPostSearchExecutor.search(normalizedKeyword, target, boardType, boardId, circleId, page, size,
+                    filter);
         } catch (RestClientException | IllegalStateException e) {
             log.warn("[#SEARCH] Meilisearch 실패로 DB fallback 검색을 수행합니다. index={}, message={}", INDEX_UID, e.getMessage());
-            return dbPostSearchExecutor.search(normalizedKeyword, target, boardType, circleId, page, size, filter);
+            return dbPostSearchExecutor.search(normalizedKeyword, target, boardType, boardId, circleId, page, size,
+                    filter);
         }
     }
 
@@ -179,11 +183,7 @@ public class PostSearchService {
         postSearchRepository.findById(postId).ifPresent(postSearchRepository::delete);
     }
 
-    private String buildFilter(BoardType boardType, Long circleId, Long userId) {
-        if (boardType == null) {
-            return "(boardType = 'FREE' OR boardType = 'NOTICE')";
-        }
-
+    private String buildFilter(BoardType boardType, Long boardId, Long circleId, Long userId) {
         if (boardType == BoardType.CIRCLE) {
             if (circleId == null) {
                 throw new InvalidRequestException("[#POST] CIRCLE 검색에는 circleId가 필요합니다.");
@@ -192,7 +192,18 @@ public class PostSearchService {
                 throw new InvalidRequestException("[#POST] CIRCLE 검색은 로그인이 필요합니다.");
             }
             circlePermissionService.requireActiveMember(circleId, userId);
+            if (boardId != null) {
+                return "boardType = 'CIRCLE' AND circleId = " + circleId + " AND boardId = " + boardId;
+            }
             return "boardType = 'CIRCLE' AND circleId = " + circleId;
+        }
+
+        if (boardId != null) {
+            return "boardId = " + boardId;
+        }
+
+        if (boardType == null) {
+            return "boardType != 'CIRCLE'";
         }
 
         return "boardType = '" + boardType.name() + "'";
@@ -296,7 +307,7 @@ public class PostSearchService {
         Long circleId = post.getBoardId().getCircleId() == null ? null : post.getBoardId().getCircleId().getCircleId();
         String title = defaultString(post.getTitle());
         String content = stripHtml(post.getContent());
-        String authorName = defaultString(post.getUserId().getName());
+        String authorName = defaultString(post.getUserId().getNickname());
 
         return PostSearchEntity.builder()
                 .postId(post.getPostId())

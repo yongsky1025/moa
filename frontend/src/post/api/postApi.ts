@@ -32,9 +32,20 @@ export const postApi = {
 
   getCommunityPosts: (board: "all" | "notice" | "free" = "all") =>
     api.get<PostResponse[]>("/api/posts/community", { params: { board } }),
+  getCommunityPostsByBoardId: (boardId: number) =>
+    api.get<PostResponse[]>("/api/posts/community", { params: { boardId } }),
+
+  getCommunityPostsPage: (params?: {
+    board?: "all" | "notice" | "free";
+    boardId?: number;
+    page?: number;
+    size?: number;
+  }) =>
+    api.get<SearchPage<PostResponse>>("/api/posts/community/page", { params }),
 
   getMyCommunityBookmarkedPosts: (params?: {
     board?: "all" | "notice" | "free";
+    boardId?: number;
     q?: string;
     target?: PostSearchTarget;
   }) =>
@@ -42,6 +53,7 @@ export const postApi = {
 
   getMyCommunityPosts: (params?: {
     board?: "all" | "notice" | "free";
+    boardId?: number;
     q?: string;
     target?: PostSearchTarget;
   }) =>
@@ -49,6 +61,7 @@ export const postApi = {
 
   getMyCommunityRepliedPosts: (params?: {
     board?: "all" | "notice" | "free";
+    boardId?: number;
     q?: string;
     target?: PostSearchTarget;
   }) =>
@@ -56,9 +69,23 @@ export const postApi = {
 
   getCommunitySidebarPosts: (params?: {
     board?: "all" | "notice" | "free";
+    boardId?: number;
     sort?: "recent" | "views" | "replies";
     limit?: number;
   }) => api.get<CommunitySidebarPost[]>("/api/posts/community/sidebar", { params }),
+
+  getGlobalBoardPosts: (boardId: number) =>
+    api.get<PostResponse[]>(`/api/boards/global/${boardId}/posts`),
+  getGlobalBoardPost: (boardId: number, postId: number) =>
+    api.get<PostResponse>(`/api/boards/global/${boardId}/posts/${postId}`),
+  createGlobalBoardPost: (boardId: number, data: PostRequest) =>
+    api.post<number>(`/api/boards/global/${boardId}/posts`, data),
+  updateGlobalBoardPost: (boardId: number, postId: number, data: PostRequest) =>
+    api.put<number>(`/api/boards/global/${boardId}/posts/${postId}`, data),
+  deleteGlobalBoardPost: (boardId: number, postId: number) =>
+    api.delete<void>(`/api/boards/global/${boardId}/posts/${postId}`),
+  toggleGlobalBoardPin: (boardId: number, postId: number) =>
+    api.post<boolean>(`/api/boards/global/${boardId}/posts/${postId}/pin`),
 
   searchPosts: (params: PostSearchRequest) =>
     api.get<SearchPage<PostSearchHit>>("/api/posts/search", { params }),

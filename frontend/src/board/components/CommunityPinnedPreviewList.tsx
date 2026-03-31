@@ -1,9 +1,15 @@
 import { Link } from "react-router-dom";
 import { Pin, Trash2 } from "lucide-react";
+import {
+  NOTICE_CATEGORY_BADGE_PALETTE,
+  NOTICE_CATEGORY_LABEL,
+  type NoticeCategory,
+} from "../../post/constants/noticeCategory";
 
 export interface PinnedPreviewItem {
   id: number;
   title: string;
+  noticeCategory?: NoticeCategory | null;
   authorName: string;
   createDateLabel: string;
   href: string;
@@ -59,7 +65,21 @@ export default function CommunityPinnedPreviewList({
                     <Pin size={14} strokeWidth={2} className="pin-icon pinned" />
                   </button>
                 )}
-                <p className="community-pinned-preview-title">{item.title}</p>
+                <div className="community-pinned-preview-title-row">
+                  <p className="community-pinned-preview-title">{item.title}</p>
+                  {item.noticeCategory && (
+                    <span
+                      className="community-pinned-preview-category"
+                      style={{
+                        borderColor: NOTICE_CATEGORY_BADGE_PALETTE[item.noticeCategory].borderColor,
+                        backgroundColor: NOTICE_CATEGORY_BADGE_PALETTE[item.noticeCategory].backgroundColor,
+                        color: NOTICE_CATEGORY_BADGE_PALETTE[item.noticeCategory].color,
+                      }}
+                    >
+                      {NOTICE_CATEGORY_LABEL[item.noticeCategory] ?? "공지"}
+                    </span>
+                  )}
+                </div>
                 <time className="community-pinned-preview-date">{item.createDateLabel}</time>
                 <span className="community-pinned-preview-author">{item.authorName}</span>
               </div>
@@ -78,7 +98,21 @@ export default function CommunityPinnedPreviewList({
                     className={`pin-icon ${item.status === "deleted" ? "" : "pinned"}`}
                   />
                 </span>
-                <p className="community-pinned-preview-title">{item.title}</p>
+                <div className="community-pinned-preview-title-row">
+                  <p className="community-pinned-preview-title">{item.title}</p>
+                  {item.noticeCategory && (
+                    <span
+                      className="community-pinned-preview-category"
+                      style={{
+                        borderColor: NOTICE_CATEGORY_BADGE_PALETTE[item.noticeCategory].borderColor,
+                        backgroundColor: NOTICE_CATEGORY_BADGE_PALETTE[item.noticeCategory].backgroundColor,
+                        color: NOTICE_CATEGORY_BADGE_PALETTE[item.noticeCategory].color,
+                      }}
+                    >
+                      {NOTICE_CATEGORY_LABEL[item.noticeCategory] ?? "공지"}
+                    </span>
+                  )}
+                </div>
                 <time className="community-pinned-preview-date">{item.createDateLabel}</time>
                 <span className="community-pinned-preview-author">{item.authorName}</span>
               </Link>
