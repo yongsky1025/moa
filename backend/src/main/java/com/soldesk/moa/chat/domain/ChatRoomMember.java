@@ -29,6 +29,10 @@ public class ChatRoomMember {
     @Column(name = "last_read_at", nullable = false)
     private LocalDateTime lastReadAt;
 
+    /** 즐겨찾기(고정) 여부 */
+    @Column(name = "is_pinned", nullable = false)
+    private boolean isPinned = false;
+
     protected ChatRoomMember() {}
 
     public static ChatRoomMember join(Long roomId, Long userId) {
@@ -44,9 +48,12 @@ public class ChatRoomMember {
         this.lastReadAt = LocalDateTime.now();
     }
 
+    public void togglePin() { this.isPinned = !this.isPinned; }
+
     public Long getId() { return id; }
     public Long getRoomId() { return roomId; }
     public Long getUserId() { return userId; }
     public LocalDateTime getJoinedAt() { return joinedAt; }
     public LocalDateTime getLastReadAt() { return lastReadAt; }
+    public boolean isPinned() { return isPinned; }
 }

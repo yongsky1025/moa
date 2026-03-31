@@ -56,6 +56,10 @@ export const chatApi = {
   toggleReaction: (messageId: number, emoji: string) =>
     api.post<import('../chat/types/chat').ChatMessage>(`/api/chat/messages/${messageId}/reactions`, null, { params: { emoji } }).then(r => r.data),
 
+  // 즐겨찾기(고정) 토글
+  togglePin: (roomId: number) =>
+    api.post<{ isPinned: boolean }>(`/api/chat/rooms/${roomId}/pin`).then(r => r.data.isPinned),
+
   // 공지 설정
   setNotice: (roomId: number, messageId: number) =>
     api.post(`/api/chat/rooms/${roomId}/notice`, { messageId }),

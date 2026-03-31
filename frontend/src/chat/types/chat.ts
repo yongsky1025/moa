@@ -12,6 +12,7 @@ export interface ChatRoomSummary {
   name: string | null;
   noticeMessageId: number | null;
   noticeContent: string | null;
+  isPinned: boolean;
 }
 
 export interface ChatMessage {

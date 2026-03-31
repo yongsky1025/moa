@@ -288,6 +288,22 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, searchQuery]);
 
+  const handleTogglePin = async (roomId: number) => {
+    try {
+      const isPinned = await chatApi.togglePin(roomId);
+      setRooms(prev => {
+        const updated = prev.map(r => r.roomId === roomId ? { ...r, isPinned } : r);
+        return [...updated].sort((a, b) => {
+          if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+          const ta = a.lastMessageAt ?? '';
+          const tb = b.lastMessageAt ?? '';
+          return tb.localeCompare(ta);
+        });
+      });
+    } catch { /* 무시 */ }
+    setRoomCtxMenu(null);
+  };
+
   const toggleMute = (roomId: number) => {
     setMutedRooms((prev) => {
       const next = new Set(prev);
@@ -709,6 +725,12 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
           )}
           <button
             style={{ display: "block", width: "100%", padding: "10px 14px", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: 13, color: "#262626" }}
+            onClick={() => handleTogglePin(roomCtxMenu.room.roomId)}
+          >
+            {roomCtxMenu.room.isPinned ? '⭐ 즐겨찾기 해제' : '☆ 즐겨찾기 추가'}
+          </button>
+          <button
+            style={{ display: "block", width: "100%", padding: "10px 14px", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: 13, color: "#262626" }}
             onClick={() => { toggleMute(roomCtxMenu.room.roomId); setRoomCtxMenu(null); }}
           >
             {mutedRooms.has(roomCtxMenu.room.roomId) ? '🔔 알림 켜기' : '🔕 알림 끄기'}
@@ -877,7 +899,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                     <div style={s.roomAvatar}>{r.roomType === 'GROUP' ? '👥' : r.roomType === 'SCHEDULE' ? '📅' : '👤'}</div>
                     <div style={s.roomInfo}>
                       <div style={s.roomRow}>
-                        <span style={s.roomName}>{roomLabel(r)}</span>
+                        <span style={s.roomName}>{r.isPinned && <span style={{ color: '#F4A261', marginRight: 3, fontSize: 11 }}>⭐</span>}{roomLabel(r)}</span>
                         <span style={s.roomTime}>{formatTime(r.lastMessageAt)}</span>
                       </div>
                       <div style={s.roomRow}>

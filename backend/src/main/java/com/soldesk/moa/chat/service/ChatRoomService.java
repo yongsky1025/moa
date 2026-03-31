@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -173,8 +174,12 @@ public class ChatRoomService {
                             otherNickname,
                             room.getName(),
                             room.getNoticeMessageId(),
-                            room.getNoticeContent());
+                            room.getNoticeContent(),
+                            member.isPinned());
                 })
+                .sorted(Comparator.comparing(ChatRoomSummaryResponse::isPinned).reversed()
+                        .thenComparing(Comparator.comparing(ChatRoomSummaryResponse::lastMessageAt,
+                                Comparator.nullsLast(Comparator.reverseOrder()))))
                 .toList();
     }
 
@@ -280,6 +285,16 @@ public class ChatRoomService {
             memberRepo.deleteByRoomId(room.getId());
             roomRepo.delete(room);
         });
+    }
+
+    /**
+     * 채팅방 즐겨찾기(고정) 토글. 사용자별 개인 설정.
+     */
+    @Transactional
+    public boolean togglePin(Long roomId, Long userId) {
+        ChatRoomMember member = getMemberOrThrow(roomId, userId);
+        member.togglePin();
+        return member.isPinned();
     }
 
     /**

@@ -27,5 +27,6 @@ public record ChatRoomSummaryResponse(
         String otherUserNickname,
         String name,
         Long noticeMessageId,
-        String noticeContent
+        String noticeContent,
+        boolean isPinned
 ) {}

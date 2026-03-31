@@ -183,6 +183,16 @@ public class ChatRestController {
         return ResponseEntity.ok(messageService.toggleReaction(messageId, auth.getUserId(), emoji));
     }
 
+    /** 채팅방 즐겨찾기(고정) 토글 */
+    @PostMapping("/rooms/{roomId}/pin")
+    public ResponseEntity<Map<String, Boolean>> togglePin(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        boolean isPinned = roomService.togglePin(roomId, auth.getUserId());
+        return ResponseEntity.ok(Map.of("isPinned", isPinned));
+    }
+
     /** 채팅방 공지 설정 */
     @PostMapping("/rooms/{roomId}/notice")
     public ResponseEntity<Void> setNotice(
