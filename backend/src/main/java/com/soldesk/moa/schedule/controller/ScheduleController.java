@@ -97,14 +97,50 @@ public class ScheduleController {
         return ResponseEntity.ok(response);
     }
 
-    // 일정 참여
+    // 일정 참여 (result: JOIN = 즉시 참여, PENDING = 생성자 승인 대기)
     @PostMapping("/{scheduleId}/join")
-    public ResponseEntity<Void> joinSchedule(
+    public ResponseEntity<Map<String, String>> joinSchedule(
             @PathVariable Long scheduleId,
             @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
-        scheduleService.joinSchedule(scheduleId, authUserDTO.getUserId());
+        com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus result =
+                scheduleService.joinSchedule(scheduleId, authUserDTO.getUserId());
+        return ResponseEntity.ok(Map.of("result", result.name()));
+    }
+
+    // 승인 대기 멤버 목록 조회 (생성자 또는 리더만)
+    @GetMapping("/{scheduleId}/members/pending")
+    public ResponseEntity<List<ScheduleMemberResponseDTO>> getPendingMembers(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(
+                scheduleService.getPendingMembers(circleId, scheduleId, authUserDTO.getUserId()));
+    }
+
+    // 승인 대기 멤버 승인 (생성자 또는 리더만)
+    @PostMapping("/{scheduleId}/members/{scheduleMemberId}/approve")
+    public ResponseEntity<Void> approveMember(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @PathVariable Long scheduleMemberId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        scheduleService.approveMember(circleId, scheduleId, scheduleMemberId, authUserDTO.getUserId());
         return ResponseEntity.ok().build();
+    }
+
+    // 승인 대기 멤버 거절 (생성자 또는 리더만)
+    @DeleteMapping("/{scheduleId}/members/{scheduleMemberId}/reject")
+    public ResponseEntity<Void> rejectMember(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @PathVariable Long scheduleMemberId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        scheduleService.rejectMember(circleId, scheduleId, scheduleMemberId, authUserDTO.getUserId());
+        return ResponseEntity.noContent().build();
     }
 
     // 일정 참여 취소

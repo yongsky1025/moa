@@ -32,6 +32,9 @@ export interface ScheduleResponse {
   latitude?: number;
   longitude?: number;
   joined?: boolean;
+  isPending?: boolean;
+  isCreator?: boolean;
+  pendingCount?: number;
   tags?: ScheduleTagItem[];
   chatRoomId?: number;
   reservation?: ScheduleReservation | null;
@@ -52,9 +55,11 @@ export interface ScheduleCreateRequest {
 export type ScheduleUpdateRequest = ScheduleCreateRequest;
 
 export interface ScheduleMember {
+  scheduleMemberId: number;
   userId: number;
   nickname: string;
   role: 'LEADER' | 'MEMBER';
+  status: 'JOIN' | 'PENDING' | 'CANCELLED';
 }
 
 export interface ScheduleReview {

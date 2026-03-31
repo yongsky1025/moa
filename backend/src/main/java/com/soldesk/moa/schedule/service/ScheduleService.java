@@ -114,9 +114,9 @@ public class ScheduleService {
                 return new ScheduleResponseDTO(saved, false, savedTags, chatRoomId);
         }
 
-        // 일정 참여
+        // 일정 참여 (반환값: JOIN = 즉시 참여, PENDING = 승인 대기)
         @Transactional
-        public void joinSchedule(
+        public ScheduleMemberStatus joinSchedule(
                         Long scheduleId,
                         Long userId) {
 
@@ -138,18 +138,28 @@ public class ScheduleService {
                         throw new IllegalStateException("일정 시작 24시간 전까지만 참여할 수 있습니다.");
                 }
 
-                // 이미 참여했는지 확인
-                if (scheduleMemberRepository
-                                .existsByScheduleAndCircleMember(schedule, member)) {
-                        throw new IllegalStateException("이미 일정에 참여 중입니다.");
+                // 기존 참여 기록 조회 (JOIN / PENDING / CANCELLED)
+                java.util.Optional<ScheduleMember> existingRecord =
+                                scheduleMemberRepository.findByScheduleAndCircleMember(schedule, member);
+
+                if (existingRecord.isPresent()) {
+                        ScheduleMemberStatus existingStatus = existingRecord.get().getStatus();
+                        if (existingStatus == ScheduleMemberStatus.JOIN) {
+                                throw new IllegalStateException("이미 일정에 참여 중입니다.");
+                        }
+                        if (existingStatus == ScheduleMemberStatus.PENDING) {
+                                throw new IllegalStateException("이미 승인 대기 중입니다.");
+                        }
+                        // CANCELLED → 재참여 시 생성자 승인 필요
+                        existingRecord.get().requestApproval();
+                        return ScheduleMemberStatus.PENDING;
                 }
 
-                // 정원 초과 검증
+                // 첫 참여: 정원 초과 검증 후 JOIN
                 if (schedule.getCurrentMember() >= schedule.getMaxMember()) {
                         throw new IllegalStateException("정원이 초과되었습니다.");
                 }
 
-                // ScheduleMember 생성
                 ScheduleMember scheduleMember = ScheduleMember.builder()
                                 .schedule(schedule)
                                 .circleMember(member)
@@ -157,9 +167,8 @@ public class ScheduleService {
                                 .build();
 
                 scheduleMemberRepository.save(scheduleMember);
-
-                // 현재 인원 증가
                 schedule.increaseCurrentMember();
+                return ScheduleMemberStatus.JOIN;
         }
 
         // 일정 삭제 (일정 생성자 혹은 서클 리더면 삭제 가능)
@@ -267,7 +276,22 @@ public class ScheduleService {
                         throw new IllegalArgumentException("해당 서클의 일정이 아닙니다.");
                 }
 
-                boolean joined = scheduleMemberRepository.existsByScheduleAndCircleMember(schedule, circleMember);
+                java.util.Optional<ScheduleMember> currentMemberRecord =
+                                scheduleMemberRepository.findByScheduleAndCircleMember(schedule, circleMember);
+
+                boolean joined = currentMemberRecord
+                                .map(sm -> sm.getStatus() == ScheduleMemberStatus.JOIN)
+                                .orElse(false);
+                boolean isPending = currentMemberRecord
+                                .map(sm -> sm.getStatus() == ScheduleMemberStatus.PENDING)
+                                .orElse(false);
+
+                boolean isCreator = schedule.getCreator().getId().equals(circleMember.getId());
+
+                int pendingCount = isCreator
+                                ? (int) scheduleMemberRepository.countByScheduleAndStatus(schedule, ScheduleMemberStatus.PENDING)
+                                : 0;
+
                 List<TagResponseDTO> tags = scheduleTagRepository.findAllBySchedule(schedule).stream()
                                 .map(st -> TagResponseDTO.builder()
                                                 .id(st.getTag().getId())
@@ -282,7 +306,7 @@ public class ScheduleService {
                                 .map(ScheduleReservationDTO::new)
                                 .orElse(null);
 
-                return new ScheduleResponseDTO(schedule, joined, tags, reservationDTO);
+                return new ScheduleResponseDTO(schedule, joined, isPending, isCreator, pendingCount, tags, reservationDTO);
         }
 
         // 일정 수정 (생성자 또는 서클 리더)
@@ -343,7 +367,7 @@ public class ScheduleService {
                 return new ScheduleResponseDTO(savedUpdated, false, updatedTags);
         }
 
-        // 일정 참여자 목록 조회 (서클 ACTIVE 멤버만)
+        // 일정 참여자 목록 조회 (JOIN 상태만, 서클 ACTIVE 멤버만)
         @Transactional(readOnly = true)
         public List<ScheduleMemberResponseDTO> getScheduleMembers(Long circleId, Long scheduleId, Long userId) {
 
@@ -361,10 +385,107 @@ public class ScheduleService {
                         throw new IllegalArgumentException("해당 서클의 일정이 아닙니다.");
                 }
 
-                return scheduleMemberRepository.findBySchedule(schedule)
+                return scheduleMemberRepository.findByScheduleAndStatus(schedule, ScheduleMemberStatus.JOIN)
                                 .stream()
                                 .map(ScheduleMemberResponseDTO::new)
                                 .collect(Collectors.toList());
+        }
+
+        // 승인 대기 멤버 목록 조회 (일정 생성자 또는 서클 리더만)
+        @Transactional(readOnly = true)
+        public List<ScheduleMemberResponseDTO> getPendingMembers(Long circleId, Long scheduleId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Schedule schedule = scheduleRepository.findById(scheduleId)
+                                .orElseThrow(() -> new IllegalArgumentException("일정이 존재하지 않습니다."));
+
+                boolean isCreator = schedule.getCreator().getUser().getUserId().equals(userId);
+                boolean isLeader = circleMemberRepository
+                                .findByCircleAndUserAndRole(circle,
+                                                usersRepository.findById(userId)
+                                                                .orElseThrow(() -> new IllegalArgumentException("사용자 없음")),
+                                                CircleRole.LEADER)
+                                .isPresent();
+
+                if (!isCreator && !isLeader) {
+                        throw new AccessDeniedException("일정 생성자 또는 서클 리더만 조회할 수 있습니다.");
+                }
+
+                return scheduleMemberRepository.findByScheduleAndStatus(schedule, ScheduleMemberStatus.PENDING)
+                                .stream()
+                                .map(ScheduleMemberResponseDTO::new)
+                                .collect(Collectors.toList());
+        }
+
+        // 승인 대기 멤버 승인 (일정 생성자 또는 서클 리더만)
+        @Transactional
+        public void approveMember(Long circleId, Long scheduleId, Long scheduleMemberId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Schedule schedule = scheduleRepository.findById(scheduleId)
+                                .orElseThrow(() -> new IllegalArgumentException("일정이 존재하지 않습니다."));
+
+                boolean isCreator = schedule.getCreator().getUser().getUserId().equals(userId);
+                boolean isLeader = circleMemberRepository
+                                .findByCircleAndUserAndRole(circle,
+                                                usersRepository.findById(userId)
+                                                                .orElseThrow(() -> new IllegalArgumentException("사용자 없음")),
+                                                CircleRole.LEADER)
+                                .isPresent();
+
+                if (!isCreator && !isLeader) {
+                        throw new AccessDeniedException("일정 생성자 또는 서클 리더만 승인할 수 있습니다.");
+                }
+
+                ScheduleMember sm = scheduleMemberRepository.findById(scheduleMemberId)
+                                .orElseThrow(() -> new IllegalArgumentException("참여 요청이 존재하지 않습니다."));
+
+                if (sm.getStatus() != ScheduleMemberStatus.PENDING) {
+                        throw new IllegalStateException("승인 대기 중인 멤버가 아닙니다.");
+                }
+
+                if (schedule.getCurrentMember() >= schedule.getMaxMember()) {
+                        throw new IllegalStateException("정원이 초과되어 승인할 수 없습니다.");
+                }
+
+                sm.approve();
+                schedule.increaseCurrentMember();
+        }
+
+        // 승인 대기 멤버 거절 (일정 생성자 또는 서클 리더만)
+        @Transactional
+        public void rejectMember(Long circleId, Long scheduleId, Long scheduleMemberId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Schedule schedule = scheduleRepository.findById(scheduleId)
+                                .orElseThrow(() -> new IllegalArgumentException("일정이 존재하지 않습니다."));
+
+                boolean isCreator = schedule.getCreator().getUser().getUserId().equals(userId);
+                boolean isLeader = circleMemberRepository
+                                .findByCircleAndUserAndRole(circle,
+                                                usersRepository.findById(userId)
+                                                                .orElseThrow(() -> new IllegalArgumentException("사용자 없음")),
+                                                CircleRole.LEADER)
+                                .isPresent();
+
+                if (!isCreator && !isLeader) {
+                        throw new AccessDeniedException("일정 생성자 또는 서클 리더만 거절할 수 있습니다.");
+                }
+
+                ScheduleMember sm = scheduleMemberRepository.findById(scheduleMemberId)
+                                .orElseThrow(() -> new IllegalArgumentException("참여 요청이 존재하지 않습니다."));
+
+                if (sm.getStatus() != ScheduleMemberStatus.PENDING) {
+                        throw new IllegalStateException("승인 대기 중인 멤버가 아닙니다.");
+                }
+
+                sm.cancel();
         }
 
         // 내가 참석한 일정 목록 (날짜 범위 필터 선택적)
@@ -444,12 +565,6 @@ public class ScheduleService {
                 Schedule schedule = scheduleRepository.findById(scheduleId)
                                 .orElseThrow(() -> new IllegalArgumentException("일정이 존재하지 않습니다."));
 
-                // 취소 가능 시간 검증 (일정 시작일 하루 전까지만)
-                LocalDateTime now = LocalDateTime.now();
-                if (now.isAfter(schedule.getStartAt().minusDays(1))) {
-                        throw new IllegalStateException("일정 시작 24시간 전까지만 취소할 수 있습니다.");
-                }
-
                 // 서클 ACTIVE 멤버인지 확인
                 CircleMember member = circleMemberRepository
                                 .findByCircleAndUser_UserIdAndStatus(
@@ -464,14 +579,21 @@ public class ScheduleService {
                                 .orElseThrow(() -> new IllegalStateException("참여하지 않은 일정입니다."));
 
                 // 생성자는 참여 취소 불가 (일정 삭제 사용)
-                if (schedule.getCreator().equals(member)) {
+                if (schedule.getCreator().getId().equals(member.getId())) {
                         throw new IllegalStateException("일정 생성자는 참여를 취소할 수 없습니다. 일정을 삭제해 주세요.");
                 }
 
-                // 참여 기록 삭제
-                scheduleMemberRepository.delete(scheduleMember);
-
-                // 현재 인원 감소
-                schedule.decreaseCurrentMember();
+                // JOIN 상태면 24h 체크 및 인원 감소, PENDING 상태면 바로 취소
+                if (scheduleMember.getStatus() == ScheduleMemberStatus.JOIN) {
+                        if (LocalDateTime.now().isAfter(schedule.getStartAt().minusDays(1))) {
+                                throw new IllegalStateException("일정 시작 24시간 전까지만 취소할 수 있습니다.");
+                        }
+                        scheduleMember.cancel();
+                        schedule.decreaseCurrentMember();
+                } else if (scheduleMember.getStatus() == ScheduleMemberStatus.PENDING) {
+                        scheduleMember.cancel();
+                } else {
+                        throw new IllegalStateException("참여 중인 일정이 아닙니다.");
+                }
         }
 }

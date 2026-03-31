@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, Users, MapPin, Star, Trash2, Building2, ChevronRight } from 'lucide-react';
+import { Clock, Users, MapPin, Star, Trash2, Building2, ChevronRight, UserCheck, UserX } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
@@ -44,6 +44,7 @@ export default function ScheduleDetailPage() {
 
   const [members, setMembers] = useState<ScheduleMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
+  const [pendingMembers, setPendingMembers] = useState<ScheduleMember[]>([]);
 
   const currentUser = useAuthStore(s => s.user);
   const [reviews, setReviews] = useState<ScheduleReview[]>([]);
@@ -70,6 +71,12 @@ export default function ScheduleDetailPage() {
       .finally(() => setMembersLoading(false));
   };
 
+  const fetchPendingMembers = () => {
+    scheduleApi.getPendingMembers(cid, sid)
+      .then(res => setPendingMembers(res.data))
+      .catch(() => {});
+  };
+
   const fetchReviews = () => {
     scheduleApi.getReviews(cid, sid)
       .then(res => setReviews(res.data))
@@ -93,7 +100,10 @@ export default function ScheduleDetailPage() {
       return;
     }
     scheduleApi.getSchedule(cid, sid)
-      .then(res => setSchedule(res.data))
+      .then(res => {
+        setSchedule(res.data);
+        if (res.data.isCreator) fetchPendingMembers();
+      })
       .catch(e => setMsg(`오류: ${getErrorMessage(e)}`))
       .finally(() => setLoading(false));
 
@@ -123,7 +133,10 @@ export default function ScheduleDetailPage() {
     try {
       await fn();
       setMsg(successMsg);
-      scheduleApi.getSchedule(cid, sid).then(res => setSchedule(res.data));
+      scheduleApi.getSchedule(cid, sid).then(res => {
+        setSchedule(res.data);
+        if (res.data.isCreator) fetchPendingMembers();
+      });
       fetchMembers();
     } catch (e) {
       setMsg(`오류: ${getErrorMessage(e)}`);
@@ -131,7 +144,26 @@ export default function ScheduleDetailPage() {
   };
 
   const handleJoin = () =>
-    action(() => scheduleApi.joinSchedule(cid, sid), '일정에 참여했습니다.');
+    openConfirm(
+      '일정 참여',
+      '이 일정에 참여하시겠습니까?',
+      async () => {
+        try {
+          const res = await scheduleApi.joinSchedule(cid, sid);
+          if (res.data.result === 'PENDING') {
+            setMsg('참여 신청이 완료됐습니다. 일정 생성자의 승인 후 참여됩니다.');
+          } else {
+            setMsg('일정에 참여했습니다.');
+          }
+          scheduleApi.getSchedule(cid, sid).then(r => setSchedule(r.data));
+          fetchMembers();
+        } catch (e) {
+          setMsg(`오류: ${getErrorMessage(e)}`);
+        }
+      },
+      'green',
+      '참여하기'
+    );
 
   const handleCancel = () =>
     openConfirm('참여 취소', '일정 참여를 취소하시겠습니까?', () =>
@@ -165,6 +197,43 @@ export default function ScheduleDetailPage() {
       setReviewSubmitting(false);
     }
   };
+
+  const handleApprove = (scheduleMemberId: number, nickname: string) =>
+    openConfirm(
+      '참여 승인',
+      `${nickname}님의 참여를 승인하시겠습니까?`,
+      async () => {
+        try {
+          await scheduleApi.approveMember(cid, sid, scheduleMemberId);
+          setMsg(`${nickname}님의 참여가 승인됐습니다.`);
+          scheduleApi.getSchedule(cid, sid).then(r => setSchedule(r.data));
+          fetchMembers();
+          fetchPendingMembers();
+        } catch (e) {
+          setMsg(`오류: ${getErrorMessage(e)}`);
+        }
+      },
+      'green',
+      '승인'
+    );
+
+  const handleReject = (scheduleMemberId: number, nickname: string) =>
+    openConfirm(
+      '참여 거절',
+      `${nickname}님의 참여를 거절하시겠습니까?`,
+      async () => {
+        try {
+          await scheduleApi.rejectMember(cid, sid, scheduleMemberId);
+          setMsg(`${nickname}님의 참여 신청을 거절했습니다.`);
+          fetchPendingMembers();
+          scheduleApi.getSchedule(cid, sid).then(r => setSchedule(r.data));
+        } catch (e) {
+          setMsg(`오류: ${getErrorMessage(e)}`);
+        }
+      },
+      'red',
+      '거절'
+    );
 
   const handleReviewDelete = (reviewId: number) =>
     openConfirm('후기 삭제', '후기를 삭제하시겠습니까?', async () => {
@@ -278,7 +347,7 @@ export default function ScheduleDetailPage() {
 
             {/* 액션 버튼 */}
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {isUpcoming && !schedule.joined && (
+              {isUpcoming && !schedule.joined && !schedule.isPending && !schedule.isCreator && (
                 <button
                   onClick={handleJoin}
                   style={{ padding: '10px 20px', borderRadius: 8, border: 'none', backgroundColor: '#111', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
@@ -286,12 +355,22 @@ export default function ScheduleDetailPage() {
                   참여하기
                 </button>
               )}
-              {isUpcoming && schedule.joined && (
+              {isUpcoming && schedule.isPending && (
+                <span style={{
+                  padding: '10px 16px', borderRadius: 8, border: '1px solid #fde68a',
+                  backgroundColor: '#fef9c3', color: '#92400e', fontSize: 13, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}>
+                  <Clock size={14} />
+                  승인 대기 중
+                </span>
+              )}
+              {isUpcoming && (schedule.joined || schedule.isPending) && !schedule.isCreator && (
                 <button
                   onClick={handleCancel}
                   style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #fca5a5', backgroundColor: 'white', color: '#dc2626', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                 >
-                  참여 취소
+                  {schedule.isPending ? '신청 취소' : '참여 취소'}
                 </button>
               )}
               <button
@@ -379,6 +458,75 @@ export default function ScheduleDetailPage() {
             <p style={{ marginTop: 10, fontSize: 12, color: '#aaa' }}>
               클릭하면 내 예약 페이지로 이동합니다.
             </p>
+          </div>
+        )}
+
+        {/* 승인 대기 섹션 (생성자/리더만) */}
+        {schedule.isCreator && isUpcoming && (
+          <div style={{ marginTop: 20, backgroundColor: 'white', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <UserCheck size={16} style={{ color: '#d97706' }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>참여 승인 대기</span>
+              {(schedule.pendingCount ?? 0) > 0 && (
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                  backgroundColor: '#fef3c7', color: '#92400e',
+                }}>
+                  {schedule.pendingCount}명
+                </span>
+              )}
+            </div>
+            {pendingMembers.length === 0 ? (
+              <p style={{ color: '#aaa', fontSize: 13 }}>승인 대기 중인 참여 신청이 없습니다.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {pendingMembers.map(m => (
+                  <div key={m.scheduleMemberId} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 14px', borderRadius: 10,
+                    backgroundColor: '#fffbeb', border: '1px solid #fde68a',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: '50%', backgroundColor: '#fef3c7',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 700, color: '#92400e', flexShrink: 0,
+                      }}>
+                        {m.nickname.charAt(0)}
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{m.nickname}</span>
+                      <span style={{ fontSize: 11, color: '#6b7280' }}>재참여 신청</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => handleApprove(m.scheduleMemberId, m.nickname)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '6px 12px', borderRadius: 6, border: 'none',
+                          backgroundColor: '#16a34a', color: 'white',
+                          fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                        }}
+                      >
+                        <UserCheck size={13} />
+                        승인
+                      </button>
+                      <button
+                        onClick={() => handleReject(m.scheduleMemberId, m.nickname)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '6px 12px', borderRadius: 6,
+                          border: '1px solid #fca5a5', backgroundColor: 'white',
+                          color: '#dc2626', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                        }}
+                      >
+                        <UserX size={13} />
+                        거절
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

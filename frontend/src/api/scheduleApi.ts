@@ -45,9 +45,21 @@ export const scheduleApi = {
   deleteSchedule: (circleId: number, scheduleId: number) =>
     api.delete<void>(`/api/circles/${circleId}/schedules/${scheduleId}`),
 
-  // 일정 참여
+  // 일정 참여 (result: 'JOIN' | 'PENDING')
   joinSchedule: (circleId: number, scheduleId: number) =>
-    api.post<void>(`/api/circles/${circleId}/schedules/${scheduleId}/join`),
+    api.post<{ result: 'JOIN' | 'PENDING' }>(`/api/circles/${circleId}/schedules/${scheduleId}/join`),
+
+  // 승인 대기 멤버 목록 조회 (생성자 또는 리더만)
+  getPendingMembers: (circleId: number, scheduleId: number) =>
+    api.get<import('../schedule/types/schedule').ScheduleMember[]>(`/api/circles/${circleId}/schedules/${scheduleId}/members/pending`),
+
+  // 승인 대기 멤버 승인
+  approveMember: (circleId: number, scheduleId: number, scheduleMemberId: number) =>
+    api.post<void>(`/api/circles/${circleId}/schedules/${scheduleId}/members/${scheduleMemberId}/approve`),
+
+  // 승인 대기 멤버 거절
+  rejectMember: (circleId: number, scheduleId: number, scheduleMemberId: number) =>
+    api.delete<void>(`/api/circles/${circleId}/schedules/${scheduleId}/members/${scheduleMemberId}/reject`),
 
   // 일정 참여 취소
   cancelSchedule: (circleId: number, scheduleId: number) =>
