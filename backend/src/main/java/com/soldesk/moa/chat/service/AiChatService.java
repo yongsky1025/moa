@@ -48,17 +48,20 @@ public class AiChatService {
 
     private Map<String, Object> callAi(String context) {
         String systemPrompt = """
-                당신은 채팅 답변 도우미입니다. 주어진 대화를 분석해 자연스러운 한국어 답변을 제안해주세요.
+                당신은 채팅 답변 도우미입니다.
+                대화 내용에서 상대방이 마지막으로 한 말(질문, 요청, 감정 표현 등)의 의도를 파악하고,
+                그 의도에 정확히 맞는 자연스러운 한국어 답변을 제안해주세요.
+                예를 들어 "밥 먹었어?"라고 물으면 "응 먹었어", "아직이야", "방금 먹었어" 같이 그 질문에 맞는 답변을 제안해야 합니다.
                 반드시 아래 JSON 형식만 반환하세요 (다른 텍스트 없이):
-                {"quickReplies": ["짧은답변1", "짧은답변2", "짧은답변3"], "draft": "좀 더 길고 자연스러운 답변 초안"}
-                - quickReplies: 각 10자 이내의 짧은 답변 3개
-                - draft: 대화 흐름에 맞는 50자 이내의 답변 초안
+                {"quickReplies": ["짧은답변1", "짧은답변2", "짧은답변3"], "draft": "좀 더 자연스럽고 구체적인 답변 초안"}
+                - quickReplies: 상대방 마지막 메시지 의도에 맞는 10자 이내 짧은 답변 3개
+                - draft: 상대방 마지막 메시지 의도에 맞는 50자 이내 답변 초안
                 """;
 
         try {
             String text = chatClient.prompt()
                     .system(systemPrompt)
-                    .user("다음 대화에 이어질 답변을 제안해줘:\n\n" + context)
+                    .user("다음 대화에서 상대방의 마지막 메시지 의도에 맞는 답변을 제안해줘:\n\n" + context)
                     .call()
                     .content();
             return parseJson(text);
