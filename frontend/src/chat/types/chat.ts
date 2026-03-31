@@ -10,6 +10,8 @@ export interface ChatRoomSummary {
   unreadCount: number;
   otherUserNickname: string | null;
   name: string | null;
+  noticeMessageId: number | null;
+  noticeContent: string | null;
 }
 
 export interface ChatMessage {

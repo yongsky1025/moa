@@ -182,4 +182,26 @@ public class ChatRestController {
     ) {
         return ResponseEntity.ok(messageService.toggleReaction(messageId, auth.getUserId(), emoji));
     }
+
+    /** 채팅방 공지 설정 */
+    @PostMapping("/rooms/{roomId}/notice")
+    public ResponseEntity<Void> setNotice(
+            @PathVariable Long roomId,
+            @RequestBody Map<String, Object> body,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        Long messageId = Long.parseLong(body.get("messageId").toString());
+        roomService.setNotice(roomId, auth.getUserId(), messageId);
+        return ResponseEntity.ok().build();
+    }
+
+    /** 채팅방 공지 해제 */
+    @DeleteMapping("/rooms/{roomId}/notice")
+    public ResponseEntity<Void> clearNotice(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        roomService.clearNotice(roomId, auth.getUserId());
+        return ResponseEntity.noContent().build();
+    }
 }

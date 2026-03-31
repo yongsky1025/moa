@@ -32,7 +32,11 @@ import com.soldesk.moa.post.entity.Post;
 import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.reply.repository.ReplyRepository;
+import com.soldesk.moa.notification.domain.NotificationType;
+import com.soldesk.moa.notification.service.NotificationService;
 import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.users.entity.constant.UserRole;
+import com.soldesk.moa.users.repository.UsersRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -50,6 +54,8 @@ public class ReportService {
         private final CircleRepository circleRepository;
         private final ReportImageRepository reportImageRepository;
         private final ImageRepository imageRepository;
+        private final NotificationService notificationService;
+        private final UsersRepository usersRepository;
 
         // 신고접수
         public void submitReport(Long reporterId, ReportRequestDTO dto) {
@@ -76,6 +82,25 @@ public class ReportService {
                         imageRepository.updateStatusAndOwnerByUserAndPaths(reporterId, dto.imagePaths(),
                                         ImageStatus.TEMP, ImageStatus.USED, ImageDomain.REPORT, report.getId());
                 }
+
+                // 관리자 전체에게 실시간 알림 전송
+                String categoryLabel = categoryToLabel(dto.category());
+                String notifyMsg = reporter.getName() + "님이 [" + categoryLabel + "] 사유로 신고를 접수했습니다.";
+                usersRepository.findAllByUserRole(UserRole.ADMIN)
+                                .forEach(admin -> notificationService.sendAsync(
+                                                admin.getUserId(), NotificationType.REPORT_SUBMITTED, notifyMsg));
+        }
+
+        private String categoryToLabel(com.soldesk.moa.admin.report.entity.constant.ReportCategory category) {
+                return switch (category) {
+                        case SPAM -> "스팸/도배";
+                        case OBSCENE -> "음란/불건전";
+                        case ABUSE -> "욕설/혐오";
+                        case FRAUD -> "사기/허위정보";
+                        case PRIVACY -> "개인정보 침해";
+                        case INAPPROPRIATE -> "부적절한 콘텐츠";
+                        case OTHER -> "기타";
+                };
         }
 
         // 신고리스트
@@ -154,6 +179,11 @@ public class ReportService {
                                 case REPLY -> fetchReplyContent(targetId);
                                 case CIRCLE -> fetchCircleContent(targetId);
                                 case USER -> fetchUserContent(targetId);
+                                case CHAT_MESSAGE -> ReportTargetContentDTO.builder()
+                                                .targetType(targetType)
+                                                .targetId(targetId)
+                                                .deleted(false)
+                                                .build();
                         };
                 } catch (Exception e) {
                         log.warn("신고 대상 콘텐츠 조회 실패: type={}, id={}, error={}", targetType, targetId, e.getMessage());

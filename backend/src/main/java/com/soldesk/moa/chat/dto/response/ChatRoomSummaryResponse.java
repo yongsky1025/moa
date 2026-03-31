@@ -25,5 +25,7 @@ public record ChatRoomSummaryResponse(
         LocalDateTime lastMessageAt,
         long unreadCount,
         String otherUserNickname,
-        String name
+        String name,
+        Long noticeMessageId,
+        String noticeContent
 ) {}

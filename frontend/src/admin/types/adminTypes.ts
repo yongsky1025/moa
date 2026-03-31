@@ -7,7 +7,7 @@ export type CircleMemberRole = "LEADER" | "MEMBER";
 
 export type BoardType = "NOTICE" | "FREE" | "SUPPORT" | "CIRCLE";
 
-export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE";
+export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE" | "CHAT_MESSAGE";
 export type ReportStatus = "PENDING" | "REVIEWING" | "RESOLVED" | "REJECTED";
 export type SanctionState = "ACTIVE" | "LIFTED" | "CANCELLED";
 

@@ -3,9 +3,7 @@ import { createPortal } from "react-dom";
 import { chatApi } from "../../api/chatApi";
 import { circleApi } from "../../api/circleApi";
 import { notificationApi } from "../../api/notificationApi";
-import { reportApi, CATEGORY_LABELS } from "../../api/reportApi";
-import type { ReportCategory } from "../../api/reportApi";
-import { useWebSocket, type TypingEvent } from "../hooks/useWebSocket";
+import { useWebSocket, type TypingEvent, type NoticeEvent } from "../hooks/useWebSocket";
 import { useAuthStore } from "../../store/authStore";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
@@ -87,14 +85,13 @@ export default function ChatPopupPage() {
   const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
   const [editMsgContent, setEditMsgContent] = useState("");
   const [replyTo, setReplyTo] = useState<{ messageId: number; content: string; nickname: string } | null>(null);
-  const [reportModal, setReportModal] = useState<{ messageId: number } | null>(null);
-  const [reportCategory, setReportCategory] = useState<ReportCategory>('ABUSE');
-  const [reportDesc, setReportDesc] = useState("");
   const [roomCtxMenu, setRoomCtxMenu] = useState<{ x: number; y: number; room: ChatRoomSummary } | null>(null);
   const [renaming, setRenaming] = useState<{ roomId: number; value: string } | null>(null);
   const [profileModal, setProfileModal] = useState<{ nickname: string; senderId: number } | null>(null);
   const [profileChatError, setProfileChatError] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [noticeContent, setNoticeContent] = useState<string | null>(null);
+  const [noticeMessageId, setNoticeMessageId] = useState<number | null>(null);
   const [readStatus, setReadStatus] = useState<Record<number, string>>({});
   const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
   const typingTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
@@ -202,6 +199,8 @@ export default function ChatPopupPage() {
       setMembers([]);
     }
     setShowMembers(false);
+    setNoticeMessageId(activeRoom?.noticeMessageId ?? null);
+    setNoticeContent(activeRoom?.noticeContent ?? null);
   }, [activeRoom]);
 
   useEffect(() => {
@@ -341,6 +340,29 @@ export default function ChatPopupPage() {
     setMessages(prev => prev.map(m => m.messageId === msg.messageId ? { ...m, reactions: msg.reactions } : m));
   }, []);
 
+  const handleNoticeEvent = useCallback((event: NoticeEvent) => {
+    setNoticeMessageId(event.noticeMessageId);
+    setNoticeContent(event.noticeContent);
+  }, []);
+
+  const handleSetNotice = async (messageId: number, content: string) => {
+    if (!activeRoom) return;
+    try {
+      await chatApi.setNotice(activeRoom.roomId, messageId);
+      setNoticeMessageId(messageId);
+      setNoticeContent(content.length > 500 ? content.substring(0, 500) : content);
+    } catch { setErrorMsg('공지 등록 실패'); }
+  };
+
+  const handleClearNotice = async () => {
+    if (!activeRoom) return;
+    try {
+      await chatApi.clearNotice(activeRoom.roomId);
+      setNoticeMessageId(null);
+      setNoticeContent(null);
+    } catch { setErrorMsg('공지 해제 실패'); }
+  };
+
   const handleToggleReaction = async (messageId: number, emoji: string) => {
     setMenuId(null);
     try {
@@ -357,6 +379,7 @@ export default function ChatPopupPage() {
     onNotification: handleNotification,
     onTyping: handleTyping,
     onReaction: handleReaction,
+    onNotice: handleNoticeEvent,
   });
 
   const handleSend = () => {
@@ -442,17 +465,6 @@ export default function ChatPopupPage() {
     setMenuId(null);
   };
 
-  const handleReportSubmit = async () => {
-    if (!reportModal) return;
-    try {
-      await reportApi.submit({ targetType: 'CHAT_MESSAGE', targetId: reportModal.messageId, category: reportCategory, description: reportDesc });
-      setReportModal(null);
-      setReportDesc("");
-    } catch (e: any) {
-      alert(e?.response?.data?.message ?? '신고 접수 실패');
-    }
-  };
-
   const startEditMsg = (msg: { messageId: number; content: string }) => {
     setEditingMsgId(msg.messageId);
     setEditMsgContent(msg.content);
@@ -496,7 +508,6 @@ export default function ChatPopupPage() {
         found = updatedRooms.find((r) => r.roomId === roomId);
       }
       setRooms(updatedRooms);
-      console.log("[startDirectChat] found:", found);
       if (found) setActiveRoom(found);
     } catch (e) {
       console.error("[startDirectChat] 에러:", e);
@@ -822,6 +833,18 @@ export default function ChatPopupPage() {
               </div>
             )}
 
+            {/* 공지 배너 (카카오톡 스타일) */}
+            {noticeContent && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: '#FFF9C4', borderBottom: '2px solid #FFE500', flexShrink: 0 }}>
+                <span style={{ fontSize: 15, flexShrink: 0 }}>📢</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 10, color: '#856404', fontWeight: 700, marginBottom: 1 }}>공지</div>
+                  <div style={{ fontSize: 13, color: '#1A1A1A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{noticeContent}</div>
+                </div>
+                <button onClick={handleClearNotice} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B8A200', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1 }} title="공지 해제">✕</button>
+              </div>
+            )}
+
             {/* 메시지 영역 */}
             <div style={s.msgArea}>
               {loadingMsg
@@ -832,14 +855,6 @@ export default function ChatPopupPage() {
                     const mine = msg.senderId === userId;
                     return (
                       <div key={msg.messageId} style={{ ...s.msgRow, flexDirection: mine ? 'row-reverse' : 'row' }}>
-                        {!mine && (
-                          <div
-                            style={{ ...s.avatar, background: avatarColor(msg.senderId), cursor: 'pointer' }}
-                            onClick={(e) => { e.stopPropagation(); setProfileModal({ nickname: msg.senderNickname ?? '?', senderId: msg.senderId }); }}
-                          >
-                            {(msg.senderNickname ?? String(msg.senderId)).charAt(0)}
-                          </div>
-                        )}
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '65%', minWidth: 0 }}>
                           {!mine && <span style={s.senderName}>{msg.senderNickname ?? `사용자 #${msg.senderId}`}</span>}
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, flexDirection: mine ? 'row-reverse' : 'row' }}>
@@ -910,13 +925,18 @@ export default function ChatPopupPage() {
                                     {!isFileUrl(msg.content) && (
                                       <button style={s.menuItem} onClick={() => { navigator.clipboard.writeText(msg.content); setMenuId(null); }}>복사</button>
                                     )}
+                                    {!isFileUrl(msg.content) && (
+                                      noticeMessageId === msg.messageId
+                                        ? <button style={{ ...s.menuItem, color: '#856404' }} onClick={() => { setMenuId(null); handleClearNotice(); }}>공지 해제</button>
+                                        : <button style={{ ...s.menuItem, color: '#856404' }} onClick={() => { setMenuId(null); handleSetNotice(msg.messageId, msg.content); }}>공지</button>
+                                    )}
                                     {mine ? (
                                       <>
                                         <button style={s.menuItem} onClick={() => startEditMsg(msg)}>수정</button>
                                         <button style={{ ...s.menuItem, color: '#e53935' }} onClick={() => handleDeleteMsg(msg.messageId)}>삭제</button>
                                       </>
                                     ) : (
-                                      <button style={{ ...s.menuItem, color: '#e53935' }} onClick={() => { setMenuId(null); setReportCategory('ABUSE'); setReportDesc(''); setReportModal({ messageId: msg.messageId }); }}>신고</button>
+                                      <button style={{ ...s.menuItem, color: '#e53935' }} onClick={() => { setMenuId(null); window.open(`/report-form?targetType=CHAT_MESSAGE&targetId=${msg.messageId}`, '_blank', 'width=420,height=600,resizable=no'); }}>신고</button>
                                     )}
                                   </div>
                                 )}
@@ -947,7 +967,6 @@ export default function ChatPopupPage() {
               }
               {Object.entries(typingUsers).map(([uid, nickname]) => (
                 <div key={uid} style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                  <div style={{ ...s.avatar, background: avatarColor(Number(uid)) }}>{nickname.charAt(0)}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                     <span style={s.senderName}>{nickname}</span>
                     <div className="bubble-other" style={{ ...s.bubble, position: 'relative', background: '#fff', border: '1px solid #E5E7EB', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', padding: '12px 16px' }}>
@@ -1026,31 +1045,6 @@ export default function ChatPopupPage() {
       </div>
     </div>
 
-    {/* 신고 모달 */}
-    {reportModal && createPortal(
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }} onClick={() => setReportModal(null)}>
-        <div style={{ background: '#fff', borderRadius: 14, padding: '24px', width: 320, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
-          <div style={{ fontWeight: 700, fontSize: 16, color: '#1F2937', marginBottom: 16 }}>메시지 신고</div>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>신고 유형</div>
-            <select value={reportCategory} onChange={(e) => setReportCategory(e.target.value as ReportCategory)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none' }}>
-              {(Object.entries(CATEGORY_LABELS) as [ReportCategory, string][]).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>상세 내용 (선택)</div>
-            <textarea value={reportDesc} onChange={(e) => setReportDesc(e.target.value)} placeholder="신고 내용을 입력하세요" maxLength={500} rows={3} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
-          </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button onClick={() => setReportModal(null)} style={{ padding: '8px 16px', background: '#EAF4F0', color: '#1F2937', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>취소</button>
-            <button onClick={handleReportSubmit} style={{ padding: '8px 16px', background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>신고하기</button>
-          </div>
-        </div>
-      </div>,
-      document.body
-    )}
     </>
   );
 }

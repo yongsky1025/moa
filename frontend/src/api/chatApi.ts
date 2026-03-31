@@ -56,6 +56,14 @@ export const chatApi = {
   toggleReaction: (messageId: number, emoji: string) =>
     api.post<import('../chat/types/chat').ChatMessage>(`/api/chat/messages/${messageId}/reactions`, null, { params: { emoji } }).then(r => r.data),
 
+  // 공지 설정
+  setNotice: (roomId: number, messageId: number) =>
+    api.post(`/api/chat/rooms/${roomId}/notice`, { messageId }),
+
+  // 공지 해제
+  clearNotice: (roomId: number) =>
+    api.delete(`/api/chat/rooms/${roomId}/notice`),
+
   // 파일 업로드 (이미지: /api/images/upload-url, 일반파일: /api/files/upload-url)
   uploadFile: async (file: File) => {
     const isImage = file.type.startsWith("image/");

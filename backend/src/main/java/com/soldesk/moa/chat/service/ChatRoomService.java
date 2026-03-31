@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -170,7 +171,9 @@ public class ChatRoomService {
                             lastMsg.map(m -> m.getCreatedAt()).orElse(null),
                             unread,
                             otherNickname,
-                            room.getName());
+                            room.getName(),
+                            room.getNoticeMessageId(),
+                            room.getNoticeContent());
                 })
                 .toList();
     }
@@ -277,6 +280,42 @@ public class ChatRoomService {
             memberRepo.deleteByRoomId(room.getId());
             roomRepo.delete(room);
         });
+    }
+
+    /**
+     * 채팅방 공지 설정. 멤버 누구나 가능. 기존 공지는 덮어씀.
+     */
+    @Transactional
+    public void setNotice(Long roomId, Long userId, Long messageId) {
+        assertMember(roomId, userId);
+        ChatRoom room = getRoomOrThrow(roomId);
+        com.soldesk.moa.chat.domain.ChatMessage message = messageRepo.findById(messageId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.INVALID_REQUEST, "메시지를 찾을 수 없습니다."));
+        if (!message.getRoomId().equals(roomId)) {
+            throw new ChatException(ChatErrorCode.INVALID_REQUEST, "해당 채팅방의 메시지가 아닙니다.");
+        }
+        if (message.isDeleted()) {
+            throw new ChatException(ChatErrorCode.INVALID_REQUEST, "삭제된 메시지는 공지로 설정할 수 없습니다.");
+        }
+        room.setNotice(messageId, message.getContent());
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("noticeMessageId", messageId);
+        payload.put("noticeContent", room.getNoticeContent());
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/notice", payload);
+    }
+
+    /**
+     * 채팅방 공지 해제. 멤버 누구나 가능.
+     */
+    @Transactional
+    public void clearNotice(Long roomId, Long userId) {
+        assertMember(roomId, userId);
+        ChatRoom room = getRoomOrThrow(roomId);
+        room.clearNotice();
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("noticeMessageId", null);
+        payload.put("noticeContent", null);
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/notice", payload);
     }
 
     // ─── private ──────────────────────────────────────────────

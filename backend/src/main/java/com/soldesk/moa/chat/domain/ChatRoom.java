@@ -74,4 +74,25 @@ public class ChatRoom {
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     public void updateName(String name) { this.name = name; }
+
+    /** 공지 메시지 ID (null이면 공지 없음) */
+    @Column(name = "notice_message_id")
+    private Long noticeMessageId;
+
+    /** 공지 메시지 내용 스냅샷 (최대 500자) */
+    @Column(name = "notice_content", length = 500)
+    private String noticeContent;
+
+    public Long getNoticeMessageId() { return noticeMessageId; }
+    public String getNoticeContent() { return noticeContent; }
+
+    public void setNotice(Long messageId, String content) {
+        this.noticeMessageId = messageId;
+        this.noticeContent = content != null && content.length() > 500 ? content.substring(0, 500) : content;
+    }
+
+    public void clearNotice() {
+        this.noticeMessageId = null;
+        this.noticeContent = null;
+    }
 }

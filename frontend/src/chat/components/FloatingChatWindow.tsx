@@ -3,11 +3,9 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { chatApi } from "../../api/chatApi";
 import { circleApi } from "../../api/circleApi";
-import { useWebSocket, type TypingEvent } from "../hooks/useWebSocket";
+import { useWebSocket, type TypingEvent, type NoticeEvent } from "../hooks/useWebSocket";
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
-import { reportApi, CATEGORY_LABELS } from "../../api/reportApi";
-import type { ReportCategory } from "../../api/reportApi";
 import EmojiPicker from "./EmojiPicker";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
@@ -110,12 +108,11 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [menuId, setMenuId] = useState<number | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
   const [editMsgContent, setEditMsgContent] = useState("");
-  const [reportModal, setReportModal] = useState<{ messageId: number } | null>(null);
-  const [reportCategory, setReportCategory] = useState<ReportCategory>('ABUSE');
-  const [reportDesc, setReportDesc] = useState("");
   const [replyTo, setReplyTo] = useState<{ messageId: number; content: string; nickname: string } | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [noticeContent, setNoticeContent] = useState<string | null>(null);
+  const [noticeMessageId, setNoticeMessageId] = useState<number | null>(null);
 
   // ChatPopupPage 동기화 기능
   const [members, setMembers] = useState<CircleMember[]>([]);
@@ -263,6 +260,8 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     }
     setShowMembers(false);
     setEditingRoomName(false);
+    setNoticeMessageId(room?.noticeMessageId ?? null);
+    setNoticeContent(room?.noticeContent ?? null);
   }, [activeRoomId]);
 
   useEffect(() => {
@@ -361,6 +360,29 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     setMessages(prev => prev.map(m => m.messageId === msg.messageId ? { ...m, reactions: msg.reactions } : m));
   }, []);
 
+  const handleNoticeEvent = useCallback((event: NoticeEvent) => {
+    setNoticeMessageId(event.noticeMessageId);
+    setNoticeContent(event.noticeContent);
+  }, []);
+
+  const handleSetNotice = async (messageId: number, content: string) => {
+    if (!activeRoomId) return;
+    try {
+      await chatApi.setNotice(activeRoomId, messageId);
+      setNoticeMessageId(messageId);
+      setNoticeContent(content.length > 500 ? content.substring(0, 500) : content);
+    } catch { setErrorMsg('공지 등록 실패'); }
+  };
+
+  const handleClearNotice = async () => {
+    if (!activeRoomId) return;
+    try {
+      await chatApi.clearNotice(activeRoomId);
+      setNoticeMessageId(null);
+      setNoticeContent(null);
+    } catch { setErrorMsg('공지 해제 실패'); }
+  };
+
   const handleToggleReaction = async (messageId: number, emoji: string) => {
     setMenuId(null);
     try {
@@ -378,6 +400,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     onSystemEvent: handleSystemEvent,
     onTyping: handleTyping,
     onReaction: handleReaction,
+    onNotice: handleNoticeEvent,
   });
 
   const navigate = useNavigate();
@@ -609,17 +632,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     setMenuId(null);
   };
 
-  const handleReportSubmit = async () => {
-    if (!reportModal) return;
-    try {
-      await reportApi.submit({ targetType: 'CHAT_MESSAGE', targetId: reportModal.messageId, category: reportCategory, description: reportDesc });
-      setReportModal(null);
-      setReportDesc("");
-    } catch (e: any) {
-      alert(e?.response?.data?.message ?? '신고 접수 실패');
-    }
-  };
-
   const startEditMsg = (msg: { messageId: number; content: string }) => {
     setEditingMsgId(msg.messageId);
     setEditMsgContent(msg.content);
@@ -744,30 +756,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
         document.body
       )}
 
-      {/* 신고 모달 */}
-      {reportModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }} onClick={() => setReportModal(null)}>
-          <div style={{ background: '#fff', borderRadius: 14, padding: '24px', width: 320, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#1F2937', marginBottom: 16 }}>메시지 신고</div>
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>신고 유형</div>
-              <select value={reportCategory} onChange={(e) => setReportCategory(e.target.value as ReportCategory)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none' }}>
-                {(Object.entries(CATEGORY_LABELS) as [ReportCategory, string][]).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>상세 내용 (선택)</div>
-              <textarea value={reportDesc} onChange={(e) => setReportDesc(e.target.value)} placeholder="신고 내용을 입력하세요" maxLength={500} rows={3} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setReportModal(null)} style={{ padding: '8px 16px', background: '#EAF4F0', color: '#1F2937', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>취소</button>
-              <button onClick={handleReportSubmit} style={{ padding: '8px 16px', background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>신고하기</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 드래그 중 오버레이 */}
       {isDragging && <div style={{ position: "fixed", inset: 0, zIndex: 9998, cursor: "grabbing" }} />}
@@ -974,6 +962,18 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                   </div>
                 )}
 
+                {/* 공지 배너 (카카오톡 스타일) */}
+                {noticeContent && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#FFF9C4', borderBottom: '2px solid #FFE500', flexShrink: 0, cursor: 'default' }}>
+                    <span style={{ fontSize: 15, flexShrink: 0 }}>📢</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, color: '#856404', fontWeight: 700, marginBottom: 1 }}>공지</div>
+                      <div style={{ fontSize: 12, color: '#1A1A1A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{noticeContent}</div>
+                    </div>
+                    <button onClick={handleClearNotice} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B8A200', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1 }} title="공지 해제">✕</button>
+                  </div>
+                )}
+
                 {/* 메시지 영역 */}
                 <div style={s.msgArea}>
                   {(searchQuery.trim()
@@ -992,14 +992,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                     const aColor = `hsl(${(msg.senderId * 47) % 360}, 55%, 55%)`;
                     return (
                       <div key={msg.messageId} style={{ ...s.msgRow, justifyContent: mine ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
-                        {!mine && (
-                          <div
-                            style={{ ...s.avatar, background: aColor, flexShrink: 0, cursor: 'pointer' }}
-                            onClick={(e) => { e.stopPropagation(); setProfileModal({ nickname: msg.senderNickname ?? '?', senderId: msg.senderId }); }}
-                          >
-                            {initial}
-                          </div>
-                        )}
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
                           {!mine && <span style={s.nick}>{msg.senderNickname}</span>}
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, flexDirection: mine ? 'row-reverse' : 'row' }}>
@@ -1061,13 +1053,18 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                                     {!isFileUrl(msg.content) && (
                                       <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { navigator.clipboard.writeText(msg.content); setMenuId(null); }}>복사</button>
                                     )}
+                                    {!isFileUrl(msg.content) && (
+                                      noticeMessageId === msg.messageId
+                                        ? <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#856404' }} onClick={() => { setMenuId(null); handleClearNotice(); }}>공지 해제</button>
+                                        : <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#856404' }} onClick={() => { setMenuId(null); handleSetNotice(msg.messageId, msg.content); }}>공지</button>
+                                    )}
                                     {mine ? (
                                       <>
                                         <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f0f0f0', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#262626' }} onClick={() => { setMenuId(null); startEditMsg(msg); }}>수정</button>
                                         <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); handleDeleteMsg(msg.messageId); }}>삭제</button>
                                       </>
                                     ) : (
-                                      <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); setReportCategory('ABUSE'); setReportDesc(''); setReportModal({ messageId: msg.messageId }); }}>신고</button>
+                                      <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); window.open(`/report-form?targetType=CHAT_MESSAGE&targetId=${msg.messageId}`, '_blank', 'width=420,height=600,resizable=no'); }}>신고</button>
                                     )}
                                   </div>
                                 )}
@@ -1098,7 +1095,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                   {/* 타이핑 인디케이터 */}
                   {Object.entries(typingUsers).map(([uid, nickname]) => (
                     <div key={uid} style={{ display: 'flex', alignItems: 'flex-end', gap: 6, justifyContent: 'flex-start' }}>
-                      <div style={{ ...s.avatar, background: `hsl(${(Number(uid) * 47) % 360}, 55%, 55%)`, flexShrink: 0 }}>{nickname.charAt(0)}</div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                         <span style={s.nick}>{nickname}</span>
                         <div style={{ ...s.bubble, background: '#fff', border: '1px solid #E5E7EB', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', padding: '12px 16px' }}>
