@@ -12,8 +12,10 @@ export default function Footer() {
         <div
           style={{
             display: "flex",
-            gap: 64,
-            flexWrap: "wrap",
+            gridTemplateColumns: "max-content max-content max-content",
+            columnGap: 40,
+            rowGap: 24,
+            alignItems: "start",
             marginBottom: 40,
           }}
         >
@@ -24,6 +26,7 @@ export default function Footer() {
                 fontWeight: 900,
                 color: "white",
                 letterSpacing: -0.5,
+                lineHeight: 1,
                 marginBottom: 10,
               }}
             >
@@ -48,12 +51,13 @@ export default function Footer() {
                 fontSize: 13,
                 fontWeight: 700,
                 color: "white",
+                lineHeight: 1,
                 marginBottom: 12,
               }}
             >
               서비스
             </div>
-            {["모임 찾기", "장소 추천", "커뮤니티", "에너지 테스트"].map((item) => (
+            {["에너지 테스트", "모임", "플레이스", "커뮤니티"].map((item) => (
               <a
                 key={item}
                 href="#"
@@ -75,6 +79,7 @@ export default function Footer() {
                 fontSize: 13,
                 fontWeight: 700,
                 color: "white",
+                lineHeight: 1,
                 marginBottom: 12,
               }}
             >

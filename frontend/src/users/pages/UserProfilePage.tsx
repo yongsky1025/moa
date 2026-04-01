@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { profileApi, energyProfileApi, type UserProfile, type EnergyProfileResponse } from "../../api/usersApi";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { useAuthStore } from "../../store/authStore";
 import { circleApi } from "../../api/circleApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
@@ -38,7 +39,7 @@ const CSS = `
   .mp-row-list:hover { background: rgba(95,143,123,0.05) !important; border-color: #BDD5CA !important; }
   .mp-row-list:hover svg:last-child { color: #777 !important; }
   .mp-ghost:hover { background: #EAF4F0 !important; }
-  .mp-edit-btn:hover { background: #EAF4F0 !important; border-color: #A9C8BB !important; }
+  .mp-edit-btn:hover { background: #4E7C69 !important; border-color: #4E7C69 !important; }
 `;
 
 export default function UserProfilePage() {
@@ -242,57 +243,98 @@ export default function UserProfilePage() {
         </ModalOverlay>
       )}
 
-      <div style={s.container}>
-        {/* 프로필 카드 */}
-        <div style={s.profileCard}>
-          <button className="mp-edit-btn" style={s.profileEditBtn} onClick={openModal}>
-            <PenLine size={13} color="#5F8F7B" />
-            수정
-          </button>
-          <div style={s.profileTop}>
-            {profile.profileImageUrl ? (
-              <img src={profile.profileImageUrl} alt="프로필" style={s.avatarImg} />
-            ) : (
-              <div style={{ ...s.avatar, background: avatarBg }}>{profile.nickname.charAt(0)}</div>
-            )}
-            <div style={s.nameBlock}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={s.name}>{profile.nickname}</span>
-                {energy && <span style={s.energyTag}>{energy.energyTypeName}</span>}
-              </div>
-              <div style={s.statusBlock}>
-                <p style={profile.statusMessage ? s.statusText : s.statusPlaceholder}>
-                  {profile.statusMessage || "아직 설정된 상태 메시지가 없어요"}
-                </p>
+      {/* 프로필 + 통계 히어로 영역 (풀 width) */}
+      <div style={s.profileStatsWrapper}>
+        <div style={s.profileStatsInner}>
+          {/* 프로필 카드 */}
+          <div style={s.profileCard}>
+            <button className="mp-edit-btn" style={s.profileEditBtn} onClick={openModal}>
+              <PenLine size={13} color="#fff" />
+              수정
+            </button>
+            <div style={s.profileTop}>
+              {profile.profileImageUrl ? (
+                <img src={profile.profileImageUrl} alt="프로필" style={s.avatarImg} />
+              ) : (
+                <div style={{ ...s.avatar, background: avatarBg }}>{profile.nickname.charAt(0)}</div>
+              )}
+              <div style={s.nameBlock}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={s.name}>{profile.nickname}</span>
+                  {energy && <span style={s.energyTag}>{energy.energyTypeName}</span>}
+                </div>
+                <div style={s.statusBlock}>
+                  <p style={profile.statusMessage ? s.statusText : s.statusPlaceholder}>
+                    {profile.statusMessage || "아직 설정된 상태 메시지가 없어요"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* 통계 */}
-        <div style={s.statsCard}>
-          <div style={s.statBox}>
-            <span style={s.statNum}>{circleCount ?? 0}</span>
-            <span style={s.statLabel}>가입 모임</span>
-          </div>
-          <div style={s.statDivider} />
-          <div style={s.statBox}>
-            <span style={s.statNum}>0</span>
-            <span style={s.statLabel}>참석 일정</span>
-          </div>
-          <div style={s.statDivider} />
-          <div style={s.statBox}>
-            <span style={s.statNum}>0</span>
-            <span style={s.statLabel}>찜한 모임</span>
+          {/* 구분선 */}
+          <div style={{ height: 1, background: "rgba(255,255,255,0.15)", margin: "0 20px" }} />
+
+          {/* 통계 */}
+          <div style={s.statsCard}>
+            <div style={s.statBox}>
+              <span style={s.statNum}>{circleCount ?? 0}</span>
+              <span style={s.statLabel}>가입 모임</span>
+            </div>
+            <div style={s.statDivider} />
+            <div style={s.statBox}>
+              <span style={s.statNum}>0</span>
+              <span style={s.statLabel}>참석 일정</span>
+            </div>
+            <div style={s.statDivider} />
+            <div style={s.statBox}>
+              <span style={s.statNum}>0</span>
+              <span style={s.statLabel}>찜한 모임</span>
+            </div>
           </div>
         </div>
+      </div>
 
+      <div style={s.container}>
         {/* 에너지 프로필 */}
-        <div style={s.sectionTitle}>에너지 프로필</div>
+        <div style={s.energySectionTitle}>에너지 프로필</div>
         <SectionCard>
-          <button className="mp-row mp-row-hero" style={s.row} onClick={() => navigate("/users/energy-test/result")}>
-            <Zap size={18} color="#5F8F7B" />
-            <span style={s.rowLabel}>{energy?.energyTypeName ?? "에너지 프로필 없음"}</span>
+          <button
+            className="mp-row mp-row-hero"
+            style={{ ...s.row, alignItems: "center", gap: 16 }}
+            onClick={() => navigate("/users/energy-test/result")}
+          >
+            {energy ? (
+              <>
+                <div style={{ width: 80, height: 80, flexShrink: 0 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart
+                      data={[
+                        { label: "사교", value: energy.socialLoad },
+                        { label: "움직임", value: energy.interactionMode },
+                        { label: "구조감", value: energy.structureLevel },
+                        { label: "몰입도", value: energy.activityIntensity },
+                        { label: "빈도", value: energy.commitmentLevel },
+                      ]}
+                      margin={{ top: 4, right: 4, bottom: 4, left: 4 }}
+                    >
+                      <PolarGrid stroke="#D1D5DB" />
+                      <PolarAngleAxis dataKey="label" tick={false} />
+                      <Radar dataKey="value" stroke="#5F8F7B" fill="#5F8F7B" fillOpacity={0.25} strokeWidth={1.5} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={{ fontSize: 16, fontWeight: 600, color: "#1F2937" }}>{energy.energyTypeName}</span>
+                  <span style={{ fontSize: 13, color: "#6B7280" }}>에너지 프로필 결과 보기</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <Zap size={18} color="#5F8F7B" />
+                <span style={s.rowLabel}>에너지 프로필 없음</span>
+              </>
+            )}
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
         </SectionCard>
@@ -498,27 +540,40 @@ const s: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
 
+  /* ── 프로필 + 통계 wrapper (풀 width 히어로) ── */
+  profileStatsWrapper: {
+    background: "rgba(95,143,123,0.12)",
+    borderRadius: 0,
+    border: "none",
+    minHeight: 190,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "32px 0 28px",
+  },
+  profileStatsInner: {
+    width: "100%",
+    maxWidth: 720,
+    padding: "0 32px",
+  },
+
   /* ── 프로필 카드 ── */
   profileCard: {
     position: "relative",
-    background: "#fff",
-    border: "1px solid #E5E7EB",
-    borderRadius: 20,
-    padding: "18px 22px",
-    marginBottom: 16,
+    padding: "0 0 16px",
   },
   profileEditBtn: {
     position: "absolute",
-    top: 18,
-    right: 22,
+    top: 0,
+    right: 0,
     display: "flex",
     alignItems: "center",
     gap: 5,
     padding: "5px 12px",
-    border: "1px solid #E5E7EB",
+    border: "1px solid rgba(255,255,255,0.25)",
     borderRadius: 8,
-    background: "transparent",
-    color: "#5F8F7B",
+    background: "#5F8F7B",
+    color: "#fff",
     fontSize: 12,
     fontWeight: 600,
     cursor: "pointer",
@@ -535,6 +590,7 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     color: "#fff",
     fontWeight: 700,
+    border: "2px solid rgba(255,255,255,0.3)",
     fontSize: 24,
   },
   avatarImg: {
@@ -545,42 +601,49 @@ const s: Record<string, React.CSSProperties> = {
     objectFit: "cover",
   },
   nameBlock: { flex: 1, display: "flex", flexDirection: "column", gap: 6 },
-  name: { fontWeight: 700, fontSize: 22, color: "#1F2937" },
+  name: { fontWeight: 700, fontSize: 22, color: "#333" },
   energyTag: {
     fontSize: 12,
     color: "#5F8F7B",
     fontWeight: 600,
-    background: "#EAF4F0",
+    background: "#ffffff",
     borderRadius: 20,
-    padding: "6px 12px",
+    padding: "4px 12px",
     lineHeight: 1.4,
   },
   statusBlock: { marginTop: 4 },
-  statusText: { margin: 0, fontSize: 15, color: "#1F2937", lineHeight: 1.6 },
-  statusPlaceholder: { margin: 0, fontSize: 15, color: "#6B7280", lineHeight: 1.6 },
+  statusText: { margin: 0, fontSize: 15, color: "#666", lineHeight: 1.6 },
+  statusPlaceholder: { margin: 0, fontSize: 15, color: "#5F8F7B", lineHeight: 1.6 },
 
   /* ── 통계 카드 ── */
   statsCard: {
     display: "flex",
     alignItems: "center",
-    background: "#fff",
-    border: "1px solid #E5E7EB",
-    borderRadius: 16,
-    padding: "14px 12px",
-    marginBottom: 24,
+    padding: "14px 12px 0",
   },
   statBox: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 },
-  statNum: { fontSize: 24, fontWeight: 700, color: "#1F2937" },
-  statLabel: { fontSize: 13, color: "#6B7280" },
-  statDivider: { width: 1, height: 32, background: "#E5E7EB" },
+  statNum: { fontSize: 36, fontWeight: 800, color: "#5F8F7B" },
+  statLabel: { fontSize: 12, color: "#888", marginTop: "4px" },
+  statDivider: { width: 1, height: 32, background: "#999" },
 
   /* ── 섹션 ── */
   sectionTitle: {
     fontSize: 16,
     fontWeight: 600,
-    color: "#1F2937",
+    color: "#333",
     marginBottom: 8,
-    paddingLeft: 16,
+    paddingLeft: 12,
+    borderLeft: "3px solid #E38B60",
+  },
+
+  energySectionTitle: {
+    fontSize: 16,
+    fontWeight: 600,
+    color: "#333",
+    marginBottom: 8,
+    paddingLeft: 12,
+    backgroundColor: "rgba(95,143,123,0.12)",
+    borderLeft: "4px solid #5F8F7B",
   },
 
   /* ── row ── */

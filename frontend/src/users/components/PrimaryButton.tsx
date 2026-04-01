@@ -14,7 +14,7 @@ export default function PrimaryButton({ loading, loadingText = "처리 중...", 
       style={{
         width: "100%",
         height: 50,
-        backgroundColor: loading ? "#5F8F7B" : isDisabled ? "#9CA3AF" : "#4E7C69",
+        backgroundColor: loading ? "#4A7A66" : isDisabled ? "#C4C4C4" : "#5F8F7B",
         color: "#fff",
         border: "none",
         borderRadius: 12,

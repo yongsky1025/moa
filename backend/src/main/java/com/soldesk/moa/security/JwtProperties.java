@@ -15,6 +15,7 @@ public class JwtProperties {
     private String secret;
     private Long accessExpMs;
     private Long refreshExpMs;
+    private Long guestTokenExpMs;
     // Legacy key fallback.
     private Long expiration;
 
@@ -36,5 +37,13 @@ public class JwtProperties {
             return refreshExpMs;
         }
         return 1_209_600_000L;
+    }
+
+    // guest energy token TTL (기본 24시간)
+    public long getGuestTokenTtlMs() {
+        if (guestTokenExpMs != null) {
+            return guestTokenExpMs;
+        }
+        return 86_400_000L;
     }
 }

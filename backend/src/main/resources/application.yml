@@ -26,6 +26,7 @@ spring:
 jwt:
   access-exp-ms: 1800000
   refresh-exp-ms: 1209600000
+  guest-token-exp-ms: 86400000
 
 meilisearch:
   enabled: ${MEILISEARCH_ENABLED:false}
