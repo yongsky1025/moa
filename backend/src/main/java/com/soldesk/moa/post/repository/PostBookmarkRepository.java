@@ -49,4 +49,41 @@ public interface PostBookmarkRepository extends JpaRepository<PostBookmark, Long
             @Param("userId") Long userId,
             @Param("circleId") Long circleId,
             @Param("boardId") Long boardId);
+
+    @Query("""
+            select p
+            from PostBookmark pb
+            join pb.post p
+            join p.boardId b
+            where pb.user.userId = :userId
+              and b.deleted = false
+              and p.deleted = false
+              and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+              and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+              and p.activityPublic = true
+            order by p.createDate desc
+            """)
+    List<Post> findBookmarkedPublicActivityPostsByUserId(@Param("userId") Long userId);
+
+    @Query("""
+            select p
+            from PostBookmark pb
+            join pb.post p
+            join p.boardId b
+            where pb.user.userId = :userId
+              and b.deleted = false
+              and p.deleted = false
+              and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+              and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+              and p.activityPublic = true
+              and exists (
+                  select cm.id
+                  from com.soldesk.moa.circle.entity.CircleMember cm
+                  where cm.user.userId = :userId
+                    and cm.circle = b.circleId
+                    and cm.status = com.soldesk.moa.circle.entity.constant.CircleMemberStatus.ACTIVE
+              )
+            order by p.createDate desc
+            """)
+    List<Post> findBookmarkedMemberPublicActivityPostsByUserId(@Param("userId") Long userId);
 }

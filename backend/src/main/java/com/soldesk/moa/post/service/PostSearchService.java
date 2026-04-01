@@ -145,8 +145,11 @@ public class PostSearchService {
         Long boardId = request.getBoardId();
         Long circleId = request.getCircleId();
         String filter = buildFilter(boardType, boardId, circleId, userId);
+        boolean excludeActivityInCircleSearch = boardType == BoardType.CIRCLE && boardId == null;
 
-        PostSearchEngineType primaryEngine = resolvePrimaryEngine();
+        PostSearchEngineType primaryEngine = excludeActivityInCircleSearch
+                ? PostSearchEngineType.DB
+                : resolvePrimaryEngine();
         if (primaryEngine == PostSearchEngineType.DB) {
             return dbPostSearchExecutor.search(normalizedKeyword, target, boardType, boardId, circleId, page, size,
                     filter);

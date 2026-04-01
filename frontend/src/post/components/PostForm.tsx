@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import type { PostFormValues } from "../types/postTypes";
-import { validatePostForm } from "../utils/postValidators";
+import { hasPostBodyContent, validatePostForm } from "../utils/postValidators";
 import { hasProfanity, stripHtmlToText } from "../../common/utils/profanityFilter";
 import PostCkEditor from "./PostCkEditor";
 
@@ -30,13 +30,14 @@ export default function PostForm({
   const hasBadWordInTitle = hasProfanity(values.title);
   const hasBadWordInContent = hasProfanity(plainContent);
   const hasBadWord = hasBadWordInTitle || hasBadWordInContent;
+  const hasBodyContent = hasPostBodyContent(values.content);
   const disableSubmit =
     submitting ||
     deleting ||
     hasBadWord ||
     normalizedTitle.length < 2 ||
     normalizedTitle.length > 80 ||
-    !plainContent;
+    !hasBodyContent;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

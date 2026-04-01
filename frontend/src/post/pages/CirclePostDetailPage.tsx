@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -129,9 +129,15 @@ export default function CirclePostDetailPage() {
 
   const showPostLoading = useDelayedLoading(loading, 180);
   const showReplyLoading = useDelayedLoading(replyLoading, 180);
-  const boardFromPath = `/circle/${cid}/board?board=${bid}`;
   const locationState = location.state as { from?: string; focusReplyId?: number } | null;
   const stateFrom = locationState?.from;
+  const board = useMemo(
+    () => boards.find((item) => item.boardId === bid) ?? null,
+    [bid, boards],
+  );
+  const cameFromActivity = typeof stateFrom === "string" && stateFrom.includes(`/circle/${cid}/activity`);
+  const isActivityContext = board?.circleBoardKind === "ACTIVITY" || cameFromActivity;
+  const boardFromPath = isActivityContext ? `/circle/${cid}/activity` : `/circle/${cid}/board?board=${bid}`;
   const initialFocusReplyId = parseFocusReplyId(locationState?.focusReplyId);
   const resolvedBackPath = typeof stateFrom === "string" && stateFrom.length > 0 ? stateFrom : boardFromPath;
   const liked = (localPostReaction?.myReaction ?? post?.myReaction) === "LIKE";
@@ -220,11 +226,6 @@ export default function CirclePostDetailPage() {
     },
     onSettled: () => {
       if (pendingBookmarkParityRef.current % 2 === 1) scheduleBookmarkCommit();
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["communityPosts"] }),
-        queryClient.invalidateQueries({ queryKey: ["circleBoardPosts"] }),
-        queryClient.invalidateQueries({ queryKey: ["communitySidebar"] }),
-      ]);
     },
   });
 
@@ -291,6 +292,10 @@ export default function CirclePostDetailPage() {
   };
 
   const handleSidebarBoardSelect = (board: "all" | number) => {
+    if (isActivityContext) {
+      navigate(`/circle/${cid}/activity`);
+      return;
+    }
     const params = new URLSearchParams();
     if (board !== "all") {
       params.set("board", String(board));
@@ -325,6 +330,10 @@ export default function CirclePostDetailPage() {
     if (nextView !== "home") {
       params.set("view", nextView);
     }
+    if (isActivityContext) {
+      navigate(`/circle/${cid}/activity${params.toString() ? `?${params.toString()}` : ""}`);
+      return;
+    }
     navigate(`/circle/${cid}/board${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
@@ -333,21 +342,25 @@ export default function CirclePostDetailPage() {
       <Navbar />
       <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
         {!loading && circle && <CircleDetailBanner circle={circle} />}
-        <CircleDetailTabs circleId={cid} activeTab="board" />
+        <CircleDetailTabs circleId={cid} activeTab={isActivityContext ? "activity" : "board"} />
 
         <section className="board-community-layout">
           <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
             <CommunityProfileCard
               selectedView={sidebarView}
               onSelectView={handleSidebarViewSelect}
-              writeHref={`/circle/${cid}/board/${bid}/posts/create`}
+              writeHref={isActivityContext
+                ? `/circle/${cid}/board/${bid}/posts/create?from=activity`
+                : `/circle/${cid}/board/${bid}/posts/create`}
             />
-            <CircleBoardSidebarMenu
-              boards={boards}
-              selectedBoard={bid}
-              onSelectBoard={handleSidebarBoardSelect}
-              isActive
-            />
+            {!isActivityContext && (
+              <CircleBoardSidebarMenu
+                boards={boards}
+                selectedBoard={bid}
+                onSelectBoard={handleSidebarBoardSelect}
+                isActive
+              />
+            )}
           </aside>
 
           <section>
@@ -387,7 +400,7 @@ export default function CirclePostDetailPage() {
                     <div className="post-detail-engagement">
                       <button
                         className={`post-detail-like-button ${liked ? "on" : ""} ${
-                          isLikeAnimating ? "pulse" : ""
+                          isLikeAnimating ? "moa-reaction-pulse" : ""
                         } ${!isLoggedIn ? "disabled" : ""}`}
                         type="button"
                         onClick={() => void react()}

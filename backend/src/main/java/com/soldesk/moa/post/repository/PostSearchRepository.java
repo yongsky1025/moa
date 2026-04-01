@@ -51,6 +51,10 @@ public interface PostSearchRepository extends JpaRepository<PostSearchEntity, Lo
             or (:boardId is null and :boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = :boardType)
             or (:boardId is null and :boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.circleId = :circleId)
           )
+          and (
+               :excludeActivity = false
+               or p.boardId.circleBoardKind <> com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+          )
         order by ps.createDate desc
         """,
             countQuery = """
@@ -92,6 +96,10 @@ public interface PostSearchRepository extends JpaRepository<PostSearchEntity, Lo
             or (:boardId is null and :boardType is not null and :boardType <> com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = :boardType)
             or (:boardId is null and :boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE and ps.circleId = :circleId)
           )
+          and (
+               :excludeActivity = false
+               or p.boardId.circleBoardKind <> com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+          )
         """)
     Page<PostSearchEntity> searchPostsForFallback(
             @Param("keyword") String keyword,
@@ -99,6 +107,7 @@ public interface PostSearchRepository extends JpaRepository<PostSearchEntity, Lo
             @Param("boardType") BoardType boardType,
             @Param("boardId") Long boardId,
             @Param("circleId") Long circleId,
+            @Param("excludeActivity") boolean excludeActivity,
             Pageable pageable);
 
     @Modifying

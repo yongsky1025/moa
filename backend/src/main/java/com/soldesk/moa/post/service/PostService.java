@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.entity.constant.CircleBoardKind;
 import com.soldesk.moa.board.repository.BoardRepository;
 import com.soldesk.moa.board.service.CirclePermissionService;
 import com.soldesk.moa.common.exception.InvalidRequestException;
@@ -65,6 +66,9 @@ public class PostService {
         private static final int MAX_PINNED_NOTICE_COUNT = 5;
         private static final Pattern IMG_SRC_PATTERN = Pattern.compile("<img[^>]*\\bsrc\\s*=\\s*['\\\"]([^'\\\"]+)['\\\"][^>]*>",
                         Pattern.CASE_INSENSITIVE);
+        private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^>]*>");
+        private static final Pattern HTML_NBSP_PATTERN = Pattern.compile("&nbsp;", Pattern.CASE_INSENSITIVE);
+        private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
         private final PostRepository postRepository;
         private final ReplyRepository replyRepository;
@@ -371,9 +375,10 @@ public class PostService {
         // }
 
         // 써클보드 전체 게시글 리스트(댓글 포함)
-        public List<PostResponseDTO> listCircleAllBoardsPosts(Long circleId, Long userId) {
+        public List<PostResponseDTO> listCircleAllBoardsPosts(Long circleId, Long userId, CircleBoardKind circleBoardKind) {
                 circlePermissionService.requireActiveMember(circleId, userId);
                 return postRepository.findCirclePostsAllBoardsWithReplyCount(circleId).stream()
+                                .filter(row -> includeInCircleBoardLists(isActivityCirclePost(row[0]), circleBoardKind))
                                 .map(this::toPostResponseWithCount)
                                 .toList();
         }
@@ -382,6 +387,37 @@ public class PostService {
                 int limit = safeSize(size);
                 return postRepository.findPublicCircleActivityPostsWithReplyCount(PageRequest.of(0, limit)).stream()
                                 .map(this::toPostResponseWithCount)
+                                .toList();
+        }
+
+        public List<PostResponseDTO> listMyMemberPublicActivityPosts(Long userId) {
+                return postRepository.findMyMemberPublicActivityPosts(userId).stream()
+                                .map(post -> toPostResponse(post, userId))
+                                .toList();
+        }
+
+        public List<PostResponseDTO> listMyBookmarkedMemberPublicActivityPosts(Long userId) {
+                return postBookmarkRepository.findBookmarkedMemberPublicActivityPostsByUserId(userId).stream()
+                                .map(post -> toPostResponse(post, userId))
+                                .toList();
+        }
+
+        public List<CommunityMyReplyDTO> listMyMemberPublicActivityReplies(Long userId) {
+                return replyRepository.findMyMemberPublicActivityReplies(userId).stream()
+                                .map(reply -> CommunityMyReplyDTO.builder()
+                                                .replyId(reply.getReplyId())
+                                                .content(reply.getContent())
+                                                .likeCount(reply.getLikeCount())
+                                                .createDate(reply.getCreateDate())
+                                                .postId(reply.getPostId().getPostId())
+                                                .postTitle(reply.getPostId().getTitle())
+                                                .boardId(reply.getPostId().getBoardId().getBoardId())
+                                                .circleId(reply.getPostId().getBoardId().getCircleId() != null
+                                                                ? reply.getPostId().getBoardId().getCircleId().getCircleId()
+                                                                : null)
+                                                .boardName(reply.getPostId().getBoardId().getName())
+                                                .boardType(reply.getPostId().getBoardId().getBoardType())
+                                                .build())
                                 .toList();
         }
 
@@ -636,6 +672,9 @@ public class PostService {
                                                 .postId(reply.getPostId().getPostId())
                                                 .postTitle(reply.getPostId().getTitle())
                                                 .boardId(reply.getPostId().getBoardId().getBoardId())
+                                                .circleId(reply.getPostId().getBoardId().getCircleId() != null
+                                                                ? reply.getPostId().getBoardId().getCircleId().getCircleId()
+                                                                : null)
                                                 .boardName(reply.getPostId().getBoardId().getName())
                                                 .boardType(reply.getPostId().getBoardId().getBoardType())
                                                 .build())
@@ -656,10 +695,12 @@ public class PostService {
                         Long circleId,
                         Long boardId,
                         String keyword,
-                        PostSearchTarget target) {
+                        PostSearchTarget target,
+                        CircleBoardKind circleBoardKind) {
                 circlePermissionService.requireActiveMember(circleId, userId);
                 List<PostResponseDTO> list = postBookmarkRepository.findBookmarkedCirclePostsByUserId(userId, circleId, boardId)
                                 .stream()
+                                .filter(post -> includeInCircleBoardLists(post.getBoardId(), boardId, circleBoardKind))
                                 .map(post -> toPostResponse(post, userId))
                                 .toList();
                 return filterPostResponsesByKeyword(sortWithPinnedPriority(list), keyword, target);
@@ -670,10 +711,12 @@ public class PostService {
                         Long circleId,
                         Long boardId,
                         String keyword,
-                        PostSearchTarget target) {
+                        PostSearchTarget target,
+                        CircleBoardKind circleBoardKind) {
                 circlePermissionService.requireActiveMember(circleId, userId);
                 List<PostResponseDTO> list = postRepository.findMyCirclePosts(userId, circleId, boardId)
                                 .stream()
+                                .filter(post -> includeInCircleBoardLists(post.getBoardId(), boardId, circleBoardKind))
                                 .map(post -> toPostResponse(post, userId))
                                 .toList();
                 return filterPostResponsesByKeyword(sortWithPinnedPriority(list), keyword, target);
@@ -684,10 +727,12 @@ public class PostService {
                         Long circleId,
                         Long boardId,
                         String keyword,
-                        PostSearchTarget target) {
+                        PostSearchTarget target,
+                        CircleBoardKind circleBoardKind) {
                 circlePermissionService.requireActiveMember(circleId, userId);
                 List<CommunityMyReplyDTO> list = replyRepository.findMyCircleReplies(userId, circleId, boardId)
                                 .stream()
+                                .filter(reply -> includeInCircleBoardLists(reply.getPostId().getBoardId(), boardId, circleBoardKind))
                                 .map(reply -> CommunityMyReplyDTO.builder()
                                                 .replyId(reply.getReplyId())
                                                 .content(reply.getContent())
@@ -696,6 +741,9 @@ public class PostService {
                                                 .postId(reply.getPostId().getPostId())
                                                 .postTitle(reply.getPostId().getTitle())
                                                 .boardId(reply.getPostId().getBoardId().getBoardId())
+                                                .circleId(reply.getPostId().getBoardId().getCircleId() != null
+                                                                ? reply.getPostId().getBoardId().getCircleId().getCircleId()
+                                                                : null)
                                                 .boardName(reply.getPostId().getBoardId().getName())
                                                 .boardType(reply.getPostId().getBoardId().getBoardType())
                                                 .build())
@@ -873,6 +921,11 @@ public class PostService {
                 if (normalizedTitle.length() < 2 || normalizedTitle.length() > 80) {
                         throw new InvalidRequestException("[#POST] 제목은 2자 이상 80자 이하여야 합니다.");
                 }
+                String normalizedContent = stripHtmlToText(req.getContent());
+                boolean hasImage = !extractPostImageUrls(req.getContent()).isEmpty();
+                if (normalizedContent.isBlank() && !hasImage) {
+                        throw new InvalidRequestException("[#POST] 내용 또는 이미지를 입력해주세요.");
+                }
                 req.setTitle(normalizedTitle);
                 profanityFilterService.validateNoProfanity(
                                 req.getTitle(),
@@ -880,6 +933,31 @@ public class PostService {
                 profanityFilterService.validateNoProfanityInHtml(
                                 req.getContent(),
                                 "[#POST] 내용에 사용할 수 없는 표현이 포함되어 있습니다.");
+        }
+
+        private String stripHtmlToText(String html) {
+                if (html == null || html.isBlank()) {
+                        return "";
+                }
+                String noTag = HTML_TAG_PATTERN.matcher(html).replaceAll(" ");
+                String noNbsp = HTML_NBSP_PATTERN.matcher(noTag).replaceAll(" ");
+                return WHITESPACE_PATTERN.matcher(noNbsp).replaceAll(" ").trim();
+        }
+
+        private List<String> extractPostImageUrls(String html) {
+                if (html == null || html.isBlank()) {
+                        return List.of();
+                }
+
+                Matcher matcher = IMG_SRC_PATTERN.matcher(html);
+                List<String> urls = new ArrayList<>();
+                while (matcher.find()) {
+                        String src = matcher.group(1);
+                        if (src != null && !src.isBlank()) {
+                                urls.add(src.trim());
+                        }
+                }
+                return urls;
         }
 
         private PostResponseDTO toPostResponse(Post p, Long viewerUserId) {
@@ -1056,6 +1134,34 @@ public class PostService {
                         return 20;
                 }
                 return Math.min(size, 100);
+        }
+
+        private boolean includeInCircleBoardLists(Board board, Long requestedBoardId, CircleBoardKind requestedKind) {
+                if (requestedBoardId != null) {
+                        return true;
+                }
+                return includeInCircleBoardLists(isActivityCircleBoard(board), requestedKind);
+        }
+
+        private boolean includeInCircleBoardLists(boolean isActivity, CircleBoardKind requestedKind) {
+                if (requestedKind == CircleBoardKind.ACTIVITY) {
+                        return isActivity;
+                }
+                return !isActivity;
+        }
+
+        private boolean isActivityCirclePost(Object postCandidate) {
+                if (!(postCandidate instanceof Post post)) {
+                        return false;
+                }
+                return isActivityCircleBoard(post.getBoardId());
+        }
+
+        private boolean isActivityCircleBoard(Board board) {
+                if (board == null || board.getBoardType() != BoardType.CIRCLE) {
+                        return false;
+                }
+                return board.getCircleBoardKind() == CircleBoardKind.ACTIVITY;
         }
 
         private String normalizeSidebarSort(String sort) {

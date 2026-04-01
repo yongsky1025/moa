@@ -8,6 +8,7 @@ import {
 } from "../constants/noticeCategory";
 import { formatDate, isEdited } from "../utils/dateFormat";
 import CommentBubbleIcon from "../../common/components/CommentBubbleIcon";
+import UserAvatar from "../../common/components/UserAvatar";
 
 interface PostDetailArticleCardProps {
   post: PostResponse;
@@ -45,7 +46,7 @@ export default function PostDetailArticleCard({
         overflow: "hidden",
       }}
     >
-      <div style={{ padding: "24px 24px 14px" }}>
+      <div style={{ padding: "24px 24px 8px" }}>
         <div
           style={{
             display: "flex",
@@ -90,33 +91,31 @@ export default function PostDetailArticleCard({
             >
               {post.title}
             </h2>
-            <div
-              style={{
-                display: "grid",
-                gap: 6,
-              }}
-            >
-              <span className="community-post-item-meta">
-                <span>{post.authorName}</span>
-                <span className="community-post-item-stat">
-                  <Eye size={14} />
-                  {post.viewCount}
-                </span>
-                <span className="community-post-item-stat">
-                  <CommentBubbleIcon size={14} strokeWidth={1.8} />
-                  {post.replyCount}
-                </span>
-                {post.boardType !== "NOTICE" && (
+            <div className="post-detail-author-block">
+              <span className="post-detail-author-avatar-wrap">
+                <UserAvatar name={post.authorName} size={40} ariaHidden initialMode="nickname" />
+              </span>
+              <div className="post-detail-author-info">
+                <p className="post-detail-author-name">{post.authorName}</p>
+                <span className="community-post-item-meta post-detail-author-meta">
                   <span className="community-post-item-stat">
                     <Heart size={14} />
                     {post.likeCount}
                   </span>
-                )}
-                <span>
-                  {formatDate(post.createDate)}
-                  {edited ? " (수정됨)" : ""}
+                  <span className="community-post-item-stat">
+                    <CommentBubbleIcon size={14} strokeWidth={1.8} />
+                    {post.replyCount}
+                  </span>
+                  <span className="community-post-item-stat">
+                    <Eye size={14} />
+                    {post.viewCount}
+                  </span>
+                  <span>
+                    {formatDate(post.createDate)}
+                    {edited ? " (수정됨)" : ""}
+                  </span>
                 </span>
-              </span>
+              </div>
             </div>
           </div>
           {headerAction && <div style={{ marginLeft: "auto" }}>{headerAction}</div>}

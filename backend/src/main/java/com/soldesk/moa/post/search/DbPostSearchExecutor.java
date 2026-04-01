@@ -38,12 +38,14 @@ public class DbPostSearchExecutor implements PostSearchExecutor {
             int page,
             int size,
             String filter) {
+        boolean excludeActivity = boardType == BoardType.CIRCLE && boardId == null;
         Page<PostSearchEntity> pageResult = postSearchRepository.searchPostsForFallback(
                 keyword,
                 target.name(),
                 boardType,
                 boardId,
                 circleId,
+                excludeActivity,
                 PageRequest.of(page - 1, size));
 
         List<PostSearchHitDTO> hits = pageResult.getContent().stream()

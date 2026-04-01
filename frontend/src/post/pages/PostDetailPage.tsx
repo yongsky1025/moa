@@ -262,11 +262,6 @@ export default function PostDetailPage() {
       if (pendingBookmarkParityRef.current % 2 === 1) {
         scheduleBookmarkCommit();
       }
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["communityPosts"] }),
-        queryClient.invalidateQueries({ queryKey: ["circleBoardPosts"] }),
-        queryClient.invalidateQueries({ queryKey: ["communitySidebar"] }),
-      ]);
     },
   });
 
@@ -493,7 +488,7 @@ export default function PostDetailPage() {
                       {kind !== "notice" && (
                         <button
                           className={`post-detail-like-button ${liked ? "on" : ""} ${
-                            isLikeAnimating ? "pulse" : ""
+                            isLikeAnimating ? "moa-reaction-pulse" : ""
                           } ${
                             !isLoggedIn ? "disabled" : ""
                           }`}

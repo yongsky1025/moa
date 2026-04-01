@@ -71,7 +71,6 @@ function CommunityPostFormScene() {
   const { submitting, deleting, error, submit, remove } = usePostForm();
   const activeKind = isEdit ? kind : selectedKind || "free";
   const listPath = activeKind === "notice" ? postRoutes.noticeBase : postRoutes.freeBase;
-  const boardTitle = activeKind === "notice" ? "공지게시판" : "자유게시판";
   const detailPath =
     isEdit && !Number.isNaN(postIdNumber)
       ? kind === "notice"
@@ -141,7 +140,7 @@ function CommunityPostFormScene() {
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
       <BoardSectionHeader
-        title={boardTitle}
+        title={isEdit ? "게시글 수정" : "게시글 작성"}
         backTo={isEdit ? detailPath : listPath}
         backLabel={isEdit ? "이전으로 이동" : "목록으로 이동"}
       />
@@ -265,10 +264,17 @@ function CirclePostFormScene() {
   const bid = Number(boardId);
   const pid = Number(postId);
   const isEdit = location.pathname.endsWith("/edit");
+  const fromQuery = new URLSearchParams(location.search).get("from");
+  const locationState = location.state as { from?: string } | null;
+  const fromState = locationState?.from;
+  const isActivityContext =
+    fromQuery === "activity" ||
+    (typeof fromState === "string" && fromState.includes(`/circle/${cid}/activity`));
 
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [selectedBoardId, setSelectedBoardId] = useState<string>("");
 
   const hasValidRequiredParams =
     !!circleId &&
@@ -279,7 +285,18 @@ function CirclePostFormScene() {
     bid > 0;
   const hasValidEditParams = hasValidRequiredParams && !!postId && Number.isInteger(pid) && pid > 0;
 
-  const listPath = hasValidRequiredParams ? `/circle/${cid}/board?board=${bid}` : "/circle";
+  const listPath = hasValidRequiredParams
+    ? isActivityContext
+      ? `/circle/${cid}/activity`
+      : `/circle/${cid}/board?board=${bid}`
+    : "/circle";
+  const createListPath = hasValidRequiredParams
+    ? isActivityContext
+      ? `/circle/${cid}/activity`
+      : selectedBoardId
+        ? `/circle/${cid}/board?board=${selectedBoardId}`
+        : `/circle/${cid}/board`
+    : "/circle";
   const detailPath = hasValidEditParams
     ? `/circle/${cid}/board/${bid}/posts/${pid}`
     : listPath;
@@ -316,10 +333,25 @@ function CirclePostFormScene() {
   });
 
   const detailError = detailIsError ? getErrorMessage(detailQueryError) : "";
-  const boardName = useMemo(
-    () => boards.find((board) => board.boardId === bid)?.name ?? "모임 게시판",
-    [bid, boards],
+  const writableBoards = useMemo(
+    () => boards.filter((board) => board.circleBoardKind !== "ACTIVITY"),
+    [boards],
   );
+  useEffect(() => {
+    if (isEdit) {
+      return;
+    }
+    if (isActivityContext) {
+      setSelectedBoardId("");
+      return;
+    }
+    const currentBoard = boards.find((board) => board.boardId === bid);
+    if (currentBoard && currentBoard.circleBoardKind !== "ACTIVITY") {
+      setSelectedBoardId(String(currentBoard.boardId));
+      return;
+    }
+    setSelectedBoardId("");
+  }, [bid, boards, isActivityContext, isEdit]);
 
   useEffect(() => {
     if (!isEdit || !post || !user) {
@@ -345,12 +377,18 @@ function CirclePostFormScene() {
       }
     }
 
+    const targetBoardId = isEdit ? bid : Number(selectedBoardId);
+    if (!isEdit && (!Number.isInteger(targetBoardId) || targetBoardId <= 0)) {
+      window.alert("게시판 종류를 선택해주세요.");
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError("");
     try {
       const savedPostId = isEdit
         ? (await circleBoardApi.updatePost(cid, bid, pid, values)).data
-        : (await circleBoardApi.createPost(cid, bid, values)).data;
+        : (await circleBoardApi.createPost(cid, targetBoardId, values)).data;
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["circleBoardPosts", cid] }),
@@ -360,8 +398,8 @@ function CirclePostFormScene() {
       if (isEdit) {
         window.alert("게시글 수정이 완료되었습니다.");
       }
-      navigate(`/circle/${cid}/board/${bid}/posts/${savedPostId}`, {
-        state: { from: listPath },
+      navigate(`/circle/${cid}/board/${targetBoardId}/posts/${savedPostId}`, {
+        state: { from: createListPath },
       });
     } catch (error) {
       setSubmitError(getErrorMessage(error));
@@ -398,13 +436,13 @@ function CirclePostFormScene() {
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
       <BoardSectionHeader
-        title={boardName}
-        backTo={isEdit ? detailPath : listPath}
+        title={isEdit ? "게시글 수정" : "게시글 작성"}
+        backTo={isEdit ? detailPath : createListPath}
         backLabel={isEdit ? "이전으로 이동" : "목록으로 이동"}
       />
       <PostEditorPageShell
         title={isEdit ? "게시글 수정" : "게시글 작성"}
-        listPath={isEdit ? detailPath : listPath}
+        listPath={isEdit ? detailPath : createListPath}
         listLabel={isEdit ? "이전으로" : "목록으로"}
         mode={isEdit ? "edit" : "create"}
         detailLoading={detailLoading}
@@ -414,6 +452,28 @@ function CirclePostFormScene() {
         initialValue={post ? { title: post.title, content: post.content } : undefined}
         submitting={submitting}
         deleting={deleting}
+        preFormSlot={
+          !isEdit ? (
+            <div className="post-editor-board-group" style={{ marginBottom: 16 }}>
+              <label className="post-editor-label" htmlFor="circle-post-board-kind">
+                게시판 선택
+              </label>
+              <select
+                id="circle-post-board-kind"
+                value={selectedBoardId}
+                onChange={(e) => setSelectedBoardId(e.target.value)}
+                className="post-editor-board-select"
+              >
+                <option value="">게시판을 선택해주세요.</option>
+                {writableBoards.map((board) => (
+                  <option key={board.boardId} value={board.boardId}>
+                    {board.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : undefined
+        }
         onSubmit={handleSubmit}
         onDelete={isEdit ? handleDelete : undefined}
       />

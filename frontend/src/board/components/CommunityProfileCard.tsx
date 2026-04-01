@@ -9,6 +9,8 @@ interface CommunityProfileCardProps {
   selectedView: CommunityProfileQuickView;
   onSelectView: (view: CommunityProfileQuickView) => void;
   writeHref: string;
+  writeLabel?: string;
+  onWriteClick?: () => void;
   bottomAction?: ReactNode;
   replaceWithPending?: boolean;
   pendingContent?: ReactNode;
@@ -18,6 +20,8 @@ export default function CommunityProfileCard({
   selectedView,
   onSelectView,
   writeHref,
+  writeLabel = "글쓰기",
+  onWriteClick,
   bottomAction,
   replaceWithPending = false,
   pendingContent,
@@ -170,20 +174,38 @@ export default function CommunityProfileCard({
             >
               스크랩
             </button>
-            <Link
-              to={writeHref}
-              style={{
-                ...quickButtonBaseStyle,
-                border: "none",
-                textDecoration: "none",
-                color: "#fff",
-                fontSize: 18,
-                fontWeight: 700,
-                backgroundColor: "#5F8F7B",
-              }}
-            >
-              글쓰기
-            </Link>
+            {onWriteClick ? (
+              <button
+                type="button"
+                onClick={onWriteClick}
+                style={{
+                  ...quickButtonBaseStyle,
+                  border: "none",
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  backgroundColor: "#5F8F7B",
+                  cursor: "pointer",
+                }}
+              >
+                {writeLabel}
+              </button>
+            ) : (
+              <Link
+                to={writeHref}
+                style={{
+                  ...quickButtonBaseStyle,
+                  border: "none",
+                  textDecoration: "none",
+                  color: "#fff",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  backgroundColor: "#5F8F7B",
+                }}
+              >
+                {writeLabel}
+              </Link>
+            )}
           </div>
         </>
       )}

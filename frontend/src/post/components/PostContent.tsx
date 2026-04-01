@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import DOMPurify from "dompurify";
 import "ckeditor5/ckeditor5.css";
 
@@ -5,8 +6,8 @@ interface PostContentProps {
   html: string;
 }
 
-export default function PostContent({ html }: PostContentProps) {
-  const sanitized = DOMPurify.sanitize(html);
+function PostContent({ html }: PostContentProps) {
+  const sanitized = useMemo(() => DOMPurify.sanitize(html), [html]);
 
   return (
     <article
@@ -26,3 +27,5 @@ export default function PostContent({ html }: PostContentProps) {
     />
   );
 }
+
+export default memo(PostContent);

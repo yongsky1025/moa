@@ -10,7 +10,7 @@ interface CircleDetailTabsProps {
 const TAB_ITEMS: Array<{ key: CircleDetailTabKey; label: string }> = [
   { key: "home", label: "홈" },
   { key: "board", label: "게시판" },
-  { key: "activity", label: "모임활동" },
+  { key: "activity", label: "모임 활동" },
 ];
 
 const tabPath = (circleId: number, tab: CircleDetailTabKey) => {

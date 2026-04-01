@@ -33,22 +33,24 @@ export const circleBoardApi = {
   getBoards: (circleId: number) =>
     api.get<CircleBoardResponse[]>(`/api/circle/${circleId}/boards`),
 
-  getAllPosts: (circleId: number) =>
-    api.get<PostResponse[]>(`/api/circle/${circleId}/posts`),
+  getAllPosts: (
+    circleId: number,
+    params?: { circleBoardKind?: CircleBoardKind },
+  ) => api.get<PostResponse[]>(`/api/circle/${circleId}/posts`, { params }),
 
   getMyBookmarkedPosts: (
     circleId: number,
-    params?: { boardId?: number; q?: string; target?: PostSearchTarget },
+    params?: { boardId?: number; circleBoardKind?: CircleBoardKind; q?: string; target?: PostSearchTarget },
   ) => api.get<PostResponse[]>(`/api/circle/${circleId}/bookmarks`, { params }),
 
   getMyPosts: (
     circleId: number,
-    params?: { boardId?: number; q?: string; target?: PostSearchTarget },
+    params?: { boardId?: number; circleBoardKind?: CircleBoardKind; q?: string; target?: PostSearchTarget },
   ) => api.get<PostResponse[]>(`/api/circle/${circleId}/my-posts`, { params }),
 
   getMyRepliedPosts: (
     circleId: number,
-    params?: { boardId?: number; q?: string; target?: PostSearchTarget },
+    params?: { boardId?: number; circleBoardKind?: CircleBoardKind; q?: string; target?: PostSearchTarget },
   ) => api.get<CommunityMyReply[]>(`/api/circle/${circleId}/my-replies`, { params }),
 
   getBoardPosts: (circleId: number, boardId: number) =>
