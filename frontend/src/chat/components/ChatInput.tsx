@@ -1,7 +1,6 @@
 import { useState, useRef, memo } from "react";
 import { chatApi } from "../../api/chatApi";
 import EmojiPicker from "./EmojiPicker";
-import type { ChatMessage } from "../types/chat";
 
 interface Props {
   activeRoomId: number | null;
@@ -10,9 +9,9 @@ interface Props {
   onSend: (content: string, replyToId?: number) => void;
   onSendFile: (file: File) => void;
   onTyping: (nickname: string) => void;
-  typingCooldownRef: React.MutableRefObject<boolean>;
+  typingCooldownRef: React.RefObject<boolean | null>;
   nickname: string;
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 const ChatInput = memo(function ChatInput({
@@ -115,9 +114,9 @@ const ChatInput = memo(function ChatInput({
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px' }}>
-        <button onClick={() => fileInputRef.current?.click()} style={s.iconBtn}>📎</button>
+        <button className="chat-icon-btn" onClick={() => fileInputRef.current?.click()} style={s.iconBtn}>📎</button>
         <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileSelect} />
-        <button ref={emojiBtnRef} style={s.iconBtn} onClick={() => setShowEmoji((v) => !v)}>😊</button>
+        <button ref={emojiBtnRef} className="chat-icon-btn" style={s.iconBtn} onClick={() => setShowEmoji((v) => !v)}>😊</button>
         <button
           style={{ ...s.iconBtn, color: aiLoading ? '#aaa' : '#5F8F7B', fontSize: 14 }}
           disabled={aiLoading || !activeRoomId}
@@ -162,7 +161,7 @@ const ChatInput = memo(function ChatInput({
             }
           }}
         />
-        <button onClick={handleSend} style={s.sendBtn} disabled={!input.trim() && !pendingFile}>전송</button>
+        <button className="chat-send-btn" onClick={handleSend} style={s.sendBtn} disabled={!input.trim() && !pendingFile}>전송</button>
       </div>
     </div>
   );
@@ -171,8 +170,8 @@ const ChatInput = memo(function ChatInput({
 export default ChatInput;
 
 const s: Record<string, React.CSSProperties> = {
-  inputArea: { display: 'flex', alignItems: 'center', borderTop: '1px solid #eee', background: '#EAF5DC', flexShrink: 0 },
-  iconBtn: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '2px 4px', color: '#5F8F7B', flexShrink: 0 },
-  textInput: { flex: 1, border: '1px solid #D1E8DF', borderRadius: 18, padding: '8px 14px', fontSize: 14, outline: 'none', resize: 'none', lineHeight: 1.4, maxHeight: 120, background: '#fff', fontFamily: 'inherit', overflowY: 'hidden' },
-  sendBtn: { background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 18, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 13, flexShrink: 0 },
+  inputArea: { display: 'flex', alignItems: 'center', borderTop: '1px solid #E5E7EB', background: '#fff', flexShrink: 0 },
+  iconBtn: { background: 'none', border: 'none', fontSize: 17, cursor: 'pointer', padding: '2px 4px', color: '#6B7280', flexShrink: 0 },
+  textInput: { flex: 1, border: '1px solid #E5E7EB', borderRadius: 20, padding: '8px 14px', fontSize: 13, outline: 'none', resize: 'none', lineHeight: 1.5, maxHeight: 120, background: '#F8FAF9', fontFamily: 'inherit', overflowY: 'hidden', color: '#1F2937' },
+  sendBtn: { background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 18, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 13, flexShrink: 0 },
 };

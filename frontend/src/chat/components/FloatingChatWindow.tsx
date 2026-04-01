@@ -839,7 +839,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             )}
             {/* 알림 */}
             <div style={{ position: "relative" }}>
-              <button style={s.titleBtn} onClick={() => setShowNoti((v) => !v)}>
+              <button className="chat-title-btn" style={s.titleBtn} onClick={() => setShowNoti((v) => !v)}>
                 🔔{unreadNoti > 0 && <span style={s.nBadge}>{unreadNoti}</span>}
               </button>
               {showNoti && (
@@ -852,7 +852,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                     <div style={s.notiEmpty}>알림 없음</div>
                   ) : (
                     chatNotifications.map((n) => (
-                      <div key={n.id} style={{ ...s.notiItem, background: n.isRead ? "#f9f9f9" : "#eaf4ff" }} onClick={() => handleNotiClick(n)}>
+                      <div key={n.id} className="chat-noti-item" style={{ ...s.notiItem, background: n.isRead ? '#F8FAF9' : '#FDF1EC' }} onClick={() => handleNotiClick(n)}>
                         <span style={s.notiMsg}>{n.message}</span>
                         <span style={s.notiTime}>{formatTime(n.createdAt)}</span>
                       </div>
@@ -862,8 +862,8 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
               )}
             </div>
             {/* 별도 창으로 분리 */}
-            <button style={s.titleBtn} onClick={() => { openPopup(); onClose(); setActiveRoomId(null); }} title="별도 창으로 분리">▼</button>
-            <button style={s.titleBtn} onClick={() => { onClose(); setActiveRoomId(null); }}>✕</button>
+            <button className="chat-title-btn" style={s.titleBtn} onClick={() => { openPopup(); onClose(); setActiveRoomId(null); }} title="별도 창으로 분리">▼</button>
+            <button className="chat-title-btn" style={s.titleBtn} onClick={() => { onClose(); setActiveRoomId(null); }}>✕</button>
           </div>
         </div>
 
@@ -885,7 +885,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                 ? <div style={s.sideEmpty}>채팅방 없음</div>
                 : filteredRooms.map((r) => (
                   <div key={r.roomId}
-                    style={{ ...s.roomItem, background: r.roomId === activeRoomId ? '#e3f2fd' : 'transparent' }}
+                    className="chat-room-item" style={{ ...s.roomItem, background: r.roomId === activeRoomId ? '#EAF4F0' : 'transparent' }}
                     onClick={() => setActiveRoomId(r.roomId)}
                     onContextMenu={(e) => handleRoomContextMenu(e, r)}>
                     <div style={s.roomAvatar}>{r.roomType === 'GROUP' ? '👥' : r.roomType === 'SCHEDULE' ? '📅' : '👤'}</div>
@@ -917,7 +917,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
           {/* 사이드바 리사이즈 핸들 */}
           <div
             onMouseDown={onSidebarResizeMouseDown}
-            style={{ width: 4, cursor: 'col-resize', background: '#EAF5DC', flexShrink: 0, zIndex: 10, alignSelf: 'stretch' }}
+            style={{ width: 4, cursor: 'col-resize', background: '#E5E7EB', flexShrink: 0, zIndex: 10, alignSelf: 'stretch' }}
           />
 
           {/* 오른쪽: 채팅방 */}
@@ -929,7 +929,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             ) : (
               <>
                 {/* 채팅 헤더 */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #d4e8c2', background: '#EAF5DC', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #E5E7EB', background: '#fff', flexShrink: 0 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {editingRoomName && activeRoom?.roomType === "GROUP" ? (
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -959,13 +959,13 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <button
                       onClick={() => { setShowSearch(v => !v); if (!showSearch) setTimeout(() => searchInputRef.current?.focus(), 50); else setSearchQuery(""); }}
-                      style={{ background: showSearch ? '#D1EAE0' : 'none', border: '1px solid #D1EAE0', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#374151' }}
+                      style={{ background: showSearch ? '#EAF4F0' : 'none', border: '1px solid #E5E7EB', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#5F8F7B' }}
                       title="메시지 검색"
                     >
                       🔍
                     </button>
                     {activeRoom?.roomType === "GROUP" && (
-                      <button style={{ background: 'none', border: '1px solid #D1EAE0', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#374151' }} onClick={() => setShowMembers((v) => !v)}>
+                      <button style={{ background: 'none', border: '1px solid #E5E7EB', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#5F8F7B' }} onClick={() => setShowMembers((v) => !v)}>
                         👥 멤버
                       </button>
                     )}
@@ -1061,14 +1061,14 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                                 style={{
                                   ...s.bubble,
                                   position: 'relative',
-                                  background: msg.isDeleted ? '#e0e0e0' : !isFileUrl(msg.content) ? (mine ? '#FEE500' : '#F0F0F0') : 'transparent',
-                                  color: msg.isDeleted ? '#999' : '#1A1A1A',
+                                  background: msg.isDeleted ? '#F3F4F6' : !isFileUrl(msg.content) ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
+                                  color: msg.isDeleted ? '#9CA3AF' : mine ? '#fff' : '#1F2937',
+                                  border: (!msg.isDeleted && !mine && !isFileUrl(msg.content)) ? '1px solid #E5E7EB' : undefined,
                                   fontStyle: msg.isDeleted ? 'italic' : 'normal',
                                   borderRadius: msg.isDeleted ? 18 : isFileUrl(msg.content) ? 8 : (mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px'),
                                   padding: (isFileUrl(msg.content) && !msg.isDeleted) || msg.replyToId ? 0 : '8px 12px',
                                   overflow: msg.replyToId ? 'hidden' : undefined,
-                                  boxShadow: isFileUrl(msg.content) && !msg.isDeleted ? 'none' : mine ? '0 1px 3px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.12)',
-                                  border: !isFileUrl(msg.content) && !mine && !msg.isDeleted ? '1px solid rgba(0,0,0,0.08)' : 'none',
+                                  boxShadow: isFileUrl(msg.content) && !msg.isDeleted ? 'none' : '0 1px 3px rgba(0,0,0,0.08)',
                                 }}
                                 onContextMenu={!msg.isDeleted ? (e) => { e.preventDefault(); e.stopPropagation(); setMenuId(menuId === msg.messageId ? null : msg.messageId); } : undefined}
                               >
@@ -1155,7 +1155,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
                 {/* 읽지 않은 메시지 이동 버튼 */}
                 {unreadOnEnter > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '5px 0', background: '#EAF5DC', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '5px 0', background: '#F8FAF9', flexShrink: 0 }}>
                     <button
                       onClick={() => {
                         const el = msgAreaRef.current?.querySelector<HTMLElement>('[data-first-unread]');
@@ -1209,28 +1209,29 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "0 12px",
-    height: 44,
-    background: "#2E7A62",
+    height: 48,
+    background: "#5F8F7B",
     cursor: "grab",
     flexShrink: 0,
     position: "relative",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
   },
-  title: { color: "#fff", fontWeight: "bold", fontSize: 14 },
+  title: { color: "#fff", fontWeight: "700", fontSize: 14, letterSpacing: "-0.2px" },
   titleBtn: {
     background: "none",
     border: "none",
-    color: "#fff",
+    color: "rgba(255,255,255,0.85)",
     cursor: "pointer",
     fontSize: 14,
     padding: "4px 6px",
-    borderRadius: 4,
+    borderRadius: 6,
     position: "relative",
   },
   nBadge: {
     position: "absolute",
     top: -2,
     right: -2,
-    background: "#e53935",
+    background: "#E38B6D",
     color: "#fff",
     borderRadius: "50%",
     fontSize: 9,
@@ -1241,57 +1242,59 @@ const s: Record<string, React.CSSProperties> = {
   notiBox: {
     position: "absolute",
     right: 0,
-    top: 36,
-    width: 280,
-    maxHeight: 320,
+    top: 40,
+    width: 300,
+    maxHeight: 340,
     overflowY: "auto",
     background: "#fff",
-    borderRadius: 8,
-    boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+    borderRadius: 12,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
     zIndex: 10000,
+    border: "1px solid #E5E7EB",
   },
   notiHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "10px 14px",
-    borderBottom: "1px solid #eee",
-    fontWeight: "bold",
+    padding: "12px 16px",
+    borderBottom: "1px solid #E5E7EB",
+    fontWeight: "700",
     fontSize: 13,
+    color: "#1F2937",
   },
-  notiReadAll: { background: "none", border: "none", color: "#5F8F7B", cursor: "pointer", fontSize: 11 },
-  notiEmpty: { padding: 16, textAlign: "center", color: "#aaa", fontSize: 13 },
-  notiItem: { padding: "8px 14px", borderBottom: "1px solid #f0f0f0", cursor: "pointer", display: "flex", flexDirection: "column", gap: 2 },
-  notiMsg: { fontSize: 12, color: "#333" },
-  notiTime: { fontSize: 11, color: "#aaa" },
+  notiReadAll: { background: "none", border: "none", color: "#5F8F7B", cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  notiEmpty: { padding: 20, textAlign: "center", color: "#A9CBBB", fontSize: 13 },
+  notiItem: { padding: "10px 16px", borderBottom: "1px solid #F3F4F6", cursor: "pointer", display: "flex", flexDirection: "column", gap: 3 },
+  notiMsg: { fontSize: 13, color: "#1F2937" },
+  notiTime: { fontSize: 11, color: "#6B7280" },
 
   body: { display: "flex", flex: 1, overflow: "hidden" },
 
-  sidebar: { width: 200, borderRight: "1px solid #eee", display: "flex", flexDirection: "column", flexShrink: 0, background: '#EAF5DC' },
-  sidebarTitle: { padding: "10px 12px", fontWeight: "bold", fontSize: 13, color: "#555", borderBottom: "1px solid #eee", flexShrink: 0 },
-  sideEmpty: { padding: 16, textAlign: "center", color: "#aaa", fontSize: 12 },
-  roomItem: { display: "flex", alignItems: "center", padding: "10px 12px", cursor: "pointer", gap: 10, borderBottom: "1px solid #EAF4F0" },
-  roomAvatar: { fontSize: 22, flexShrink: 0 },
+  sidebar: { width: 200, borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", flexShrink: 0, background: '#fff' },
+  sidebarTitle: { padding: "12px 14px", fontWeight: "700", fontSize: 13, color: "#1F2937", borderBottom: "1px solid #E5E7EB", flexShrink: 0 },
+  sideEmpty: { padding: 16, textAlign: "center", color: "#A9CBBB", fontSize: 12 },
+  roomItem: { display: "flex", alignItems: "center", padding: "10px 12px", cursor: "pointer", gap: 10, borderBottom: "1px solid #F3F4F6" },
+  roomAvatar: { fontSize: 20, flexShrink: 0 },
   roomInfo: { flex: 1, minWidth: 0 },
   roomRow: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  roomName: { fontSize: 13, fontWeight: "bold", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  roomTime: { fontSize: 10, color: "#aaa", flexShrink: 0, marginLeft: 4 },
-  roomLast: { fontSize: 11, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  unreadBadge: { background: "#e53935", color: "#fff", borderRadius: 12, fontSize: 10, padding: "1px 5px", fontWeight: "bold", flexShrink: 0 },
+  roomName: { fontSize: 13, fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#1F2937" },
+  roomTime: { fontSize: 10, color: "#6B7280", flexShrink: 0, marginLeft: 4 },
+  roomLast: { fontSize: 11, color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  unreadBadge: { background: "#E38B6D", color: "#fff", borderRadius: 12, fontSize: 10, padding: "1px 6px", fontWeight: "bold", flexShrink: 0 },
 
   chatArea: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-  noRoom: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#bbb', fontSize: 14, background: '#EAF5DC' },
-  msgArea: { flex: 1, overflowY: 'auto', padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 10, background: '#EAF5DC' },
+  noRoom: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#A9CBBB', fontSize: 14, background: '#F8FAF9' },
+  msgArea: { flex: 1, overflowY: 'auto', padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10, background: '#F8FAF9' },
   msgRow: { display: 'flex', alignItems: 'flex-end', gap: 6 },
-  avatar: { width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 'bold', flexShrink: 0, alignSelf: 'flex-start' },
-  nick: { fontSize: 12, color: '#333', fontWeight: 600, marginBottom: 4 },
-  bubble: { padding: '8px 12px', borderRadius: 18, fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word', width: 'fit-content', maxWidth: 240, textAlign: 'left' as const },
-  msgTime: { fontSize: 11, color: '#999', flexShrink: 0, marginBottom: 2 },
-  unreadCount: { fontSize: 11, color: '#E9C46A', fontWeight: 'bold', flexShrink: 0, marginBottom: 2, lineHeight: 1 },
-  inputArea: { display: 'flex', alignItems: 'center', borderTop: '1px solid #eee', background: '#EAF5DC', flexShrink: 0 },
-  iconBtn: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '0 2px', flexShrink: 0 },
-  textInput: { flex: 1, padding: '8px 12px', border: '1px solid #ddd', borderRadius: 20, fontSize: 13, outline: 'none', resize: 'none' as const, lineHeight: 1.5, maxHeight: 120, overflowY: 'auto' as const, fontFamily: 'inherit' },
-  sendBtn: { background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 16, padding: '8px 14px', fontWeight: 'bold', cursor: 'pointer', fontSize: 12, flexShrink: 0 },
+  avatar: { width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 'bold', flexShrink: 0, alignSelf: 'flex-start' },
+  nick: { fontSize: 11, color: '#6B7280', fontWeight: 600, marginBottom: 3 },
+  bubble: { padding: '8px 12px', borderRadius: 16, fontSize: 13, lineHeight: 1.5, wordBreak: 'break-word', width: 'fit-content', maxWidth: 240, textAlign: 'left' as const },
+  msgTime: { fontSize: 10, color: '#A9CBBB', flexShrink: 0, marginBottom: 2 },
+  unreadCount: { fontSize: 10, color: '#E38B6D', fontWeight: 'bold', flexShrink: 0, marginBottom: 2, lineHeight: 1 },
+  inputArea: { display: 'flex', alignItems: 'center', borderTop: '1px solid #E5E7EB', background: '#fff', flexShrink: 0 },
+  iconBtn: { background: 'none', border: 'none', fontSize: 17, cursor: 'pointer', padding: '0 2px', flexShrink: 0, color: '#6B7280' },
+  textInput: { flex: 1, padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: 20, fontSize: 13, outline: 'none', resize: 'none' as const, lineHeight: 1.5, maxHeight: 120, overflowY: 'auto' as const, fontFamily: 'inherit', background: '#F8FAF9' },
+  sendBtn: { background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 16, padding: '8px 14px', fontWeight: '700', cursor: 'pointer', fontSize: 12, flexShrink: 0 },
 
   rHandle: { position: "absolute", zIndex: 10001, background: "transparent" },
   rN: { top: 0, left: 8, right: 8, height: 5, cursor: "n-resize" },

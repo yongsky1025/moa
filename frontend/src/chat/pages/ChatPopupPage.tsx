@@ -120,8 +120,8 @@ function ChatInputArea({ activeRoom, replyTo, onCancelReply, onSend, onFileUploa
       )}
       <div style={s.inputWrap}>
         <div style={s.inputToolbar}>
-          <button style={s.toolBtn} onClick={() => fileInputRef.current?.click()}>📎</button>
-          <button ref={emojiBtnRef} style={s.toolBtn} onClick={() => setShowEmoji((v) => !v)}>😊</button>
+          <button className="chat-icon-btn" style={s.toolBtn} onClick={() => fileInputRef.current?.click()}>📎</button>
+          <button ref={emojiBtnRef} className="chat-icon-btn" style={s.toolBtn} onClick={() => setShowEmoji((v) => !v)}>😊</button>
           <button
             style={{ ...s.toolBtn, color: aiLoading ? '#aaa' : '#5F8F7B', fontSize: 15 }}
             disabled={aiLoading || !activeRoom}
@@ -166,7 +166,7 @@ function ChatInputArea({ activeRoom, replyTo, onCancelReply, onSend, onFileUploa
               }
             }}
           />
-          <button style={{ ...s.sendBtn, opacity: input.trim() ? 1 : 0.4 }} onClick={handleSend} disabled={!input.trim()}>
+          <button className="chat-send-btn" style={{ ...s.sendBtn, opacity: input.trim() ? 1 : 0.4 }} onClick={handleSend} disabled={!input.trim()}>
             전송
           </button>
         </div>
@@ -757,7 +757,7 @@ export default function ChatPopupPage() {
                     chatNotifications.map((n) => (
                       <div
                         key={n.id}
-                        style={{ ...s.notiItem, background: n.isRead ? "#fafafa" : "#EAF4F0", cursor: 'pointer' }}
+                        className="chat-noti-item" style={{ ...s.notiItem, background: n.isRead ? '#F8FAF9' : '#FDF1EC', cursor: 'pointer' }}
                         onClick={() => handleNotiClick(n)}
                       >
                         <span style={s.notiMsg}>{n.message}</span>
@@ -784,7 +784,7 @@ export default function ChatPopupPage() {
             filteredRooms.map((r) => (
               <div
                 key={r.roomId}
-                style={{ ...s.roomItem, background: r.roomId === activeRoom?.roomId ? "#EAF4F0" : "transparent" }}
+                className="chat-room-item" style={{ ...s.roomItem, background: r.roomId === activeRoom?.roomId ? "#EAF4F0" : "transparent" }}
                 onClick={() => setActiveRoom(r)}
                 onContextMenu={(e) => handleRoomContextMenu(e, r)}
               >
@@ -818,7 +818,7 @@ export default function ChatPopupPage() {
         <div ref={ctxMenuRef} style={{ ...s.ctxMenu, top: roomCtxMenu.y, left: roomCtxMenu.x }} onClick={(e) => e.stopPropagation()}>
           {roomCtxMenu.room.roomType === "GROUP" && (
             <button
-              style={s.ctxItem}
+              className="chat-ctx-item" style={s.ctxItem}
               onClick={() => {
                 setRenaming({ roomId: roomCtxMenu.room.roomId, value: roomCtxMenu.room.name ?? roomLabel(roomCtxMenu.room) });
                 setRoomCtxMenu(null);
@@ -827,10 +827,10 @@ export default function ChatPopupPage() {
               ✏️ 방 이름 변경
             </button>
           )}
-          <button style={s.ctxItem} onClick={() => handleTogglePin(roomCtxMenu.room.roomId)}>
-            {roomCtxMenu.room.isPinned ? '⭐ 즐겨찾기 해제' : '☆ 즐겨찾기 추가'}
+          <button className="chat-ctx-item" style={s.ctxItem} onClick={() => handleTogglePin(roomCtxMenu.room.roomId)}>
+{roomCtxMenu.room.isPinned ? '⭐ 즐겨찾기 해제' : '☆ 즐겨찾기 추가'}
           </button>
-          <button style={s.ctxItem} onClick={() => { toggleMute(roomCtxMenu.room.roomId); setRoomCtxMenu(null); }}>
+          <button className="chat-ctx-item" style={s.ctxItem} onClick={() => { toggleMute(roomCtxMenu.room.roomId); setRoomCtxMenu(null); }}>
             {mutedRooms.has(roomCtxMenu.room.roomId) ? '🔔 알림 켜기' : '🔕 알림 끄기'}
           </button>
           <button style={{ ...s.ctxItem, color: "#c62828" }} onClick={() => handleRoomLeave(roomCtxMenu.room.roomId)}>
@@ -929,7 +929,7 @@ export default function ChatPopupPage() {
       {/* 사이드바 리사이즈 핸들 */}
       <div
         onMouseDown={onSidebarResizeMouseDown}
-        style={{ width: 4, cursor: 'col-resize', background: '#EAF5DC', flexShrink: 0, zIndex: 10, alignSelf: 'stretch' }}
+        style={{ width: 4, cursor: 'col-resize', background: '#E5E7EB', flexShrink: 0, zIndex: 10, alignSelf: 'stretch' }}
       />
 
       {/* ── 채팅 영역 ── */}
@@ -974,13 +974,13 @@ export default function ChatPopupPage() {
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={() => { setShowSearch(v => !v); if (!showSearch) setTimeout(() => searchInputRef.current?.focus(), 50); else setSearchQuery(""); }}
-                  style={{ ...s.headerBtn, background: showSearch ? '#D1EAE0' : 'none' }}
+                  className="chat-header-btn" style={{ ...s.headerBtn, background: showSearch ? '#EAF4F0' : 'none' }}
                   title="메시지 검색"
                 >
                   🔍
                 </button>
                 {activeRoom.roomType === "GROUP" && (
-                  <button style={s.headerBtn} onClick={() => setShowMembers((v) => !v)}>
+                  <button className="chat-header-btn" style={s.headerBtn} onClick={() => setShowMembers((v) => !v)}>
                     👥 멤버
                   </button>
                 )}
@@ -1077,14 +1077,14 @@ export default function ChatPopupPage() {
                                 style={{
                                   ...s.bubble,
                                   position: 'relative',
-                                  background: msg.isDeleted ? '#e0e0e0' : !isFileUrl(msg.content) ? (mine ? '#FEE500' : '#F0F0F0') : 'transparent',
-                                  color: msg.isDeleted ? '#999' : '#1A1A1A',
+                                  background: msg.isDeleted ? '#F3F4F6' : !isFileUrl(msg.content) ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
+                                  color: msg.isDeleted ? '#9CA3AF' : mine ? '#fff' : '#1F2937',
+                                  border: (!msg.isDeleted && !mine && !isFileUrl(msg.content)) ? '1px solid #E5E7EB' : undefined,
                                   fontStyle: msg.isDeleted ? 'italic' : 'normal',
                                   borderRadius: msg.isDeleted ? 18 : isFileUrl(msg.content) ? 8 : (mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px'),
                                   padding: (isFileUrl(msg.content) && !msg.isDeleted) || msg.replyToId ? 0 : '8px 12px',
                                   overflow: msg.replyToId ? 'hidden' : undefined,
-                                  boxShadow: isFileUrl(msg.content) && !msg.isDeleted ? 'none' : mine ? '0 1px 3px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.12)',
-                                  border: !isFileUrl(msg.content) && !mine && !msg.isDeleted ? '1px solid rgba(0,0,0,0.08)' : 'none',
+                                  boxShadow: isFileUrl(msg.content) && !msg.isDeleted ? 'none' : '0 1px 3px rgba(0,0,0,0.08)',
                                 }}
                                 onContextMenu={!msg.isDeleted ? (e) => {
                                   e.preventDefault();
@@ -1094,7 +1094,7 @@ export default function ChatPopupPage() {
                               >
                                 {/* 답장 인용 */}
                                 {msg.replyToId && (
-                                  <div style={{ background: mine ? 'rgba(0,0,0,0.1)' : '#F0F0F0', padding: '7px 12px 6px', borderBottom: '1px solid ' + (mine ? 'rgba(0,0,0,0.08)' : '#DDE1E6') }}>
+                                  <div style={{ background: mine ? 'rgba(255,255,255,0.15)' : '#F3F4F6', padding: '7px 12px 6px', borderBottom: '1px solid ' + (mine ? 'rgba(255,255,255,0.1)' : '#E5E7EB') }}>
                                     <div style={{ fontSize: 11, fontWeight: 700, color: mine ? 'rgba(0,0,0,0.7)' : '#5F8F7B', marginBottom: 2 }}>{msg.replyToNickname}에게 답장</div>
                                     <div style={{ fontSize: 11, color: mine ? 'rgba(0,0,0,0.5)' : '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{msg.replyToContent}</div>
                                   </div>
@@ -1177,7 +1177,7 @@ export default function ChatPopupPage() {
 
             {/* 읽지 않은 메시지 이동 버튼 */}
             {unreadOnEnter > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', background: '#EAF5DC', flexShrink: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', background: '#F8FAF9', flexShrink: 0 }}>
                 <button
                   onClick={() => {
                     const el = msgAreaRef.current?.querySelector<HTMLElement>('[data-first-unread]');
@@ -1216,19 +1216,19 @@ const s: Record<string, React.CSSProperties> = {
     height: "100vh",
     fontFamily: '"Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
     overflow: "hidden",
-    background: "#EAF5DC",
+    background: "#F8FAF9",
   },
 
   // 사이드바
-  sidebar: { width: 280, display: "flex", flexDirection: "column", background: "#EAF5DC", borderRight: "1px solid #d4e8c2", flexShrink: 0 },
+  sidebar: { width: 280, display: "flex", flexDirection: "column", background: "#fff", borderRight: "1px solid #E5E7EB", flexShrink: 0 },
   sideHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 16px 8px", flexShrink: 0 },
-  sideTitle: { fontSize: 18, fontWeight: "bold", color: "#1F2937" },
-  iconBtn: { background: "none", border: "none", fontSize: 18, cursor: "pointer", position: "relative", padding: 4 },
+  sideTitle: { fontSize: 18, fontWeight: "700", color: "#1F2937" },
+  iconBtn: { background: "none", border: "none", fontSize: 18, cursor: "pointer", position: "relative", padding: 4, color: "#6B7280" },
   dot: {
     position: "absolute",
     top: 0,
     right: 0,
-    background: "#E3886D",
+    background: "#E38B6D",
     color: "#fff",
     borderRadius: "50%",
     fontSize: 9,
@@ -1238,17 +1238,18 @@ const s: Record<string, React.CSSProperties> = {
   searchWrap: { padding: "6px 12px 10px", flexShrink: 0 },
   searchInput: {
     width: "100%",
-    padding: "8px 12px",
+    padding: "8px 14px",
     border: "1px solid #E5E7EB",
     borderRadius: 20,
-    background: "#EAF4F0",
+    background: "#F8FAF9",
     fontSize: 13,
     outline: "none",
     boxSizing: "border-box" as const,
+    color: "#1F2937",
   },
   roomList: { flex: 1, overflowY: "auto" as const },
-  noRoom: { textAlign: "center" as const, padding: 24, color: "#A9C8BB", fontSize: 13 },
-  roomItem: { display: "flex", alignItems: "center", padding: "10px 14px", cursor: "pointer", gap: 12, borderBottom: "1px solid #E5E7EB" },
+  noRoom: { textAlign: "center" as const, padding: 24, color: "#A9CBBB", fontSize: 13 },
+  roomItem: { display: "flex", alignItems: "center", padding: "10px 14px", cursor: "pointer", gap: 12, borderBottom: "1px solid #F3F4F6" },
   roomAvatar: {
     width: 44,
     height: 44,
@@ -1258,18 +1259,19 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     fontSize: 20,
     flexShrink: 0,
+    background: "#EAF4F0",
   },
   roomMeta: { flex: 1, minWidth: 0 },
   roomTop: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   roomName: { fontSize: 14, fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, color: "#1F2937" },
   roomTime: { fontSize: 11, color: "#6B7280", flexShrink: 0, marginLeft: 4 },
   roomLast: { fontSize: 12, color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const },
-  unreadBadge: { background: "#E3886D", color: "#fff", borderRadius: 10, fontSize: 10, padding: "2px 6px", fontWeight: "bold", flexShrink: 0 },
+  unreadBadge: { background: "#E38B6D", color: "#fff", borderRadius: 10, fontSize: 10, padding: "2px 6px", fontWeight: "bold", flexShrink: 0 },
   totalUnread: {
     padding: "10px 16px",
-    background: "#EAF4F0",
+    background: "#F8FAF9",
     fontSize: 12,
-    color: "#3D5F52",
+    color: "#6B7280",
     textAlign: "center" as const,
     borderTop: "1px solid #E5E7EB",
   },
@@ -1278,52 +1280,54 @@ const s: Record<string, React.CSSProperties> = {
   notiDropdown: {
     position: "absolute" as const,
     left: 0,
-    top: 36,
-    width: 280,
-    maxHeight: 320,
+    top: 40,
+    width: 300,
+    maxHeight: 340,
     overflowY: "auto" as const,
     background: "#fff",
-    borderRadius: 10,
-    boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+    borderRadius: 12,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
     zIndex: 1000,
+    border: "1px solid #E5E7EB",
   },
-  notiHead: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: "1px solid #E5E7EB" },
-  notiAll: { background: "none", border: "none", color: "#5F8F7B", cursor: "pointer", fontSize: 12 },
-  notiEmpty: { padding: 16, textAlign: "center" as const, color: "#A9C8BB", fontSize: 13 },
-  notiItem: { padding: "10px 14px", borderBottom: "1px solid #E5E7EB", cursor: "pointer", display: "flex", flexDirection: "column" as const, gap: 2 },
+  notiHead: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #E5E7EB" },
+  notiAll: { background: "none", border: "none", color: "#5F8F7B", cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  notiEmpty: { padding: 20, textAlign: "center" as const, color: "#A9CBBB", fontSize: 13 },
+  notiItem: { padding: "10px 14px", borderBottom: "1px solid #F3F4F6", cursor: "pointer", display: "flex", flexDirection: "column" as const, gap: 3 },
   notiMsg: { fontSize: 13, color: "#1F2937" },
   notiTime: { fontSize: 11, color: "#6B7280" },
 
   // 채팅 영역
-  chat: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#EAF5DC" },
+  chat: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#F8FAF9" },
   placeholder: {
     flex: 1,
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    color: "#A9C8BB",
-    background: "#EAF5DC",
+    color: "#A9CBBB",
+    background: "#F8FAF9",
   },
   chatHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     padding: "12px 20px",
-    background: "#EAF5DC",
-    borderBottom: "1px solid #d4e8c2",
+    background: "#fff",
+    borderBottom: "1px solid #E5E7EB",
     flexShrink: 0,
   },
-  chatTitle: { fontWeight: "bold", fontSize: 15, color: "#1F2937" },
+  chatTitle: { fontWeight: "700", fontSize: 15, color: "#1F2937" },
   chatSub: { fontSize: 12, color: "#6B7280", marginTop: 2 },
   headerBtn: {
-    background: "#EAF4F0",
-    border: "1px solid #A9C8BB",
+    background: "#F8FAF9",
+    border: "1px solid #E5E7EB",
     borderRadius: 8,
     padding: "6px 12px",
     cursor: "pointer",
     fontSize: 12,
-    color: "#3D5F52",
+    color: "#5F8F7B",
+    fontWeight: 600,
   },
   editNameBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 13, padding: "0 2px", opacity: 0.5 },
   roomNameInput: { flex: 1, padding: "5px 10px", border: "1px solid #5F8F7B", borderRadius: 8, fontSize: 14, outline: "none", minWidth: 0 },
@@ -1338,9 +1342,9 @@ const s: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   nameCancelBtn: {
-    background: "#EAF4F0",
-    color: "#1F2937",
-    border: "none",
+    background: "#F8FAF9",
+    color: "#6B7280",
+    border: "1px solid #E5E7EB",
     borderRadius: 6,
     padding: "5px 10px",
     cursor: "pointer",
@@ -1354,7 +1358,7 @@ const s: Record<string, React.CSSProperties> = {
     flexWrap: "wrap" as const,
     gap: 10,
     padding: "10px 16px",
-    background: "#fff",
+    background: "#F8FAF9",
     borderBottom: "1px solid #E5E7EB",
     maxHeight: 120,
     overflowY: "auto" as const,
@@ -1376,34 +1380,34 @@ const s: Record<string, React.CSSProperties> = {
   leaderTag: { fontSize: 10, background: "#EAF4F0", color: "#3D5F52", borderRadius: 6, padding: "1px 5px" },
 
   // 메시지
-  msgArea: { flex: 1, overflowY: 'auto' as const, padding: '20px 16px 28px', display: 'flex', flexDirection: 'column', gap: 16 },
-  firstMsg: { textAlign: 'center' as const, color: '#A9C8BB', fontSize: 13, marginTop: 20 },
+  msgArea: { flex: 1, overflowY: 'auto' as const, padding: '20px 16px 28px', display: 'flex', flexDirection: 'column', gap: 14 },
+  firstMsg: { textAlign: 'center' as const, color: '#A9CBBB', fontSize: 13, marginTop: 20 },
   msgRow: { display: 'flex', alignItems: 'flex-end', gap: 8 },
   avatar: { width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: 14, flexShrink: 0, alignSelf: 'flex-start' },
   senderName: { fontSize: 11, color: '#6B7280', marginBottom: 4, marginLeft: 4 },
-  bubble: { padding: '8px 12px', borderRadius: 18, fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word' as const, wordWrap: 'break-word' as const, width: 'fit-content', maxWidth: 320, textAlign: 'left' as const },
-  msgTime: { fontSize: 11, color: '#999', flexShrink: 0, marginBottom: 10 },
-  unreadCount: { fontSize: 11, color: '#E9C46A', fontWeight: 'bold', flexShrink: 0, marginBottom: 10, lineHeight: 1 },
+  bubble: { padding: '9px 14px', borderRadius: 18, fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word' as const, wordWrap: 'break-word' as const, width: 'fit-content', maxWidth: 320, textAlign: 'left' as const },
+  msgTime: { fontSize: 11, color: '#A9CBBB', flexShrink: 0, marginBottom: 10 },
+  unreadCount: { fontSize: 11, color: '#E38B6D', fontWeight: 'bold', flexShrink: 0, marginBottom: 10, lineHeight: 1 },
 
   // 메시지 수정/삭제 메뉴
-  menuBox: { position: 'absolute' as const, right: 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 90, overflow: 'hidden' as const },
-  menuItem: { display: 'block', width: '100%', padding: '11px 16px', background: 'none', border: 'none', borderBottom: '1px solid #E5E7EB', textAlign: 'left' as const, cursor: 'pointer', fontSize: 13, color: '#1F2937' },
+  menuBox: { position: 'absolute' as const, right: 0, top: '100%', marginTop: 4, background: '#fff', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 100, overflow: 'hidden' as const, border: '1px solid #E5E7EB' },
+  menuItem: { display: 'block', width: '100%', padding: '11px 16px', background: 'none', border: 'none', borderBottom: '1px solid #F3F4F6', textAlign: 'left' as const, cursor: 'pointer', fontSize: 13, color: '#1F2937' },
   editInput: { padding: '7px 10px', border: '1px solid #5F8F7B', borderRadius: 8, fontSize: 13, outline: 'none' },
   editConfirmBtn: { flex: 1, padding: '4px', background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
-  editCancelBtn: { flex: 1, padding: '4px', background: '#EAF4F0', color: '#1F2937', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
+  editCancelBtn: { flex: 1, padding: '4px', background: '#F3F4F6', color: '#6B7280', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
 
   // AI 스마트 답변
-  aiSuggestWrap: { background: "#F0FAF5", borderTop: "1px solid #D1EAE0", padding: "8px 12px 6px", flexShrink: 0 },
+  aiSuggestWrap: { background: "#F8FAF9", borderTop: "1px solid #E5E7EB", padding: "8px 12px 6px", flexShrink: 0 },
   aiSuggestHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  aiCloseBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#aaa", padding: "0 2px" },
+  aiCloseBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#A9CBBB", padding: "0 2px" },
   aiQuickReplies: { display: "flex", gap: 6, flexWrap: "wrap" as const, marginBottom: 4 },
   aiChip: { background: "#fff", border: "1px solid #5F8F7B", color: "#5F8F7B", borderRadius: 16, padding: "4px 12px", fontSize: 12, cursor: "pointer", fontWeight: 500 },
-  aiDraftBtn: { background: "#fff", border: "1px solid #D1EAE0", borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer", color: "#333", textAlign: "left" as const, width: "100%", display: "flex", alignItems: "center" },
+  aiDraftBtn: { background: "#fff", border: "1px solid #E5E7EB", borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer", color: "#1F2937", textAlign: "left" as const, width: "100%", display: "flex", alignItems: "center" },
 
   // 입력창
-  inputWrap: { background: "#EAF5DC", borderTop: "1px solid #d4e8c2", flexShrink: 0 },
+  inputWrap: { background: "#fff", borderTop: "1px solid #E5E7EB", flexShrink: 0 },
   inputToolbar: { display: "flex", gap: 4, padding: "8px 12px 0" },
-  toolBtn: { background: "none", border: "none", fontSize: 18, cursor: "pointer", padding: "4px 6px", borderRadius: 6 },
+  toolBtn: { background: "none", border: "none", fontSize: 18, cursor: "pointer", padding: "4px 6px", borderRadius: 6, color: "#6B7280" },
   inputRow: { display: "flex", alignItems: "flex-end", gap: 8, padding: "6px 12px 10px" },
   textarea: {
     flex: 1,
@@ -1417,6 +1421,8 @@ const s: Record<string, React.CSSProperties> = {
     maxHeight: 120,
     overflowY: "auto" as const,
     fontFamily: "inherit",
+    background: "#F8FAF9",
+    color: "#1F2937",
   },
   sendBtn: {
     background: "#5F8F7B",
@@ -1424,7 +1430,7 @@ const s: Record<string, React.CSSProperties> = {
     border: "none",
     borderRadius: 20,
     padding: "10px 18px",
-    fontWeight: "bold",
+    fontWeight: "700",
     cursor: "pointer",
     fontSize: 14,
     flexShrink: 0,
@@ -1457,7 +1463,7 @@ const s: Record<string, React.CSSProperties> = {
   modalTitle: { fontWeight: 'bold', fontSize: 15, color: '#1F2937', marginBottom: 14 },
   modalInput: { width: '100%', padding: '10px 14px', border: '1px solid #5F8F7B', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' as const },
   modalBtns: { display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' },
-  modalCancel: { padding: '8px 16px', background: '#EAF4F0', color: '#1F2937', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
+  modalCancel: { padding: '8px 16px', background: '#F3F4F6', color: '#6B7280', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
   modalConfirm: { padding: '8px 16px', background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 'bold' },
   // 에러 토스트
   errorToast: { position: 'fixed' as const, top: 16, left: '50%', transform: 'translateX(-50%)', background: '#c62828', color: '#fff', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 'bold', zIndex: 99999, display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.25)', maxWidth: 380, whiteSpace: 'pre-wrap' as const },
