@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
-import { Image as ImageIcon } from "lucide-react";
+import { Globe, Image as ImageIcon, Lock } from "lucide-react";
 import type { CircleBoardResponse } from "../../api/circleBoardApi";
 import { circleBoardApi } from "../../api/circleBoardApi";
 import UserAvatar from "../../common/components/UserAvatar";
@@ -11,6 +11,7 @@ import "../../reply/styles/replySection.css";
 
 interface CircleActivityComposerProps {
   circleId: number;
+  circleName?: string;
   boards: CircleBoardResponse[];
   selectedBoard: "all" | number;
   onCreated: () => void;
@@ -18,6 +19,7 @@ interface CircleActivityComposerProps {
 
 export default function CircleActivityComposer({
   circleId,
+  circleName,
   boards,
   selectedBoard,
   onCreated,
@@ -96,7 +98,7 @@ export default function CircleActivityComposer({
       return;
     }
     if (!targetBoardId) {
-      setError("작성 가능한 모임활동 게시판이 없습니다.");
+      setError("작성 가능한 모임 활동 게시판이 없습니다.");
       return;
     }
 
@@ -120,7 +122,7 @@ export default function CircleActivityComposer({
         uploadedUrls.push(metadata.fileUrl);
       }
 
-      const title = buildActivityTitle(trimmed);
+      const title = buildActivityTitle(circleName);
       const content = buildActivityHtml(trimmed, uploadedUrls);
       await circleBoardApi.createPost(circleId, targetBoardId, {
         title,
@@ -184,56 +186,14 @@ export default function CircleActivityComposer({
       </div>
 
       {previewUrls.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              previewUrls.length === 1
-                ? "minmax(0, 1fr)"
-                : previewUrls.length === 2
-                  ? "repeat(2, minmax(0, 1fr))"
-                  : "repeat(2, minmax(0, 1fr))",
-            gap: 8,
-            marginTop: 6,
-          }}
-        >
-          {previewUrls.map((url, idx) => (
-            <div key={`${url}-${idx}`} style={{ position: "relative" }}>
-              <img
-                src={url}
-                alt={`preview-${idx}`}
-                style={{
-                  width: "100%",
-                  height: previewUrls.length === 1 ? 260 : 170,
-                  objectFit: "cover",
-                  borderRadius: 10,
-                  border: "1px solid #e5e7eb",
-                  backgroundColor: "#f3f4f6",
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setFiles((prev) => prev.filter((_, fileIdx) => fileIdx !== idx))}
-                style={{
-                  position: "absolute",
-                  top: 6,
-                  right: 6,
-                  width: 22,
-                  height: 22,
-                  border: "none",
-                  borderRadius: "50%",
-                  backgroundColor: "rgba(17,24,39,0.78)",
-                  color: "#fff",
-                  fontSize: 12,
-                  cursor: "pointer",
-                  lineHeight: 1,
-                }}
-                aria-label="사진 제거"
-              >
-                ×
-              </button>
+        <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
+          {previewUrls.length === 1 && renderPreviewItem(previewUrls[0], 0, 260, setFiles)}
+
+          {previewUrls.length >= 2 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+              {previewUrls.map((url, idx) => renderPreviewItem(url, idx, 170, setFiles))}
             </div>
-          ))}
+          )}
         </div>
       )}
 
@@ -276,8 +236,18 @@ export default function CircleActivityComposer({
               }}
             />
           </button>
-          <span style={{ fontSize: 11, color: activityPublic ? "#166534" : "#64748b", fontWeight: 700 }}>
-            {activityPublic ? "공개" : "비공개"}
+          <span
+            style={{
+              fontSize: 13,
+              color: activityPublic ? "#166534" : "#64748b",
+              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            {activityPublic ? "전체" : "모임"}
+            {activityPublic ? <Globe size={12} aria-hidden="true" /> : <Lock size={12} aria-hidden="true" />}
           </span>
           <label
             style={{
@@ -334,6 +304,52 @@ export default function CircleActivityComposer({
   );
 }
 
+function renderPreviewItem(
+  url: string,
+  idx: number,
+  height: number,
+  setFiles: Dispatch<SetStateAction<File[]>>,
+) {
+  return (
+    <div key={`${url}-${idx}`} style={{ position: "relative" }}>
+      <img
+        src={url}
+        alt={`preview-${idx}`}
+        style={{
+          width: "100%",
+          height,
+          objectFit: "cover",
+          borderRadius: 10,
+          border: "1px solid #e5e7eb",
+          backgroundColor: "#f3f4f6",
+          display: "block",
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => setFiles((prev) => prev.filter((_, fileIdx) => fileIdx !== idx))}
+        style={{
+          position: "absolute",
+          top: 6,
+          right: 6,
+          width: 22,
+          height: 22,
+          border: "none",
+          borderRadius: "50%",
+          backgroundColor: "rgba(17,24,39,0.78)",
+          color: "#fff",
+          fontSize: 12,
+          cursor: "pointer",
+          lineHeight: 1,
+        }}
+        aria-label="사진 제거"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 const composerCardStyle: React.CSSProperties = {
   border: "1px solid #e5e7eb",
   borderRadius: 12,
@@ -345,12 +361,26 @@ const composerCardStyle: React.CSSProperties = {
   zIndex: 30,
 };
 
-function buildActivityTitle(text: string) {
-  if (!text) return "모임활동";
-  const firstLine = text.split("\n").find((line) => line.trim().length > 0) ?? "";
-  const normalized = firstLine.trim();
-  if (normalized.length < 2) return "모임활동";
-  return normalized.slice(0, 80);
+function buildActivityTitle(circleName?: string) {
+  const normalizedCircleName = (circleName ?? "모임")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\p{L}\p{N}_-]/gu, "")
+    .slice(0, 30);
+
+  const date = new Date();
+  const yy = String(date.getFullYear()).slice(-2);
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const suffix = createShortId();
+  return `${normalizedCircleName || "모임"}-${yy}${mm}${dd}-${suffix}`;
+}
+
+function createShortId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID().replace(/-/g, "").slice(0, 4).toLowerCase();
+  }
+  return Math.random().toString(36).slice(2, 6).padEnd(4, "0");
 }
 
 function buildActivityHtml(text: string, imageUrls: string[]) {

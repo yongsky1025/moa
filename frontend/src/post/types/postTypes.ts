@@ -13,6 +13,9 @@ export interface PostRequest {
 export interface PostResponse {
   boardId: number;
   boardType?: "FREE" | "NOTICE" | "CIRCLE";
+  circleId?: number | null;
+  circleName?: string | null;
+  activityPublic?: boolean;
   postId: number;
   title: string;
   content: string;
@@ -59,6 +62,7 @@ export interface CommunityMyReply {
   postId: number;
   postTitle: string;
   boardId?: number;
+  circleId?: number | null;
   boardName?: string;
   boardType: "FREE" | "NOTICE" | "CIRCLE";
 }

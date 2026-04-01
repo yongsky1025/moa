@@ -386,8 +386,8 @@ export default function CircleBoardTabPage() {
     if (boardFilter !== "all") {
       return boardFilter;
     }
-    const activityBoard = effectiveCircleBoards.find((board) => board.circleBoardKind === "ACTIVITY");
-    return activityBoard?.boardId ?? effectiveCircleBoards[0]?.boardId ?? null;
+    const nonActivityBoard = effectiveCircleBoards.find((board) => board.circleBoardKind !== "ACTIVITY");
+    return nonActivityBoard?.boardId ?? effectiveCircleBoards[0]?.boardId ?? null;
   }, [boardFilter, effectiveCircleBoards]);
 
   const writeHref = defaultWriteBoardId
@@ -450,8 +450,14 @@ export default function CircleBoardTabPage() {
       boardFilter === "all"
         ? circlePostItems
         : circlePostItems.filter((post) => post.boardId === boardFilter);
-    return [...byBoard].sort(compareCirclePosts);
-  }, [boardFilter, circlePostItems, view]);
+
+    const visiblePosts =
+      view === "home" && boardFilter === "all"
+        ? byBoard.filter((post) => boardMap.get(post.boardId)?.circleBoardKind !== "ACTIVITY")
+        : byBoard;
+
+    return [...visiblePosts].sort(compareCirclePosts);
+  }, [boardFilter, boardMap, circlePostItems, view]);
 
   const filteredReplies = useMemo(() => {
     if (view !== "myReplies") {
@@ -490,8 +496,15 @@ export default function CircleBoardTabPage() {
     return boardMap.get(boardFilter)?.name ?? "게시판";
   }, [boardFilter, boardMap, view]);
 
+  const selectedCircleBoard = useMemo(
+    () => (boardFilter === "all" ? null : boardMap.get(boardFilter) ?? null),
+    [boardFilter, boardMap],
+  );
+  const isRestrictedStickyBoard =
+    selectedCircleBoard?.circleBoardKind === "NOTICE" || selectedCircleBoard?.circleBoardKind === "INTRO";
+
   const canEditBoardTitleInline =
-    isCircleLeader && editMode && view === "home" && boardFilter !== "all";
+    isCircleLeader && editMode && view === "home" && boardFilter !== "all" && !isRestrictedStickyBoard;
 
   useEffect(() => {
     if (boardFilter === "all") {
@@ -570,7 +583,7 @@ export default function CircleBoardTabPage() {
   };
 
   const openInlineRenameCircleBoard = () => {
-    if (!isCircleLeader || isBoardEditBusy || boardFilter === "all") {
+    if (!isCircleLeader || isBoardEditBusy || boardFilter === "all" || isRestrictedStickyBoard) {
       return;
     }
     const current = boardMap.get(boardFilter);
@@ -580,7 +593,7 @@ export default function CircleBoardTabPage() {
   };
 
   const handleRenameCircleBoard = () => {
-    if (!isCircleLeader || isBoardEditBusy || !editMode || boardFilter === "all") {
+    if (!isCircleLeader || isBoardEditBusy || !editMode || boardFilter === "all" || isRestrictedStickyBoard) {
       return;
     }
     const current = boardMap.get(boardFilter);
@@ -599,7 +612,7 @@ export default function CircleBoardTabPage() {
   };
 
   const handleDeleteCurrentCircleBoard = async () => {
-    if (!isCircleLeader || isBoardEditBusy || !editMode || boardFilter === "all") {
+    if (!isCircleLeader || isBoardEditBusy || !editMode || boardFilter === "all" || isRestrictedStickyBoard) {
       return;
     }
     const current = boardMap.get(boardFilter);

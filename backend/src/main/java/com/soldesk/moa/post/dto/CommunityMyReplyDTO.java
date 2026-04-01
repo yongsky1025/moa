@@ -23,6 +23,7 @@ public class CommunityMyReplyDTO {
     private Long postId;
     private String postTitle;
     private Long boardId;
+    private Long circleId;
     private String boardName;
     private BoardType boardType;
 }

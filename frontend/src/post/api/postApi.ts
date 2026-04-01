@@ -34,6 +34,14 @@ export const postApi = {
     api.get<PostResponse[]>("/api/posts/community", { params: { board } }),
   getCommunityPostsByBoardId: (boardId: number) =>
     api.get<PostResponse[]>("/api/posts/community", { params: { boardId } }),
+  getCommunityActivities: (params?: { size?: number }) =>
+    api.get<PostResponse[]>("/api/community/activities", { params }),
+  getMyCommunityActivityPosts: () =>
+    api.get<PostResponse[]>("/api/community/activities/my-posts"),
+  getMyCommunityActivityBookmarkedPosts: () =>
+    api.get<PostResponse[]>("/api/community/activities/bookmarks"),
+  getMyCommunityActivityReplies: () =>
+    api.get<CommunityMyReply[]>("/api/community/activities/my-replies"),
 
   getCommunityPostsPage: (params?: {
     board?: "all" | "notice" | "free";

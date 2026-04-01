@@ -83,7 +83,7 @@ export default function PostActionMenu({
         aria-label="북마크"
         onClick={handleBookmarkClick}
         className={`post-detail-bookmark-button ${bookmarked ? "on" : ""} ${
-          isBookmarkAnimating ? "pulse" : ""
+          isBookmarkAnimating ? "moa-reaction-pulse" : ""
         }`}
       >
         <Bookmark

@@ -41,7 +41,9 @@ export default function CircleBoardSidebarMenu({
 }: CircleBoardSidebarMenuProps) {
   const sortedBoards = useMemo(
     () =>
-      [...boards].sort((a, b) => {
+      [...boards]
+        .filter((board) => board.circleBoardKind !== "ACTIVITY")
+        .sort((a, b) => {
         const aOrder = CIRCLE_BOARD_KIND_ORDER[a.circleBoardKind ?? "CUSTOM"] ?? 99;
         const bOrder = CIRCLE_BOARD_KIND_ORDER[b.circleBoardKind ?? "CUSTOM"] ?? 99;
         if (aOrder !== bOrder) {

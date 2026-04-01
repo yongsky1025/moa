@@ -125,4 +125,43 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
             @Param("circleId") Long circleId,
             @Param("boardId") Long boardId);
 
+    @Query("""
+            select r
+            from Reply r
+            join fetch r.postId p
+            join fetch p.boardId b
+            where r.userId.userId = :userId
+              and r.deleted = false
+              and p.deleted = false
+              and b.deleted = false
+              and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+              and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+              and p.activityPublic = true
+            order by r.createDate desc, r.replyId desc
+            """)
+    List<Reply> findMyPublicActivityReplies(@Param("userId") Long userId);
+
+    @Query("""
+            select r
+            from Reply r
+            join fetch r.postId p
+            join fetch p.boardId b
+            where r.userId.userId = :userId
+              and r.deleted = false
+              and p.deleted = false
+              and b.deleted = false
+              and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+              and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+              and p.activityPublic = true
+              and exists (
+                  select cm.id
+                  from com.soldesk.moa.circle.entity.CircleMember cm
+                  where cm.user.userId = :userId
+                    and cm.circle = b.circleId
+                    and cm.status = com.soldesk.moa.circle.entity.constant.CircleMemberStatus.ACTIVE
+              )
+            order by r.createDate desc, r.replyId desc
+            """)
+    List<Reply> findMyMemberPublicActivityReplies(@Param("userId") Long userId);
+
 }

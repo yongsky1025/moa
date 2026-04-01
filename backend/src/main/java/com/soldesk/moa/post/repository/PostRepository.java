@@ -221,6 +221,41 @@ public interface PostRepository extends JpaRepository<Post, Long> {
       @Param("boardId") Long boardId);
 
   @Query("""
+          select p
+          from Post p
+          join p.boardId b
+          where p.userId.userId = :userId
+            and b.deleted = false
+            and p.deleted = false
+            and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+            and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+            and p.activityPublic = true
+          order by p.createDate desc
+      """)
+  List<Post> findMyPublicActivityPosts(@Param("userId") Long userId);
+
+  @Query("""
+          select p
+          from Post p
+          join p.boardId b
+          where p.userId.userId = :userId
+            and b.deleted = false
+            and p.deleted = false
+            and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+            and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+            and p.activityPublic = true
+            and exists (
+                select cm.id
+                from com.soldesk.moa.circle.entity.CircleMember cm
+                where cm.user.userId = :userId
+                  and cm.circle = b.circleId
+                  and cm.status = com.soldesk.moa.circle.entity.constant.CircleMemberStatus.ACTIVE
+            )
+          order by p.createDate desc
+      """)
+  List<Post> findMyMemberPublicActivityPosts(@Param("userId") Long userId);
+
+  @Query("""
           select distinct p
           from Reply r
           join r.postId p
@@ -330,6 +365,32 @@ public interface PostRepository extends JpaRepository<Post, Long> {
           order by p.createDate desc
       """)
   List<Object[]> findPublicCircleActivityPostsWithReplyCount(Pageable pageable);
+
+  @Query(
+      value = """
+          select p, count(r)
+          from Post p
+          join p.boardId b
+          left join Reply r on r.postId = p and r.deleted = false
+          where b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+            and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+            and p.activityPublic = true
+            and b.deleted = false
+            and p.deleted = false
+          group by p
+          order by p.createDate desc
+      """,
+      countQuery = """
+          select count(p)
+          from Post p
+          join p.boardId b
+          where b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+            and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+            and p.activityPublic = true
+            and b.deleted = false
+            and p.deleted = false
+      """)
+  Page<Object[]> findPublicCircleActivityPostsWithReplyCountPaged(Pageable pageable);
 
   @Query("""
           select p

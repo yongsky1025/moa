@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.entity.constant.CircleBoardKind;
 import com.soldesk.moa.board.service.BoardService;
 import com.soldesk.moa.post.dto.PostRequestDTO;
 import com.soldesk.moa.post.dto.PostResponseDTO;
@@ -49,8 +50,9 @@ public class CirclePostRestController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/posts")
     public List<PostResponseDTO> listAllBoards(@PathVariable("circleId") Long circleId,
+            @RequestParam(value = "circleBoardKind", required = false) CircleBoardKind circleBoardKind,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        return postService.listCircleAllBoardsPosts(circleId, auth.getUserId());
+        return postService.listCircleAllBoardsPosts(circleId, auth.getUserId(), circleBoardKind);
     }
 
     // 써클 Board, Post 리스트
@@ -67,6 +69,7 @@ public class CirclePostRestController {
     public List<PostResponseDTO> myBookmarkedPosts(
             @PathVariable("circleId") Long circleId,
             @RequestParam(value = "boardId", required = false) Long boardId,
+            @RequestParam(value = "circleBoardKind", required = false) CircleBoardKind circleBoardKind,
             @RequestParam(value = "q", required = false) String keyword,
             @RequestParam(value = "target", required = false, defaultValue = "ALL") String target,
             @AuthenticationPrincipal AuthUserDTO auth) {
@@ -75,7 +78,8 @@ public class CirclePostRestController {
                 circleId,
                 boardId,
                 keyword,
-                parseTarget(target));
+                parseTarget(target),
+                circleBoardKind);
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -83,6 +87,7 @@ public class CirclePostRestController {
     public List<PostResponseDTO> myPosts(
             @PathVariable("circleId") Long circleId,
             @RequestParam(value = "boardId", required = false) Long boardId,
+            @RequestParam(value = "circleBoardKind", required = false) CircleBoardKind circleBoardKind,
             @RequestParam(value = "q", required = false) String keyword,
             @RequestParam(value = "target", required = false, defaultValue = "ALL") String target,
             @AuthenticationPrincipal AuthUserDTO auth) {
@@ -91,7 +96,8 @@ public class CirclePostRestController {
                 circleId,
                 boardId,
                 keyword,
-                parseTarget(target));
+                parseTarget(target),
+                circleBoardKind);
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -99,6 +105,7 @@ public class CirclePostRestController {
     public List<CommunityMyReplyDTO> myReplies(
             @PathVariable("circleId") Long circleId,
             @RequestParam(value = "boardId", required = false) Long boardId,
+            @RequestParam(value = "circleBoardKind", required = false) CircleBoardKind circleBoardKind,
             @RequestParam(value = "q", required = false) String keyword,
             @RequestParam(value = "target", required = false, defaultValue = "ALL") String target,
             @AuthenticationPrincipal AuthUserDTO auth) {
@@ -107,7 +114,8 @@ public class CirclePostRestController {
                 circleId,
                 boardId,
                 keyword,
-                parseTarget(target));
+                parseTarget(target),
+                circleBoardKind);
     }
 
     @PreAuthorize("isAuthenticated()")
