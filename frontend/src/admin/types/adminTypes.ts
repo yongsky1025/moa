@@ -530,6 +530,16 @@ export type ActionType =
   | "WITHDRAW"
   | "JOIN_CIRCLE"
   | "LEAVE_CIRCLE"
+  | "APPROVE"
+  | "REJECT"
+  | "CLOSE"
+  | "RESTORE"
+  | "SANCTION"
+  | "CANCEL_SANCTION"
+  | "REPORT"
+  | "RESOLVE_REPORT"
+  | "RESERVE"
+  | "CANCEL_RESERVATION"
   | "UNKNOWN";
 
 export interface AdminActionLog {
@@ -543,6 +553,7 @@ export interface AdminActionLog {
   ipAddress: string | null;
   userAgent: string | null;
   timestamp: string; // ISO datetime
+  success: boolean | null; // null = 구버전 로그
 }
 
 export interface LogSearchDTO extends PageRequestDTO {}
