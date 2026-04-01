@@ -15,9 +15,6 @@ spring:
     hibernate:
       ddl-auto: create
 
-jwt:
-  secret: ${JWT_SECRET}
-
 app:
   # 프론트 로그인/리다이렉트 기준 URL (로컬)
   frontend-url: http://localhost:5173

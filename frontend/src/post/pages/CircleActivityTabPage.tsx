@@ -1,6 +1,6 @@
 import { Heart, Settings, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { circleApi } from "../../api/circleApi";
 import { circleBoardApi, type CircleBoardResponse } from "../../api/circleBoardApi";
 import { postApi } from "../api/postApi";
@@ -20,6 +20,7 @@ import { useAuthStore } from "../../store/authStore";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import CommunityActivityFeedCard from "../components/CommunityActivityFeedCard";
 import PostActionMenu from "../components/PostActionMenu";
+import { useInfiniteScroll } from "../../admin/hooks/useInfiniteScroll";
 
 const toDateLabel = (value: string) => {
   const d = new Date(value);
@@ -70,11 +71,14 @@ const applyLocalBookmarkState = (current: { bookmarked: boolean }) => ({
 });
 
 const REACTION_COMMIT_DEBOUNCE_MS = 300;
+const ACTIVITY_INITIAL_VISIBLE_COUNT = 10;
+const ACTIVITY_LOAD_MORE_COUNT = 10;
 
 export default function CircleActivityTabPage() {
   const { circleId } = useParams<{ circleId: string }>();
   const cid = Number(circleId);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isLoggedIn, user } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
 
@@ -96,6 +100,8 @@ export default function CircleActivityTabPage() {
   const [bookmarkByPostId, setBookmarkByPostId] = useState<
     Record<number, { bookmarked: boolean }>
   >({});
+  const [visiblePostCount, setVisiblePostCount] = useState(ACTIVITY_INITIAL_VISIBLE_COUNT);
+  const [visibleReplyCount, setVisibleReplyCount] = useState(ACTIVITY_INITIAL_VISIBLE_COUNT);
   const likeAnimationResetRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const reactionCommitDebounceRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const bookmarkCommitDebounceRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
@@ -143,6 +149,15 @@ export default function CircleActivityTabPage() {
   useEffect(() => {
     void loadActivityPage();
   }, [loadActivityPage]);
+
+  useEffect(() => {
+    const viewParam = searchParams.get("view");
+    if (viewParam === "myPosts" || viewParam === "myReplies" || viewParam === "scrap") {
+      setSelectedView(viewParam);
+      return;
+    }
+    setSelectedView("home");
+  }, [searchParams]);
 
   const refreshCurrentView = useCallback(async () => {
     if (!circleId || Number.isNaN(cid) || !activityBoardId) {
@@ -227,6 +242,48 @@ export default function CircleActivityTabPage() {
     }
     return postItems;
   }, [postItems, selectedView]);
+
+  const visiblePosts = useMemo(
+    () => filteredPosts.slice(0, visiblePostCount),
+    [filteredPosts, visiblePostCount],
+  );
+  const visibleReplies = useMemo(
+    () => replyItems.slice(0, visibleReplyCount),
+    [replyItems, visibleReplyCount],
+  );
+  const hasMorePosts = visiblePostCount < filteredPosts.length;
+  const hasMoreReplies = visibleReplyCount < replyItems.length;
+
+  const loadMorePosts = useCallback(() => {
+    setVisiblePostCount((prev) => Math.min(prev + ACTIVITY_LOAD_MORE_COUNT, filteredPosts.length));
+  }, [filteredPosts.length]);
+  const loadMoreReplies = useCallback(() => {
+    setVisibleReplyCount((prev) => Math.min(prev + ACTIVITY_LOAD_MORE_COUNT, replyItems.length));
+  }, [replyItems.length]);
+
+  const postSentinelRef = useInfiniteScroll(
+    loadMorePosts,
+    !listLoading && selectedView !== "myReplies" && hasMorePosts,
+    "260px",
+  );
+  const replySentinelRef = useInfiniteScroll(
+    loadMoreReplies,
+    !listLoading && selectedView === "myReplies" && hasMoreReplies,
+    "260px",
+  );
+
+  useEffect(() => {
+    setVisiblePostCount(ACTIVITY_INITIAL_VISIBLE_COUNT);
+    setVisibleReplyCount(ACTIVITY_INITIAL_VISIBLE_COUNT);
+  }, [selectedView]);
+
+  useEffect(() => {
+    setVisiblePostCount(ACTIVITY_INITIAL_VISIBLE_COUNT);
+  }, [filteredPosts]);
+
+  useEffect(() => {
+    setVisibleReplyCount(ACTIVITY_INITIAL_VISIBLE_COUNT);
+  }, [replyItems]);
 
   const emptyText = useMemo(() => {
     if ((selectedView === "myPosts" || selectedView === "myReplies" || selectedView === "scrap") && !isLoggedIn) {
@@ -350,8 +407,23 @@ export default function CircleActivityTabPage() {
   };
 
   const handleSelectView = (nextView: CommunityProfileQuickView) => {
+    setListLoading(true);
+    setPostItems([]);
+    setReplyItems([]);
     setSelectedView(nextView);
     setStagedPostDeletes({});
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (nextView === "home") {
+          params.delete("view");
+        } else {
+          params.set("view", nextView);
+        }
+        return params;
+      },
+      { replace: true },
+    );
     requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
@@ -562,121 +634,137 @@ export default function CircleActivityTabPage() {
                   replyItems.length === 0 ? (
                     <p style={{ margin: 0, color: "#6b7280" }}>{emptyText}</p>
                   ) : (
-                    <ul className="community-post-list">
-                      {replyItems.map((item) => (
-                        <li key={`reply-${item.replyId}`}>
-                          <Link
-                            to={`/circle/${cid}/board/${item.boardId}/posts/${item.postId}`}
-                            state={{ from: boardFromPath, focusReplyId: item.replyId }}
-                            className="community-post-item-link"
-                          >
-                            <div className="community-post-item-body">
-                              <p className="community-post-item-title">
-                                <span className="community-post-item-title-text">{item.content}</span>
-                                <span className="community-post-item-board">
-                                  · {boardMap.get(item.boardId ?? 0)?.name ?? "게시판"}
-                                </span>
-                              </p>
-                              <p className="community-post-item-meta">
-                                <span>원문: {item.postTitle}</span>
-                                <span className="community-post-item-stat">
-                                  <Heart size={14} />
-                                  {item.likeCount}
-                                </span>
-                                <span>{toDateLabel(item.createDate)}</span>
-                              </p>
-                            </div>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+                    <>
+                      <ul className="community-post-list">
+                        {visibleReplies.map((item) => (
+                          <li key={`reply-${item.replyId}`}>
+                            <Link
+                              to={`/circle/${cid}/board/${item.boardId}/posts/${item.postId}`}
+                              state={{ from: boardFromPath, focusReplyId: item.replyId }}
+                              className="community-post-item-link"
+                            >
+                              <div className="community-post-item-body">
+                                <p className="community-post-item-title">
+                                  <span className="community-post-item-title-text">{item.content}</span>
+                                  <span className="community-post-item-board">
+                                    · {boardMap.get(item.boardId ?? 0)?.name ?? "게시판"}
+                                  </span>
+                                </p>
+                                <p className="community-post-item-meta">
+                                  <span>원문: {item.postTitle}</span>
+                                  <span className="community-post-item-stat">
+                                    <Heart size={14} />
+                                    {item.likeCount}
+                                  </span>
+                                  <span>{toDateLabel(item.createDate)}</span>
+                                </p>
+                              </div>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                      {hasMoreReplies && <div ref={replySentinelRef} className="h-6" />}
+                      {!hasMoreReplies && replyItems.length > 0 && (
+                        <p style={{ margin: "8px 0 0", textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
+                          모든 댓글을 불러왔습니다.
+                        </p>
+                      )}
+                    </>
                   )
                 ) : filteredPosts.length === 0 ? (
                   <p style={{ margin: 0, color: "#6b7280" }}>{emptyText}</p>
                 ) : (
-                  <ul className="community-post-list">
-                    {filteredPosts.map(({ post, imageUrls }) => {
-                      const stagedDeleted = !!stagedPostDeletes[post.postId];
-                      const summary = extractPlainText(post.content);
-                      const previewImages = imageUrls.length > 0
-                        ? Array.from(new Set(imageUrls.filter((url): url is string => !!url)))
-                        : post.thumbnailUrl
-                          ? [post.thumbnailUrl]
-                          : [];
-                      const reactionState = reactionByPostId[post.postId] ?? {
-                        liked: post.myReaction === "LIKE",
-                        likeCount: post.likeCount,
-                        error: undefined,
-                      };
-                      const bookmarkState = bookmarkByPostId[post.postId] ?? {
-                        bookmarked: false,
-                      };
-                      const isOwner = user?.publicId != null && user.publicId === post.authorPublicId;
-                      const canEdit = isOwner && cid > 0;
-                      const canDeleteOwn = isOwner;
-                      const canReport = isLoggedIn && !isOwner;
-                      return (
-                        <li
-                          key={post.postId}
-                          className="community-activity-feed-item"
-                          style={stagedDeleted ? { opacity: 0.55 } : undefined}
-                        >
-                          <CommunityActivityFeedCard
-                            post={post}
-                            circleName={circle?.name ?? "모임"}
-                            postHref={`/circle/${cid}/board/${post.boardId}/posts/${post.postId}`}
-                            fromState={{ from: boardFromPath }}
-                            createDateLabel={toDateLabel(post.createDate)}
-                            disableNavigation={editMode}
-                            previewImages={previewImages}
-                            summary={summary}
-                            liked={reactionState.liked}
-                            likeCount={reactionState.likeCount}
-                            isLikeAnimating={!!likeAnimatingByPostId[post.postId]}
-                            reactionError={reactionState.error}
-                            isLoggedIn={isLoggedIn}
-                            avatarColor={avatarColor(post.authorName)}
-                            onToggleReaction={() => void handleToggleReaction(post)}
-                            headerAction={
-                                <PostActionMenu
-                                  canEdit={canEdit}
-                                  canDelete={canDeleteOwn}
-                                  canReport={canReport}
-                                  bookmarked={bookmarkState.bookmarked}
-                                  onToggleBookmark={() => void handleToggleBookmark(post)}
-                                  onDelete={() => void handleDeleteOwnPost(post)}
-                                  onEdit={() =>
-                                    navigate(`/circle/${cid}/board/${post.boardId}/posts/${post.postId}/edit`, {
-                                      state: { from: boardFromPath },
-                                  })
-                                }
-                                onReport={() => window.alert("신고 기능은 준비 중입니다.")}
-                              />
-                            }
-                            metaAction={
-                              canManageActivityEdit && editMode ? (
-                                <button
-                                  type="button"
-                                  aria-label="게시글 삭제"
-                                  className={`community-post-admin-action-button danger ${
-                                    stagedPostDeletes[post.postId] ? "active" : ""
-                                  }`}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleStageDeletePost(post);
-                                  }}
-                                >
-                                  <Trash2 size={14} strokeWidth={2} />
-                                  <span>삭제</span>
-                                </button>
-                              ) : undefined
-                            }
-                          />
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <>
+                    <ul className="community-post-list">
+                      {visiblePosts.map(({ post, imageUrls }) => {
+                        const stagedDeleted = !!stagedPostDeletes[post.postId];
+                        const summary = extractPlainText(post.content);
+                        const previewImages = imageUrls.length > 0
+                          ? Array.from(new Set(imageUrls.filter((url): url is string => !!url)))
+                          : post.thumbnailUrl
+                            ? [post.thumbnailUrl]
+                            : [];
+                        const reactionState = reactionByPostId[post.postId] ?? {
+                          liked: post.myReaction === "LIKE",
+                          likeCount: post.likeCount,
+                          error: undefined,
+                        };
+                        const bookmarkState = bookmarkByPostId[post.postId] ?? {
+                          bookmarked: false,
+                        };
+                        const isOwner = user?.publicId != null && user.publicId === post.authorPublicId;
+                        const canEdit = isOwner && cid > 0;
+                        const canDeleteOwn = isOwner;
+                        const canReport = isLoggedIn && !isOwner;
+                        return (
+                          <li
+                            key={post.postId}
+                            className="community-activity-feed-item"
+                            style={stagedDeleted ? { opacity: 0.55 } : undefined}
+                          >
+                            <CommunityActivityFeedCard
+                              post={post}
+                              circleName={circle?.name ?? "모임"}
+                              postHref={`/circle/${cid}/board/${post.boardId}/posts/${post.postId}`}
+                              fromState={{ from: boardFromPath }}
+                              createDateLabel={toDateLabel(post.createDate)}
+                              disableNavigation={editMode}
+                              previewImages={previewImages}
+                              summary={summary}
+                              liked={reactionState.liked}
+                              likeCount={reactionState.likeCount}
+                              isLikeAnimating={!!likeAnimatingByPostId[post.postId]}
+                              reactionError={reactionState.error}
+                              isLoggedIn={isLoggedIn}
+                              avatarColor={avatarColor(post.authorName)}
+                              onToggleReaction={() => void handleToggleReaction(post)}
+                              headerAction={
+                                  <PostActionMenu
+                                    canEdit={canEdit}
+                                    canDelete={canDeleteOwn}
+                                    canReport={canReport}
+                                    bookmarked={bookmarkState.bookmarked}
+                                    onToggleBookmark={() => void handleToggleBookmark(post)}
+                                    onDelete={() => void handleDeleteOwnPost(post)}
+                                    onEdit={() =>
+                                      navigate(`/circle/${cid}/board/${post.boardId}/posts/${post.postId}/edit`, {
+                                        state: { from: boardFromPath },
+                                    })
+                                  }
+                                  onReport={() => window.alert("신고 기능은 준비 중입니다.")}
+                                />
+                              }
+                              metaAction={
+                                canManageActivityEdit && editMode ? (
+                                  <button
+                                    type="button"
+                                    aria-label="게시글 삭제"
+                                    className={`community-post-admin-action-button danger ${
+                                      stagedPostDeletes[post.postId] ? "active" : ""
+                                    }`}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleStageDeletePost(post);
+                                    }}
+                                  >
+                                    <Trash2 size={14} strokeWidth={2} />
+                                    <span>삭제</span>
+                                  </button>
+                                ) : undefined
+                              }
+                            />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {hasMorePosts && <div ref={postSentinelRef} className="h-6" />}
+                    {!hasMorePosts && filteredPosts.length > 0 && (
+                      <p style={{ margin: "8px 0 0", textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
+                        모든 게시글을 불러왔습니다.
+                      </p>
+                    )}
+                  </>
                 )}
               </section>
 
