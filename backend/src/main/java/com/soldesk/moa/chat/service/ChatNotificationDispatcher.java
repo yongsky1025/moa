@@ -1,6 +1,9 @@
 package com.soldesk.moa.chat.service;
 
+import com.soldesk.moa.chat.domain.ChatRoom;
+import com.soldesk.moa.chat.domain.RoomType;
 import com.soldesk.moa.chat.repository.ChatRoomMemberRepository;
+import com.soldesk.moa.chat.repository.ChatRoomRepository;
 import com.soldesk.moa.notification.domain.NotificationType;
 import com.soldesk.moa.notification.dto.NotificationResponse;
 import com.soldesk.moa.notification.service.NotificationService;
@@ -22,11 +25,12 @@ import java.util.stream.Collectors;
 public class ChatNotificationDispatcher {
 
     private final ChatRoomMemberRepository memberRepo;
+    private final ChatRoomRepository roomRepo;
     private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Async
-    public void dispatch(Long roomId, Long senderId, String content) {
+    public void dispatch(Long roomId, Long senderId, String senderNickname, String content) {
         List<Long> recipientIds = memberRepo.findByRoomId(roomId).stream()
                 .filter(m -> !m.getUserId().equals(senderId))
                 .map(m -> m.getUserId())
@@ -34,18 +38,28 @@ public class ChatNotificationDispatcher {
 
         if (recipientIds.isEmpty()) return;
 
+        RoomType roomType = roomRepo.findById(roomId)
+                .map(ChatRoom::getType)
+                .orElse(RoomType.DIRECT);
+
+        String prefix = switch (roomType) {
+            case GROUP -> "[모임] ";
+            case SCHEDULE -> "[일정] ";
+            default -> "";
+        };
+
+        String message = prefix + senderNickname + " 님의 메시지가 도착했습니다: " + content;
+
         // 1. WebSocket 알람 즉시 전송 (DB 저장 전 — 트랜잭션 없음)
         NotificationResponse alarm = new NotificationResponse(
                 null, NotificationType.CHAT_MESSAGE,
-                "새 메시지가 도착했습니다: " + content,
-                false, LocalDateTime.now(), roomId
+                message, false, LocalDateTime.now(), roomId
         );
         recipientIds.forEach(uid ->
                 messagingTemplate.convertAndSend("/topic/alarm/" + uid, alarm));
 
         // 2. DB 저장 (이력 보존용, 순차 처리)
         recipientIds.forEach(uid ->
-                notificationService.saveOnly(uid, NotificationType.CHAT_MESSAGE,
-                        "새 메시지가 도착했습니다: " + content, roomId));
+                notificationService.saveOnly(uid, NotificationType.CHAT_MESSAGE, message, roomId));
     }
 }

@@ -200,6 +200,9 @@ export default function ChatPopupPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [noticeContent, setNoticeContent] = useState<string | null>(null);
   const [noticeMessageId, setNoticeMessageId] = useState<number | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [unreadOnEnter, setUnreadOnEnter] = useState(0);
   const [readStatus, setReadStatus] = useState<Record<number, string>>({});
   const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
@@ -969,6 +972,13 @@ export default function ChatPopupPage() {
                 {activeRoom.roomType === "GROUP" && <div style={s.chatSub}>{members.length}명 참여 중</div>}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => { setShowSearch(v => !v); if (!showSearch) setTimeout(() => searchInputRef.current?.focus(), 50); else setSearchQuery(""); }}
+                  style={{ ...s.headerBtn, background: showSearch ? '#D1EAE0' : 'none' }}
+                  title="메시지 검색"
+                >
+                  🔍
+                </button>
                 {activeRoom.roomType === "GROUP" && (
                   <button style={s.headerBtn} onClick={() => setShowMembers((v) => !v)}>
                     👥 멤버
@@ -998,6 +1008,28 @@ export default function ChatPopupPage() {
               </div>
             )}
 
+            {/* 검색 바 */}
+            {showSearch && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderBottom: '1px solid #E5E7EB', background: '#F9FAFB', flexShrink: 0 }}>
+                <span style={{ fontSize: 13, color: '#6B7280' }}>🔍</span>
+                <input
+                  ref={searchInputRef}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="메시지 검색..."
+                  style={{ flex: 1, border: '1px solid #D1D5DB', borderRadius: 6, padding: '4px 8px', fontSize: 13, outline: 'none' }}
+                  onKeyDown={(e) => { if (e.key === 'Escape') { setShowSearch(false); setSearchQuery(""); } }}
+                  autoFocus
+                />
+                {searchQuery && (
+                  <span style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap' }}>
+                    {messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase())).length}건
+                  </span>
+                )}
+                <button onClick={() => { setShowSearch(false); setSearchQuery(""); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 14, padding: '0 2px' }}>✕</button>
+              </div>
+            )}
+
             {/* 공지 배너 (카카오톡 스타일) */}
             {noticeContent && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: '#FFF9C4', borderBottom: '2px solid #FFE500', flexShrink: 0 }}>
@@ -1016,7 +1048,7 @@ export default function ChatPopupPage() {
                 ? <div style={s.placeholder}>불러오는 중...</div>
                 : messages.length === 0
                   ? <div style={s.firstMsg}>첫 메시지를 보내보세요! 👋</div>
-                  : messages.map((msg) => {
+                  : (searchQuery.trim() ? messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase())) : messages).map((msg) => {
                     const mine = msg.senderId === userId;
                     return (
                       <div key={msg.messageId} {...(firstUnreadMsgIdRef.current === msg.messageId ? { 'data-first-unread': 'true' } : {})} style={{ ...s.msgRow, flexDirection: mine ? 'row-reverse' : 'row' }}>
@@ -1086,7 +1118,7 @@ export default function ChatPopupPage() {
                                         );
                                       })}
                                     </div>
-                                    <button style={s.menuItem} onClick={() => { setReplyTo({ messageId: msg.messageId, content: isFileUrl(msg.content) ? '📎 파일' : msg.content, nickname: msg.senderNickname ?? '?' }); setMenuId(null); textareaRef.current?.focus(); }}>답장</button>
+                                    <button style={s.menuItem} onClick={() => { setReplyTo({ messageId: msg.messageId, content: isFileUrl(msg.content) ? '📎 파일' : msg.content, nickname: msg.senderNickname ?? '?' }); setMenuId(null); }}>답장</button>
                                     {!isFileUrl(msg.content) && (
                                       <button style={s.menuItem} onClick={() => { navigator.clipboard.writeText(msg.content); setMenuId(null); }}>복사</button>
                                     )}

@@ -12,6 +12,7 @@ import com.soldesk.moa.chat.repository.ChatRoomMemberRepository;
 import com.soldesk.moa.chat.repository.ChatRoomRepository;
 import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
+import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.users.repository.UsersRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -32,16 +33,19 @@ public class ChatRoomService {
     private final ChatMessageRepository messageRepo;
     private final UsersRepository usersRepo;
     private final CircleMemberRepository circleMemberRepo;
+    private final CircleRepository circleRepo;
     private final SimpMessagingTemplate messagingTemplate;
 
     public ChatRoomService(ChatRoomRepository roomRepo, ChatRoomMemberRepository memberRepo,
             ChatMessageRepository messageRepo, UsersRepository usersRepo,
-            CircleMemberRepository circleMemberRepo, SimpMessagingTemplate messagingTemplate) {
+            CircleMemberRepository circleMemberRepo, CircleRepository circleRepo,
+            SimpMessagingTemplate messagingTemplate) {
         this.roomRepo = roomRepo;
         this.memberRepo = memberRepo;
         this.messageRepo = messageRepo;
         this.usersRepo = usersRepo;
         this.circleMemberRepo = circleMemberRepo;
+        this.circleRepo = circleRepo;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -93,7 +97,10 @@ public class ChatRoomService {
             return room;
         }).orElseGet(() -> {
             try {
-                ChatRoom room = roomRepo.save(ChatRoom.group(circleId));
+                String circleName = circleRepo.findById(circleId)
+                        .map(c -> c.getName())
+                        .orElse(null);
+                ChatRoom room = roomRepo.save(ChatRoom.group(circleId, circleName));
                 memberRepo.save(ChatRoomMember.join(room.getId(), myId));
                 return room;
             } catch (DataIntegrityViolationException e) {

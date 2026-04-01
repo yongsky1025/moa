@@ -48,10 +48,11 @@ public class ChatRoom {
         return r;
     }
 
-    public static ChatRoom group(Long circleId) {
+    public static ChatRoom group(Long circleId, String name) {
         ChatRoom r = new ChatRoom();
         r.type = RoomType.GROUP;
         r.circleId = circleId;
+        r.name = name;
         r.createdAt = LocalDateTime.now();
         return r;
     }

@@ -7,6 +7,7 @@ import { useWebSocket, type TypingEvent, type NoticeEvent } from "../hooks/useWe
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
 import EmojiPicker from "./EmojiPicker";
+import ChatInput from "./ChatInput";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
 import type { CircleMember } from "../../circle/types/circle";
@@ -75,7 +76,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [rooms, setRooms] = useState<ChatRoomSummary[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
   const [loadingMsg, setLoadingMsg] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -94,10 +94,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const resizeDir = useRef("");
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0 });
 
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
-
-  const [showEmoji, setShowEmoji] = useState(false);
   const [roomCtxMenu, setRoomCtxMenu] = useState<{ x: number; y: number; room: ChatRoomSummary } | null>(null);
   const [renaming, setRenaming] = useState<{ roomId: number; value: string } | null>(null);
   const [readStatus, setReadStatus] = useState<Record<number, string>>({});
@@ -125,8 +121,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [profileChatError, setProfileChatError] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
-  const [aiSuggestions, setAiSuggestions] = useState<{ quickReplies: string[]; draft: string } | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(200);
   const sidebarDragging = useRef(false);
   const sidebarDragStartX = useRef(0);
@@ -146,8 +140,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const msgAreaRef = useRef<HTMLDivElement>(null);
   const firstUnreadMsgIdRef = useRef<number | null>(null);
   const shouldScrollToUnreadRef = useRef(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const emojiBtnRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const roomsRef = useRef(rooms);
   roomsRef.current = rooms;
@@ -491,79 +483,56 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     }
   };
 
-  const cancelPendingFile = () => {
-    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
-    setPendingFile(null);
-    setPendingPreviewUrl(null);
-  };
-
-  const handleSend = async () => {
-    const content = input.trim();
-    if (!content && !pendingFile) return;
+  const handleSendContent = useCallback((content: string, replyToId?: number) => {
     if (!activeRoomId) return;
+    const tempMsg: ChatMessage = {
+      messageId: -Date.now(),
+      roomId: activeRoomId,
+      senderId: userId!,
+      senderNickname: user?.nickname ?? '?',
+      content,
+      createdAt: new Date().toISOString(),
+      updatedAt: null,
+      isDeleted: false,
+      replyToId: replyToId ?? null,
+      replyToContent: replyTo?.content ?? null,
+      replyToNickname: replyTo?.nickname ?? null,
+    };
+    setMessages((prev) => [...prev, tempMsg]);
+    setRooms((prev) => prev.map((r) =>
+      r.roomId === activeRoomId
+        ? { ...r, lastMessage: content, lastMessageAt: tempMsg.createdAt }
+        : r
+    ));
+    sendMessage(content, replyToId);
+    setReplyTo(null);
+  }, [activeRoomId, userId, user, replyTo, sendMessage]);
 
-    if (pendingFile) {
-      try {
-        const fileUrl = await chatApi.uploadFile(pendingFile);
-        const tempMsg: ChatMessage = {
-          messageId: -Date.now(),
-          roomId: activeRoomId,
-          senderId: userId!,
-          senderNickname: user?.nickname ?? '?',
-          content: fileUrl,
-          createdAt: new Date().toISOString(),
-          updatedAt: null,
-          isDeleted: false,
-        };
-        setMessages((prev) => [...prev, tempMsg]);
-        setRooms((prev) => prev.map((r) =>
-          r.roomId === activeRoomId
-            ? { ...r, lastMessage: fileUrl, lastMessageAt: tempMsg.createdAt }
-            : r
-        ));
-        sendMessage(fileUrl);
-        cancelPendingFile();
-      } catch {
-        alert("업로드 실패");
-        return;
-      }
-    }
-
-    if (content) {
+  const handleSendFile = useCallback(async (file: File) => {
+    if (!activeRoomId) return;
+    try {
+      const fileUrl = await chatApi.uploadFile(file);
       const tempMsg: ChatMessage = {
         messageId: -Date.now(),
         roomId: activeRoomId,
         senderId: userId!,
         senderNickname: user?.nickname ?? '?',
-        content,
+        content: fileUrl,
         createdAt: new Date().toISOString(),
         updatedAt: null,
         isDeleted: false,
-        replyToId: replyTo?.messageId ?? null,
-        replyToContent: replyTo?.content ?? null,
-        replyToNickname: replyTo?.nickname ?? null,
       };
       setMessages((prev) => [...prev, tempMsg]);
       setRooms((prev) => prev.map((r) =>
         r.roomId === activeRoomId
-          ? { ...r, lastMessage: content, lastMessageAt: tempMsg.createdAt }
+          ? { ...r, lastMessage: fileUrl, lastMessageAt: tempMsg.createdAt }
           : r
       ));
-      setInput("");
-      if (textareaRef.current) textareaRef.current.style.height = "auto";
-      sendMessage(content, replyTo?.messageId);
-      setReplyTo(null);
+      sendMessage(fileUrl);
+    } catch {
+      alert("업로드 실패");
     }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
-    setPendingFile(file);
-    setPendingPreviewUrl(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
-  };
+  }, [activeRoomId, userId, user, sendMessage]);
 
   const startDirectChat = async (targetUserId: number) => {
     if (targetUserId === userId) return;
@@ -892,16 +861,6 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                 </div>
               )}
             </div>
-            {/* 메시지 검색 */}
-            {activeRoomId && (
-              <button
-                onClick={() => { setShowSearch(v => !v); if (!showSearch) setTimeout(() => searchInputRef.current?.focus(), 50); else setSearchQuery(""); }}
-                style={{ ...s.titleBtn, background: showSearch ? 'rgba(255,255,255,0.2)' : 'none' }}
-                title="메시지 검색"
-              >
-                🔍
-              </button>
-            )}
             {/* 별도 창으로 분리 */}
             <button style={s.titleBtn} onClick={() => { openPopup(); onClose(); setActiveRoomId(null); }} title="별도 창으로 분리">▼</button>
             <button style={s.titleBtn} onClick={() => { onClose(); setActiveRoomId(null); }}>✕</button>
@@ -997,11 +956,20 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                     )}
                     {activeRoom?.roomType === "GROUP" && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{members.length}명 참여 중</div>}
                   </div>
-                  {activeRoom?.roomType === "GROUP" && (
-                    <button style={{ background: 'none', border: '1px solid #D1EAE0', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#374151' }} onClick={() => setShowMembers((v) => !v)}>
-                      👥 멤버
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button
+                      onClick={() => { setShowSearch(v => !v); if (!showSearch) setTimeout(() => searchInputRef.current?.focus(), 50); else setSearchQuery(""); }}
+                      style={{ background: showSearch ? '#D1EAE0' : 'none', border: '1px solid #D1EAE0', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#374151' }}
+                      title="메시지 검색"
+                    >
+                      🔍
                     </button>
-                  )}
+                    {activeRoom?.roomType === "GROUP" && (
+                      <button style={{ background: 'none', border: '1px solid #D1EAE0', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#374151' }} onClick={() => setShowMembers((v) => !v)}>
+                        👥 멤버
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* 멤버 패널 */}
@@ -1203,104 +1171,17 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                 )}
 
                 {/* 입력 영역 */}
-                <div style={{ ...s.inputArea, flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
-                  {/* 답장 미리보기 */}
-                  {replyTo && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#F0F7F4', borderBottom: '1px solid #D1E8DF', borderLeft: '3px solid #5F8F7B' }}>
-                      <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <div style={{ fontSize: 11, color: '#5F8F7B', fontWeight: 600 }}>{replyTo.nickname}에게 답장</div>
-                        <div style={{ fontSize: 12, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{replyTo.content}</div>
-                      </div>
-                      <button onClick={() => setReplyTo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 14, padding: '0 2px', flexShrink: 0 }}>✕</button>
-                    </div>
-                  )}
-                  {/* 파일 미리보기 */}
-                  {pendingFile && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderBottom: '1px solid #e5e7eb' }}>
-                      {pendingPreviewUrl ? (
-                        <img src={pendingPreviewUrl} alt="미리보기" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, border: '1px solid #E5E7EB' }} />
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F3F4F6', borderRadius: 8, padding: '6px 10px', fontSize: 13, color: '#374151' }}>
-                          📎 {pendingFile.name}
-                        </div>
-                      )}
-                      <button onClick={cancelPendingFile} style={{ background: '#e5e7eb', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', flexShrink: 0 }}>✕</button>
-                    </div>
-                  )}
-                  {/* AI 스마트 답변 제안 */}
-                  {aiSuggestions && (
-                    <div style={{ background: '#F0FAF5', borderTop: '1px solid #D1EAE0', padding: '6px 10px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <span style={{ fontSize: 10, color: '#5F8F7B', fontWeight: 600 }}>✨ AI 스마트 답변</span>
-                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#aaa' }} onClick={() => setAiSuggestions(null)}>✕</button>
-                      </div>
-                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: aiSuggestions.draft ? 4 : 0 }}>
-                        {aiSuggestions.quickReplies.map((r, i) => (
-                          <button key={i} style={{ background: '#fff', border: '1px solid #5F8F7B', color: '#5F8F7B', borderRadius: 14, padding: '3px 10px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}
-                            onClick={() => { setInput(r); setAiSuggestions(null); textareaRef.current?.focus(); }}>
-                            {r}
-                          </button>
-                        ))}
-                      </div>
-                      {aiSuggestions.draft && (
-                        <button style={{ background: '#fff', border: '1px solid #D1EAE0', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', color: '#333', textAlign: 'left', width: '100%', display: 'flex', alignItems: 'center', gap: 4 }}
-                          onClick={() => { setInput(aiSuggestions.draft); setAiSuggestions(null); textareaRef.current?.focus(); }}>
-                          <span style={{ color: '#888', flexShrink: 0 }}>초안</span>{aiSuggestions.draft}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px' }}>
-                    <button onClick={() => fileInputRef.current?.click()} style={s.iconBtn}>📎</button>
-                    <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileSelect} />
-                    <button ref={emojiBtnRef} style={s.iconBtn} onClick={() => setShowEmoji((v) => !v)}>😊</button>
-                    <button
-                      style={{ ...s.iconBtn, color: aiLoading ? '#aaa' : '#5F8F7B', fontSize: 14 }}
-                      disabled={aiLoading || !activeRoomId}
-                      onClick={async () => {
-                        if (!activeRoomId) return;
-                        setAiLoading(true);
-                        try {
-                          const result = await chatApi.suggestReply(activeRoomId);
-                          setAiSuggestions(result);
-                        } finally {
-                          setAiLoading(false);
-                        }
-                      }}
-                      title="AI 스마트 답변"
-                    >
-                      {aiLoading ? '...' : '✨'}
-                    </button>
-                    {showEmoji && (
-                      <EmojiPicker anchorRef={emojiBtnRef} onSelect={(emoji) => setInput((prev) => prev + emoji)} onClose={() => setShowEmoji(false)} />
-                    )}
-                    <textarea
-                      ref={textareaRef}
-                      className="chat-textarea"
-                      style={s.textInput}
-                      placeholder="메시지 입력..."
-                      value={input}
-                      rows={1}
-                      onChange={(e) => {
-                        setInput(e.target.value);
-                        e.target.style.height = "auto";
-                        e.target.style.height = e.target.scrollHeight + "px";
-                        if (!typingCooldownRef.current && e.target.value.trim()) {
-                          sendTyping(user?.nickname ?? '');
-                          typingCooldownRef.current = true;
-                          setTimeout(() => { typingCooldownRef.current = false; }, 2000);
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSend();
-                        }
-                      }}
-                    />
-                    <button onClick={handleSend} style={s.sendBtn} disabled={!input.trim() && !pendingFile}>전송</button>
-                  </div>
-                </div>
+                <ChatInput
+                  activeRoomId={activeRoomId}
+                  replyTo={replyTo}
+                  onClearReply={() => setReplyTo(null)}
+                  onSend={handleSendContent}
+                  onSendFile={handleSendFile}
+                  onTyping={sendTyping}
+                  typingCooldownRef={typingCooldownRef}
+                  nickname={user?.nickname ?? ''}
+                  textareaRef={textareaRef}
+                />
               </>
             )}
           </div>

@@ -57,7 +57,7 @@ public class ChatMessageService {
         messagingTemplate.convertAndSend("/topic/room/" + roomId, response);
 
         // 발신자 제외 채팅방 멤버들에게 알림 전송 (비동기 — 메시지 응답 속도에 영향 없도록)
-        notificationDispatcher.dispatch(roomId, senderId, content);
+        notificationDispatcher.dispatch(roomId, senderId, response.senderNickname(), content);
 
         return response;
     }
