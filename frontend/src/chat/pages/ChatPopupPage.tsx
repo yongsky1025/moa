@@ -39,19 +39,152 @@ function renderMsgContent(content: string, mine: boolean) {
   return content;
 }
 
+interface ChatInputAreaProps {
+  activeRoom: ChatRoomSummary | null;
+  replyTo: { messageId: number; content: string; nickname: string } | null;
+  onCancelReply: () => void;
+  onSend: (content: string, replyToId?: number | null) => void;
+  onFileUpload: (file: File) => Promise<void>;
+  sendTyping: (nickname: string) => void;
+  userNickname: string;
+}
+
+function ChatInputArea({ activeRoom, replyTo, onCancelReply, onSend, onFileUpload, sendTyping, userNickname }: ChatInputAreaProps) {
+  const [input, setInput] = useState("");
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<{ quickReplies: string[]; draft: string } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const typingCooldownRef = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiBtnRef = useRef<HTMLButtonElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSend = () => {
+    const content = input.trim();
+    if (!content || !activeRoom) return;
+    onSend(content, replyTo?.messageId);
+    setInput("");
+    setShowEmoji(false);
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeRoom) return;
+    try {
+      await onFileUpload(file);
+    } catch {
+      alert("업로드 실패");
+    }
+    e.target.value = "";
+  };
+
+  return (
+    <>
+      {showEmoji && (
+        <EmojiPicker
+          anchorRef={emojiBtnRef}
+          onSelect={(emoji) => setInput((p) => p + emoji)}
+          onClose={() => setShowEmoji(false)}
+        />
+      )}
+      {replyTo && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: '#F0F7F4', borderTop: '1px solid #D1E8DF', borderLeft: '3px solid #5F8F7B', flexShrink: 0 }}>
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <div style={{ fontSize: 11, color: '#5F8F7B', fontWeight: 600 }}>{replyTo.nickname}에게 답장</div>
+            <div style={{ fontSize: 12, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{replyTo.content}</div>
+          </div>
+          <button onClick={onCancelReply} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 16, padding: '0 2px', flexShrink: 0 }}>✕</button>
+        </div>
+      )}
+      {aiSuggestions && (
+        <div style={s.aiSuggestWrap}>
+          <div style={s.aiSuggestHeader}>
+            <span style={{ fontSize: 11, color: '#5F8F7B', fontWeight: 600 }}>✨ AI 스마트 답변</span>
+            <button style={s.aiCloseBtn} onClick={() => setAiSuggestions(null)}>✕</button>
+          </div>
+          <div style={s.aiQuickReplies}>
+            {aiSuggestions.quickReplies.map((r, i) => (
+              <button key={i} style={s.aiChip} onClick={() => { setInput(r); setAiSuggestions(null); textareaRef.current?.focus(); }}>
+                {r}
+              </button>
+            ))}
+          </div>
+          {aiSuggestions.draft && (
+            <button style={s.aiDraftBtn} onClick={() => { setInput(aiSuggestions.draft); setAiSuggestions(null); textareaRef.current?.focus(); }}>
+              <span style={{ fontSize: 11, color: '#888', marginRight: 4 }}>초안</span>
+              {aiSuggestions.draft}
+            </button>
+          )}
+        </div>
+      )}
+      <div style={s.inputWrap}>
+        <div style={s.inputToolbar}>
+          <button style={s.toolBtn} onClick={() => fileInputRef.current?.click()}>📎</button>
+          <button ref={emojiBtnRef} style={s.toolBtn} onClick={() => setShowEmoji((v) => !v)}>😊</button>
+          <button
+            style={{ ...s.toolBtn, color: aiLoading ? '#aaa' : '#5F8F7B', fontSize: 15 }}
+            disabled={aiLoading || !activeRoom}
+            onClick={async () => {
+              if (!activeRoom) return;
+              setAiLoading(true);
+              try {
+                const result = await chatApi.suggestReply(activeRoom.roomId);
+                setAiSuggestions(result);
+              } finally {
+                setAiLoading(false);
+              }
+            }}
+            title="AI 스마트 답변"
+          >
+            {aiLoading ? '...' : '✨'}
+          </button>
+          <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFile} />
+        </div>
+        <div style={s.inputRow}>
+          <textarea
+            ref={textareaRef}
+            className="chat-textarea"
+            style={s.textarea}
+            placeholder="메시지를 입력하세요"
+            value={input}
+            rows={1}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = e.target.scrollHeight + "px";
+              if (!typingCooldownRef.current && e.target.value.trim()) {
+                sendTyping(userNickname);
+                typingCooldownRef.current = true;
+                setTimeout(() => { typingCooldownRef.current = false; }, 2000);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+          />
+          <button style={{ ...s.sendBtn, opacity: input.trim() ? 1 : 0.4 }} onClick={handleSend} disabled={!input.trim()}>
+            전송
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function ChatPopupPage() {
   const { userId, user } = useAuthStore();
 
   const [rooms, setRooms] = useState<ChatRoomSummary[]>([]);
   const [activeRoom, setActiveRoom] = useState<ChatRoomSummary | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
   const [loadingMsg, setLoadingMsg] = useState(false);
   const [search, setSearch] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNoti, setShowNoti] = useState(false);
-  const [showEmoji, setShowEmoji] = useState(false);
-  const emojiBtnRef = useRef<HTMLButtonElement>(null);
   const [members, setMembers] = useState<CircleMember[]>([]);
   const [showMembers, setShowMembers] = useState(false);
   const [editingRoomName, setEditingRoomName] = useState(false);
@@ -69,11 +202,8 @@ export default function ChatPopupPage() {
   const [noticeMessageId, setNoticeMessageId] = useState<number | null>(null);
   const [unreadOnEnter, setUnreadOnEnter] = useState(0);
   const [readStatus, setReadStatus] = useState<Record<number, string>>({});
-  const [aiSuggestions, setAiSuggestions] = useState<{ quickReplies: string[]; draft: string } | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
   const typingTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
-  const typingCooldownRef = useRef(false);
   const [mutedRooms, setMutedRooms] = useState<Set<number>>(() =>
     new Set(JSON.parse(localStorage.getItem('moa_muted_rooms') ?? '[]'))
   );
@@ -96,9 +226,7 @@ export default function ChatPopupPage() {
   const msgAreaRef = useRef<HTMLDivElement>(null);
   const firstUnreadMsgIdRef = useRef<number | null>(null);
   const shouldScrollToUnreadRef = useRef(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const chatNotifications = notifications.filter((n) => n.type === 'CHAT_MESSAGE');
   const unreadNoti = chatNotifications.filter((n) => !n.isRead).length;
@@ -421,8 +549,7 @@ export default function ChatPopupPage() {
     onNotice: handleNoticeEvent,
   });
 
-  const handleSend = () => {
-    const content = input.trim();
+  const handleSend = useCallback((content: string, replyToId?: number | null) => {
     if (!content || !activeRoom) return;
     const tempMsg: ChatMessage = {
       messageId: -Date.now(),
@@ -433,7 +560,7 @@ export default function ChatPopupPage() {
       createdAt: new Date().toISOString(),
       updatedAt: null,
       isDeleted: false,
-      replyToId: replyTo?.messageId ?? null,
+      replyToId: replyToId ?? null,
       replyToContent: replyTo?.content ?? null,
       replyToNickname: replyTo?.nickname ?? null,
     };
@@ -443,41 +570,31 @@ export default function ChatPopupPage() {
         ? { ...r, lastMessage: content, lastMessageAt: tempMsg.createdAt }
         : r
     ));
-    setInput("");
-    setShowEmoji(false);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
-    sendMessage(content, replyTo?.messageId);
+    sendMessage(content, replyToId);
     setReplyTo(null);
-  };
+  }, [activeRoom, userId, user, replyTo, sendMessage]);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !activeRoom) return;
-    try {
-      const fileUrl = await chatApi.uploadFile(file);
-      const tempMsg: ChatMessage = {
-        messageId: -Date.now(),
-        roomId: activeRoom.roomId,
-        senderId: userId!,
-        senderNickname: user?.nickname ?? '?',
-        content: fileUrl,
-        createdAt: new Date().toISOString(),
-        updatedAt: null,
-        isDeleted: false,
-      };
-      setMessages((prev) => [...prev, tempMsg]);
-      setRooms((prev) => prev.map((r) =>
-        r.roomId === activeRoom.roomId
-          ? { ...r, lastMessage: fileUrl, lastMessageAt: tempMsg.createdAt }
-          : r
-      ));
-      sendMessage(fileUrl);
-    } catch {
-      alert("업로드 실패");
-    }
-  };
+  const handleFileUpload = useCallback(async (file: File) => {
+    if (!activeRoom) return;
+    const fileUrl = await chatApi.uploadFile(file);
+    const tempMsg: ChatMessage = {
+      messageId: -Date.now(),
+      roomId: activeRoom.roomId,
+      senderId: userId!,
+      senderNickname: user?.nickname ?? '?',
+      content: fileUrl,
+      createdAt: new Date().toISOString(),
+      updatedAt: null,
+      isDeleted: false,
+    };
+    setMessages((prev) => [...prev, tempMsg]);
+    setRooms((prev) => prev.map((r) =>
+      r.roomId === activeRoom.roomId
+        ? { ...r, lastMessage: fileUrl, lastMessageAt: tempMsg.createdAt }
+        : r
+    ));
+    sendMessage(fileUrl);
+  }, [activeRoom, userId, user, sendMessage]);
 
   const formatTime = (iso: string | null) => {
     if (!iso) return "";
@@ -1043,107 +1160,15 @@ export default function ChatPopupPage() {
               </div>
             )}
 
-            {/* 이모티콘 피커 */}
-            {showEmoji && (
-              <EmojiPicker
-                anchorRef={emojiBtnRef}
-                onSelect={(emoji) => setInput((p) => p + emoji)}
-                onClose={() => setShowEmoji(false)}
-              />
-            )}
-
-            {/* 답장 미리보기 */}
-            {replyTo && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: '#F0F7F4', borderTop: '1px solid #D1E8DF', borderLeft: '3px solid #5F8F7B', flexShrink: 0 }}>
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{ fontSize: 11, color: '#5F8F7B', fontWeight: 600 }}>{replyTo.nickname}에게 답장</div>
-                  <div style={{ fontSize: 12, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{replyTo.content}</div>
-                </div>
-                <button onClick={() => setReplyTo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 16, padding: '0 2px', flexShrink: 0 }}>✕</button>
-              </div>
-            )}
-
-            {/* AI 스마트 답변 제안 */}
-            {aiSuggestions && (
-              <div style={s.aiSuggestWrap}>
-                <div style={s.aiSuggestHeader}>
-                  <span style={{ fontSize: 11, color: '#5F8F7B', fontWeight: 600 }}>✨ AI 스마트 답변</span>
-                  <button style={s.aiCloseBtn} onClick={() => setAiSuggestions(null)}>✕</button>
-                </div>
-                <div style={s.aiQuickReplies}>
-                  {aiSuggestions.quickReplies.map((r, i) => (
-                    <button key={i} style={s.aiChip} onClick={() => { setInput(r); setAiSuggestions(null); textareaRef.current?.focus(); }}>
-                      {r}
-                    </button>
-                  ))}
-                </div>
-                {aiSuggestions.draft && (
-                  <button style={s.aiDraftBtn} onClick={() => { setInput(aiSuggestions.draft); setAiSuggestions(null); textareaRef.current?.focus(); }}>
-                    <span style={{ fontSize: 11, color: '#888', marginRight: 4 }}>초안</span>
-                    {aiSuggestions.draft}
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* 입력 영역 */}
-            <div style={s.inputWrap}>
-              <div style={s.inputToolbar}>
-                <button style={s.toolBtn} onClick={() => fileInputRef.current?.click()}>
-                  📎
-                </button>
-                <button ref={emojiBtnRef} style={s.toolBtn} onClick={() => setShowEmoji((v) => !v)}>
-                  😊
-                </button>
-                <button
-                  style={{ ...s.toolBtn, color: aiLoading ? '#aaa' : '#5F8F7B', fontSize: 15 }}
-                  disabled={aiLoading || !activeRoom}
-                  onClick={async () => {
-                    if (!activeRoom) return;
-                    setAiLoading(true);
-                    try {
-                      const result = await chatApi.suggestReply(activeRoom.roomId);
-                      setAiSuggestions(result);
-                    } finally {
-                      setAiLoading(false);
-                    }
-                  }}
-                  title="AI 스마트 답변"
-                >
-                  {aiLoading ? '...' : '✨'}
-                </button>
-                <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFile} />
-              </div>
-              <div style={s.inputRow}>
-                <textarea
-                  ref={textareaRef}
-                  className="chat-textarea"
-                  style={s.textarea}
-                  placeholder="메시지를 입력하세요"
-                  value={input}
-                  rows={1}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                    e.target.style.height = "auto";
-                    e.target.style.height = e.target.scrollHeight + "px";
-                    if (!typingCooldownRef.current && e.target.value.trim()) {
-                      sendTyping(user?.nickname ?? '');
-                      typingCooldownRef.current = true;
-                      setTimeout(() => { typingCooldownRef.current = false; }, 2000);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                />
-                <button style={{ ...s.sendBtn, opacity: input.trim() ? 1 : 0.4 }} onClick={handleSend} disabled={!input.trim()}>
-                  전송
-                </button>
-              </div>
-            </div>
+            <ChatInputArea
+              activeRoom={activeRoom}
+              replyTo={replyTo}
+              onCancelReply={() => setReplyTo(null)}
+              onSend={handleSend}
+              onFileUpload={handleFileUpload}
+              sendTyping={sendTyping}
+              userNickname={user?.nickname ?? ''}
+            />
           </>
         )}
       </div>
