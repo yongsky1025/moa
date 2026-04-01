@@ -20,16 +20,15 @@ export default function EmojiPicker({ onSelect, onClose, anchorRef }: EmojiPicke
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
-  // 버튼 위치 기준으로 피커 위치 계산
   useEffect(() => {
-    if (!anchorRef.current) return;
+    if (!anchorRef.current || !ref.current) return;
     const rect = anchorRef.current.getBoundingClientRect();
     const pickerW = 220;
-    const pickerH = 200;
-    let left = rect.right - pickerW;
+    const pickerH = ref.current.offsetHeight || 160;
+    let left = rect.left;
     let top = rect.top - pickerH - 8;
+    if (left + pickerW > window.innerWidth - 8) left = window.innerWidth - pickerW - 8;
     if (left < 8) left = 8;
-    if (left + pickerW > window.innerWidth - 20) left = window.innerWidth - pickerW - 20;
     if (top < 8) top = rect.bottom + 8;
     setPos({ top, left });
   }, [anchorRef]);
@@ -48,7 +47,7 @@ export default function EmojiPicker({ onSelect, onClose, anchorRef }: EmojiPicke
   }, [onClose, anchorRef]);
 
   return (
-    <div ref={ref} style={{ ...styles.box, top: pos.top, left: pos.left }}>
+    <div ref={ref} className="emoji-picker-box" style={{ ...styles.box, top: pos.top, left: pos.left }}>
       {EMOJIS.map((emoji) => (
         <button
           key={emoji}
@@ -67,21 +66,28 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'fixed',
     width: 220,
     background: '#fff',
-    borderRadius: 10,
+    borderRadius: 12,
     boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
-    padding: 4,
+    padding: 8,
     display: 'grid',
-    gridTemplateColumns: 'repeat(10, 1fr)',
-    gap: 0,
+    gridTemplateColumns: 'repeat(7, 1fr)',
+    gap: 2,
     zIndex: 99999,
+    boxSizing: 'border-box',
+    maxHeight: 180,
+    overflowY: 'scroll',
+    overflowX: 'hidden',
+    scrollbarWidth: 'none' as const,
   },
   btn: {
     background: 'none',
     border: 'none',
-    fontSize: 10,
+    fontSize: 20,
     cursor: 'pointer',
-    padding: 1,
-    borderRadius: 3,
+    padding: 3,
+    borderRadius: 4,
     lineHeight: 1,
+    width: '100%',
+    textAlign: 'center' as const,
   },
 };

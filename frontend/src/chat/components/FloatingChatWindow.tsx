@@ -70,6 +70,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
   const [pos, setPos] = useState({ x: window.innerWidth - INIT_W - 40, y: window.innerHeight - INIT_H - 60 });
   const [size, setSize] = useState({ w: INIT_W, h: INIT_H });
+  const sizeRef = useRef({ w: INIT_W, h: INIT_H });
 
   const [rooms, setRooms] = useState<ChatRoomSummary[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
@@ -126,6 +127,17 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
   const [aiSuggestions, setAiSuggestions] = useState<{ quickReplies: string[]; draft: string } | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(200);
+  const sidebarDragging = useRef(false);
+  const sidebarDragStartX = useRef(0);
+  const sidebarDragStartW = useRef(0);
+
+  const onSidebarResizeMouseDown = (e: React.MouseEvent) => {
+    sidebarDragging.current = true;
+    sidebarDragStartX.current = e.clientX;
+    sidebarDragStartW.current = sidebarWidth;
+    e.preventDefault();
+  };
   const typingTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const typingCooldownRef = useRef(false);
 
@@ -161,6 +173,22 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     try {
       setNotifications(await notificationApi.getAll());
     } catch {}
+  }, []);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!sidebarDragging.current) return;
+      const delta = e.clientX - sidebarDragStartX.current;
+      const newW = Math.max(140, Math.min(340, sidebarDragStartW.current + delta));
+      setSidebarWidth(newW);
+    };
+    const onMouseUp = () => { sidebarDragging.current = false; };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
   }, []);
 
   useEffect(() => {
@@ -580,10 +608,12 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      setPos({
-        x: e.clientX - dragOffset.current.x,
-        y: e.clientY - dragOffset.current.y,
-      });
+      const newX = e.clientX - dragOffset.current.x;
+      const newY = e.clientY - dragOffset.current.y;
+      setPos(() => ({
+        x: Math.max(0, Math.min(newX, window.innerWidth - sizeRef.current.w)),
+        y: Math.max(0, Math.min(newY, window.innerHeight - 44)),
+      }));
     };
     const onUp = () => {
       dragging.current = false;
@@ -621,6 +651,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
       if (dir.includes("w")) { nw = Math.max(MIN_W, w - dx); nx = px + (w - nw); }
       if (dir.includes("n")) { nh = Math.max(MIN_H, h - dy); ny = py + (h - nh); }
 
+      sizeRef.current = { w: nw, h: nh };
       setSize({ w: nw, h: nh });
       setPos({ x: nx, y: ny });
     };
@@ -879,7 +910,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
         <div style={s.body}>
           {/* 왼쪽: 채팅 목록 */}
-          <div style={s.sidebar}>
+          <div style={{ ...s.sidebar, width: sidebarWidth }}>
             <div style={s.sidebarTitle}>채팅</div>
             {/* 채팅방 검색 */}
             <div style={{ padding: '6px 10px', borderBottom: '1px solid #eee', flexShrink: 0 }}>
@@ -924,6 +955,12 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             )}
           </div>
 
+          {/* 사이드바 리사이즈 핸들 */}
+          <div
+            onMouseDown={onSidebarResizeMouseDown}
+            style={{ width: 4, cursor: 'col-resize', background: '#EAF5DC', flexShrink: 0, zIndex: 10, alignSelf: 'stretch' }}
+          />
+
           {/* 오른쪽: 채팅방 */}
           <div style={s.chatArea}>
             {!activeRoomId ? (
@@ -933,7 +970,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             ) : (
               <>
                 {/* 채팅 헤더 */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #eee', background: '#fff', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #d4e8c2', background: '#EAF5DC', flexShrink: 0 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {editingRoomName && activeRoom?.roomType === "GROUP" ? (
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -961,7 +998,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                     {activeRoom?.roomType === "GROUP" && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{members.length}명 참여 중</div>}
                   </div>
                   {activeRoom?.roomType === "GROUP" && (
-                    <button style={{ background: 'none', border: '1px solid #E5E7EB', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#374151' }} onClick={() => setShowMembers((v) => !v)}>
+                    <button style={{ background: 'none', border: '1px solid #D1EAE0', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#374151' }} onClick={() => setShowMembers((v) => !v)}>
                       👥 멤버
                     </button>
                   )}
@@ -1150,7 +1187,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
                 {/* 읽지 않은 메시지 이동 버튼 */}
                 {unreadOnEnter > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '5px 0', background: '#fff', borderTop: '1px solid #EAF4F0', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '5px 0', background: '#EAF5DC', flexShrink: 0 }}>
                     <button
                       onClick={() => {
                         const el = msgAreaRef.current?.querySelector<HTMLElement>('[data-first-unread]');
@@ -1239,6 +1276,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                     )}
                     <textarea
                       ref={textareaRef}
+                      className="chat-textarea"
                       style={s.textInput}
                       placeholder="메시지 입력..."
                       value={input}
@@ -1374,7 +1412,7 @@ const s: Record<string, React.CSSProperties> = {
   textInput: { flex: 1, padding: '8px 12px', border: '1px solid #ddd', borderRadius: 20, fontSize: 13, outline: 'none', resize: 'none' as const, lineHeight: 1.5, maxHeight: 120, overflowY: 'auto' as const, fontFamily: 'inherit' },
   sendBtn: { background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 16, padding: '8px 14px', fontWeight: 'bold', cursor: 'pointer', fontSize: 12, flexShrink: 0 },
 
-  rHandle: { position: "absolute", zIndex: 10001 },
+  rHandle: { position: "absolute", zIndex: 10001, background: "transparent" },
   rN: { top: 0, left: 8, right: 8, height: 5, cursor: "n-resize" },
   rS: { bottom: 0, left: 8, right: 8, height: 5, cursor: "s-resize" },
   rE: { right: 0, top: 8, bottom: 8, width: 5, cursor: "e-resize" },

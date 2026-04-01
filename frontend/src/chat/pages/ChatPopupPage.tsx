@@ -8,38 +8,12 @@ import { useAuthStore } from "../../store/authStore";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
 import type { CircleMember } from "../../circle/types/circle";
+import EmojiPicker from "../components/EmojiPicker";
 
 const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
 const avatarColor = (id: number) => AVATAR_COLORS[id % AVATAR_COLORS.length];
 const nickColor = (nick: string) => AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
 
-const EMOJIS = [
-  "😀",
-  "😂",
-  "😍",
-  "😎",
-  "🥺",
-  "😭",
-  "😡",
-  "🤔",
-  "👍",
-  "👎",
-  "❤️",
-  "🔥",
-  "✨",
-  "🎉",
-  "😊",
-  "🙏",
-  "💪",
-  "😅",
-  "🤣",
-  "😇",
-  "😘",
-  "🥳",
-  "😴",
-  "🤯",
-  "😱",
-];
 
 const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
 const isFileUrl = (c: string) => c.startsWith('/uploads/') || c.startsWith('/api/chat/files/');
@@ -77,6 +51,7 @@ export default function ChatPopupPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNoti, setShowNoti] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  const emojiBtnRef = useRef<HTMLButtonElement>(null);
   const [members, setMembers] = useState<CircleMember[]>([]);
   const [showMembers, setShowMembers] = useState(false);
   const [editingRoomName, setEditingRoomName] = useState(false);
@@ -105,6 +80,18 @@ export default function ChatPopupPage() {
   const mutedRoomsRef = useRef(mutedRooms);
   mutedRoomsRef.current = mutedRooms;
 
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const sidebarDragging = useRef(false);
+  const sidebarDragStartX = useRef(0);
+  const sidebarDragStartW = useRef(0);
+
+  const onSidebarResizeMouseDown = (e: React.MouseEvent) => {
+    sidebarDragging.current = true;
+    sidebarDragStartX.current = e.clientX;
+    sidebarDragStartW.current = sidebarWidth;
+    e.preventDefault();
+  };
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const msgAreaRef = useRef<HTMLDivElement>(null);
   const firstUnreadMsgIdRef = useRef<number | null>(null);
@@ -126,6 +113,22 @@ export default function ChatPopupPage() {
     try {
       setNotifications(await notificationApi.getAll());
     } catch {}
+  }, []);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!sidebarDragging.current) return;
+      const delta = e.clientX - sidebarDragStartX.current;
+      const newW = Math.max(180, Math.min(480, sidebarDragStartW.current + delta));
+      setSidebarWidth(newW);
+    };
+    const onMouseUp = () => { sidebarDragging.current = false; };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
   }, []);
 
   useEffect(() => {
@@ -603,7 +606,7 @@ export default function ChatPopupPage() {
         </div>
       )}
       {/* ── 사이드바 ── */}
-      <div style={s.sidebar}>
+      <div style={{ ...s.sidebar, width: sidebarWidth, position: 'relative' }}>
         {/* 사이드바 헤더 */}
         <div style={s.sideHeader}>
           <span style={s.sideTitle}>채팅</span>
@@ -802,6 +805,12 @@ export default function ChatPopupPage() {
         </div>,
         document.body
       )}
+
+      {/* 사이드바 리사이즈 핸들 */}
+      <div
+        onMouseDown={onSidebarResizeMouseDown}
+        style={{ width: 4, cursor: 'col-resize', background: '#EAF5DC', flexShrink: 0, zIndex: 10, alignSelf: 'stretch' }}
+      />
 
       {/* ── 채팅 영역 ── */}
       <div style={s.chat}>
@@ -1019,7 +1028,7 @@ export default function ChatPopupPage() {
 
             {/* 읽지 않은 메시지 이동 버튼 */}
             {unreadOnEnter > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', background: '#fff', borderTop: '1px solid #EAF4F0', flexShrink: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', background: '#EAF5DC', flexShrink: 0 }}>
                 <button
                   onClick={() => {
                     const el = msgAreaRef.current?.querySelector<HTMLElement>('[data-first-unread]');
@@ -1036,13 +1045,11 @@ export default function ChatPopupPage() {
 
             {/* 이모티콘 피커 */}
             {showEmoji && (
-              <div style={s.emojiPicker}>
-                {EMOJIS.map((e) => (
-                  <button key={e} style={s.emojiBtn} onClick={() => setInput((p) => p + e)}>
-                    {e}
-                  </button>
-                ))}
-              </div>
+              <EmojiPicker
+                anchorRef={emojiBtnRef}
+                onSelect={(emoji) => setInput((p) => p + emoji)}
+                onClose={() => setShowEmoji(false)}
+              />
             )}
 
             {/* 답장 미리보기 */}
@@ -1085,7 +1092,7 @@ export default function ChatPopupPage() {
                 <button style={s.toolBtn} onClick={() => fileInputRef.current?.click()}>
                   📎
                 </button>
-                <button style={s.toolBtn} onClick={() => setShowEmoji((v) => !v)}>
+                <button ref={emojiBtnRef} style={s.toolBtn} onClick={() => setShowEmoji((v) => !v)}>
                   😊
                 </button>
                 <button
@@ -1110,6 +1117,7 @@ export default function ChatPopupPage() {
               <div style={s.inputRow}>
                 <textarea
                   ref={textareaRef}
+                  className="chat-textarea"
                   style={s.textarea}
                   placeholder="메시지를 입력하세요"
                   value={input}
@@ -1151,11 +1159,11 @@ const s: Record<string, React.CSSProperties> = {
     height: "100vh",
     fontFamily: '"Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
     overflow: "hidden",
-    background: "#EAF4F0",
+    background: "#EAF5DC",
   },
 
   // 사이드바
-  sidebar: { width: 280, display: "flex", flexDirection: "column", background: "#fff", borderRight: "1px solid #E5E7EB", flexShrink: 0 },
+  sidebar: { width: 280, display: "flex", flexDirection: "column", background: "#EAF5DC", borderRight: "1px solid #d4e8c2", flexShrink: 0 },
   sideHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 16px 8px", flexShrink: 0 },
   sideTitle: { fontSize: 18, fontWeight: "bold", color: "#1F2937" },
   iconBtn: { background: "none", border: "none", fontSize: 18, cursor: "pointer", position: "relative", padding: 4 },
@@ -1230,7 +1238,7 @@ const s: Record<string, React.CSSProperties> = {
   notiTime: { fontSize: 11, color: "#6B7280" },
 
   // 채팅 영역
-  chat: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#EAF4F0" },
+  chat: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#EAF5DC" },
   placeholder: {
     flex: 1,
     display: "flex",
@@ -1238,15 +1246,15 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     alignItems: "center",
     color: "#A9C8BB",
-    background: "#EAF4F0",
+    background: "#EAF5DC",
   },
   chatHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     padding: "12px 20px",
-    background: "#fff",
-    borderBottom: "1px solid #E5E7EB",
+    background: "#EAF5DC",
+    borderBottom: "1px solid #d4e8c2",
     flexShrink: 0,
   },
   chatTitle: { fontWeight: "bold", fontSize: 15, color: "#1F2937" },
@@ -1327,18 +1335,6 @@ const s: Record<string, React.CSSProperties> = {
   editConfirmBtn: { flex: 1, padding: '4px', background: '#5F8F7B', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
   editCancelBtn: { flex: 1, padding: '4px', background: '#EAF4F0', color: '#1F2937', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 },
 
-  // 이모지 피커
-  emojiPicker: {
-    display: "flex",
-    flexWrap: "wrap" as const,
-    gap: 4,
-    padding: "8px 14px",
-    background: "#fff",
-    borderTop: "1px solid #E5E7EB",
-    flexShrink: 0,
-  },
-  emojiBtn: { background: "none", border: "none", fontSize: 22, cursor: "pointer", padding: 2 },
-
   // AI 스마트 답변
   aiSuggestWrap: { background: "#F0FAF5", borderTop: "1px solid #D1EAE0", padding: "8px 12px 6px", flexShrink: 0 },
   aiSuggestHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
@@ -1348,7 +1344,7 @@ const s: Record<string, React.CSSProperties> = {
   aiDraftBtn: { background: "#fff", border: "1px solid #D1EAE0", borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer", color: "#333", textAlign: "left" as const, width: "100%", display: "flex", alignItems: "center" },
 
   // 입력창
-  inputWrap: { background: "#fff", borderTop: "1px solid #E5E7EB", flexShrink: 0 },
+  inputWrap: { background: "#EAF5DC", borderTop: "1px solid #d4e8c2", flexShrink: 0 },
   inputToolbar: { display: "flex", gap: 4, padding: "8px 12px 0" },
   toolBtn: { background: "none", border: "none", fontSize: 18, cursor: "pointer", padding: "4px 6px", borderRadius: 6 },
   inputRow: { display: "flex", alignItems: "flex-end", gap: 8, padding: "6px 12px 10px" },

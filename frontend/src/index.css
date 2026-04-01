@@ -68,3 +68,14 @@ button {
 [data-moa-landing] .moa-landing__fade-delay-2 {
   animation-delay: 0.6s;
 }
+
+
+/* 채팅 입력창 - 스크롤바 숨기고 휠 스크롤만 허용 */
+.chat-textarea::-webkit-scrollbar { display: none; }
+.chat-textarea { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* 이모지 피커 스크롤바 숨기기 */
+.emoji-picker-box::-webkit-scrollbar { display: none; }
+
+/* ChatPopupPage 이모지 피커 스크롤바 숨기기 */
+.chat-emoji-picker::-webkit-scrollbar { display: none; }
