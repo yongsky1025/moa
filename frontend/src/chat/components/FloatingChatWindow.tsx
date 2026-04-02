@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { Search, X, Bell, BellOff, Pencil, List, LogOut, UserRound, UsersRound, CalendarDays } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { chatApi } from "../../api/chatApi";
@@ -10,7 +11,7 @@ import EmojiPicker from "./EmojiPicker";
 import ChatInput from "./ChatInput";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
-import type { CircleMember } from "../../circle/types/circle";
+type RoomMember = { userId: number; nickname: string; circleMemberId?: number; role?: string };
 
 const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
 const isFileUrl = (c: string) => c.startsWith('/uploads/') || c.startsWith('/api/chat/files/');
@@ -113,7 +114,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const [unreadOnEnter, setUnreadOnEnter] = useState(0);
 
   // ChatPopupPage 동기화 기능
-  const [members, setMembers] = useState<CircleMember[]>([]);
+  const [members, setMembers] = useState<RoomMember[]>([]);
   const [showMembers, setShowMembers] = useState(false);
   const [editingRoomName, setEditingRoomName] = useState(false);
   const [roomNameInput, setRoomNameInput] = useState("");
@@ -284,12 +285,16 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
         setReadStatus(map);
       })
       .catch(() => {});
-    // 모임방이면 멤버 로드
+    // 모임/일정 채팅방이면 멤버 로드
     const room = roomsRef.current.find(r => r.roomId === activeRoomId);
     if (room?.roomType === "GROUP" && room?.circleId) {
       circleApi
         .getActiveMembers(room.circleId, { size: 100 })
         .then((res) => setMembers(res.data.dtoList ?? []))
+        .catch(() => setMembers([]));
+    } else if (room?.roomType === "SCHEDULE") {
+      chatApi.getRoomMembers(activeRoomId)
+        .then((list) => setMembers(list))
         .catch(() => setMembers([]));
     } else {
       setMembers([]);
@@ -399,7 +404,9 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   }, [activeRoomId]);
 
   const handleSystemEvent = useCallback((event: { type: string; nickname: string; createdAt: string }) => {
-    const text = event.type === 'LEAVE' ? `${event.nickname}님이 퇴장했습니다.` : `${event.nickname}님이 입장했습니다.`;
+    const text = event.type === 'LEAVE' ? `${event.nickname}님이 퇴장했습니다.`
+      : event.type === 'KICK' ? `${event.nickname}님이 강퇴되었습니다.`
+      : `${event.nickname}님이 입장했습니다.`;
     const systemMsg: ChatMessage = {
       messageId: -Date.now(),
       roomId: activeRoomId ?? 0,
@@ -722,7 +729,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
               style={{ display: "block", width: "100%", padding: "10px 14px", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: 13, color: "#262626" }}
               onClick={() => { setRenaming({ roomId: roomCtxMenu.room.roomId, value: roomCtxMenu.room.name ?? roomLabel(roomCtxMenu.room) }); setRoomCtxMenu(null); }}
             >
-              ✏️ 방 이름 변경
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Pencil size={14} /> 방 이름 변경</span>
             </button>
           )}
           <button
@@ -735,13 +742,15 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             style={{ display: "block", width: "100%", padding: "10px 14px", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: 13, color: "#262626" }}
             onClick={() => { toggleMute(roomCtxMenu.room.roomId); setRoomCtxMenu(null); }}
           >
-            {mutedRooms.has(roomCtxMenu.room.roomId) ? '🔔 알림 켜기' : '🔕 알림 끄기'}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {mutedRooms.has(roomCtxMenu.room.roomId) ? <><Bell size={14} /> 알림 켜기</> : <><BellOff size={14} /> 알림 끄기</>}
+            </span>
           </button>
           <button
             style={{ display: "block", width: "100%", padding: "10px 14px", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: 13, color: "#c62828" }}
             onClick={() => handleRoomLeave(roomCtxMenu.room.roomId)}
           >
-            🚪 채팅방 나가기
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><LogOut size={14} /> 채팅방 나가기</span>
           </button>
         </div>
       )}
@@ -839,8 +848,8 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             )}
             {/* 알림 */}
             <div style={{ position: "relative" }}>
-              <button className="chat-title-btn" style={s.titleBtn} onClick={() => setShowNoti((v) => !v)}>
-                🔔{unreadNoti > 0 && <span style={s.nBadge}>{unreadNoti}</span>}
+              <button className="chat-title-btn" style={{ ...s.titleBtn, display: 'flex', alignItems: 'center', position: 'relative' }} onClick={() => setShowNoti((v) => !v)}>
+                <Bell size={16} />{unreadNoti > 0 && <span style={s.nBadge}>{unreadNoti}</span>}
               </button>
               {showNoti && (
                 <div style={s.notiBox}>
@@ -873,12 +882,15 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             <div style={s.sidebarTitle}>채팅</div>
             {/* 채팅방 검색 */}
             <div style={{ padding: '6px 10px', borderBottom: '1px solid #eee', flexShrink: 0 }}>
-              <input
-                style={{ width: '100%', padding: '6px 10px', border: '1px solid #E5E7EB', borderRadius: 16, background: '#EAF4F0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
-                placeholder="🔍 채팅방 검색"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={13} style={{ position: 'absolute', left: 9, color: '#9CA3AF', pointerEvents: 'none' }} />
+                <input
+                  style={{ width: '100%', padding: '6px 10px 6px 28px', border: '1px solid #E5E7EB', borderRadius: 16, background: '#EAF4F0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="채팅방 검색"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
             </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {filteredRooms.length === 0
@@ -888,7 +900,9 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                     className="chat-room-item" style={{ ...s.roomItem, background: r.roomId === activeRoomId ? '#EAF4F0' : 'transparent' }}
                     onClick={() => setActiveRoomId(r.roomId)}
                     onContextMenu={(e) => handleRoomContextMenu(e, r)}>
-                    <div style={s.roomAvatar}>{r.roomType === 'GROUP' ? '👥' : r.roomType === 'SCHEDULE' ? '📅' : '👤'}</div>
+                    <div style={{ ...s.roomAvatar, background: r.roomType === 'GROUP' ? '#5F8F7B' : r.roomType === 'SCHEDULE' ? '#F9B88A' : '#3D5F52' }}>
+                      {r.roomType === 'GROUP' ? <UsersRound size={18} color="#fff" /> : r.roomType === 'SCHEDULE' ? <CalendarDays size={18} color="#fff" /> : <UserRound size={18} color="#fff" />}
+                    </div>
                     <div style={s.roomInfo}>
                       <div style={s.roomRow}>
                         <span style={s.roomName}>{r.isPinned && <span style={{ color: '#F4A261', marginRight: 3, fontSize: 11 }}>⭐</span>}{roomLabel(r)}</span>
@@ -897,7 +911,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                       <div style={s.roomRow}>
                         <span style={s.roomLast}>{r.lastMessage ?? ''}</span>
                         {mutedRooms.has(r.roomId)
-                          ? <span style={{ fontSize: 13, color: '#9CA3AF' }}>🔕</span>
+                          ? <span style={{ color: '#9CA3AF', display: 'flex', alignItems: 'center' }}><BellOff size={13} /></span>
                           : r.unreadCount > 0 && <span style={s.unreadBadge}>{r.unreadCount > 99 ? '99+' : r.unreadCount}</span>
                         }
                       </div>
@@ -949,24 +963,21 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                         <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#1F2937' }}>
                           {activeRoom ? roomLabel(activeRoom) : ''}
                         </span>
-                        {activeRoom?.roomType === "GROUP" && (
-                          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#9CA3AF', padding: '2px 4px' }} onClick={() => { setRoomNameInput(activeRoom.name ?? roomLabel(activeRoom)); setEditingRoomName(true); }}>✏️</button>
-                        )}
                       </div>
                     )}
-                    {activeRoom?.roomType === "GROUP" && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{members.length}명 참여 중</div>}
+                    {(activeRoom?.roomType === "GROUP" || activeRoom?.roomType === "SCHEDULE") && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{members.length}명 참여 중</div>}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <button
                       onClick={() => { setShowSearch(v => !v); if (!showSearch) setTimeout(() => searchInputRef.current?.focus(), 50); else setSearchQuery(""); }}
-                      style={{ background: showSearch ? '#EAF4F0' : 'none', border: '1px solid #E5E7EB', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#5F8F7B' }}
+                      style={{ background: showSearch ? '#EAF4F0' : 'none', border: 'none', borderRadius: 6, padding: '4px', cursor: 'pointer', color: showSearch ? '#5F8F7B' : '#9CA3AF', display: 'flex', alignItems: 'center' }}
                       title="메시지 검색"
                     >
-                      🔍
+                      <Search size={16} />
                     </button>
-                    {activeRoom?.roomType === "GROUP" && (
-                      <button style={{ background: 'none', border: '1px solid #E5E7EB', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 12, color: '#5F8F7B' }} onClick={() => setShowMembers((v) => !v)}>
-                        👥 멤버
+                    {(activeRoom?.roomType === "GROUP" || activeRoom?.roomType === "SCHEDULE") && (
+                      <button style={{ background: 'none', border: '1px solid #E5E7EB', borderRadius: 6, padding: '4px 6px', cursor: 'pointer', color: '#5F8F7B', display: 'flex', alignItems: 'center' }} onClick={() => setShowMembers((v) => !v)}>
+                        <List size={14} />
                       </button>
                     )}
                   </div>
@@ -977,7 +988,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                   <div style={{ borderBottom: '1px solid #eee', background: '#F9FAFB', overflowY: 'auto', maxHeight: 140, flexShrink: 0 }}>
                     {members.map((m) => (
                       <div
-                        key={m.circleMemberId}
+                        key={m.userId}
                         style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: m.userId !== userId ? 'pointer' : 'default' }}
                         onClick={(e) => { if (m.userId === userId) return; e.stopPropagation(); setProfileModal({ nickname: m.nickname, senderId: m.userId }); }}
                       >
@@ -992,7 +1003,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                 {/* 검색 바 */}
                 {showSearch && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderBottom: '1px solid #E5E7EB', background: '#F9FAFB', flexShrink: 0 }}>
-                    <span style={{ fontSize: 13, color: '#6B7280' }}>🔍</span>
+                    <Search size={14} style={{ color: '#6B7280', flexShrink: 0 }} />
                     <input
                       ref={searchInputRef}
                       value={searchQuery}
@@ -1007,7 +1018,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                         {messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase())).length}건
                       </span>
                     )}
-                    <button onClick={() => { setShowSearch(false); setSearchQuery(""); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 14, padding: '0 2px' }}>✕</button>
+                    <button onClick={() => { setShowSearch(false); setSearchQuery(""); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: '2px', display: 'flex', alignItems: 'center' }}><X size={14} /></button>
                   </div>
                 )}
 
@@ -1274,7 +1285,7 @@ const s: Record<string, React.CSSProperties> = {
   sidebarTitle: { padding: "12px 14px", fontWeight: "700", fontSize: 13, color: "#1F2937", borderBottom: "1px solid #E5E7EB", flexShrink: 0 },
   sideEmpty: { padding: 16, textAlign: "center", color: "#A9CBBB", fontSize: 12 },
   roomItem: { display: "flex", alignItems: "center", padding: "10px 12px", cursor: "pointer", gap: 10, borderBottom: "1px solid #F3F4F6" },
-  roomAvatar: { fontSize: 20, flexShrink: 0 },
+  roomAvatar: { width: 32, height: 32, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   roomInfo: { flex: 1, minWidth: 0 },
   roomRow: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   roomName: { fontSize: 13, fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#1F2937" },

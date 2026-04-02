@@ -11,7 +11,7 @@ interface ReadEvent {
 }
 
 interface SystemEvent {
-  type: 'LEAVE';
+  type: 'LEAVE' | 'JOIN' | 'KICK';
   nickname: string;
   createdAt: string;
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Search, X, Bell, BellOff, Pencil, List, LogOut, UserRound, UsersRound, CalendarDays } from "lucide-react";
 import { createPortal } from "react-dom";
 import { chatApi } from "../../api/chatApi";
 import { circleApi } from "../../api/circleApi";
@@ -7,7 +8,7 @@ import { useWebSocket, type TypingEvent, type NoticeEvent } from "../hooks/useWe
 import { useAuthStore } from "../../store/authStore";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
-import type { CircleMember } from "../../circle/types/circle";
+type RoomMember = { userId: number; nickname: string; circleMemberId?: number; role?: string };
 import EmojiPicker from "../components/EmojiPicker";
 
 const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
@@ -185,7 +186,7 @@ export default function ChatPopupPage() {
   const [search, setSearch] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNoti, setShowNoti] = useState(false);
-  const [members, setMembers] = useState<CircleMember[]>([]);
+  const [members, setMembers] = useState<RoomMember[]>([]);
   const [showMembers, setShowMembers] = useState(false);
   const [editingRoomName, setEditingRoomName] = useState(false);
   const [roomNameInput, setRoomNameInput] = useState("");
@@ -338,11 +339,15 @@ export default function ChatPopupPage() {
       })
       .catch(() => {});
 
-    // 모임방이면 멤버 로드
+    // 모임/일정 채팅방이면 멤버 로드
     if (activeRoom.roomType === "GROUP" && activeRoom.circleId) {
       circleApi
         .getActiveMembers(activeRoom.circleId, { size: 100 })
         .then((res) => setMembers(res.data.dtoList ?? []))
+        .catch(() => setMembers([]));
+    } else if (activeRoom.roomType === "SCHEDULE") {
+      chatApi.getRoomMembers(activeRoom.roomId)
+        .then((list) => setMembers(list))
         .catch(() => setMembers([]));
     } else {
       setMembers([]);
@@ -541,12 +546,31 @@ export default function ChatPopupPage() {
     } catch {}
   };
 
+  const handleSystemEvent = useCallback((event: { type: string; nickname: string; createdAt: string }) => {
+    const text = event.type === 'LEAVE' ? `${event.nickname}님이 퇴장했습니다.`
+      : event.type === 'KICK' ? `${event.nickname}님이 강퇴되었습니다.`
+      : `${event.nickname}님이 입장했습니다.`;
+    const systemMsg: ChatMessage = {
+      messageId: -Date.now(),
+      roomId: activeRoom?.roomId ?? 0,
+      senderId: 0,
+      senderNickname: '',
+      content: text,
+      createdAt: event.createdAt,
+      updatedAt: null,
+      isDeleted: false,
+      messageType: 'SYSTEM',
+    };
+    setMessages((prev) => [...prev, systemMsg]);
+  }, [activeRoom?.roomId]);
+
   const { sendMessage, sendTyping } = useWebSocket({
     roomId: activeRoom?.roomId ?? 0,
     userId: userId ?? undefined,
     onMessage: handleNewMessage,
     onReadEvent: handleReadEvent,
     onNotification: handleNotification,
+    onSystemEvent: handleSystemEvent,
     onTyping: handleTyping,
     onReaction: handleReaction,
     onNotice: handleNoticeEvent,
@@ -733,8 +757,8 @@ export default function ChatPopupPage() {
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             {/* 알림 */}
             <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
-              <button style={s.iconBtn} onClick={() => setShowNoti((v) => !v)}>
-                🔔
+              <button style={{ ...s.iconBtn, display: 'flex', alignItems: 'center', position: 'relative' }} onClick={() => setShowNoti((v) => !v)}>
+                <Bell size={16} />
                 {unreadNoti > 0 && <span style={s.dot}>{unreadNoti}</span>}
               </button>
               {showNoti && (
@@ -773,7 +797,10 @@ export default function ChatPopupPage() {
 
         {/* 검색 */}
         <div style={s.searchWrap}>
-          <input style={s.searchInput} placeholder="🔍  채팅방 검색" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search size={13} style={{ position: 'absolute', left: 12, color: '#9CA3AF', pointerEvents: 'none' }} />
+            <input style={{ ...s.searchInput, paddingLeft: 32 }} placeholder="채팅방 검색" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
         </div>
 
         {/* 채팅방 목록 */}
@@ -788,8 +815,8 @@ export default function ChatPopupPage() {
                 onClick={() => setActiveRoom(r)}
                 onContextMenu={(e) => handleRoomContextMenu(e, r)}
               >
-                <div style={{ ...s.roomAvatar, background: r.roomType === 'GROUP' ? '#5F8F7B' : r.roomType === 'SCHEDULE' ? '#457B9D' : '#3D5F52' }}>
-                  {r.roomType === 'GROUP' ? '👥' : r.roomType === 'SCHEDULE' ? '📅' : '👤'}
+                <div style={{ ...s.roomAvatar, background: r.roomType === 'GROUP' ? '#5F8F7B' : r.roomType === 'SCHEDULE' ? '#F9B88A' : '#3D5F52', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {r.roomType === 'GROUP' ? <UsersRound size={18} color="#fff" /> : r.roomType === 'SCHEDULE' ? <CalendarDays size={18} color="#fff" /> : <UserRound size={18} color="#fff" />}
                 </div>
                 <div style={s.roomMeta}>
                   <div style={s.roomTop}>
@@ -799,7 +826,7 @@ export default function ChatPopupPage() {
                   <div style={s.roomTop}>
                     <span style={s.roomLast}>{r.lastMessage ?? ""}</span>
                     {mutedRooms.has(r.roomId)
-                      ? <span style={{ fontSize: 13, color: '#9CA3AF' }}>🔕</span>
+                      ? <span style={{ color: '#9CA3AF', display: 'flex', alignItems: 'center' }}><BellOff size={13} /></span>
                       : r.unreadCount > 0 && <span style={s.unreadBadge}>{r.unreadCount}</span>
                     }
                   </div>
@@ -824,17 +851,19 @@ export default function ChatPopupPage() {
                 setRoomCtxMenu(null);
               }}
             >
-              ✏️ 방 이름 변경
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Pencil size={14} /> 방 이름 변경</span>
             </button>
           )}
           <button className="chat-ctx-item" style={s.ctxItem} onClick={() => handleTogglePin(roomCtxMenu.room.roomId)}>
 {roomCtxMenu.room.isPinned ? '⭐ 즐겨찾기 해제' : '☆ 즐겨찾기 추가'}
           </button>
           <button className="chat-ctx-item" style={s.ctxItem} onClick={() => { toggleMute(roomCtxMenu.room.roomId); setRoomCtxMenu(null); }}>
-            {mutedRooms.has(roomCtxMenu.room.roomId) ? '🔔 알림 켜기' : '🔕 알림 끄기'}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {mutedRooms.has(roomCtxMenu.room.roomId) ? <><Bell size={14} /> 알림 켜기</> : <><BellOff size={14} /> 알림 끄기</>}
+            </span>
           </button>
           <button style={{ ...s.ctxItem, color: "#c62828" }} onClick={() => handleRoomLeave(roomCtxMenu.room.roomId)}>
-            🚪 채팅방 나가기
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><LogOut size={14} /> 채팅방 나가기</span>
           </button>
         </div>
       )}
@@ -969,19 +998,19 @@ export default function ChatPopupPage() {
                     <div style={s.chatTitle}>{roomLabel(activeRoom)}</div>
                   </div>
                 )}
-                {activeRoom.roomType === "GROUP" && <div style={s.chatSub}>{members.length}명 참여 중</div>}
+                {(activeRoom.roomType === "GROUP" || activeRoom.roomType === "SCHEDULE") && <div style={s.chatSub}>{members.length}명 참여 중</div>}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={() => { setShowSearch(v => !v); if (!showSearch) setTimeout(() => searchInputRef.current?.focus(), 50); else setSearchQuery(""); }}
-                  className="chat-header-btn" style={{ ...s.headerBtn, background: showSearch ? '#EAF4F0' : 'none' }}
+                  className="chat-header-btn" style={{ ...s.headerBtn, background: showSearch ? '#EAF4F0' : 'none', border: 'none', display: 'flex', alignItems: 'center', color: showSearch ? '#5F8F7B' : '#9CA3AF' }}
                   title="메시지 검색"
                 >
-                  🔍
+                  <Search size={16} />
                 </button>
-                {activeRoom.roomType === "GROUP" && (
-                  <button className="chat-header-btn" style={s.headerBtn} onClick={() => setShowMembers((v) => !v)}>
-                    👥 멤버
+                {(activeRoom.roomType === "GROUP" || activeRoom.roomType === "SCHEDULE") && (
+                  <button className="chat-header-btn" style={{ ...s.headerBtn, display: 'flex', alignItems: 'center', padding: '4px 6px' }} onClick={() => setShowMembers((v) => !v)}>
+                    <List size={14} />
                   </button>
                 )}
               </div>
@@ -992,7 +1021,7 @@ export default function ChatPopupPage() {
               <div style={s.memberPanel}>
                 {members.map((m) => (
                   <div
-                    key={m.circleMemberId}
+                    key={m.userId}
                     style={{ ...s.memberItem, cursor: m.userId !== userId ? "pointer" : "default" }}
                     onClick={(e) => {
                       if (m.userId === userId) return;
@@ -1011,7 +1040,7 @@ export default function ChatPopupPage() {
             {/* 검색 바 */}
             {showSearch && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderBottom: '1px solid #E5E7EB', background: '#F9FAFB', flexShrink: 0 }}>
-                <span style={{ fontSize: 13, color: '#6B7280' }}>🔍</span>
+                <Search size={14} style={{ color: '#6B7280', flexShrink: 0 }} />
                 <input
                   ref={searchInputRef}
                   value={searchQuery}
@@ -1026,7 +1055,7 @@ export default function ChatPopupPage() {
                     {messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase())).length}건
                   </span>
                 )}
-                <button onClick={() => { setShowSearch(false); setSearchQuery(""); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 14, padding: '0 2px' }}>✕</button>
+                <button onClick={() => { setShowSearch(false); setSearchQuery(""); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: '2px', display: 'flex', alignItems: 'center' }}><X size={14} /></button>
               </div>
             )}
 

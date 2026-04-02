@@ -93,6 +93,9 @@ public class ChatRoomService {
             // 방이 이미 있으면 멤버로 추가 (없는 경우에만)
             if (!memberRepo.existsByRoomIdAndUserId(room.getId(), myId)) {
                 memberRepo.save(ChatRoomMember.join(room.getId(), myId));
+                String nickname = usersRepo.findById(myId).map(u -> u.getNickname()).orElse("알 수 없음");
+                messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/system",
+                        Map.of("type", "JOIN", "nickname", nickname, "createdAt", LocalDateTime.now().toString()));
             }
             return room;
         }).orElseGet(() -> {
@@ -199,6 +202,9 @@ public class ChatRoomService {
         return roomRepo.findByScheduleId(scheduleId).map(room -> {
             if (!memberRepo.existsByRoomIdAndUserId(room.getId(), userId)) {
                 memberRepo.save(ChatRoomMember.join(room.getId(), userId));
+                String nickname = usersRepo.findById(userId).map(u -> u.getNickname()).orElse("알 수 없음");
+                messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/system",
+                        Map.of("type", "JOIN", "nickname", nickname, "createdAt", LocalDateTime.now().toString()));
             }
             return room;
         }).orElseGet(() -> {
@@ -270,15 +276,39 @@ public class ChatRoomService {
      * 방이 없거나 멤버가 아니면 무시.
      */
     @Transactional
-    public void leaveGroupRoom(Long circleId, Long userId) {
+    public void leaveGroupRoom(Long circleId, Long userId, boolean isKick) {
         roomRepo.findByCircleId(circleId).ifPresent(room -> {
             memberRepo.findByRoomIdAndUserId(room.getId(), userId).ifPresent(member -> {
+                String nickname = usersRepo.findById(userId).map(u -> u.getNickname()).orElse("알 수 없음");
                 memberRepo.delete(member);
-                if (memberRepo.findByRoomId(room.getId()).isEmpty()) {
+                List<ChatRoomMember> remaining = memberRepo.findByRoomId(room.getId());
+                if (remaining.isEmpty()) {
                     roomRepo.deleteById(room.getId());
+                } else {
+                    String type = isKick ? "KICK" : "LEAVE";
+                    messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/system",
+                            Map.of("type", type, "nickname", nickname, "createdAt", LocalDateTime.now().toString()));
                 }
             });
         });
+    }
+
+    /**
+     * 채팅방 멤버 목록 조회 (일정/모임 채팅방 공통).
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getRoomMembers(Long roomId, Long userId) {
+        assertMember(roomId, userId);
+        return memberRepo.findByRoomId(roomId).stream()
+                .map(m -> {
+                    String nickname = usersRepo.findById(m.getUserId())
+                            .map(u -> u.getNickname()).orElse("알 수 없음");
+                    Map<String, Object> info = new HashMap<>();
+                    info.put("userId", m.getUserId());
+                    info.put("nickname", nickname);
+                    return info;
+                })
+                .toList();
     }
 
     /**

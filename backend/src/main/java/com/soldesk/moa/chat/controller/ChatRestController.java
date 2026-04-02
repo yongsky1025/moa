@@ -122,6 +122,15 @@ public class ChatRestController {
         return ResponseEntity.ok().build();
     }
 
+    /** 채팅방 멤버 목록 조회 */
+    @GetMapping("/rooms/{roomId}/members")
+    public ResponseEntity<List<Map<String, Object>>> getRoomMembers(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        return ResponseEntity.ok(roomService.getRoomMembers(roomId, auth.getUserId()));
+    }
+
     /** 채팅방 나가기 */
     @DeleteMapping("/rooms/{roomId}/leave")
     public ResponseEntity<Void> leaveRoom(
