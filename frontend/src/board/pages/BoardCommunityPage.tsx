@@ -1682,10 +1682,7 @@ export default function BoardCommunityPage() {
         {topTab === "activity" ? (
           <>
             <div className="community-sticky-gap" aria-hidden="true" />
-            <section
-              className="board-community-layout"
-              style={{ gridTemplateColumns: "260px minmax(0, 1fr)" }}
-            >
+            <section className="board-community-layout">
               <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
                 <CommunityProfileCard
                   selectedView={activityView}
@@ -1861,6 +1858,7 @@ export default function BoardCommunityPage() {
                 )}
               </CommunityListState>
               </section>
+              <aside className="community-right-sidebar" aria-hidden="true" />
             </section>
           </>
         ) : (
