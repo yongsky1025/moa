@@ -5,11 +5,18 @@ export interface UserProfile {
   publicId: string;
   nickname: string;
   email: string;
+  provider: 'LOCAL' | 'GOOGLE' | 'KAKAO' | 'NAVER' | null;
   age: number;
   userGender: 'MALE' | 'FEMALE';
   birthDate: string;
   statusMessage: string | null;
   profileImageUrl?: string | null;
+}
+
+export interface PasswordChangeRequest {
+  currentPassword: string;
+  newPassword: string;
+  newPasswordConfirm: string;
 }
 
 export interface EnergyProfileRequest {
@@ -53,6 +60,14 @@ export const profileApi = {
 
   checkNickname: (nickname: string) =>
     api.get('/api/users/profile/check-nickname', { params: { nickname } }),
+};
+
+export const accountApi = {
+  changePassword: (data: PasswordChangeRequest) =>
+    api.post('/api/users/account/password', data),
+
+  withdraw: (password: string) =>
+    api.post('/api/users/account/withdraw', { password }),
 };
 
 export const energyProfileApi = {

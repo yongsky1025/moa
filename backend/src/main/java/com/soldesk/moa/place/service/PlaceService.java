@@ -1,10 +1,14 @@
 package com.soldesk.moa.place.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.soldesk.moa.payment.dto.OccupiedSlotDTO;
+import com.soldesk.moa.place.repository.ReservationRepository;
 
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
 import com.soldesk.moa.common.entity.Likes;
@@ -35,6 +39,7 @@ public class PlaceService {
         private final LikesRepository likesRepository;
         private final AdminUsersRepository usersRepository;
         private final PlaceImageService placeImageService;
+        private final ReservationRepository reservationRepository;
 
         // 장소 단건 상세 조회
         @Transactional(readOnly = true)
@@ -200,6 +205,17 @@ public class PlaceService {
         // 삭제
         public void deletePlace(Long id) {
                 placeRepository.deleteById(id);
+        }
+
+        // 날짜별 예약된(점유된) 시간대 조회
+        @Transactional(readOnly = true)
+        public List<OccupiedSlotDTO> getOccupiedSlots(Long placeId, LocalDate date) {
+                return reservationRepository.findOccupiedSlots(placeId, date)
+                                .stream()
+                                .map(r -> new OccupiedSlotDTO(
+                                                r.getStartTime().toLocalTime().toString(),
+                                                r.getEndTime().toLocalTime().toString()))
+                                .toList();
         }
 
 }

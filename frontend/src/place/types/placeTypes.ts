@@ -125,3 +125,38 @@ export interface PlaceListResponse {
   hasNext: boolean;
   lastId: number | null;
 }
+
+// ── 예약 점유 슬롯 ─────────────────────────
+export interface OccupiedSlotDTO {
+  startTime: string // "HH:mm" or "HH:mm:ss"
+  endTime: string
+}
+
+// ── hold 응답 ─────────────────────────────
+export interface HoldResponse {
+  reservationId: number
+  orderId: string
+  amount: number
+  orderName: string
+}
+
+// ── 내 예약 목록 ──────────────────────────
+export interface MyReservationDTO {
+  reservationId: number
+  placeId: number
+  placeName: string
+  startTime: string // ISO datetime
+  endTime: string
+  totalPrice: number
+  status: string // HOLDING | RESERVED | CANCELLED | COMPLETED | EXPIRED
+}
+
+// ── 일정 연결용 내 일정 목록 ──────────────
+export interface MyUpcomingScheduleDTO {
+  scheduleId: number
+  title: string
+  startAt: string // ISO datetime
+  endAt: string
+  circleId: number
+  circleName: string
+}

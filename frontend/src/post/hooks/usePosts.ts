@@ -5,12 +5,10 @@ import { getErrorMessage } from "../../common/utils/errorMessage";
 
 interface UsePostsParams {
   kind: PostKind;
-  circleId?: number;
-  boardId?: number;
   enabled?: boolean;
 }
 
-export function usePosts({ kind, circleId, boardId, enabled = true }: UsePostsParams) {
+export function usePosts({ kind, enabled = true }: UsePostsParams) {
   const [data, setData] = useState<PostResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -19,16 +17,9 @@ export function usePosts({ kind, circleId, boardId, enabled = true }: UsePostsPa
     setLoading(true);
     setError("");
     try {
-      let response;
-      if (kind === "free") {
-        response = await postApi.getFreePosts();
-      } else if (kind === "notice") {
-        response = await postApi.getNoticePosts();
-      } else if (boardId) {
-        response = await postApi.getCircleBoardPosts(circleId ?? 0, boardId);
-      } else {
-        response = await postApi.getCircleAllPosts(circleId ?? 0);
-      }
+      const response = kind === "free"
+        ? await postApi.getFreePosts()
+        : await postApi.getNoticePosts();
       setData(response.data);
     } catch (e) {
       setError(getErrorMessage(e));
@@ -36,7 +27,7 @@ export function usePosts({ kind, circleId, boardId, enabled = true }: UsePostsPa
     } finally {
       setLoading(false);
     }
-  }, [kind, circleId, boardId]);
+  }, [kind]);
 
   useEffect(() => {
     if (!enabled) {

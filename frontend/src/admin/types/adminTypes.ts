@@ -6,8 +6,9 @@ export type CircleStatus = "OPEN" | "FULL" | "CLOSED" | "PENDING" | "REJECTED";
 export type CircleMemberRole = "LEADER" | "MEMBER";
 
 export type BoardType = "NOTICE" | "FREE" | "SUPPORT" | "CIRCLE";
+export type NoticeCategory = "ANNOUNCEMENT" | "EVENT" | "UPDATE";
 
-export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE" | "CHAT_MESSAGE";
+export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE" | "PLACE_REVIEW";
 export type ReportStatus = "PENDING" | "REVIEWING" | "RESOLVED" | "REJECTED";
 export type SanctionState = "ACTIVE" | "LIFTED" | "CANCELLED";
 
@@ -292,6 +293,7 @@ export interface AdminPostResponseDTO {
   circleId: number | null;
   viewCount: number;
   replyCount: number;
+  noticeCategory?: NoticeCategory | null;
   deleted: boolean;
   createDate: string;
 }
@@ -319,6 +321,7 @@ export interface AdminPostDetailDTO {
   circleId: number | null;
   boardId: number;
   viewCount: number;
+  noticeCategory?: NoticeCategory | null;
   deleted: boolean;
   sanctionId: number | null;
   createDate: string;
@@ -329,6 +332,7 @@ export interface AdminPostDetailDTO {
 export interface AdminNoticeRequestDTO {
   title: string;
   content: string;
+  noticeCategory: NoticeCategory;
 }
 
 // ==========신고관리===============
@@ -384,6 +388,13 @@ export interface ReportTargetContentDTO {
   userStatus?: string | null;
   userSanctionCount?: number | null;
   userRecentActivities?: UserRecentActivityDTO[] | null;
+  // PLACE_REVIEW
+  placeReviewContent?: string | null;
+  placeReviewRating?: number | null;
+  placeReviewAuthorName?: string | null;
+  placeReviewPlaceName?: string | null;
+  placeReviewPlaceId?: number | null;
+  placeReviewCreatedAt?: string | null;
 }
 
 export interface ReportResponseDTO {

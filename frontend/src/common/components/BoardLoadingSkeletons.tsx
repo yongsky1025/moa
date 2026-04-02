@@ -80,22 +80,33 @@ export function BoardDetailSkeleton() {
   );
 }
 
-export function ReplyListSkeleton({ count = 3 }: { count?: number }) {
+export function ReplyListSkeleton({
+  count = 3,
+  withTopMargin = true,
+}: {
+  count?: number;
+  withTopMargin?: boolean;
+}) {
   return (
     <SkeletonTheme baseColor={baseColor} highlightColor={highlightColor}>
-      <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+      <div style={{ display: "grid", gap: 0, marginTop: withTopMargin ? 12 : 0 }}>
         {Array.from({ length: count }).map((_, index) => (
           <div
             key={index}
             style={{
-              backgroundColor: "#fff",
-              border: "1px solid #e5e7eb",
-              borderRadius: 10,
-              padding: 14,
+              padding: "12px 0",
+              borderTop: index === 0 ? "none" : "1px solid #edf1f5",
             }}
           >
-            <Skeleton width={140} height={14} style={{ marginBottom: 10 }} />
-            <Skeleton count={2} height={14} />
+            <div style={{ display: "grid", gridTemplateColumns: "38px minmax(0, 1fr)", columnGap: 10 }}>
+              <Skeleton circle width={38} height={38} />
+              <div>
+                <Skeleton width={180} height={14} style={{ marginBottom: 10 }} />
+                <Skeleton width="82%" height={14} style={{ marginBottom: 7 }} />
+                <Skeleton width="66%" height={14} style={{ marginBottom: 10 }} />
+                <Skeleton width={120} height={12} />
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -168,7 +179,7 @@ export function BoardSelectorSkeleton() {
   );
 }
 
-export function PostEditorSkeleton() {
+export function CommonEditorSkeleton() {
   return (
     <SkeletonTheme baseColor={baseColor} highlightColor={highlightColor}>
       <div style={{ display: "grid", gap: 12 }}>
@@ -183,3 +194,6 @@ export function PostEditorSkeleton() {
     </SkeletonTheme>
   );
 }
+
+// Backward compatibility: legacy name used in older modules.
+export const PostEditorSkeleton = CommonEditorSkeleton;

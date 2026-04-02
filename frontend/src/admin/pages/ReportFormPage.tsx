@@ -3,9 +3,32 @@ import { useSearchParams } from "react-router-dom";
 import { ShieldAlert, X, Plus } from "lucide-react";
 import type { ReportCategory, ReportTargetType } from "../types/adminTypes";
 import { postReport } from "../api/adminReportAndSanctionApi";
-import { requestUploadUrl, uploadImageFile } from "../api/adminPlaceApi";
+import api from "../../api/axiosInstance";
 
 const API_HOST = "http://localhost:8080";
+
+async function requestUploadUrl(
+  fileName: string,
+  contentType: string,
+): Promise<{ uploadUrl: string }> {
+  const res = await api.post<{ uploadUrl: string }>("/api/images/upload-url", {
+    domain: "REPORT",
+    fileName,
+    contentType,
+  });
+  return res.data;
+}
+
+async function uploadImageFile(uploadUrl: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await api.post<{ fileUrl: string }>(uploadUrl, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  const fileUrl = res.data.fileUrl;
+  const idx = fileUrl.indexOf("/uploads/");
+  return idx >= 0 ? fileUrl.substring(idx) : fileUrl;
+}
 const MAX_IMAGES = 3;
 
 const CATEGORY_LABELS: Record<ReportCategory, string> = {
@@ -23,7 +46,7 @@ const TARGET_TYPE_LABELS: Record<ReportTargetType, string> = {
   POST: "게시글",
   REPLY: "댓글",
   CIRCLE: "모임",
-  CHAT_MESSAGE: "채팅 메시지",
+  PLACE_REVIEW: "장소 리뷰",
 };
 
 export default function ReportFormPage() {
@@ -64,7 +87,6 @@ export default function ReportFormPage() {
         const { uploadUrl } = await requestUploadUrl(
           file.name,
           file.type || "image/jpeg",
-          "REPORT",
         );
         const path = await uploadImageFile(uploadUrl, file);
         newPaths.push(path);
@@ -113,18 +135,20 @@ export default function ReportFormPage() {
 
   if (done) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-moa-accent-light px-6">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white px-6">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E3886D]">
           <ShieldAlert className="h-7 w-7 text-white" />
         </div>
-        <p className="text-lg font-bold text-[#C0613A]">신고가 접수되었습니다.</p>
+        <p className="text-lg font-bold text-[#C0613A]">
+          신고가 접수되었습니다.
+        </p>
         <p className="text-sm text-orange-400">잠시 후 창이 닫힙니다.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-moa-accent-light">
+    <div className="flex min-h-screen flex-col bg-white">
       {/* 헤더 */}
       <div className="flex items-center gap-3 border-b border-orange-200 bg-white px-6 py-4 shadow-sm">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E3886D]">

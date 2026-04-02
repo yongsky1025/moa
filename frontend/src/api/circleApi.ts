@@ -36,7 +36,7 @@ export const circleApi = {
 
   // 내가 좋아요한 서클
   getLikedCircles: () =>
-    api.get<CircleResponse[]>('/circles/me/liked'),
+    api.get<CircleResponse[]>('/api/circles/me/liked'),
 
   // 추천 서클 번들 (에너지 프로필 기반 — 5축/사회/활동 3가지 기준)
   getRecommendationBundle: (limit = 5) =>
@@ -51,7 +51,9 @@ export const circleApi = {
     const formData = new FormData();
     formData.append('data', new Blob([JSON.stringify(data)], { type: 'application/json' }));
     if (imageFile) formData.append('image', imageFile);
-    return api.post<CircleResponse>('/api/circles', formData);
+    return api.post<CircleResponse>('/api/circles', formData, {
+      headers: { 'Content-Type': undefined },
+    });
   },
 
   // 서클 수정 (JSON, PUT multipart는 Tomcat 미지원)

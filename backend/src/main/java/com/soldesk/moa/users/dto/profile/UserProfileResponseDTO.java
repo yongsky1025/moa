@@ -1,6 +1,8 @@
 package com.soldesk.moa.users.dto.profile;
 
 import java.time.LocalDate;
+
+import com.soldesk.moa.users.entity.constant.AuthProvider;
 import com.soldesk.moa.users.entity.constant.UserGender;
 
 import lombok.AllArgsConstructor;
@@ -23,6 +25,8 @@ public class UserProfileResponseDTO {
     private String email;
 
     private int age;
+
+    private AuthProvider provider;
 
     private UserGender userGender;
 

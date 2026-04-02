@@ -5,7 +5,7 @@ import type { PageResponse, ReplyReactionSummary, ReplyRequest, ReplyResponse } 
 // - 댓글/대댓글 조회 및 CRUD API를 담당
 export const replyApi = {
   // 특정 게시글의 댓글 목록 조회
-  getReplies: (postId: number, page = 0, size = 20) =>
+  getReplies: (postId: number, page = 0, size = 15) =>
     api.get<PageResponse<ReplyResponse>>(`/api/posts/${postId}/replies`, {
       params: { page, size },
     }),

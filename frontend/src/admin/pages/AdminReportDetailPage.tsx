@@ -58,6 +58,7 @@ const TARGET_TYPE_LABEL: Record<string, string> = {
   REPLY: "댓글",
   CIRCLE: "모임",
   USER: "유저",
+  PLACE_REVIEW: "장소 후기",
 };
 
 function ReportTargetContentCard({ content }: { content: ReportTargetContentDTO }) {
@@ -87,6 +88,7 @@ function ReportTargetContentCard({ content }: { content: ReportTargetContentDTO 
         {content.targetType === "REPLY" && <ReplyContent content={content} />}
         {content.targetType === "CIRCLE" && <CircleContent content={content} />}
         {content.targetType === "USER" && <UserContent content={content} />}
+        {content.targetType === "PLACE_REVIEW" && <PlaceReviewContent content={content} />}
 
         {content.linkUrl && (
           <a
@@ -216,6 +218,29 @@ function UserContent({ content }: { content: ReportTargetContentDTO }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function PlaceReviewContent({ content }: { content: ReportTargetContentDTO }) {
+  return (
+    <>
+      <ContentRow label="장소명">
+        <span className="font-semibold">{content.placeReviewPlaceName}</span>
+      </ContentRow>
+      <ContentRow label="작성자">{content.placeReviewAuthorName}</ContentRow>
+      <ContentRow label="평점">
+        <span className="font-bold text-amber-500">{"★".repeat(content.placeReviewRating ?? 0)}</span>
+        <span className="text-moa-subtle ml-1">({content.placeReviewRating}점)</span>
+      </ContentRow>
+      <ContentRow label="작성일">{formatDateTime(content.placeReviewCreatedAt)}</ContentRow>
+      {content.placeReviewContent && (
+        <div className="border-moa-border mt-2 rounded-xl border bg-stone-50 px-4 py-3">
+          <p className="text-moa-text whitespace-pre-wrap text-sm leading-relaxed">
+            {content.placeReviewContent}
+          </p>
         </div>
       )}
     </>

@@ -59,6 +59,7 @@ import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.post.entity.constant.NoticeCategory;
 import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
@@ -564,6 +565,7 @@ public class AdminService {
                                                                         : null)
                                                         .viewCount(post.getViewCount())
                                                         .replyCount(replyCount != null ? replyCount : 0L)
+                                                        .noticeCategory(resolveNoticeCategory(post))
                                                         .deleted(post.isDeleted())
                                                         .createDate(post.getCreateDate())
                                                         .build();
@@ -627,6 +629,7 @@ public class AdminService {
                                 .circleId(board.getCircleId() != null ? board.getCircleId().getCircleId() : null)
                                 .boardId(board.getBoardId())
                                 .viewCount(post.getViewCount())
+                                .noticeCategory(resolveNoticeCategory(post))
                                 .deleted(post.isDeleted())
                                 .sanctionId(sanctionId)
                                 .createDate(post.getCreateDate())
@@ -639,7 +642,7 @@ public class AdminService {
 
         // 공지사항 작성
         @Transactional
-        public Long createNotice(Long adminId, String title, String content) {
+        public Long createNotice(Long adminId, String title, String content, NoticeCategory noticeCategory) {
                 Users admin = adminUsersRepository.findById(adminId)
                                 .orElseThrow(() -> new IllegalArgumentException("해당 관리자를 찾을 수 없습니다."));
 
@@ -651,6 +654,7 @@ public class AdminService {
                                 .content(content)
                                 .userId(admin)
                                 .boardId(noticeBoard)
+                                .noticeCategory(resolveNoticeCategory(noticeCategory))
                                 .build();
 
                 return adminPostRepository.save(notice).getPostId();
@@ -658,7 +662,7 @@ public class AdminService {
 
         // 공지사항 수정
         @Transactional
-        public void updateNotice(Long postId, String title, String content) {
+        public void updateNotice(Long postId, String title, String content, NoticeCategory noticeCategory) {
                 Post post = adminPostRepository.findById(postId)
                                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
 
@@ -668,6 +672,7 @@ public class AdminService {
 
                 post.changeTitle(title);
                 post.changeContent(content);
+                post.changeNoticeCategory(resolveNoticeCategory(noticeCategory));
         }
 
         // 공지사항 삭제 (soft delete - 제재 시스템 미사용)
@@ -698,6 +703,17 @@ public class AdminService {
                 }
 
                 post.restore();
+        }
+
+        private NoticeCategory resolveNoticeCategory(NoticeCategory category) {
+                return category != null ? category : NoticeCategory.ANNOUNCEMENT;
+        }
+
+        private NoticeCategory resolveNoticeCategory(Post post) {
+                if (post.getBoardId().getBoardType() != BoardType.NOTICE) {
+                        return null;
+                }
+                return post.getNoticeCategory() != null ? post.getNoticeCategory() : NoticeCategory.ANNOUNCEMENT;
         }
 
         // ── 장소 관리 ──────────────────────────────────────────────────────

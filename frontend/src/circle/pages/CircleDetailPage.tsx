@@ -4,15 +4,16 @@ import { useAuthStore } from "../../store/authStore";
 import { Users, Clock, MapPin } from "lucide-react";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
-import CircleBoardSideMenu from "../../board/components/CircleBoardSideMenu";
-import CircleBoardPostPreviewSection from "../../board/components/CircleBoardPostPreviewSection";
+import CircleDetailTabs from "../../common/components/CircleDetailTabs";
 import { circleApi } from "../../api/circleApi";
 import { chatApi } from "../../api/chatApi";
 import { useDirectChat } from "../../chat/hooks/useDirectChat";
 import { scheduleApi } from "../../api/scheduleApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import type { CircleResponse, CircleMember } from "../types/circle";
-import type { ScheduleResponse } from "../../schedule/types/schedule";
+import type { ScheduleResponse, ScheduleReview } from "../../schedule/types/schedule";
+import AdminConfirmModal from "../../admin/component/AdminConfirmModal";
+import ReportButton from "../../common/components/ReportButton";
 
 const STATUS_LABEL: Record<
   string,
@@ -61,10 +62,18 @@ export default function CircleDetailPage() {
   const [circle, setCircle] = useState<CircleResponse | null>(null);
   const [activeMembers, setActiveMembers] = useState<CircleMember[]>([]);
   const [myMember, setMyMember] = useState<CircleMember | null>(null);
-  const [upcomingSchedules, setUpcomingSchedules] = useState<
-    ScheduleResponse[]
-  >([]);
+  const [allSchedules, setAllSchedules] = useState<ScheduleResponse[]>([]);
+  const [scheduleTab, setScheduleTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [circleReviews, setCircleReviews] = useState<ScheduleReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean; title: string; message: string;
+    confirmLabel?: string; confirmColor?: 'green' | 'red'; onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, confirmColor: 'green' | 'red' = 'red', confirmLabel = '확인') =>
+    setConfirmModal({ open: true, title, message, confirmLabel, confirmColor, onConfirm });
+
   const [msg, setMsg] = useState("");
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -74,7 +83,6 @@ export default function CircleDetailPage() {
   );
   const [profileModal, setProfileModal] = useState<CircleMember | null>(null);
   const [kakaoReady, setKakaoReady] = useState(false);
-  const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -96,13 +104,14 @@ export default function CircleDetailPage() {
 
         if (me) {
           try {
-            const schedRes = await scheduleApi.getSchedules(cid);
-            const upcoming = schedRes.data
-              .filter((s) => s.status === "UPCOMING")
-              .slice(0, 6);
-            setUpcomingSchedules(upcoming);
+            const [schedRes, reviewsRes] = await Promise.allSettled([
+              scheduleApi.getSchedules(cid),
+              scheduleApi.getCircleReviews(cid, { size: 4 }),
+            ]);
+            if (schedRes.status === 'fulfilled') setAllSchedules(schedRes.value.data);
+            if (reviewsRes.status === 'fulfilled') setCircleReviews(reviewsRes.value.data);
           } catch {
-            // 일정 로드 실패 무시
+            // 로드 실패 무시
           }
         }
       }
@@ -143,12 +152,17 @@ export default function CircleDetailPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // 탭별 표시 일정
+  const upcomingSchedules = allSchedules.filter((s) => s.status !== "COMPLETED");
+  const pastSchedules = allSchedules.filter((s) => s.status === "COMPLETED");
+  const displayedSchedules = (scheduleTab === 'upcoming' ? upcomingSchedules : pastSchedules).slice(0, 6);
+
   // 일정 변경 시 지도 초기화
   useEffect(() => {
     mapRef.current = null;
-  }, [upcomingSchedules]);
+  }, [allSchedules]);
 
-  // 가장 가까운 위치 정보가 있는 일정
+  // 가장 가까운 위치 정보가 있는 예정 일정 (지도용)
   const nearestScheduleWithLocation =
     upcomingSchedules.find((s) => s.latitude && s.longitude) ??
     upcomingSchedules.find((s) => s.location) ??
@@ -214,10 +228,10 @@ export default function CircleDetailPage() {
       () => circleApi.joinCircle(cid),
       "가입 신청이 완료됐습니다. 리더의 승인을 기다려주세요.",
     );
-  const handleLeave = () => {
-    if (!confirm("서클에서 탈퇴하시겠습니까?")) return;
-    action(() => circleApi.leaveCircle(cid), "탈퇴했습니다.");
-  };
+  const handleLeave = () =>
+    openConfirm('서클 탈퇴', '서클에서 탈퇴하시겠습니까?', () =>
+      action(() => circleApi.leaveCircle(cid), '탈퇴했습니다.')
+    );
   const handleLike = async () => {
     if (!isLoggedIn || likeLoading) return;
     setLikeLoading(true);
@@ -395,7 +409,8 @@ export default function CircleDetailPage() {
               alt={circle.name}
               style={{
                 width: "100%",
-                height: 220,
+                aspectRatio: "16/9",
+                maxHeight: 340,
                 objectFit: "cover",
                 display: "block",
               }}
@@ -563,9 +578,14 @@ export default function CircleDetailPage() {
                   로그인 후 가입 신청
                 </button>
               )}
+              {isLoggedIn && !isLeader && (
+                <ReportButton targetType="CIRCLE" targetId={cid} />
+              )}
             </div>
           </div>
         </div>
+
+        <CircleDetailTabs circleId={cid} activeTab="home" />
 
         {/* 2컬럼 레이아웃 */}
         <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
@@ -588,8 +608,28 @@ export default function CircleDetailPage() {
                 boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
               }}
             >
-              <div style={{ marginBottom: 16 }}>
-                <h2 style={sectionTitleStyle}>다가오는 일정</h2>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <h2 style={sectionTitleStyle}>일정</h2>
+                {isMember && (
+                  <div style={{ display: 'flex', gap: 4, backgroundColor: '#f3f4f6', borderRadius: 8, padding: 3 }}>
+                    {(['upcoming', 'past'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setScheduleTab(tab)}
+                        style={{
+                          padding: '4px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                          fontSize: 12, fontWeight: 600,
+                          backgroundColor: scheduleTab === tab ? 'white' : 'transparent',
+                          color: scheduleTab === tab ? '#111' : '#888',
+                          boxShadow: scheduleTab === tab ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {tab === 'upcoming' ? '예정' : '지나간 일정'}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {!isMember ? (
@@ -705,28 +745,29 @@ export default function CircleDetailPage() {
                     가입하면 일정을 확인할 수 있어요.
                   </p>
                 </>
-              ) : upcomingSchedules.length === 0 ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "32px 0",
-                    color: "#bbb",
-                  }}
-                >
+              ) : displayedSchedules.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "32px 0", color: "#bbb" }}>
                   <p style={{ fontSize: 14, marginBottom: 8 }}>
-                    예정된 일정이 없습니다.
+                    {scheduleTab === 'upcoming' ? '예정된 일정이 없습니다.' : '완료된 일정이 없습니다.'}
                   </p>
-                  <Link
-                    to={`/circle/${cid}/schedules/create`}
-                    style={{
-                      fontSize: 13,
-                      color: "#111",
-                      fontWeight: 600,
-                      textDecoration: "none",
-                    }}
-                  >
-                    + 일정 만들기
-                  </Link>
+                  {scheduleTab === 'upcoming' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <Link
+                        to={`/circle/${cid}/schedules/create`}
+                        style={{ fontSize: 13, color: "#111", fontWeight: 600, textDecoration: "none" }}
+                      >
+                        + 일정 만들기
+                      </Link>
+                      {pastSchedules.length > 0 && (
+                        <button
+                          onClick={() => setScheduleTab('past')}
+                          style={{ fontSize: 12, color: "#6b7280", background: 'none', border: '1px solid #e5e5e5', borderRadius: 6, padding: '4px 12px', cursor: 'pointer' }}
+                        >
+                          지나간 일정 {pastSchedules.length}개 보기
+                        </button>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <>
@@ -737,7 +778,7 @@ export default function CircleDetailPage() {
                       gap: 10,
                     }}
                   >
-                    {upcomingSchedules.map((s) => {
+                    {displayedSchedules.map((s) => {
                       const { month, day } = formatMonthDay(s.startAt);
                       const scheduleStatus = SCHEDULE_STATUS_LABEL[
                         s.status
@@ -896,16 +937,79 @@ export default function CircleDetailPage() {
                     }}
                   >
                     전체 일정 보기
+                    {scheduleTab === 'past' && pastSchedules.length > 6 && (
+                      <span style={{ fontWeight: 400, color: '#888', marginLeft: 4 }}>
+                        ({pastSchedules.length}개)
+                      </span>
+                    )}
                   </Link>
+                </>
+              )}
+
+              {/* 최근 일정 후기 */}
+              {isMember && circleReviews.length > 0 && (
+                <>
+                  <div style={{ borderTop: "1px solid #f0f0f0", margin: "16px 0 14px" }} />
+                  <div style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#333", margin: 0 }}>최근 일정 후기</h3>
+                    <Link to={`/circle/${cid}/reviews`} style={{ fontSize: 12, color: "#5F8F7B", textDecoration: "none", fontWeight: 600 }}>
+                      전체 보기
+                    </Link>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {circleReviews.map((r) => {
+                      const imgMatch = r.content.match(/<img[^>]*\bsrc\s*=\s*['"]([^'"]+)['"]/i);
+                      const thumbSrc = imgMatch ? imgMatch[1] : null;
+                      const plainText = r.content.replace(/<[^>]+>/g, "").trim();
+                      return (
+                        <div
+                          key={r.reviewId}
+                          onClick={() => navigate(`/circle/${cid}/reviews`)}
+                          style={{
+                            border: "1px solid #f0f0f0",
+                            borderRadius: 10,
+                            padding: "10px 11px",
+                            cursor: "pointer",
+                            backgroundColor: "#fafafa",
+                            transition: "box-shadow 0.15s",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 5,
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: "#5F8F7B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {r.scheduleTitle}
+                            </span>
+                            <span style={{ fontSize: 10, color: "#f59e0b", letterSpacing: 0.5, flexShrink: 0 }}>
+                              {"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+                            <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.5, flex: 1, minWidth: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                              {plainText || "（이미지 후기）"}
+                            </p>
+                            {thumbSrc && (
+                              <img
+                                src={thumbSrc}
+                                alt=""
+                                style={{ width: 36, height: 36, borderRadius: 6, objectFit: "cover", flexShrink: 0 }}
+                              />
+                            )}
+                          </div>
+                          <div style={{ fontSize: 10, color: "#bbb" }}>
+                            {r.nickname} · {new Date(r.createdAt).toLocaleDateString("ko-KR")}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </>
               )}
             </div>
 
-            <CircleBoardPostPreviewSection
-              circleId={cid}
-              selectedBoardId={selectedBoardId}
-              onSelectedBoardChange={setSelectedBoardId}
-            />
           </div>
 
           {/* 오른쪽: 멤버 사이드바 + 지도 */}
@@ -1116,17 +1220,19 @@ export default function CircleDetailPage() {
                 )}
               </div>
             )}
-            {/* 써클 게시판 */}
-            <CircleBoardSideMenu
-              circleId={cid}
-              showAllItem
-              currentBoardId={selectedBoardId ?? undefined}
-              onBoardSelect={setSelectedBoardId}
-            />
           </div>
         </div>
       </main>
       <Footer />
+      <AdminConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        confirmColor={confirmModal.confirmColor}
+        onConfirm={() => { setConfirmModal(m => ({ ...m, open: false })); confirmModal.onConfirm(); }}
+        onCancel={() => setConfirmModal(m => ({ ...m, open: false }))}
+      />
     </div>
   );
 }

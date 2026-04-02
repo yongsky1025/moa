@@ -32,12 +32,6 @@ export default function Navbar() {
       { label: "전체 모임", href: "/circle", icon: <LayoutGrid size={15} /> },
       { label: "내 모임", href: "/circle/my", icon: <Users size={15} /> },
     ],
-    커뮤니티: [
-      { label: "자유게시판", href: "#", icon: <MessageSquare size={15} /> },
-      { label: "모임 후기", href: "#", icon: <Star size={15} /> },
-      { label: "Q&A", href: "#", icon: <HelpCircle size={15} /> },
-      { label: "공지사항", href: "#", icon: <Megaphone size={15} /> },
-    ],
   };
 
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -52,7 +46,7 @@ export default function Navbar() {
   const unreadActivityCount = activityNoti.filter((n) => !n.isRead).length;
 
   useAlarmSocket(isLoggedIn ? alarmUserId : null, (noti) => {
-    if (noti.type === 'CHAT_MESSAGE') {
+    if (noti.type === "CHAT_MESSAGE") {
       setUnreadChatCount((c) => c + 1);
     } else {
       setActivityNoti((prev) => [noti, ...prev]);
@@ -125,31 +119,26 @@ export default function Navbar() {
   };
 
   const ACTIVITY_NOTI_ICONS: Record<string, string> = {
-    JOIN_REQUEST: '📨',
-    JOIN_APPROVED: '✅',
-    JOIN_REJECTED: '❌',
-    KICKED: '🚫',
-    CIRCLE_DISBANDED: '💔',
-    REPLY: '💬',
-    CHILD_REPLY: '↩️',
-    POST_LIKE: '👍',
+    JOIN_REQUEST: "📨",
+    JOIN_APPROVED: "✅",
+    JOIN_REJECTED: "❌",
+    KICKED: "🚫",
+    CIRCLE_DISBANDED: "💔",
+    REPLY: "💬",
+    CHILD_REPLY: "↩️",
+    POST_LIKE: "👍",
   };
 
-  const navItems = [
-    "관리자 페이지",
-    "모임 찾기",
-    "커뮤니티",
-    "에너지 테스트",
-    "장소 추천",
-  ];
+  const navItems = ["관리자 페이지", "모임", "커뮤니티", "에너지", "플레이스"];
+  const visibleNavItems = navItems.filter(
+    (item) => item !== "관리자 페이지" || isAdmin,
+  );
 
   const navLinks: Record<string, string> = {
-    "모임 찾기": "/circle",
+    모임: "/circle",
     커뮤니티: "/board",
-    "에너지 테스트": isLoggedIn
-      ? "/users/energy-test/result"
-      : "/users/energy-test",
-    "장소 추천": "/place/rental",
+    에너지: isLoggedIn ? "/users/energy-test/result" : "/users/energy-test",
+    플레이스: "/place/rental",
     "관리자 페이지": "/admin/maindashboard",
   };
 
@@ -197,7 +186,7 @@ export default function Navbar() {
             }}
           >
             <nav style={{ display: "flex", gap: 24 }}>
-              {navItems.map((item) => (
+              {visibleNavItems.map((item) => (
                 <div
                   key={item}
                   style={{ position: "relative" }}
@@ -219,17 +208,9 @@ export default function Navbar() {
                       color: hoveredItem === item ? "#5F8F7B" : "#374151",
                       textDecoration: "none",
                       display: "inline-block",
-                      textAlign: "center",
-                      width: 76,
                       whiteSpace: "nowrap",
                       lineHeight: "60px",
                       transition: "color 0.15s",
-                      visibility:
-                        item === "관리자 페이지" && !isAdmin
-                          ? "hidden"
-                          : "visible",
-                      pointerEvents:
-                        item === "관리자 페이지" && !isAdmin ? "none" : "auto",
                     }}
                   >
                     {item}
@@ -646,7 +627,7 @@ export default function Navbar() {
                         },
                         {
                           label: "계정",
-                          href: "/users/profile",
+                          href: "/users/account",
                           icon: <Settings size={15} />,
                         },
                       ].map((item) => (

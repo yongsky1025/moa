@@ -32,7 +32,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Log4j2
 @RequestMapping("/api/notice")
@@ -75,5 +74,11 @@ public class NoticePostRestController {
     @DeleteMapping("/{postId}")
     public void delete(@PathVariable("postId") Long postId) {
         postService.deleteGlobal(BoardType.NOTICE, postId);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{postId}/pin")
+    public boolean togglePin(@PathVariable("postId") Long postId) {
+        return postService.toggleNoticePin(postId);
     }
 }

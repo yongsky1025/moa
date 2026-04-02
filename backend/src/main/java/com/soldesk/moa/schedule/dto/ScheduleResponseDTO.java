@@ -29,8 +29,12 @@ public class ScheduleResponseDTO {
     private Double latitude;
     private Double longitude;
     private boolean joined;
+    private boolean isPending;
+    private boolean isCreator;
+    private int pendingCount;
     private List<TagResponseDTO> tags;
     private Long chatRoomId;
+    private ScheduleReservationDTO reservation;
 
     public ScheduleResponseDTO(Schedule schedule) {
         this.scheduleId = schedule.getScheduleId();
@@ -66,5 +70,15 @@ public class ScheduleResponseDTO {
     public ScheduleResponseDTO(Schedule schedule, boolean joined, List<TagResponseDTO> tags, Long chatRoomId) {
         this(schedule, joined, tags);
         this.chatRoomId = chatRoomId;
+    }
+
+    // 일정 상세 조회 전용 생성자 (isPending, isCreator, pendingCount, reservation 포함)
+    public ScheduleResponseDTO(Schedule schedule, boolean joined, boolean isPending, boolean isCreator,
+            int pendingCount, List<TagResponseDTO> tags, ScheduleReservationDTO reservation) {
+        this(schedule, joined, tags);
+        this.isPending = isPending;
+        this.isCreator = isCreator;
+        this.pendingCount = pendingCount;
+        this.reservation = reservation;
     }
 }

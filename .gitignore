@@ -273,7 +273,7 @@ gradle-app.setting
 src/main/resources/application.properties
 
 # Claude Code
-.claude/
+.claude/**
 
 # Uploaded files
 /uploads/**

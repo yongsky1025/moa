@@ -45,4 +45,16 @@ public class ScheduleMember {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ScheduleMemberStatus status;
+
+    public void approve() {
+        this.status = ScheduleMemberStatus.JOIN;
+    }
+
+    public void cancel() {
+        this.status = ScheduleMemberStatus.CANCELLED;
+    }
+
+    public void requestApproval() {
+        this.status = ScheduleMemberStatus.PENDING;
+    }
 }

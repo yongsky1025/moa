@@ -116,6 +116,11 @@ public class SecurityConfig {
                                                 .requestMatchers("/notice/**", "/free/**", "/support/**").permitAll()
                                                 .requestMatchers("/api/notice/**", "/api/free/**", "/api/support/**")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/boards/global/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/community").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/community/sidebar").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/community/activities/**").permitAll()
+                                                .requestMatchers("/api/posts/search", "/api/posts/search/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/posts/search").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/posts/*/replies").permitAll()
                                                 // board 써클 회원만 열람?(예정)
@@ -134,15 +139,18 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/chat/**").authenticated()
 
                                                 // ---------- 관리자----------
-                                                .requestMatchers("/api/admin/popular-circles").permitAll() // 메인페이지에
-                                                                                                           // 써야할수있으니 허용
-                                                .requestMatchers(HttpMethod.POST, "/api/admin/reports").authenticated() // 일반 유저 신고 허용
+                                                .requestMatchers("/api/admin/circles/popular-circles").permitAll() // 메인페이지에
+                                                // 써야할수있으니 허용
+                                                .requestMatchers(HttpMethod.POST, "/api/admin/reports")
+                                                .authenticated() // 신고 접수는 일반 유저도 가능
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 security 적용
                                                 // .requestMatchers("/api/admin/**").permitAll() // 개발중에만 허용
                                                 // ---------------- 장소(place) -----------------
                                                 .requestMatchers("/api/places/**").permitAll()
                                                 .requestMatchers("/api/tags/**").permitAll() // 장소&일정 태그 다 열어야함
                                                 .requestMatchers("/api/place-reviews/**").authenticated() // 장소 후기
+                                                // ------------------- 예약+결제(payment) -----------
+                                                .requestMatchers("/api/reservations/**").authenticated()
                                                 // ----------------------------------
                                                 // swagger 임시 허용(개발중)
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
