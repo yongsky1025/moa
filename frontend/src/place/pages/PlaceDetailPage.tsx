@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import {
   MapPin,
@@ -128,7 +128,9 @@ export default function PlaceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const initialDate = searchParams.get("date") ?? undefined;
+  const initialScheduleId = (location.state as { scheduleId?: number } | null)?.scheduleId;
   const { isLoggedIn } = useAuthStore();
   const [place, setPlace] = useState<PlaceDetailDTO | null>(null);
   const [reviews, setReviews] = useState<PlaceReviewDTO[]>([]);
@@ -848,7 +850,7 @@ export default function PlaceDetailPage() {
           <div
             style={{ width: 340, flexShrink: 0, position: "sticky", top: 84 }}
           >
-            <PlaceReservationPanel place={place} initialDate={initialDate} />
+            <PlaceReservationPanel place={place} initialDate={initialDate} initialScheduleId={initialScheduleId} />
           </div>
         </div>
       </div>

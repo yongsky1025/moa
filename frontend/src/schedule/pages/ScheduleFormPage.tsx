@@ -282,7 +282,7 @@ export default function ScheduleFormPage() {
         navigate(`/circle/${cid}/schedules/${sid}`);
       } else {
         const res = await scheduleApi.createSchedule(cid, payload);
-        navigate(`/circle/${cid}/schedules/${res.data.scheduleId}`);
+        navigate(`/circle/${cid}/schedules/${res.data.scheduleId}`, { state: { showRecommend: true } });
       }
     } catch (e) {
       setError(getErrorMessage(e));

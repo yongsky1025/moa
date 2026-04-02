@@ -23,6 +23,7 @@ import ScheduleConnectSection from "./ScheduleConnectSection";
 interface Props {
   place: PlaceDetailDTO;
   initialDate?: string;
+  initialScheduleId?: number;
 }
 
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY as string;
@@ -77,7 +78,7 @@ function getNowTime(): string {
   return `${h}:${m}`;
 }
 
-export default function PlaceReservationPanel({ place, initialDate }: Props) {
+export default function PlaceReservationPanel({ place, initialDate, initialScheduleId }: Props) {
   const { isLoggedIn, userId } = useAuthStore();
 
   const [selectedDate, setSelectedDate] = useState(initialDate ?? today);
@@ -159,6 +160,16 @@ export default function PlaceReservationPanel({ place, initialDate }: Props) {
       .then(setMySchedules)
       .catch(() => {});
   }, [isLoggedIn]);
+
+  // mySchedules 로드 완료 후 initialScheduleId 자동 선택 + 날짜 세팅
+  useEffect(() => {
+    if (!initialScheduleId || mySchedules.length === 0) return;
+    const schedule = mySchedules.find((s) => s.scheduleId === initialScheduleId);
+    if (schedule) {
+      setSelectedScheduleId(initialScheduleId);
+      setSelectedDate(schedule.startAt.split("T")[0]);
+    }
+  }, [mySchedules, initialScheduleId]);
 
   const selectedDateObj = selectedDate
     ? new Date(selectedDate + "T00:00:00")

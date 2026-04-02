@@ -11,42 +11,6 @@ button {
   cursor: pointer;
 }
 
-/* Shared UI policy: dropdown menu/button primitives */
-.moa-dropdown-menu {
-  position: absolute;
-  right: 0;
-  top: 34px;
-  min-width: 96px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
-  padding: 6px;
-  display: grid;
-  gap: 4px;
-  z-index: 10;
-}
-
-.moa-dropdown-item {
-  width: 100%;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  text-align: left;
-  padding: 8px 10px;
-  color: #111827;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.moa-dropdown-item:hover {
-  background: #f3f4f6;
-}
-
-.moa-dropdown-item-danger {
-  color: #b91c1c;
-}
-
 @theme {
   --color-moa-primary: #5f8f7b;
   --color-moa-hover: #4e7c69;
@@ -66,7 +30,7 @@ button {
 /* 랜딩페이지 전용 css */
 
 [data-moa-landing] .moa-landing__hero-bg {
-  background-image: url("https://d2xsxph8kpxj0f.cloudfront.net/310519663408313920/fMf9gXP2KonUhfCYUJkC6j/moa-hero-bg-cafe-green-QMJnWNRGbtb7JaUaJjRFoS.webp");
+  background-image: url("/landing/landing_m.jpg");
 }
 
 [data-moa-landing] .moa-landing__font-serif {
