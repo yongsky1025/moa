@@ -8,7 +8,7 @@ export type CircleMemberRole = "LEADER" | "MEMBER";
 export type BoardType = "NOTICE" | "FREE" | "SUPPORT" | "CIRCLE";
 export type NoticeCategory = "ANNOUNCEMENT" | "EVENT" | "UPDATE";
 
-export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE" | "PLACE_REVIEW";
+export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE" | "PLACE_REVIEW" | "CHAT";
 export type ReportStatus = "PENDING" | "REVIEWING" | "RESOLVED" | "REJECTED";
 export type SanctionState = "ACTIVE" | "LIFTED" | "CANCELLED";
 
@@ -395,6 +395,13 @@ export interface ReportTargetContentDTO {
   placeReviewPlaceName?: string | null;
   placeReviewPlaceId?: number | null;
   placeReviewCreatedAt?: string | null;
+  // CHAT
+  chatContent?: string | null;
+  chatSenderName?: string | null;
+  chatSenderUserId?: number | null;
+  chatRoomId?: number | null;
+  chatRoomType?: string | null;
+  chatCreatedAt?: string | null;
 }
 
 export interface ReportResponseDTO {
@@ -516,7 +523,6 @@ export interface SanctionApplyRequest {
 }
 
 export interface SanctionCancelRequest {
-  adminId: number;
   cancelReason: string;
 }
 

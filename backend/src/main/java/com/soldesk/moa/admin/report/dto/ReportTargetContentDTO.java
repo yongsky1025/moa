@@ -49,7 +49,15 @@ public record ReportTargetContentDTO(
         String placeReviewAuthorName,
         String placeReviewPlaceName,
         Long placeReviewPlaceId,
-        LocalDateTime placeReviewCreatedAt) {
+        LocalDateTime placeReviewCreatedAt,
+
+        // CHAT
+        String chatContent,
+        String chatSenderName,
+        Long chatSenderUserId,
+        Long chatRoomId,
+        String chatRoomType,
+        LocalDateTime chatCreatedAt) {
 
     @Builder
     public record UserRecentActivityDTO(

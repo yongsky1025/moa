@@ -1,14 +1,15 @@
-package com.soldesk.moa.payment.dto;
+package com.soldesk.moa.place.dto;
 
 import java.time.LocalDateTime;
 
-public record MyReservationDTO(
+public record MyUsedPlaceDTO(
     Long reservationId,
     Long placeId,
     String placeName,
     LocalDateTime startTime,
     LocalDateTime endTime,
     Integer totalPrice,
-    String status,
-    String thumbnailUrl
+    String thumbnailUrl,
+    String sourceType,   // DIRECT | SCHEDULE
+    boolean hasReview
 ) {}

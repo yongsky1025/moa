@@ -112,4 +112,31 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             AND r.reservationStatus IN ('HOLDING', 'RESERVED')
             """)
     List<Reservation> findActiveByScheduleId(@Param("scheduleId") Long scheduleId);
+
+    // 이용한 장소 - 직접 예약 (reservedBy=나, COMPLETED, schedule 연동 무관)
+    @Query("""
+            SELECT r FROM Reservation r
+            JOIN FETCH r.place p
+            WHERE r.reservedBy.userId = :userId
+            AND r.reservationStatus = com.soldesk.moa.place.entity.constant.ReservationStatus.COMPLETED
+            ORDER BY r.startTime DESC
+            """)
+    List<Reservation> findMyDirectCompletedReservations(@Param("userId") Long userId);
+
+    // 이용한 장소 - 일정 멤버로 참여 (reservedBy≠나, 내가 ScheduleMember JOIN, COMPLETED)
+    @Query("""
+            SELECT r FROM Reservation r
+            JOIN FETCH r.place p
+            WHERE r.schedule IS NOT NULL
+            AND r.reservationStatus = com.soldesk.moa.place.entity.constant.ReservationStatus.COMPLETED
+            AND r.reservedBy.userId <> :userId
+            AND EXISTS (
+                SELECT sm FROM ScheduleMember sm
+                WHERE sm.schedule.scheduleId = r.schedule.scheduleId
+                AND sm.circleMember.user.userId = :userId
+                AND sm.status = com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus.JOIN
+            )
+            ORDER BY r.startTime DESC
+            """)
+    List<Reservation> findMyScheduleCompletedReservations(@Param("userId") Long userId);
 }

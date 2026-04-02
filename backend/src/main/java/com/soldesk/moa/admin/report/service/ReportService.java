@@ -29,6 +29,11 @@ import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageResultDTO;
+import com.soldesk.moa.chat.domain.ChatMessage;
+import com.soldesk.moa.chat.domain.ChatRoom;
+import com.soldesk.moa.chat.domain.RoomType;
+import com.soldesk.moa.chat.repository.ChatMessageRepository;
+import com.soldesk.moa.chat.repository.ChatRoomRepository;
 import com.soldesk.moa.place.entity.PlaceReview;
 import com.soldesk.moa.place.repository.PlaceReviewRepository;
 import com.soldesk.moa.post.entity.Post;
@@ -54,11 +59,24 @@ public class ReportService {
         private final PlaceReviewRepository placeReviewRepository;
         private final ReportImageRepository reportImageRepository;
         private final ImageRepository imageRepository;
+        private final ChatMessageRepository chatMessageRepository;
+        private final ChatRoomRepository chatRoomRepository;
 
         // 신고접수
         public void submitReport(Long reporterId, ReportRequestDTO dto) {
                 Users reporter = adminUsersRepository.findById(reporterId)
                                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+
+                // CHAT 신고 시 DIRECT 방 차단
+                if (dto.targetType() == ReportTargetType.CHAT) {
+                        ChatMessage msg = chatMessageRepository.findById(dto.targetId())
+                                        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅 메세지입니다."));
+                        ChatRoom room = chatRoomRepository.findById(msg.getRoomId())
+                                        .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+                        if (room.getType() == RoomType.DIRECT) {
+                                throw new IllegalArgumentException("1:1 채팅은 신고할 수 없습니다.");
+                        }
+                }
 
                 // 중복 신고인지 체크
                 boolean isDuplicate = reportRepository.existsByReporter_UserIdAndTargetTypeAndTargetId(reporterId,
@@ -159,6 +177,7 @@ public class ReportService {
                                 case CIRCLE -> fetchCircleContent(targetId);
                                 case USER -> fetchUserContent(targetId);
                                 case PLACE_REVIEW -> fetchPlaceReviewContent(targetId);
+                                case CHAT -> fetchChatContent(targetId);
                         };
                 } catch (Exception e) {
                         log.warn("신고 대상 콘텐츠 조회 실패: type={}, id={}, error={}", targetType, targetId, e.getMessage());
@@ -247,6 +266,26 @@ public class ReportService {
                                 .placeReviewPlaceName(review.getPlace().getName())
                                 .placeReviewPlaceId(review.getPlace().getId())
                                 .placeReviewCreatedAt(review.getCreateDate())
+                                .build();
+        }
+
+        private ReportTargetContentDTO fetchChatContent(Long messageId) {
+                ChatMessage message = chatMessageRepository.findById(messageId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅 메세지입니다."));
+                ChatRoom room = chatRoomRepository.findById(message.getRoomId())
+                                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+                Users sender = adminUsersRepository.findById(message.getSenderId())
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                return ReportTargetContentDTO.builder()
+                                .targetType(ReportTargetType.CHAT)
+                                .targetId(messageId)
+                                .deleted(message.isReported())
+                                .chatContent(message.getContent())
+                                .chatSenderName(sender.getNickname())
+                                .chatSenderUserId(sender.getUserId())
+                                .chatRoomId(message.getRoomId())
+                                .chatRoomType(room.getType().name())
+                                .chatCreatedAt(message.getCreatedAt())
                                 .build();
         }
 
