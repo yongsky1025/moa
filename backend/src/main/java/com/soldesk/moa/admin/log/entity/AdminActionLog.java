@@ -47,4 +47,6 @@ public class AdminActionLog {
     private String userAgent; // 브라우저
 
     private LocalDateTime timestamp; // 액션 발생 시간
+
+    private Boolean success; // 성공 여부 (null = 구버전 로그)
 }

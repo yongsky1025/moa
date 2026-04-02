@@ -1,5 +1,7 @@
 import api from "../../api/axiosInstance";
 import type {
+  MyLikedPlaceDTO,
+  MyUsedPlaceDTO,
   PlaceDetailDTO,
   PlaceListResponse,
   PlaceReviewDTO,
@@ -46,3 +48,9 @@ export const fetchTagsGrouped = async (): Promise<TagCategoryGroupDTO[]> => {
 
 export const togglePlaceLike = (placeId: number): Promise<{ liked: boolean; likeCount: number }> =>
   api.post(`/api/likes/places/PLACE/${placeId}`).then((res) => res.data);
+
+export const fetchMyLikedPlaces = (): Promise<MyLikedPlaceDTO[]> =>
+  api.get<MyLikedPlaceDTO[]>(`/api/likes/places/my`).then((res) => res.data);
+
+export const fetchMyUsedPlaces = (): Promise<MyUsedPlaceDTO[]> =>
+  api.get<MyUsedPlaceDTO[]>(`${BASE}/my/used`).then((res) => res.data);

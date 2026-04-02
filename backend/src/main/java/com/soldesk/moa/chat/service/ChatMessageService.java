@@ -29,10 +29,10 @@ public class ChatMessageService {
     private final ChatMessageReactionRepository reactionRepo;
 
     public ChatMessageService(ChatRoomService roomService, ChatMessageRepository messageRepo,
-                              UsersRepository usersRepository,
-                              ChatNotificationDispatcher notificationDispatcher,
-                              SimpMessagingTemplate messagingTemplate,
-                              ChatMessageReactionRepository reactionRepo) {
+            UsersRepository usersRepository,
+            ChatNotificationDispatcher notificationDispatcher,
+            SimpMessagingTemplate messagingTemplate,
+            ChatMessageReactionRepository reactionRepo) {
         this.roomService = roomService;
         this.messageRepo = messageRepo;
         this.usersRepository = usersRepository;
@@ -74,7 +74,8 @@ public class ChatMessageService {
         Page<ChatMessage> msgPage = messageRepo.findByRoomIdOrderByCreatedAtDesc(roomId, PageRequest.of(page, size));
         List<Long> ids = msgPage.getContent().stream().map(ChatMessage::getId).collect(Collectors.toList());
         Map<Long, List<ChatMessageReaction>> reactionMap = ids.isEmpty() ? Map.of()
-                : reactionRepo.findByMessageIdIn(ids).stream().collect(Collectors.groupingBy(ChatMessageReaction::getMessageId));
+                : reactionRepo.findByMessageIdIn(ids).stream()
+                        .collect(Collectors.groupingBy(ChatMessageReaction::getMessageId));
         return msgPage.map(m -> toResponse(m, userId, reactionMap.getOrDefault(m.getId(), List.of())));
     }
 
@@ -142,8 +143,7 @@ public class ChatMessageService {
                         reactionRepo.save(ChatMessageReaction.of(messageId, userId, emoji));
                     }
                 },
-                () -> reactionRepo.save(ChatMessageReaction.of(messageId, userId, emoji))
-        );
+                () -> reactionRepo.save(ChatMessageReaction.of(messageId, userId, emoji)));
 
         List<ChatMessageReaction> reactions = reactionRepo.findByMessageId(messageId);
         ChatMessageResponse response = toResponse(message, userId, reactions);
@@ -171,11 +171,11 @@ public class ChatMessageService {
                 .map(e -> new ChatMessageResponse.ReactionSummary(
                         e.getKey(),
                         e.getValue().size(),
-                        currentUserId != null && e.getValue().stream().anyMatch(r -> r.getUserId().equals(currentUserId))
-                ))
+                        currentUserId != null
+                                && e.getValue().stream().anyMatch(r -> r.getUserId().equals(currentUserId))))
                 .collect(Collectors.toList());
         return new ChatMessageResponse(m.getId(), m.getRoomId(), m.getSenderId(), nickname,
                 m.getContent(), m.getCreatedAt(), m.getUpdatedAt(), m.isDeleted(),
-                m.getReplyToId(), replyToContent, replyToNickname, reactionSummaries);
+                m.getReplyToId(), replyToContent, replyToNickname, reactionSummaries, m.isReported());
     }
 }

@@ -4,8 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "chat_message",
-        indexes = @Index(name = "idx_room_created", columnList = "room_id, created_at"))
+@Table(name = "chat_message", indexes = @Index(name = "idx_room_created", columnList = "room_id, created_at"))
 public class ChatMessage {
 
     @Id
@@ -36,7 +35,11 @@ public class ChatMessage {
     @Column(name = "is_pinned", nullable = false)
     private boolean isPinned = false;
 
-    protected ChatMessage() {}
+    @Column(name = "is_reported", nullable = false)
+    private boolean isReported = false;
+
+    protected ChatMessage() {
+    }
 
     public static ChatMessage of(Long roomId, Long senderId, String content, Long replyToId) {
         if (content == null || content.isBlank()) {
@@ -65,12 +68,53 @@ public class ChatMessage {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public Long getRoomId() { return roomId; }
-    public Long getSenderId() { return senderId; }
-    public String getContent() { return content; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public boolean isDeleted() { return isDeleted; }
-    public Long getReplyToId() { return replyToId; }
+    // 채팅 신고용
+    public void markReported() {
+        this.isDeleted = true;
+        this.isReported = true;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 채팅 신고용
+    public void restore() {
+        this.isDeleted = false;
+        this.isReported = false;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Long getRoomId() {
+        return roomId;
+    }
+
+    public Long getSenderId() {
+        return senderId;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public boolean isReported() {
+        return isReported;
+    }
+
+    public Long getReplyToId() {
+        return replyToId;
+    }
 }
