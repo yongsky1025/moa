@@ -21,6 +21,7 @@ import com.soldesk.moa.place.entity.Reservation;
 import com.soldesk.moa.place.entity.constant.ReservationStatus;
 import com.soldesk.moa.place.repository.PlaceRepository;
 import com.soldesk.moa.place.repository.ReservationRepository;
+import com.soldesk.moa.place.service.PlaceImageService;
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.repository.ScheduleRepository;
 import com.soldesk.moa.users.entity.Users;
@@ -40,6 +41,7 @@ public class PaymentService {
     private final TossPaymentClient tossPaymentClient;
     private final UsersRepository usersRepository;
     private final PlaceRepository placeRepository;
+    private final PlaceImageService placeImageService;
 
     // 1. 시간대를 선점, 결제창 열기전에 호출
     public ReservationHoldResponse hold(Long userId, ReservationHoldRequest request) {
@@ -192,8 +194,10 @@ public class PaymentService {
     // 5. 내 예약 목록 조회
     @Transactional(readOnly = true)
     public List<MyReservationDTO> getMyReservations(Long userId) {
-        return reservationRepository.findMyReservations(userId)
-                .stream()
+        List<com.soldesk.moa.place.entity.Reservation> reservations = reservationRepository.findMyReservations(userId);
+        List<Long> placeIds = reservations.stream().map(r -> r.getPlace().getId()).toList();
+        java.util.Map<Long, String> repImages = placeImageService.getRepresentativeImages(placeIds);
+        return reservations.stream()
                 .map(r -> new MyReservationDTO(
                         r.getId(),
                         r.getPlace().getId(),
@@ -201,7 +205,8 @@ public class PaymentService {
                         r.getStartTime(),
                         r.getEndTime(),
                         r.getTotalPrice(),
-                        r.getReservationStatus().name()))
+                        r.getReservationStatus().name(),
+                        repImages.get(r.getPlace().getId())))
                 .toList();
     }
 

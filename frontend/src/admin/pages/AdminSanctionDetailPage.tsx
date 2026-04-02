@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type {
-  SanctionCancelRequest,
-  SanctionResponseDTO,
-} from '../types/adminTypes';
+import type { SanctionResponseDTO } from '../types/adminTypes';
 import {
   cancelSanction,
   fetchReportDetail,
@@ -37,7 +34,6 @@ export default function AdminSanctionDetailPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reportImagePaths, setReportImagePaths] = useState<string[] | null>(null);
-  const [adminId, setAdminId] = useState(''); // security 붙으면 제거(토큰)
   const [cancelReason, setCancelReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'lift' | 'cancel' | null>(null);
@@ -85,40 +81,6 @@ export default function AdminSanctionDetailPage() {
     [data?.sanctionState],
   );
 
-  // 토스트 들어오고 필요x, 혹시 모르니 남겨둠
-  // const onCancel = async () => {
-  //   if (!data) return;
-  //   const aId = Number(adminId);
-  //   if (!Number.isFinite(aId)) {
-  //     setError('adminId는 숫자로 입력해주세요.');
-  //     return;
-  //   }
-  //   if (!cancelReason.trim()) {
-  //     setError('취소 사유를 입력해주세요.');
-  //     return;
-  //   }
-
-  //   setSaving(true);
-  //   setError(null);
-  //   try {
-  //     const req: SanctionCancelRequest = {
-  //       adminId: aId,
-  //       cancelReason: cancelReason.trim(),
-  //     };
-  //     await cancelSanction(data.sanctionId, req);
-  //     const next: SanctionResponseDTO = {
-  //       ...data,
-  //       sanctionState: 'CANCELLED',
-  //       cancelReason: req.cancelReason,
-  //       cancelledAt: new Date().toISOString(),
-  //     };
-  //     setData(next);
-  //   } catch (e: any) {
-  //     setError(e?.response?.data?.message ?? '제재 취소에 실패했습니다.');
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
   // 해제
   const handleLift = async () => {
     if (!canLift) return;
@@ -138,25 +100,14 @@ export default function AdminSanctionDetailPage() {
   // 취소
   const handleCancel = async () => {
     if (!canCancel) return;
-
-    const aId = Number(adminId);
-    if (!adminId.trim() || !Number.isFinite(aId)) {
-      setError('adminId를 숫자로 입력해주세요.');
-      return;
-    }
     if (!cancelReason.trim()) {
       setError('취소 사유를 입력해주세요.');
       return;
     }
-
     setSaving(true);
     setError(null);
     try {
-      const req: SanctionCancelRequest = {
-        adminId: aId,
-        cancelReason: cancelReason.trim(),
-      };
-      await cancelSanction(sanctionId, req);
+      await cancelSanction(sanctionId, cancelReason.trim());
       showToast('제재가 취소되었습니다.', { navigateTo: '/admin/sanctions' });
     } catch (e: any) {
       showToast(e?.response?.data?.message ?? '취소에 실패했습니다.', {
@@ -364,18 +315,6 @@ export default function AdminSanctionDetailPage() {
               </p>
             </div>
             <div className="space-y-4 px-6 py-5">
-              <div>
-                <label className="text-moa-subtle text-xs font-semibold">
-                  관리자 ID번호
-                </label>
-                <input
-                  value={adminId}
-                  onChange={(e) => setAdminId(e.target.value)}
-                  inputMode="numeric"
-                  className="border-moa-border focus:border-moa-primary mt-2 w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none"
-                  placeholder="예: 1"
-                />
-              </div>
               <div>
                 <label className="text-moa-subtle text-xs font-semibold">
                   취소 사유

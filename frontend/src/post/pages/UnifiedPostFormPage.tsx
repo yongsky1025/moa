@@ -5,6 +5,7 @@ import { useAuthStore } from "../../store/authStore";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import BoardSectionHeader from "../../common/components/BoardSectionHeader";
+import CircleActivityComposer from "../../common/components/CircleActivityComposer";
 import PostEditorPageShell from "../components/PostEditorPageShell";
 import { usePostDetail } from "../hooks/usePostDetail";
 import { usePostForm } from "../hooks/usePostForm";
@@ -365,6 +366,7 @@ function CirclePostFormScene() {
     navigate(detailPath, { replace: true });
   }, [detailPath, isEdit, navigate, post, user]);
 
+
   const handleSubmit = async (values: PostFormValues) => {
     if (!hasValidRequiredParams || (isEdit && !hasValidEditParams)) {
       return;
@@ -431,6 +433,48 @@ function CirclePostFormScene() {
       setDeleting(false);
     }
   };
+
+  if (isEdit && isActivityContext) {
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
+        <Navbar />
+        <BoardSectionHeader
+          title="모임 활동 수정"
+          backTo={detailPath}
+          backLabel="이전으로 이동"
+        />
+        <main style={{ maxWidth: 860, margin: "0 auto", padding: "14px 16px 32px" }}>
+          {detailLoading && <p style={{ margin: 0, color: "#6b7280" }}>모임 활동을 불러오는 중...</p>}
+          {!detailLoading && detailError && <p style={{ margin: 0, color: "#dc2626" }}>{detailError}</p>}
+          {!detailLoading && !detailError && post && (
+            <CircleActivityComposer
+              circleId={cid}
+              circleName={post.circleName ?? undefined}
+              boards={boards}
+              selectedBoard={bid}
+              mode="edit"
+              editConfig={{
+                boardId: bid,
+                postId: pid,
+                title: post.title,
+                content: post.content,
+                activityPublic: post.activityPublic ?? true,
+              }}
+              onCreated={() => {
+                void Promise.all([
+                  queryClient.invalidateQueries({ queryKey: ["circleBoardPosts", cid] }),
+                  queryClient.invalidateQueries({ queryKey: ["circleBoardsForBoardTab", cid] }),
+                ]);
+                window.alert("모임 활동 수정이 완료되었습니다.");
+                navigate(detailPath, { state: { from: listPath } });
+              }}
+            />
+          )}
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>

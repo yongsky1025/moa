@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -164,15 +163,6 @@ public class PostViewController {
             default -> null;
         };
         return postService.listMyCommunityReplies(auth.getUserId(), boardType, boardId, keyword, parseTarget(target));
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/search/reindex")
-    public Map<String, Object> reindex(@RequestParam(value = "batchSize", required = false) Integer batchSize) {
-        long indexedCount = postSearchService.reindexAll(batchSize);
-        return Map.of(
-                "indexedCount", indexedCount,
-                "batchSize", batchSize == null ? 500 : Math.min(Math.max(batchSize, 1), 2000));
     }
 
     private PostSearchTarget parseTarget(String target) {

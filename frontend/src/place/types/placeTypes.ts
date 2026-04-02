@@ -149,6 +149,34 @@ export interface MyReservationDTO {
   endTime: string
   totalPrice: number
   status: string // HOLDING | RESERVED | CANCELLED | COMPLETED | EXPIRED
+  thumbnailUrl?: string
+}
+
+// ── 찜한 장소 ────────────────────────────
+export interface MyLikedPlaceDTO {
+  placeId: number
+  name: string
+  city: string
+  district: string
+  capacity: number
+  avgRating: number
+  reviewCount: number
+  pricePerHour: number
+  thumbnailUrl?: string
+  tags: string[]
+}
+
+// ── 이용한 장소 ──────────────────────────
+export interface MyUsedPlaceDTO {
+  reservationId: number
+  placeId: number
+  placeName: string
+  startTime: string
+  endTime: string
+  totalPrice: number
+  thumbnailUrl?: string
+  sourceType: 'DIRECT' | 'SCHEDULE'
+  hasReview: boolean
 }
 
 // ── 일정 연결용 내 일정 목록 ──────────────

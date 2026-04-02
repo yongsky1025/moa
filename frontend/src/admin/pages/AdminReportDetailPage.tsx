@@ -5,13 +5,16 @@ import type {
   ReportStatus,
   ReportStatusUpdateRequest,
   ReportTargetContentDTO,
+  SanctionType,
 } from "../types/adminTypes";
 import {
   fetchReportDetail,
   patchReportStatus,
+  applySanction,
 } from "../api/adminReportAndSanctionApi";
 import AdminReportStatusBadge from "../component/report/AdminReportStatusBadge";
 import AdminConfirmModal from "../component/AdminConfirmModal";
+import AdminSanctionModal from "../component/post/AdminSanctionModal";
 import { useAdminToast } from "../hooks/useAdminToast";
 import AdminToast from "../component/AdminToast";
 import ReportEvidenceImages from "../component/report/ReportEvidenceImages";
@@ -59,7 +62,33 @@ const TARGET_TYPE_LABEL: Record<string, string> = {
   CIRCLE: "모임",
   USER: "유저",
   PLACE_REVIEW: "장소 후기",
+  CHAT: "채팅 메세지",
 };
+
+function ChatContent({ content }: { content: ReportTargetContentDTO }) {
+  const roomTypeLabel: Record<string, string> = {
+    GROUP: "모임 채팅방",
+    SCHEDULE: "일정 채팅방",
+  };
+  return (
+    <>
+      <ContentRow label="발신자">
+        <span className="font-semibold">{content.chatSenderName}</span>
+      </ContentRow>
+      <ContentRow label="채팅방 유형">
+        {roomTypeLabel[content.chatRoomType ?? ""] ?? content.chatRoomType}
+      </ContentRow>
+      <ContentRow label="작성일">{formatDateTime(content.chatCreatedAt)}</ContentRow>
+      {content.chatContent && (
+        <div className="border-moa-border mt-2 rounded-xl border bg-stone-50 px-4 py-3">
+          <p className="text-moa-text whitespace-pre-wrap text-sm leading-relaxed">
+            {content.chatContent}
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
 
 function ReportTargetContentCard({ content }: { content: ReportTargetContentDTO }) {
   const label = TARGET_TYPE_LABEL[content.targetType] ?? content.targetType;
@@ -89,6 +118,7 @@ function ReportTargetContentCard({ content }: { content: ReportTargetContentDTO 
         {content.targetType === "CIRCLE" && <CircleContent content={content} />}
         {content.targetType === "USER" && <UserContent content={content} />}
         {content.targetType === "PLACE_REVIEW" && <PlaceReviewContent content={content} />}
+        {content.targetType === "CHAT" && <ChatContent content={content} />}
 
         {content.linkUrl && (
           <a
@@ -259,6 +289,7 @@ export default function AdminReportDetailPage() {
   const [adminNote, setAdminNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ReportStatus | null>(null);
+  const [chatSanctionOpen, setChatSanctionOpen] = useState(false);
 
   useEffect(() => {
     if (!Number.isFinite(reportId)) return;
@@ -289,6 +320,49 @@ export default function AdminReportDetailPage() {
     const s = data?.status;
     return s === "PENDING" || s === "REVIEWING";
   }, [data?.status]);
+
+  const handleChatSanctionConfirm = async (
+    reason: string,
+    addUserSanction: boolean,
+    userSanctionType?: SanctionType,
+    userSanctionReason?: string,
+  ) => {
+    if (!data) return;
+    setSaving(true);
+    try {
+      const senderUserId = data.targetContent?.chatSenderUserId;
+      if (!senderUserId) throw new Error("발신자 정보를 찾을 수 없습니다.");
+
+      await applySanction({
+        reportId: data.reportId,
+        targetUserId: senderUserId,
+        targetType: "CHAT",
+        targetId: data.targetId,
+        sanctionType: "CONTENT_DELETE",
+        reason,
+      });
+
+      if (addUserSanction && userSanctionType && userSanctionReason) {
+        await applySanction({
+          reportId: data.reportId,
+          targetUserId: senderUserId,
+          targetType: "USER",
+          targetId: senderUserId,
+          sanctionType: userSanctionType,
+          reason: userSanctionReason,
+        });
+      }
+
+      await patchReportStatus(data.reportId, { status: "RESOLVED", adminNote: adminNote.trim() });
+      setData({ ...data, status: "RESOLVED", adminNote: adminNote.trim() });
+      setChatSanctionOpen(false);
+      showToast("채팅 메세지 제재가 완료되었습니다.", { navigateTo: "/admin/reports" });
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? e?.message ?? "제재 처리에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const decide = async (status: ReportStatus) => {
     if (!data) return;
@@ -467,7 +541,11 @@ export default function AdminReportDetailPage() {
                 onClick={() => {
                   if (!adminNote.trim()) { setError('관리자 메모를 입력해주세요.'); return; }
                   setError(null);
-                  setConfirmAction("RESOLVED");
+                  if (data?.targetType === "CHAT") {
+                    setChatSanctionOpen(true);
+                  } else {
+                    setConfirmAction("RESOLVED");
+                  }
                 }}
               />
               <ActionButton
@@ -494,6 +572,17 @@ export default function AdminReportDetailPage() {
       {/* 신고 대상 콘텐츠 */}
       {data?.targetContent && (
         <ReportTargetContentCard content={data.targetContent} />
+      )}
+
+      {chatSanctionOpen && data && (
+        <AdminSanctionModal
+          targetType="CHAT"
+          targetId={data.targetId}
+          authorName={data.targetContent?.chatSenderName ?? ""}
+          loading={saving}
+          onConfirm={handleChatSanctionConfirm}
+          onClose={() => setChatSanctionOpen(false)}
+        />
       )}
 
       <AdminConfirmModal

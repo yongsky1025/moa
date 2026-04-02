@@ -219,51 +219,69 @@ export default function MyReservationsPage() {
                   return (
                     <div
                       key={r.reservationId}
-                      className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+                      className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-moa-primary" />
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/place/${r.placeId}`)}
-                            className="text-base font-bold text-moa-text hover:underline"
-                          >
-                            {r.placeName}
-                          </button>
-                        </div>
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusInfo.className}`}
+                      {/* 이미지 + 텍스트 행 */}
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/place/${r.placeId}`)}
+                          className="shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-gray-100"
                         >
-                          {statusInfo.label}
-                        </span>
+                          {r.thumbnailUrl ? (
+                            <img
+                              src={r.thumbnailUrl}
+                              alt={r.placeName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <MapPin className="h-7 w-7 text-gray-300" />
+                            </div>
+                          )}
+                        </button>
+
+                        <div className="flex flex-1 flex-col gap-1.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/place/${r.placeId}`)}
+                              className="text-base font-bold text-moa-text hover:underline text-left"
+                            >
+                              {r.placeName}
+                            </button>
+                            <span
+                              className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusInfo.className}`}
+                            >
+                              {statusInfo.label}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                            <CalendarDays className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                            <span>
+                              {formatDatetime(r.startTime)} ~{" "}
+                              {formatTimeOnly(r.endTime)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-400">결제 금액</span>
+                            <span className="font-bold text-moa-primary">
+                              {r.totalPrice.toLocaleString()}원
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="mt-3 flex flex-col gap-1 text-sm text-gray-600">
-                        <div className="flex items-center gap-1.5">
-                          <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
-                          <span>
-                            {formatDatetime(r.startTime)} ~{" "}
-                            {formatTimeOnly(r.endTime)}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex items-center justify-between">
-                          <span className="text-xs text-gray-400">
-                            결제 금액
-                          </span>
-                          <span className="font-bold text-moa-primary">
-                            {r.totalPrice.toLocaleString()}원
-                          </span>
-                        </div>
-                      </div>
-
+                      {/* 취소 버튼 — 별도 행 */}
                       {canCancel && (
-                        <div className="mt-4 flex justify-end">
+                        <div className="mt-3 flex justify-end">
                           <button
                             type="button"
                             onClick={() => handleCancelClick(r.reservationId)}
                             disabled={cancelling}
-                            className="rounded-xl border border-red-300 px-4 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-50 disabled:opacity-50"
+                            className="rounded-xl border border-red-300 px-4 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-50 disabled:opacity-50"
                           >
                             예약 취소
                           </button>

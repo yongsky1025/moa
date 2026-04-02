@@ -17,6 +17,7 @@ const truncate = (str: string | null, n: number) => {
 const HEADERS = [
   "#",
   "발생시각",
+  "결과",
   "액션",
   "대상",
   "경로",
@@ -24,6 +25,14 @@ const HEADERS = [
   "IP",
   "유저 ID",
 ];
+
+function SuccessBadge({ success }: { success: boolean | null }) {
+  if (success === true)
+    return <span className="inline-block rounded px-2 py-0.5 text-[10px] font-bold" style={{ background: '#DCFCE7', color: '#15803D' }}>성공</span>;
+  if (success === false)
+    return <span className="inline-block rounded px-2 py-0.5 text-[10px] font-bold" style={{ background: '#FEE2E2', color: '#B91C1C' }}>실패</span>;
+  return <span className="text-slate-300">-</span>;
+}
 
 interface Props {
   logs: AdminActionLog[];
@@ -103,6 +112,9 @@ export default function LogTable({
                   <td className="px-4 py-2.5 text-slate-400">{startNo + i}</td>
                   <td className="px-4 py-2.5 font-mono text-slate-600 whitespace-nowrap">
                     {fmtTs(log.timestamp)}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <SuccessBadge success={log.success} />
                   </td>
                   <td className="px-4 py-2.5">
                     <ActionTypeBadge type={log.actionType} />

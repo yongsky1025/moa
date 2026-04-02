@@ -21,6 +21,9 @@ public enum ActionType {
     CANCEL_SANCTION,
     REPORT,
     RESOLVE_REPORT,
+    // 예약/결제
+    RESERVE,
+    CANCEL_RESERVATION,
     //
     UNKNOWN
 }

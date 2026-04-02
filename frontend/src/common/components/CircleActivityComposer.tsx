@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Globe, Image as ImageIcon, Lock } from "lucide-react";
 import type { CircleBoardResponse } from "../../api/circleBoardApi";
@@ -8,6 +8,7 @@ import { useAuthStore } from "../../store/authStore";
 import { getErrorMessage } from "../utils/errorMessage";
 import { requestUploadUrl, uploadByContract } from "../../api/uploadUrlApi";
 import "../../reply/styles/replySection.css";
+import "../../board/pages/boardCommunity.css";
 
 interface CircleActivityComposerProps {
   circleId: number;
@@ -15,6 +16,14 @@ interface CircleActivityComposerProps {
   boards: CircleBoardResponse[];
   selectedBoard: "all" | number;
   onCreated: () => void;
+  mode?: "create" | "edit";
+  editConfig?: {
+    boardId: number;
+    postId: number;
+    title: string;
+    content: string;
+    activityPublic?: boolean;
+  };
 }
 
 export default function CircleActivityComposer({
@@ -23,23 +32,39 @@ export default function CircleActivityComposer({
   boards,
   selectedBoard,
   onCreated,
+  mode = "create",
+  editConfig,
 }: CircleActivityComposerProps) {
   const navigate = useNavigate();
   const { isLoggedIn, user } = useAuthStore();
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [activityPublic, setActivityPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const combinedImageUrls = [...existingImageUrls, ...previewUrls];
 
   const activityBoard =
     boards.find((board) => board.circleBoardKind === "ACTIVITY") ?? null;
-  const targetBoardId =
-    selectedBoard !== "all"
+  const targetBoardId = mode === "edit"
+    ? (editConfig?.boardId ?? null)
+    : selectedBoard !== "all"
       ? selectedBoard
       : activityBoard?.boardId ?? boards[0]?.boardId ?? null;
+
+  useEffect(() => {
+    if (mode !== "edit" || !editConfig) {
+      return;
+    }
+    setText(extractActivityText(editConfig.content));
+    setExistingImageUrls(extractActivityImageUrls(editConfig.content));
+    setActivityPublic(editConfig.activityPublic ?? true);
+    setFiles([]);
+    setError("");
+  }, [editConfig, mode]);
 
   const appendImages = useCallback((incoming: File[]) => {
     const imageFiles = incoming.filter((file) => file.type.startsWith("image/"));
@@ -48,13 +73,14 @@ export default function CircleActivityComposer({
     }
 
     setFiles((prev) => {
-      const merged = [...prev, ...imageFiles].slice(0, 4);
-      if (prev.length + imageFiles.length > 4) {
+      const maxCount = 4 - existingImageUrls.length;
+      const merged = [...prev, ...imageFiles].slice(0, Math.max(maxCount, 0));
+      if (prev.length + imageFiles.length > maxCount) {
         setError("사진은 최대 4장까지 첨부할 수 있습니다.");
       }
       return merged;
     });
-  }, []);
+  }, [existingImageUrls.length]);
 
   const handleSelectFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files ?? []);
@@ -122,18 +148,28 @@ export default function CircleActivityComposer({
         uploadedUrls.push(metadata.fileUrl);
       }
 
-      const title = buildActivityTitle(circleName);
-      const content = buildActivityHtml(trimmed, uploadedUrls);
-      await circleBoardApi.createPost(circleId, targetBoardId, {
-        title,
-        content,
-        activityPublic,
-      });
+      if (mode === "edit" && editConfig) {
+        const content = buildActivityHtml(trimmed, [...existingImageUrls, ...uploadedUrls]);
+        await circleBoardApi.updatePost(circleId, editConfig.boardId, editConfig.postId, {
+          title: editConfig.title,
+          content,
+          activityPublic,
+        });
+      } else {
+        const title = buildActivityTitle(circleName);
+        const content = buildActivityHtml(trimmed, uploadedUrls);
+        await circleBoardApi.createPost(circleId, targetBoardId, {
+          title,
+          content,
+          activityPublic,
+        });
+      }
 
       setText("");
       setFiles([]);
       setPreviewUrls([]);
-      setActivityPublic(true);
+      setExistingImageUrls([]);
+      setActivityPublic(mode === "edit" ? (editConfig?.activityPublic ?? true) : true);
       onCreated();
     } catch (e) {
       setError(getErrorMessage(e));
@@ -185,15 +221,114 @@ export default function CircleActivityComposer({
         </div>
       </div>
 
-      {previewUrls.length > 0 && (
-        <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
-          {previewUrls.length === 1 && renderPreviewItem(previewUrls[0], 0, 260, setFiles)}
+      {combinedImageUrls.length > 0 && (
+        <div style={{ marginTop: 8, borderTop: "1px solid #e5e7eb", paddingTop: 10 }}>
+          <div className="community-twitter-content-split has-image">
+            {combinedImageUrls.length === 1 && (
+              <div className="community-twitter-media">
+                <img src={combinedImageUrls[0]} alt="본문 미리보기 이미지 1" loading="lazy" />
+              </div>
+            )}
+            {combinedImageUrls.length === 2 && (
+              <div className="community-twitter-album community-twitter-album-2">
+                {combinedImageUrls.slice(0, 2).map((url, idx) => (
+                  <div key={`${url}-${idx}`} className="community-twitter-album-cell">
+                    <img src={url} alt={`본문 미리보기 이미지 ${idx + 1}`} loading="lazy" />
+                  </div>
+                ))}
+              </div>
+            )}
+            {combinedImageUrls.length === 3 && (
+              <div className="community-twitter-album community-twitter-album-side">
+                <div className="community-twitter-album-main">
+                  <img src={combinedImageUrls[0]} alt="본문 미리보기 이미지 1" loading="lazy" />
+                </div>
+                <div className="community-twitter-album-stack">
+                  {combinedImageUrls.slice(1, 3).map((url, idx) => (
+                    <div key={`${url}-${idx}`} className="community-twitter-album-cell">
+                      <img src={url} alt={`본문 미리보기 이미지 ${idx + 2}`} loading="lazy" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {combinedImageUrls.length >= 4 && (
+              <div className="community-twitter-album community-twitter-album-side">
+                <div className="community-twitter-album-main">
+                  <img src={combinedImageUrls[0]} alt="본문 미리보기 이미지 1" loading="lazy" />
+                </div>
+                <div className="community-twitter-album-stack three">
+                  {combinedImageUrls.slice(1, 4).map((url, idx) => (
+                    <div key={`${url}-${idx}`} className="community-twitter-album-cell">
+                      <img src={url} alt={`본문 미리보기 이미지 ${idx + 2}`} loading="lazy" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-          {previewUrls.length >= 2 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-              {previewUrls.map((url, idx) => renderPreviewItem(url, idx, 170, setFiles))}
-            </div>
-          )}
+      {combinedImageUrls.length > 0 && (
+        <div
+          style={{
+            marginTop: 10,
+            display: "grid",
+            gap: 6,
+            paddingTop: 10,
+            borderTop: "1px solid #e5e7eb",
+          }}
+        >
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
+            {combinedImageUrls.map((url, idx) => (
+              <div
+                key={`${url}-${idx}`}
+                style={{ position: "relative", width: 72, height: 72, flex: "0 0 auto" }}
+              >
+                <img
+                  src={url}
+                  alt={`첨부 썸네일 ${idx + 1}`}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: 8,
+                    border: "1px solid #d1d5db",
+                    display: "block",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (idx < existingImageUrls.length) {
+                      setExistingImageUrls((prev) => prev.filter((_, i) => i !== idx));
+                      return;
+                    }
+                    const newIdx = idx - existingImageUrls.length;
+                    setFiles((prev) => prev.filter((_, i) => i !== newIdx));
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: 4,
+                    right: 4,
+                    width: 20,
+                    height: 20,
+                    border: "none",
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(17,24,39,0.82)",
+                    color: "#fff",
+                    fontSize: 11,
+                    cursor: "pointer",
+                    lineHeight: 1,
+                  }}
+                  aria-label="사진 제거"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -290,7 +425,7 @@ export default function CircleActivityComposer({
               opacity: submitting ? 0.7 : 1,
             }}
           >
-            {submitting ? "게시 중..." : "게시"}
+            {submitting ? (mode === "edit" ? "수정 중..." : "게시 중...") : (mode === "edit" ? "수정" : "게시")}
           </button>
         </div>
       </div>
@@ -301,52 +436,6 @@ export default function CircleActivityComposer({
         </p>
       )}
     </section>
-  );
-}
-
-function renderPreviewItem(
-  url: string,
-  idx: number,
-  height: number,
-  setFiles: Dispatch<SetStateAction<File[]>>,
-) {
-  return (
-    <div key={`${url}-${idx}`} style={{ position: "relative" }}>
-      <img
-        src={url}
-        alt={`preview-${idx}`}
-        style={{
-          width: "100%",
-          height,
-          objectFit: "cover",
-          borderRadius: 10,
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#f3f4f6",
-          display: "block",
-        }}
-      />
-      <button
-        type="button"
-        onClick={() => setFiles((prev) => prev.filter((_, fileIdx) => fileIdx !== idx))}
-        style={{
-          position: "absolute",
-          top: 6,
-          right: 6,
-          width: 22,
-          height: 22,
-          border: "none",
-          borderRadius: "50%",
-          backgroundColor: "rgba(17,24,39,0.78)",
-          color: "#fff",
-          fontSize: 12,
-          cursor: "pointer",
-          lineHeight: 1,
-        }}
-        aria-label="사진 제거"
-      >
-        ×
-      </button>
-    </div>
   );
 }
 
@@ -402,4 +491,32 @@ function escapeHtml(text: string) {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function extractActivityImageUrls(html: string | undefined): string[] {
+  if (!html) return [];
+  const urls: string[] = [];
+  const regex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+  let match = regex.exec(html);
+  while (match) {
+    urls.push(match[1]);
+    match = regex.exec(html);
+  }
+  return Array.from(new Set(urls.filter(Boolean)));
+}
+
+function extractActivityText(html: string | undefined): string {
+  return (html ?? "")
+    .replace(
+      /<figure\b[^>]*>\s*(?:<img\b[^>]*>\s*)+(<figcaption\b[^>]*>[\s\S]*?<\/figcaption>)?\s*<\/figure>/gi,
+      "$1",
+    )
+    .replace(/<img\b[^>]*>/gi, "")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }

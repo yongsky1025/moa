@@ -15,6 +15,7 @@ import BoardPendingPanel from "../../board/components/BoardPendingPanel";
 import CommunityProfileCard, {
   type CommunityProfileQuickView,
 } from "../../board/components/CommunityProfileCard";
+import CircleActivityComposer from "../../common/components/CircleActivityComposer";
 import type { CommunityMyReply, PostResponse } from "../types/postTypes";
 import { useAuthStore } from "../../store/authStore";
 import { getErrorMessage } from "../../common/utils/errorMessage";
@@ -73,6 +74,45 @@ const applyLocalBookmarkState = (current: { bookmarked: boolean }) => ({
 const REACTION_COMMIT_DEBOUNCE_MS = 300;
 const ACTIVITY_INITIAL_VISIBLE_COUNT = 10;
 const ACTIVITY_LOAD_MORE_COUNT = 10;
+
+const isSamePostItems = (
+  prev: Array<{ post: PostResponse; imageUrls: string[] }>,
+  next: Array<{ post: PostResponse; imageUrls: string[] }>,
+) => {
+  if (prev.length !== next.length) return false;
+  for (let i = 0; i < prev.length; i += 1) {
+    const a = prev[i];
+    const b = next[i];
+    if (
+      a.post.postId !== b.post.postId ||
+      a.post.updateDate !== b.post.updateDate ||
+      a.post.likeCount !== b.post.likeCount ||
+      a.post.replyCount !== b.post.replyCount ||
+      a.post.viewCount !== b.post.viewCount
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const isSameReplyItems = (prev: CommunityMyReply[], next: CommunityMyReply[]) => {
+  if (prev.length !== next.length) return false;
+  for (let i = 0; i < prev.length; i += 1) {
+    const a = prev[i];
+    const b = next[i];
+    if (
+      a.replyId !== b.replyId ||
+      a.postId !== b.postId ||
+      a.createDate !== b.createDate ||
+      a.content !== b.content ||
+      a.likeCount !== b.likeCount
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
 
 export default function CircleActivityTabPage() {
   const { circleId } = useParams<{ circleId: string }>();
@@ -159,7 +199,8 @@ export default function CircleActivityTabPage() {
     setSelectedView("home");
   }, [searchParams]);
 
-  const refreshCurrentView = useCallback(async () => {
+  const refreshCurrentView = useCallback(async (options?: { showLoading?: boolean }) => {
+    const showLoading = options?.showLoading ?? true;
     if (!circleId || Number.isNaN(cid) || !activityBoardId) {
       setPostItems([]);
       setReplyItems([]);
@@ -171,13 +212,16 @@ export default function CircleActivityTabPage() {
       return;
     }
 
-    setListLoading(true);
+    if (showLoading) {
+      setListLoading(true);
+    }
     setErrorMessage("");
     try {
       if (selectedView === "myReplies") {
         const res = await circleBoardApi.getMyRepliedPosts(cid, { boardId: activityBoardId });
-        setReplyItems(res.data.filter((reply) => (reply.boardId ?? 0) > 0));
-        setPostItems([]);
+        const nextReplies = res.data.filter((reply) => (reply.boardId ?? 0) > 0);
+        setReplyItems((prev) => (isSameReplyItems(prev, nextReplies) ? prev : nextReplies));
+        setPostItems((prev) => (prev.length === 0 ? prev : []));
         return;
       }
 
@@ -188,18 +232,19 @@ export default function CircleActivityTabPage() {
             ? await circleBoardApi.getMyBookmarkedPosts(cid, { boardId: activityBoardId })
             : await circleBoardApi.getBoardPosts(cid, activityBoardId);
 
-      setReplyItems([]);
-      setPostItems(
-        res.data
-          .map((post) => ({ post, imageUrls: extractImageUrls(post.content) }))
-          .sort((a, b) => new Date(b.post.createDate).getTime() - new Date(a.post.createDate).getTime()),
-      );
+      const nextPosts = res.data
+        .map((post) => ({ post, imageUrls: extractImageUrls(post.content) }))
+        .sort((a, b) => new Date(b.post.createDate).getTime() - new Date(a.post.createDate).getTime());
+      setReplyItems((prev) => (prev.length === 0 ? prev : []));
+      setPostItems((prev) => (isSamePostItems(prev, nextPosts) ? prev : nextPosts));
     } catch (e) {
       setErrorMessage(getErrorMessage(e));
-      setPostItems([]);
-      setReplyItems([]);
+      setPostItems((prev) => (prev.length === 0 ? prev : []));
+      setReplyItems((prev) => (prev.length === 0 ? prev : []));
     } finally {
-      setListLoading(false);
+      if (showLoading) {
+        setListLoading(false);
+      }
     }
   }, [activityBoardId, cid, circleId, isLoggedIn, selectedView]);
 
@@ -407,6 +452,23 @@ export default function CircleActivityTabPage() {
   };
 
   const handleSelectView = (nextView: CommunityProfileQuickView) => {
+    const viewParam = searchParams.get("view");
+    const currentView: CommunityProfileQuickView =
+      viewParam === "myPosts" || viewParam === "myReplies" || viewParam === "scrap"
+        ? viewParam
+        : "home";
+
+    if (nextView === currentView) {
+      setStagedPostDeletes({});
+      if (!loading) {
+        void refreshCurrentView({ showLoading: false });
+      }
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      return;
+    }
+
     setListLoading(true);
     setPostItems([]);
     setReplyItems([]);
@@ -628,6 +690,27 @@ export default function CircleActivityTabPage() {
               </aside>
 
               <section className="community-center-column">
+                {activityBoardId && (
+                  <CircleActivityComposer
+                    circleId={cid}
+                    circleName={circle?.name}
+                    boards={boards}
+                    selectedBoard={activityBoardId}
+                    onCreated={() => {
+                      const viewParam = searchParams.get("view");
+                      const currentView: CommunityProfileQuickView =
+                        viewParam === "myPosts" || viewParam === "myReplies" || viewParam === "scrap"
+                          ? viewParam
+                          : "home";
+
+                      if (currentView === "home") {
+                        void refreshCurrentView({ showLoading: false });
+                        return;
+                      }
+                      handleSelectView("home");
+                    }}
+                  />
+                )}
                 {listLoading ? (
                   <p style={{ margin: 0, color: "#6b7280" }}>목록을 불러오는 중...</p>
                 ) : selectedView === "myReplies" ? (

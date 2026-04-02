@@ -78,8 +78,7 @@ export default function AdminPostDetailPage() {
 
     try {
       // 1. 콘텐츠 삭제 (CONTENT_DELETE)
-      await applySanction(1, {
-        reportId: undefined,
+      await applySanction({
         targetUserId: sanctionTarget.authorId,
         targetType: sanctionTarget.type,
         targetId: sanctionTarget.id,
@@ -89,8 +88,7 @@ export default function AdminPostDetailPage() {
 
       // 2. 추가 유저 제재 (선택 시) — 별도 사유 사용
       if (addUserSanction && userSanctionType && userSanctionReason) {
-        await applySanction(1, {
-          reportId: undefined,
+        await applySanction({
           targetUserId: sanctionTarget.authorId,
           targetType: "USER",
           targetId: sanctionTarget.authorId,

@@ -180,11 +180,7 @@ export default function CommunityProfileCard({
                 onClick={onWriteClick}
                 style={{
                   ...quickButtonBaseStyle,
-                  border: "none",
-                  color: "#fff",
-                  fontSize: 16,
-                  fontWeight: 700,
-                  backgroundColor: "#5F8F7B",
+                  backgroundColor: selectedView === "home" ? "#EAF4F0" : "#fff",
                   cursor: "pointer",
                 }}
               >
