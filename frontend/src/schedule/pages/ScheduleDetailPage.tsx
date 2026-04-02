@@ -416,7 +416,7 @@ export default function ScheduleDetailPage() {
               <span style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>예약 장소</span>
             </div>
             <button
-              onClick={() => navigate('/places/my-reservations')}
+              onClick={() => navigate('/place/my-reservations')}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 width: '100%', padding: '14px 16px', borderRadius: 12,
@@ -588,7 +588,7 @@ export default function ScheduleDetailPage() {
             </div>
 
             {/* 후기 작성 폼 */}
-            {schedule.joined && !reviews.find(r => r.userId === currentUser?.userId) && (
+            {schedule.joined && !reviews.find(r => r.nickname === currentUser?.nickname) && (
               <div style={{ marginBottom: 28, padding: 20, backgroundColor: '#f9fafb', borderRadius: 12, border: '1px solid #f0f0f0' }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: '#333', marginBottom: 12 }}>후기 작성</p>
 
@@ -667,7 +667,7 @@ export default function ScheduleDetailPage() {
                         <span style={{ fontSize: 12, color: '#aaa' }}>
                           {new Date(review.createdAt).toLocaleDateString('ko-KR')}
                         </span>
-                        {(review.userId === currentUser?.userId) && (
+                        {(review.nickname === currentUser?.nickname) && (
                           <button
                             onClick={() => handleReviewDelete(review.reviewId)}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#aaa', display: 'flex', alignItems: 'center' }}

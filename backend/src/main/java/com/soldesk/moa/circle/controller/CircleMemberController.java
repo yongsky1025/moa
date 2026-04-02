@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/circles/{circleId}/members")
 @RequiredArgsConstructor
 @Validated
-public class CircleMemberContoller {
+public class CircleMemberController {
 
         private final CircleMemberService circleMemberService;
 
