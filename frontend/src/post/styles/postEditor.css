@@ -103,10 +103,18 @@
   padding: 16px;
 }
 
+.post-editor-content-group .ck.ck-editor__editable > .ck-placeholder::before {
+  color: #9ca3af;
+  font-size: 15px;
+  font-style: normal;
+  opacity: 1;
+}
+
 .post-editor-actions {
   display: flex;
   gap: 10px;
   margin-top: 4px;
+  justify-content: flex-end;
 }
 
 .post-editor-btn {
@@ -135,9 +143,9 @@
 }
 
 .post-editor-btn-outline {
-  background: #fff;
-  color: #111827;
-  border: 1px solid #d1d5db;
+  background: #111827;
+  color: #ffffff;
+  border: none;
 }
 
 .post-editor-btn-danger {
@@ -160,11 +168,12 @@
   }
 
   .post-editor-actions {
-    flex-direction: column;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 
   .post-editor-btn {
-    width: 100%;
+    width: 120px;
   }
 
   .post-editor-card {

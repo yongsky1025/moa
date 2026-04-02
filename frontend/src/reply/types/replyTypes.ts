@@ -11,9 +11,11 @@ export interface ReplyResponse {
   authorPublicId: string | null;
   authorUserId: number | null;
   createDate: string;
+  updateDate: string;
   parentId: number | null;
   depth: number;
   replyToUserId: number | null;
+  replyToAuthorName: string | null;
   deleted: boolean;
   likeCount: number;
   myReaction: ReplyReactionType | null;

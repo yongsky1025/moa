@@ -13,10 +13,7 @@ spring:
       port: 6379
   jpa:
     hibernate:
-      ddl-auto: update
-
-jwt:
-  secret: ${JWT_SECRET}
+      ddl-auto: create
 
 app:
   # 프론트 로그인/리다이렉트 기준 URL (로컬)

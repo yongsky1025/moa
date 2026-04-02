@@ -2,6 +2,7 @@ package com.soldesk.moa.reply.repository;
 
 import java.util.List;
 
+import com.soldesk.moa.board.entity.constant.BoardType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,6 +17,7 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
     // 게시글별 댓글 목록 (작성일 순)
     List<Reply> findByPostId_PostIdOrderByCreateDateAsc(Long postId);
     Page<Reply> findByPostId_PostIdOrderByCreateDateAscReplyIdAsc(Long postId, Pageable pageable);
+    Page<Reply> findByPostId_PostIdAndParentIdIsNullOrderByCreateDateAscReplyIdAsc(Long postId, Pageable pageable);
 
     @Query("""
             select r.parentId.replyId, count(r)
@@ -84,5 +86,82 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
     @Modifying
     @Query("update Reply r set r.likeCount = r.likeCount - 1 where r.replyId = :replyId and r.likeCount > 0")
     int decrementLikeCount(@Param("replyId") Long replyId);
+
+    @Query("""
+            select r
+            from Reply r
+            join fetch r.postId p
+            join fetch p.boardId b
+            where r.userId.userId = :userId
+              and r.deleted = false
+              and p.deleted = false
+              and b.deleted = false
+              and (
+                   (:boardType is null and b.boardType in (com.soldesk.moa.board.entity.constant.BoardType.FREE, com.soldesk.moa.board.entity.constant.BoardType.NOTICE))
+                or (:boardType is not null and b.boardType = :boardType)
+              )
+            order by r.createDate desc, r.replyId desc
+            """)
+    List<Reply> findMyCommunityReplies(
+            @Param("userId") Long userId,
+            @Param("boardType") BoardType boardType);
+
+    @Query("""
+            select r
+            from Reply r
+            join fetch r.postId p
+            join fetch p.boardId b
+            where r.userId.userId = :userId
+              and r.deleted = false
+              and p.deleted = false
+              and b.deleted = false
+              and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+              and b.circleId.circleId = :circleId
+              and (:boardId is null or b.boardId = :boardId)
+            order by r.createDate desc, r.replyId desc
+            """)
+    List<Reply> findMyCircleReplies(
+            @Param("userId") Long userId,
+            @Param("circleId") Long circleId,
+            @Param("boardId") Long boardId);
+
+    @Query("""
+            select r
+            from Reply r
+            join fetch r.postId p
+            join fetch p.boardId b
+            where r.userId.userId = :userId
+              and r.deleted = false
+              and p.deleted = false
+              and b.deleted = false
+              and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+              and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+              and p.activityPublic = true
+            order by r.createDate desc, r.replyId desc
+            """)
+    List<Reply> findMyPublicActivityReplies(@Param("userId") Long userId);
+
+    @Query("""
+            select r
+            from Reply r
+            join fetch r.postId p
+            join fetch p.boardId b
+            where r.userId.userId = :userId
+              and r.deleted = false
+              and p.deleted = false
+              and b.deleted = false
+              and b.boardType = com.soldesk.moa.board.entity.constant.BoardType.CIRCLE
+              and b.circleBoardKind = com.soldesk.moa.board.entity.constant.CircleBoardKind.ACTIVITY
+              and p.activityPublic = true
+              and exists (
+                  select cm.id
+                  from com.soldesk.moa.circle.entity.CircleMember cm
+                  where cm.user.userId = :userId
+                    and cm.circle = b.circleId
+                    and cm.status = com.soldesk.moa.circle.entity.constant.CircleMemberStatus.ACTIVE
+              )
+            order by r.createDate desc, r.replyId desc
+            """)
+    List<Reply> findMyMemberPublicActivityReplies(@Param("userId") Long userId);
 
 }

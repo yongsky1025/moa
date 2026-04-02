@@ -6,6 +6,7 @@ export type CircleStatus = "OPEN" | "FULL" | "CLOSED" | "PENDING" | "REJECTED";
 export type CircleMemberRole = "LEADER" | "MEMBER";
 
 export type BoardType = "NOTICE" | "FREE" | "SUPPORT" | "CIRCLE";
+export type NoticeCategory = "ANNOUNCEMENT" | "EVENT" | "UPDATE";
 
 export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE" | "PLACE_REVIEW";
 export type ReportStatus = "PENDING" | "REVIEWING" | "RESOLVED" | "REJECTED";
@@ -292,6 +293,7 @@ export interface AdminPostResponseDTO {
   circleId: number | null;
   viewCount: number;
   replyCount: number;
+  noticeCategory?: NoticeCategory | null;
   deleted: boolean;
   createDate: string;
 }
@@ -319,6 +321,7 @@ export interface AdminPostDetailDTO {
   circleId: number | null;
   boardId: number;
   viewCount: number;
+  noticeCategory?: NoticeCategory | null;
   deleted: boolean;
   sanctionId: number | null;
   createDate: string;
@@ -329,6 +332,7 @@ export interface AdminPostDetailDTO {
 export interface AdminNoticeRequestDTO {
   title: string;
   content: string;
+  noticeCategory: NoticeCategory;
 }
 
 // ==========신고관리===============

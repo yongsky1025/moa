@@ -1,8 +1,18 @@
-import { useEffect, useRef, useState } from "react";
-import type { ReplyReactionSummary, ReplyTreeNode } from "../types/replyTypes";
-import { formatDateTime } from "../../post/utils/dateFormat";
+﻿import { useEffect, useRef, useState } from "react";
+import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { Heart } from "lucide-react";
+import { replyApi } from "../api/replyApi";
+import type {
+  ReplyReactionSummary,
+  ReplyResponse,
+  ReplyTreeNode,
+} from "../types/replyTypes";
+import { formatDateTime, isEdited } from "../../post/utils/dateFormat";
 import { hasProfanity } from "../../common/utils/profanityFilter";
 import { validateReplyContent } from "../utils/replyValidators";
+import UserAvatar from "../../common/components/UserAvatar";
+import { getReplyDisplayName } from "../utils/replyUserDisplay";
+import ReplyComposer from "./ReplyComposer";
 import ReplyForm from "./ReplyForm";
 
 interface ReplyItemProps {
@@ -21,16 +31,14 @@ interface ReplyItemProps {
     targetReplyId: number,
     expandParentId: number,
   ) => Promise<void>;
-  onReact: (replyId: number) => Promise<ReplyReactionSummary>;
   autoExpandParentId?: number | null;
   focusReplyId?: number | null;
   onFocusReplyHandled?: () => void;
   rootAuthorUserId?: number | null;
+  onRequireLogin?: () => void;
 }
 
-function applyLocalReaction(
-  current: ReplyReactionSummary,
-): ReplyReactionSummary {
+function applyLocalReplyReaction(current: ReplyReactionSummary): ReplyReactionSummary {
   if (current.myReaction === "LIKE") {
     return {
       ...current,
@@ -38,7 +46,6 @@ function applyLocalReaction(
       myReaction: null,
     };
   }
-
   return {
     ...current,
     likeCount: current.likeCount + 1,
@@ -64,6 +71,27 @@ function hasDescendantReplyId(
   return false;
 }
 
+function stripLeadingMention(content: string, mentionText: string | null): string {
+  if (!mentionText) {
+    return content;
+  }
+  if (content.startsWith(`${mentionText} `)) {
+    return content.slice(mentionText.length + 1);
+  }
+  if (content.startsWith(mentionText)) {
+    return content.slice(mentionText.length).replace(/^\s+/, "");
+  }
+  return content;
+}
+
+function mergeMentionAndContent(content: string, mentionText: string | null): string {
+  const trimmed = content.trim();
+  if (!mentionText) {
+    return trimmed;
+  }
+  return `${mentionText} ${trimmed}`.trim();
+}
+
 export default function ReplyItem({
   postId,
   reply,
@@ -76,12 +104,13 @@ export default function ReplyItem({
   onUpdate,
   onDelete,
   onCreateChild,
-  onReact,
   autoExpandParentId = null,
   focusReplyId = null,
   onFocusReplyHandled,
   rootAuthorUserId = null,
+  onRequireLogin,
 }: ReplyItemProps) {
+  const queryClient = useQueryClient();
   const [showChildForm, setShowChildForm] = useState(false);
   const [showChildren, setShowChildren] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -91,13 +120,17 @@ export default function ReplyItem({
   const [editingContent, setEditingContent] = useState(reply.content);
   const [error, setError] = useState("");
   const [reactionError, setReactionError] = useState("");
-  const [isReacting, setIsReacting] = useState(false);
-  const [reactionSummary, setReactionSummary] = useState<ReplyReactionSummary>({
+  const [localReplyReaction, setLocalReplyReaction] = useState<ReplyReactionSummary>({
     likeCount: reply.likeCount,
     myReaction: reply.myReaction,
   });
+  const [isLikeAnimating, setIsLikeAnimating] = useState(false);
   const contentRef = useRef<HTMLParagraphElement>(null);
   const itemRef = useRef<HTMLLIElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const reactAnimationResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reactCommitDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingReplyLikeParityRef = useRef(0);
   const hasEditingBadWord = hasProfanity(editingContent);
   const disableEditSave = hasEditingBadWord || !editingContent.trim();
 
@@ -109,13 +142,17 @@ export default function ReplyItem({
   const canReport = !reply.deleted && canWrite && !isOwner;
   const canCreateChild = canWrite && !reply.deleted;
   const childCount = Math.max(reply.replyCount ?? 0, childrenReplies.length);
-  const authorInitial = reply.authorName?.trim().charAt(0) || "?";
-  const actionLikeCount = reactionSummary.likeCount;
-  const isLiked = reactionSummary.myReaction === "LIKE";
-  const mentionPrefix = reply.authorName?.trim()
-    ? `@${reply.authorName.trim()} `
-    : "";
-  const expandParentId = reply.parentId ?? reply.replyId;
+  const authorName = getReplyDisplayName(reply.authorName, "익명");
+  const actionLikeCount = localReplyReaction.likeCount;
+  const isLiked = localReplyReaction.myReaction === "LIKE";
+  const mentionPrefix = `@${authorName} `;
+  const replyToAuthorName = getReplyDisplayName(reply.replyToAuthorName, "");
+  const mentionText =
+    reply.replyToUserId !== null && replyToAuthorName.length > 0
+      ? `@${replyToAuthorName}`
+      : null;
+  const contentWithoutMention = stripLeadingMention(reply.content, mentionText);
+  const expandParentId = reply.replyId;
 
   useEffect(() => {
     if (autoExpandParentId === reply.replyId && childCount > 0) {
@@ -142,12 +179,107 @@ export default function ReplyItem({
   }, [childrenReplies, focusReplyId, showChildren]);
 
   useEffect(() => {
-    setReactionSummary({
+    setReactionError("");
+  }, [reply.likeCount, reply.myReaction]);
+
+  useEffect(() => {
+    if (pendingReplyLikeParityRef.current % 2 === 1 || reactionMutation.isPending) {
+      return;
+    }
+    setLocalReplyReaction({
       likeCount: reply.likeCount,
       myReaction: reply.myReaction,
     });
-    setReactionError("");
-  }, [reply.likeCount, reply.myReaction]);
+  }, [reply.replyId, reply.likeCount, reply.myReaction]);
+
+  useEffect(() => {
+    return () => {
+      if (reactAnimationResetRef.current) {
+        clearTimeout(reactAnimationResetRef.current);
+      }
+      if (reactCommitDebounceRef.current) {
+        clearTimeout(reactCommitDebounceRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showMore) {
+      return;
+    }
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (target && moreMenuRef.current?.contains(target)) {
+        return;
+      }
+      setShowMore(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [showMore]);
+
+  const reactionMutation = useMutation<ReplyReactionSummary, Error>({
+    mutationFn: async () =>
+      (await replyApi.reactToReply(postId, reply.replyId)).data,
+    onSuccess: () => {
+      setReactionError("");
+    },
+    onError: (error) => {
+      setLocalReplyReaction((current) => applyLocalReplyReaction(current));
+      const repliesQueryKey = ["postReplies", postId] as const;
+      queryClient.setQueriesData<InfiniteData<{ content: ReplyResponse[] }>>(
+        { queryKey: repliesQueryKey },
+        (current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            pages: current.pages.map((page) => ({
+              ...page,
+              content: page.content.map((item) =>
+                item.replyId === reply.replyId
+                  ? {
+                      ...item,
+                      likeCount:
+                        item.myReaction === "LIKE"
+                          ? Math.max(0, item.likeCount - 1)
+                          : item.likeCount + 1,
+                      myReaction: item.myReaction === "LIKE" ? null : "LIKE",
+                    }
+                  : item,
+              ),
+            })),
+          };
+        },
+      );
+      setReactionError(error instanceof Error ? error.message : "좋아요 처리에 실패했습니다.");
+    },
+    onSettled: () => {
+      if (pendingReplyLikeParityRef.current % 2 === 1) {
+        scheduleReplyLikeCommit();
+      }
+    },
+  });
+
+  const scheduleReplyLikeCommit = () => {
+    if (reactCommitDebounceRef.current) {
+      clearTimeout(reactCommitDebounceRef.current);
+    }
+    reactCommitDebounceRef.current = setTimeout(() => {
+      if (pendingReplyLikeParityRef.current % 2 === 0) {
+        return;
+      }
+      if (reactionMutation.isPending) {
+        scheduleReplyLikeCommit();
+        return;
+      }
+      pendingReplyLikeParityRef.current = 0;
+      reactionMutation.mutate();
+    }, 200);
+  };
 
   useEffect(() => {
     if (reply.deleted || isEditing) {
@@ -171,8 +303,8 @@ export default function ReplyItem({
   }, [reply.content, reply.deleted, isEditing, isExpanded]);
 
   const submitUpdate = async () => {
-    const trimmed = editingContent.trim();
-    const message = validateReplyContent(trimmed);
+    const payload = mergeMentionAndContent(editingContent, mentionText);
+    const message = validateReplyContent(payload);
     if (message) {
       setError(message);
       return;
@@ -180,32 +312,65 @@ export default function ReplyItem({
 
     setError("");
     try {
-      await onUpdate(reply.replyId, trimmed);
+      await onUpdate(reply.replyId, payload);
       setIsEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "댓글 수정에 실패했습니다.");
     }
   };
 
-  const submitReaction = async () => {
-    if (!canWrite || isReacting || reply.deleted) return;
-
-    const baseReaction = reactionSummary;
-    const optimisticReaction = applyLocalReaction(baseReaction);
-    setReactionSummary(optimisticReaction);
-    setReactionError("");
-    setIsReacting(true);
-    try {
-      const updated = await onReact(reply.replyId);
-      setReactionSummary(updated);
-    } catch (e) {
-      setReactionSummary(baseReaction);
-      setReactionError(
-        e instanceof Error ? e.message : "좋아요 처리에 실패했습니다.",
-      );
-    } finally {
-      setIsReacting(false);
+  const submitReaction = () => {
+    if (!canWrite) {
+      setReactionError("로그인 후 좋아요를 누를 수 있습니다.");
+      onRequireLogin?.();
+      return;
     }
+    if (reply.deleted) return;
+
+    setIsLikeAnimating(false);
+    requestAnimationFrame(() => setIsLikeAnimating(true));
+    if (reactAnimationResetRef.current) {
+      clearTimeout(reactAnimationResetRef.current);
+    }
+    reactAnimationResetRef.current = setTimeout(() => {
+      setIsLikeAnimating(false);
+    }, 500);
+    const repliesQueryKey = ["postReplies", postId] as const;
+    setReactionError("");
+    setLocalReplyReaction((current) => applyLocalReplyReaction(current));
+    queryClient.setQueriesData<InfiniteData<{ content: ReplyResponse[] }>>(
+      { queryKey: repliesQueryKey },
+      (current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          pages: current.pages.map((page) => ({
+            ...page,
+            content: page.content.map((item) =>
+              item.replyId === reply.replyId
+                ? {
+                    ...item,
+                    likeCount:
+                      item.myReaction === "LIKE"
+                        ? Math.max(0, item.likeCount - 1)
+                        : item.likeCount + 1,
+                    myReaction: item.myReaction === "LIKE" ? null : "LIKE",
+                  }
+                : item,
+            ),
+          })),
+        };
+      },
+    );
+    pendingReplyLikeParityRef.current = (pendingReplyLikeParityRef.current + 1) % 2;
+    scheduleReplyLikeCommit();
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditingContent(contentWithoutMention);
+    setIsExpanded(false);
+    setError("");
   };
 
   const submitDelete = async () => {
@@ -219,13 +384,8 @@ export default function ReplyItem({
     }
   };
 
-  const metaText = `${reply.authorName} · ${formatDateTime(reply.createDate)}`;
-  const mentionMatch = reply.content.match(/^(@[^\s]+)([\s\S]*)$/);
-  const mentionText =
-    reply.replyToUserId && mentionMatch ? mentionMatch[1] : null;
-  const contentWithoutMention = mentionText
-    ? (mentionMatch?.[2] ?? "")
-    : reply.content;
+  const edited = isEdited(reply.createDate, reply.updateDate);
+  const metaText = `${authorName} · ${formatDateTime(reply.createDate)}${edited ? " (수정됨)" : ""}`;
   const mentionSeparator =
     mentionText &&
     contentWithoutMention &&
@@ -244,11 +404,75 @@ export default function ReplyItem({
   return (
     <li
       ref={itemRef}
-      className={`reply-card ${isChildReply ? "reply-card-depth-1" : ""} ${isDeepChildVisual ? "reply-card-depth-2" : ""}`}
+      data-reply-id={reply.replyId}
+      className={`reply-card ${isChildReply ? "reply-card-depth-1" : ""} ${isDeepChildVisual ? "reply-card-depth-2" : ""} ${
+        showChildren && childCount > 0 ? "reply-card-children-open" : ""
+      }`}
     >
       <div className="reply-header">
-        <div className="reply-avatar">{authorInitial}</div>
-        <p className="reply-meta-line">{metaText}</p>
+        <div className="reply-header-main">
+          <UserAvatar
+            name={authorName}
+            size={40}
+            className="reply-avatar"
+            ariaHidden
+            initialMode="nickname"
+          />
+          <p className="reply-meta-line">{metaText}</p>
+        </div>
+        {!reply.deleted && !isEditing && (canEdit || canDelete || canReport) && (
+          <div ref={moreMenuRef} className="reply-more-wrap">
+            <button
+              type="button"
+              className="reply-more-btn post-detail-more-button"
+              aria-label="댓글 더보기"
+              onClick={() => setShowMore((prev) => !prev)}
+            >
+              ⋯
+            </button>
+            {showMore && (
+              <div className="moa-dropdown-menu">
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="moa-dropdown-item"
+                    onClick={() => {
+                      setShowMore(false);
+                      setEditingContent(contentWithoutMention);
+                      setIsEditing(true);
+                    }}
+                  >
+                    수정
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    type="button"
+                    className="moa-dropdown-item moa-dropdown-item-danger"
+                    onClick={() => {
+                      setShowMore(false);
+                      void submitDelete();
+                    }}
+                  >
+                    삭제
+                  </button>
+                )}
+                {canReport && (
+                  <button
+                    type="button"
+                    className="moa-dropdown-item"
+                    onClick={() => {
+                      setShowMore(false);
+                      window.alert("신고 기능은 준비 중입니다.");
+                    }}
+                  >
+                    신고
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {!reply.deleted && isEditing ? (
@@ -257,34 +481,27 @@ export default function ReplyItem({
           {hasEditingBadWord && (
             <p className="reply-error">부적절한 표현이 포함되어 있습니다.</p>
           )}
-          <textarea
-            value={editingContent}
-            onChange={(e) => setEditingContent(e.target.value)}
-            rows={3}
-            className="reply-edit-textarea"
-          />
-          <div className="reply-edit-actions">
-            <button
-              type="button"
-              disabled={disableEditSave}
-              onClick={() => void submitUpdate()}
-              className="reply-flat-btn"
-            >
-              저장
-            </button>
-            <button
-              type="button"
-              className="reply-flat-btn"
-              onClick={() => {
-                setIsEditing(false);
-                setEditingContent(reply.content);
-                setIsExpanded(false);
-                setError("");
-              }}
-            >
-              취소
-            </button>
-          </div>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submitUpdate();
+            }}
+            className="reply-panel-form reply-panel-form-compact"
+          >
+            <ReplyComposer
+              variant="default"
+              content={editingContent}
+              onChangeContent={(event) => setEditingContent(event.target.value)}
+              mentionPrefix={mentionText ?? undefined}
+              canWrite
+              currentUserName={currentUserName}
+              disableSubmit={disableEditSave}
+              submitButtonText="수정"
+              submitAriaLabel="댓글 수정"
+              showCancelButton
+              onCancel={cancelEdit}
+            />
+          </form>
         </div>
       ) : (
         <p
@@ -319,11 +536,21 @@ export default function ReplyItem({
         <div className="reply-item-actions">
           <button
             type="button"
-            className={`reply-action-btn ${isLiked ? "liked" : ""}`}
+            className={`reply-like-btn ${isLiked ? "on" : ""} ${
+              isLikeAnimating ? "pulse" : ""
+            } ${!canWrite ? "disabled" : ""}`}
             onClick={() => void submitReaction()}
-            disabled={!canWrite || isReacting}
+            disabled={reply.deleted}
+            aria-pressed={isLiked}
+            aria-label={isLiked ? "좋아요 취소" : "좋아요"}
           >
-            👍 {actionLikeCount}
+            <Heart
+              size={16}
+              strokeWidth={2}
+              fill={isLiked ? "currentColor" : "none"}
+              aria-hidden="true"
+            />
+            <span>{actionLikeCount}</span>
           </button>
           {canCreateChild && (
             <button
@@ -333,58 +560,6 @@ export default function ReplyItem({
             >
               답글
             </button>
-          )}
-          {(canEdit || canDelete || canReport) && (
-            <div className="reply-more-wrap">
-              <button
-                type="button"
-                className="reply-more-btn"
-                aria-label="댓글 더보기"
-                onClick={() => setShowMore((prev) => !prev)}
-              >
-                ⋯
-              </button>
-              {showMore && (
-                <div className="reply-more-menu">
-                  {canEdit && (
-                    <button
-                      type="button"
-                      className="reply-more-item"
-                      onClick={() => {
-                        setShowMore(false);
-                        setIsEditing(true);
-                      }}
-                    >
-                      수정
-                    </button>
-                  )}
-                  {canDelete && (
-                    <button
-                      type="button"
-                      className="reply-more-item reply-more-item-danger"
-                      onClick={() => {
-                        setShowMore(false);
-                        void submitDelete();
-                      }}
-                    >
-                      삭제
-                    </button>
-                  )}
-                  {canReport && (
-                    <button
-                      type="button"
-                      className="reply-more-item"
-                      onClick={() => {
-                        setShowMore(false);
-                        window.alert("신고 기능은 준비 중입니다.");
-                      }}
-                    >
-                      신고
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
           )}
         </div>
       )}
@@ -445,11 +620,11 @@ export default function ReplyItem({
                   onUpdate={onUpdate}
                   onDelete={onDelete}
                   onCreateChild={onCreateChild}
-                  onReact={onReact}
                   autoExpandParentId={autoExpandParentId}
                   focusReplyId={focusReplyId}
                   onFocusReplyHandled={onFocusReplyHandled}
                   rootAuthorUserId={effectiveRootAuthorUserId}
+                  onRequireLogin={onRequireLogin}
                 />
               ))}
             </ul>
@@ -464,3 +639,5 @@ export default function ReplyItem({
     </li>
   );
 }
+
+

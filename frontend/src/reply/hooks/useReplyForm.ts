@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { replyApi } from "../api/replyApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 
@@ -20,17 +21,32 @@ interface DeleteReplyOptions {
 }
 
 export function useReplyForm() {
+  const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const invalidateRelatedBoardQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["communityPosts"] }),
+      queryClient.invalidateQueries({ queryKey: ["circleBoardPosts"] }),
+      queryClient.invalidateQueries({ queryKey: ["communitySidebar"] }),
+    ]);
+  };
 
   const create = async ({ postId, content, parentId }: CreateReplyOptions) => {
     setSubmitting(true);
     setError("");
     try {
       if (parentId) {
-        return (await replyApi.createChildReply(postId, parentId, { content })).data;
+        const createdReplyId = (await replyApi.createChildReply(postId, parentId, { content })).data;
+        await queryClient.invalidateQueries({ queryKey: ["postReplies", postId] });
+        await invalidateRelatedBoardQueries();
+        return createdReplyId;
       }
-      return (await replyApi.createReply(postId, { content })).data;
+      const createdReplyId = (await replyApi.createReply(postId, { content })).data;
+      await queryClient.invalidateQueries({ queryKey: ["postReplies", postId] });
+      await invalidateRelatedBoardQueries();
+      return createdReplyId;
     } catch (e) {
       const message = getErrorMessage(e);
       setError(message);
@@ -44,7 +60,10 @@ export function useReplyForm() {
     setSubmitting(true);
     setError("");
     try {
-      return (await replyApi.updateReply(postId, replyId, { content })).data;
+      const updatedReplyId = (await replyApi.updateReply(postId, replyId, { content })).data;
+      await queryClient.invalidateQueries({ queryKey: ["postReplies", postId] });
+      await invalidateRelatedBoardQueries();
+      return updatedReplyId;
     } catch (e) {
       const message = getErrorMessage(e);
       setError(message);
@@ -59,6 +78,8 @@ export function useReplyForm() {
     setError("");
     try {
       await replyApi.deleteReply(postId, replyId);
+      await queryClient.invalidateQueries({ queryKey: ["postReplies", postId] });
+      await invalidateRelatedBoardQueries();
     } catch (e) {
       const message = getErrorMessage(e);
       setError(message);

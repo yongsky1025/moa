@@ -10,17 +10,28 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.entity.constant.CircleBoardKind;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
 
     // Global 고정 보드 찾기 (NOTICE/FREE/SUPPORT)
     Optional<Board> findByBoardTypeAndCircleIdIsNullAndDeletedFalse(BoardType type);
+    List<Board> findByCircleIdIsNullAndDeletedFalseOrderByBoardIdAsc();
 
     // Circle 보드 검증: boardId + circleId가 맞는지
     Optional<Board> findByBoardIdAndBoardTypeAndCircleId_CircleIdAndDeletedFalse(Long boardId, BoardType type,
             Long circleId);
+    Optional<Board> findByBoardIdAndCircleIdIsNullAndDeletedFalse(Long boardId);
 
     List<Board> findByBoardTypeAndCircleId_CircleIdAndDeletedFalse(BoardType boardType, Long circleId);
+    Optional<Board> findByBoardTypeAndCircleId_CircleIdAndCircleBoardKindAndDeletedFalse(
+            BoardType boardType,
+            Long circleId,
+            CircleBoardKind circleBoardKind);
+    boolean existsByBoardTypeAndCircleId_CircleIdAndCircleBoardKindAndDeletedFalse(
+            BoardType boardType,
+            Long circleId,
+            CircleBoardKind circleBoardKind);
 
     Optional<Board> findByBoardIdAndDeletedFalse(Long boardId);
 

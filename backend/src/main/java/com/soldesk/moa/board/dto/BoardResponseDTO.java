@@ -3,7 +3,7 @@ package com.soldesk.moa.board.dto;
 import java.time.LocalDateTime;
 
 import com.soldesk.moa.board.entity.constant.BoardType;
-import com.soldesk.moa.circle.entity.Circle;
+import com.soldesk.moa.board.entity.constant.CircleBoardKind;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +21,7 @@ import lombok.ToString;
 public class BoardResponseDTO {
     private Long boardId;
     private BoardType boardType;
+    private CircleBoardKind circleBoardKind;
     private String name;
     private Long circleId;
 

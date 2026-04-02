@@ -1,9 +1,13 @@
 package com.soldesk.moa.post.entity;
 
+import java.time.LocalDateTime;
+
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.board.entity.constant.CircleBoardKind;
 import com.soldesk.moa.common.entity.BaseEntity;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.post.entity.constant.NoticeCategory;
 import com.soldesk.moa.users.entity.Users;
 
 import jakarta.persistence.Column;
@@ -15,6 +19,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -40,7 +45,8 @@ public class Post extends BaseEntity {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Lob
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String content;
 
     @Builder.Default
@@ -68,6 +74,21 @@ public class Post extends BaseEntity {
     @Builder.Default
     private boolean deleted = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private NoticeCategory noticeCategory;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean pinned = false;
+
+    @Column
+    private LocalDateTime pinnedAt;
+
+    @Column
+    @Builder.Default
+    private Boolean activityPublic = false;
+
     // setter
     // 수정용
     public void changeTitle(String title) {
@@ -80,6 +101,26 @@ public class Post extends BaseEntity {
 
     public void changeImage(Image image) {
         this.image = image;
+    }
+
+    public void changeNoticeCategory(NoticeCategory noticeCategory) {
+        this.noticeCategory = noticeCategory;
+    }
+
+    public void changePinned(boolean pinned) {
+        this.pinned = pinned;
+        this.pinnedAt = pinned ? LocalDateTime.now() : null;
+    }
+
+    public void changeActivityPublic(Boolean activityPublic) {
+        this.activityPublic = Boolean.TRUE.equals(activityPublic);
+    }
+
+    public boolean isPublicCircleActivityPost() {
+        return boardId != null
+                && boardId.getBoardType() == BoardType.CIRCLE
+                && boardId.getCircleBoardKind() == CircleBoardKind.ACTIVITY
+                && Boolean.TRUE.equals(activityPublic);
     }
 
     // 신고/제재용 메소드 추가

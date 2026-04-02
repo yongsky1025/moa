@@ -3,6 +3,9 @@ package com.soldesk.moa.post.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.post.entity.constant.NoticeCategory;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +23,8 @@ public class PostResponseDTO {
 
     private Long boardId;
 
+    private BoardType boardType;
+
     private Long postId;
 
     private String title;
@@ -28,9 +33,19 @@ public class PostResponseDTO {
 
     private List<String> imagePaths;
 
+    private Long thumbnailImageId;
+
+    private String thumbnailUrl;
+
     private String authorName;
 
     private String authorPublicId;
+
+    private Long circleId;
+
+    private String circleName;
+
+    private boolean activityPublic;
 
     private int viewCount;
 
@@ -39,6 +54,12 @@ public class PostResponseDTO {
     private String myReaction;
 
     private long replyCount;
+
+    private NoticeCategory noticeCategory;
+
+    private boolean pinned;
+
+    private LocalDateTime pinnedAt;
 
     private LocalDateTime createDate;
 
