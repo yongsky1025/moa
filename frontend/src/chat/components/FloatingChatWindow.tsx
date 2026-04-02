@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Search, X, Bell, BellOff, Pencil, List, LogOut, UserRound, UsersRound, CalendarDays } from "lucide-react";
+import { Search, X, Bell, BellOff, Pencil, List, LogOut, UserRound, UsersRound, CalendarDays, MessageSquare, ChevronDown } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { chatApi } from "../../api/chatApi";
@@ -11,7 +11,7 @@ import EmojiPicker from "./EmojiPicker";
 import ChatInput from "./ChatInput";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
-type RoomMember = { userId: number; nickname: string; circleMemberId?: number; role?: string };
+type RoomMember = { userId: number; nickname: string; circleMemberId?: number; role?: string; isLeader?: boolean };
 
 const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
 const isFileUrl = (c: string) => c.startsWith('/uploads/') || c.startsWith('/api/chat/files/');
@@ -837,19 +837,19 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
         {/* 타이틀바 */}
         <div style={s.titleBar} onMouseDown={onDragMouseDown}>
-          <span style={s.title}>💬 MOA 채팅</span>
+          <span style={{ ...s.title, display: 'flex', alignItems: 'center', gap: 6 }}>💬 MOA 채팅</span>
           <div style={{ display: "flex", gap: 6 }} onClick={(e) => e.stopPropagation()}>
             {/* 에러 토스트 */}
             {errorMsg && (
               <div style={{ position: 'absolute', top: 48, left: '50%', transform: 'translateX(-50%)', background: '#c62828', color: '#fff', borderRadius: 8, padding: '8px 16px', fontSize: 13, zIndex: 10004, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
                 {errorMsg}
-                <button onClick={() => setErrorMsg(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, padding: 0 }}>✕</button>
+                <button onClick={() => setErrorMsg(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}><X size={14} /></button>
               </div>
             )}
             {/* 알림 */}
             <div style={{ position: "relative" }}>
               <button className="chat-title-btn" style={{ ...s.titleBtn, display: 'flex', alignItems: 'center', position: 'relative' }} onClick={() => setShowNoti((v) => !v)}>
-                <Bell size={16} />{unreadNoti > 0 && <span style={s.nBadge}>{unreadNoti}</span>}
+                <Bell size={16} fill="rgba(255,255,255,0.85)" />{unreadNoti > 0 && <span style={s.nBadge}>{unreadNoti}</span>}
               </button>
               {showNoti && (
                 <div style={s.notiBox}>
@@ -871,8 +871,8 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
               )}
             </div>
             {/* 별도 창으로 분리 */}
-            <button className="chat-title-btn" style={s.titleBtn} onClick={() => { openPopup(); onClose(); setActiveRoomId(null); }} title="별도 창으로 분리">▼</button>
-            <button className="chat-title-btn" style={s.titleBtn} onClick={() => { onClose(); setActiveRoomId(null); }}>✕</button>
+            <button className="chat-title-btn" style={{ ...s.titleBtn, display: 'flex', alignItems: 'center' }} onClick={() => { openPopup(); onClose(); setActiveRoomId(null); }} title="별도 창으로 분리"><ChevronDown size={16} /></button>
+            <button className="chat-title-btn" style={{ ...s.titleBtn, display: 'flex', alignItems: 'center' }} onClick={() => { onClose(); setActiveRoomId(null); }}><X size={16} /></button>
           </div>
         </div>
 
@@ -994,7 +994,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                       >
                         <div style={{ width: 28, height: 28, borderRadius: '50%', background: avatarColor(m.userId), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 'bold', flexShrink: 0 }}>{m.nickname.charAt(0)}</div>
                         <span style={{ fontSize: 13, color: '#1F2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.nickname}</span>
-                        {m.role === "LEADER" && <span style={{ fontSize: 10, background: '#5F8F7B', color: '#fff', borderRadius: 4, padding: '1px 5px', flexShrink: 0 }}>방장</span>}
+                        {(m.role === "LEADER" || m.isLeader) && <span style={{ fontSize: 10, background: '#5F8F7B', color: '#fff', borderRadius: 4, padding: '1px 5px', flexShrink: 0 }}>방장</span>}
                       </div>
                     ))}
                   </div>
@@ -1036,10 +1036,12 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
                 {/* 메시지 영역 */}
                 <div ref={msgAreaRef} style={s.msgArea}>
-                  {(searchQuery.trim()
-                    ? messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase()))
-                    : messages
-                  ).map((msg) => {
+                  {messages.length === 0
+                    ? <div style={{ textAlign: 'center', color: '#A9CBBB', fontSize: 13, marginTop: 20 }}>첫 메시지를 보내보세요! 👋</div>
+                    : (searchQuery.trim()
+                      ? messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+                      : messages
+                    ).map((msg) => {
                     if (msg.messageType === 'SYSTEM') {
                       return (
                         <div key={msg.messageId} style={{ textAlign: 'center', margin: '8px 0', fontSize: 12, color: '#9CA3AF' }}>
@@ -1233,9 +1235,11 @@ const s: Record<string, React.CSSProperties> = {
     border: "none",
     color: "rgba(255,255,255,0.85)",
     cursor: "pointer",
-    fontSize: 14,
     padding: "4px 6px",
     borderRadius: 6,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     position: "relative",
   },
   nBadge: {

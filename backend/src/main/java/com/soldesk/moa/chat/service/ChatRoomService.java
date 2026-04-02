@@ -13,6 +13,7 @@ import com.soldesk.moa.chat.repository.ChatRoomRepository;
 import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.schedule.repository.ScheduleRepository;
 import com.soldesk.moa.users.repository.UsersRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -34,18 +35,20 @@ public class ChatRoomService {
     private final UsersRepository usersRepo;
     private final CircleMemberRepository circleMemberRepo;
     private final CircleRepository circleRepo;
+    private final ScheduleRepository scheduleRepo;
     private final SimpMessagingTemplate messagingTemplate;
 
     public ChatRoomService(ChatRoomRepository roomRepo, ChatRoomMemberRepository memberRepo,
             ChatMessageRepository messageRepo, UsersRepository usersRepo,
             CircleMemberRepository circleMemberRepo, CircleRepository circleRepo,
-            SimpMessagingTemplate messagingTemplate) {
+            ScheduleRepository scheduleRepo, SimpMessagingTemplate messagingTemplate) {
         this.roomRepo = roomRepo;
         this.memberRepo = memberRepo;
         this.messageRepo = messageRepo;
         this.usersRepo = usersRepo;
         this.circleMemberRepo = circleMemberRepo;
         this.circleRepo = circleRepo;
+        this.scheduleRepo = scheduleRepo;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -299,6 +302,15 @@ public class ChatRoomService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getRoomMembers(Long roomId, Long userId) {
         assertMember(roomId, userId);
+        ChatRoom room = getRoomOrThrow(roomId);
+        // 일정 채팅방이면 일정 생성자(방장) userId 조회
+        Long creatorUserId = null;
+        if (room.getScheduleId() != null) {
+            creatorUserId = scheduleRepo.findById(room.getScheduleId())
+                    .map(s -> s.getCreator().getUser().getUserId())
+                    .orElse(null);
+        }
+        final Long finalCreatorUserId = creatorUserId;
         return memberRepo.findByRoomId(roomId).stream()
                 .map(m -> {
                     String nickname = usersRepo.findById(m.getUserId())
@@ -306,6 +318,7 @@ public class ChatRoomService {
                     Map<String, Object> info = new HashMap<>();
                     info.put("userId", m.getUserId());
                     info.put("nickname", nickname);
+                    info.put("isLeader", m.getUserId().equals(finalCreatorUserId));
                     return info;
                 })
                 .toList();

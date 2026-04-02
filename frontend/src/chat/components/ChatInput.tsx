@@ -1,4 +1,5 @@
 import { useState, useRef, memo } from "react";
+import { Paperclip, Smile, BotMessageSquare } from "lucide-react";
 import { chatApi } from "../../api/chatApi";
 import EmojiPicker from "./EmojiPicker";
 
@@ -114,11 +115,11 @@ const ChatInput = memo(function ChatInput({
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px' }}>
-        <button className="chat-icon-btn" onClick={() => fileInputRef.current?.click()} style={s.iconBtn}>📎</button>
+        <button className="chat-icon-btn" onClick={() => fileInputRef.current?.click()} style={s.iconBtn}><Paperclip size={17} /></button>
         <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileSelect} />
-        <button ref={emojiBtnRef} className="chat-icon-btn" style={s.iconBtn} onClick={() => setShowEmoji((v) => !v)}>😊</button>
+        <button ref={emojiBtnRef} className="chat-icon-btn" style={s.iconBtn} onClick={() => setShowEmoji((v) => !v)}><Smile size={17} /></button>
         <button
-          style={{ ...s.iconBtn, color: aiLoading ? '#aaa' : '#5F8F7B', fontSize: 14 }}
+          style={{ ...s.iconBtn, color: aiLoading ? '#aaa' : '#5F8F7B' }}
           disabled={aiLoading || !activeRoomId}
           onClick={async () => {
             if (!activeRoomId) return;
@@ -132,7 +133,7 @@ const ChatInput = memo(function ChatInput({
           }}
           title="AI 스마트 답변"
         >
-          {aiLoading ? '...' : '✨'}
+          <BotMessageSquare size={17} />
         </button>
         {showEmoji && (
           <EmojiPicker anchorRef={emojiBtnRef} onSelect={(emoji) => setInput((prev) => prev + emoji)} onClose={() => setShowEmoji(false)} />

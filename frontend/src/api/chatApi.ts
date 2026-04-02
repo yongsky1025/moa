@@ -70,7 +70,7 @@ export const chatApi = {
 
   // 채팅방 멤버 목록 조회 (일정/모임 공통)
   getRoomMembers: (roomId: number) =>
-    api.get<{ userId: number; nickname: string }[]>(`/api/chat/rooms/${roomId}/members`).then(r => r.data),
+    api.get<{ userId: number; nickname: string; isLeader: boolean }[]>(`/api/chat/rooms/${roomId}/members`).then(r => r.data),
 
   // AI 스마트 답변 제안
   suggestReply: (roomId: number) =>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, X, Bell, BellOff, Pencil, List, LogOut, UserRound, UsersRound, CalendarDays } from "lucide-react";
+import { Search, X, Bell, BellOff, Pencil, List, LogOut, UserRound, UsersRound, CalendarDays, Paperclip, Smile, BotMessageSquare } from "lucide-react";
 import { createPortal } from "react-dom";
 import { chatApi } from "../../api/chatApi";
 import { circleApi } from "../../api/circleApi";
@@ -8,7 +8,7 @@ import { useWebSocket, type TypingEvent, type NoticeEvent } from "../hooks/useWe
 import { useAuthStore } from "../../store/authStore";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
-type RoomMember = { userId: number; nickname: string; circleMemberId?: number; role?: string };
+type RoomMember = { userId: number; nickname: string; circleMemberId?: number; role?: string; isLeader?: boolean };
 import EmojiPicker from "../components/EmojiPicker";
 
 const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
@@ -121,10 +121,10 @@ function ChatInputArea({ activeRoom, replyTo, onCancelReply, onSend, onFileUploa
       )}
       <div style={s.inputWrap}>
         <div style={s.inputToolbar}>
-          <button className="chat-icon-btn" style={s.toolBtn} onClick={() => fileInputRef.current?.click()}>📎</button>
-          <button ref={emojiBtnRef} className="chat-icon-btn" style={s.toolBtn} onClick={() => setShowEmoji((v) => !v)}>😊</button>
+          <button className="chat-icon-btn" style={s.toolBtn} onClick={() => fileInputRef.current?.click()}><Paperclip size={18} /></button>
+          <button ref={emojiBtnRef} className="chat-icon-btn" style={s.toolBtn} onClick={() => setShowEmoji((v) => !v)}><Smile size={18} /></button>
           <button
-            style={{ ...s.toolBtn, color: aiLoading ? '#aaa' : '#5F8F7B', fontSize: 15 }}
+            style={{ ...s.toolBtn, color: aiLoading ? '#aaa' : '#5F8F7B' }}
             disabled={aiLoading || !activeRoom}
             onClick={async () => {
               if (!activeRoom) return;
@@ -138,7 +138,7 @@ function ChatInputArea({ activeRoom, replyTo, onCancelReply, onSend, onFileUploa
             }}
             title="AI 스마트 답변"
           >
-            {aiLoading ? '...' : '✨'}
+            <BotMessageSquare size={18} />
           </button>
           <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFile} />
         </div>
@@ -1031,7 +1031,7 @@ export default function ChatPopupPage() {
                   >
                     <div style={{ ...s.memberAvatar, background: avatarColor(m.userId) }}>{m.nickname.charAt(0)}</div>
                     <span style={s.memberNick}>{m.nickname}</span>
-                    {m.role === "LEADER" && <span style={s.leaderTag}>방장</span>}
+                    {(m.role === "LEADER" || m.isLeader) && <span style={s.leaderTag}>방장</span>}
                   </div>
                 ))}
               </div>
