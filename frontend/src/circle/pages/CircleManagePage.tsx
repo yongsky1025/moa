@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { Settings, Trash2, Users, Calendar } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
@@ -24,9 +24,11 @@ export default function CircleManagePage() {
   const { circleId } = useParams<{ circleId: string }>();
   const cid = Number(circleId);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
 
-  const [activeMenu, setActiveMenu] = useState<Menu>('edit');
+  const initialTab = (searchParams.get('tab') as Menu) ?? 'edit';
+  const [activeMenu, setActiveMenu] = useState<Menu>(initialTab);
   const [circle, setCircle] = useState<CircleResponse | null>(null);
   const [activeMembers, setActiveMembers] = useState<CircleMember[]>([]);
   const [pendingMembers, setPendingMembers] = useState<CircleMember[]>([]);

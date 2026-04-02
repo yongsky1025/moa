@@ -90,7 +90,8 @@ public class CircleMemberService {
                         .ifPresent(leader -> notificationService.send(
                                 leader.getUser().getUserId(),
                                 NotificationType.JOIN_REQUEST,
-                                loginUser.getNickname() + "님이 '" + circle.getName() + "' 모임에 가입 신청했습니다."
+                                loginUser.getNickname() + "님이 '" + circle.getName() + "' 모임에 가입 신청했습니다.",
+                                circle.getCircleId()
                         ));
         }
 
@@ -147,7 +148,8 @@ public class CircleMemberService {
                         notificationService.send(
                                 member.getUser().getUserId(),
                                 NotificationType.JOIN_APPROVED,
-                                "'" + member.getCircle().getName() + "' 모임 가입이 승인되었습니다."
+                                "'" + member.getCircle().getName() + "' 모임 가입이 승인되었습니다.",
+                                circleId
                         );
                         return;
                 }
@@ -159,7 +161,8 @@ public class CircleMemberService {
                         notificationService.send(
                                 member.getUser().getUserId(),
                                 NotificationType.JOIN_REJECTED,
-                                "'" + member.getCircle().getName() + "' 모임 가입이 거절되었습니다."
+                                "'" + member.getCircle().getName() + "' 모임 가입이 거절되었습니다.",
+                                circleId
                         );
                         return;
                 }
@@ -309,7 +312,8 @@ public class CircleMemberService {
                 notificationService.send(
                         target.getUser().getUserId(),
                         NotificationType.KICKED,
-                        "'" + circle.getName() + "' 모임에서 강퇴되었습니다."
+                        "'" + circle.getName() + "' 모임에서 강퇴되었습니다.",
+                        circleId
                 );
         }
 

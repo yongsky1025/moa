@@ -757,23 +757,22 @@ export default function ChatPopupPage() {
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             {/* 알림 */}
             <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
-              <button style={{ ...s.iconBtn, display: 'flex', alignItems: 'center', position: 'relative' }} onClick={() => setShowNoti((v) => !v)}>
+              <button style={{ ...s.iconBtn, display: 'flex', alignItems: 'center', position: 'relative' }} onClick={() => {
+                if (!showNoti) {
+                  setShowNoti(true);
+                  if (unreadNoti > 0) notificationApi.readAll().catch(() => {});
+                } else {
+                  setShowNoti(false);
+                  setNotifications((p) => p.map((n) => ({ ...n, isRead: true })));
+                }
+              }}>
                 <Bell size={16} />
-                {unreadNoti > 0 && <span style={s.dot}>{unreadNoti}</span>}
+                {!showNoti && unreadNoti > 0 && <span style={s.dot}>{unreadNoti}</span>}
               </button>
               {showNoti && (
                 <div style={s.notiDropdown}>
                   <div style={s.notiHead}>
                     <b>알림</b>
-                    <button
-                      style={s.notiAll}
-                      onClick={async () => {
-                        await notificationApi.readAll();
-                        setNotifications((p) => p.map((n) => ({ ...n, isRead: true })));
-                      }}
-                    >
-                      전체 읽음
-                    </button>
                   </div>
                   {chatNotifications.length === 0 ? (
                     <p style={s.notiEmpty}>알림 없음</p>
@@ -781,10 +780,10 @@ export default function ChatPopupPage() {
                     chatNotifications.map((n) => (
                       <div
                         key={n.id}
-                        className="chat-noti-item" style={{ ...s.notiItem, background: n.isRead ? '#F8FAF9' : '#FDF1EC', cursor: 'pointer' }}
+                        className="chat-noti-item" style={{ ...s.notiItem, background: n.isRead ? '#F8FAF9' : '#EAF4F0', borderLeft: n.isRead ? '3px solid transparent' : '3px solid #5F8F7B', cursor: 'pointer' }}
                         onClick={() => handleNotiClick(n)}
                       >
-                        <span style={s.notiMsg}>{n.message}</span>
+                        <span style={{ ...s.notiMsg, fontWeight: n.isRead ? 400 : 600 }}>{n.message}</span>
                         <span style={s.notiTime}>{formatTime(n.createdAt)}</span>
                       </div>
                     ))

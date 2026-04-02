@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Search, X, Bell, BellOff, Pencil, List, LogOut, UserRound, UsersRound, CalendarDays, MessageSquare, ChevronDown } from "lucide-react";
+import { Search, X, Bell, BellOff, Pencil, List, LogOut, UserRound, UsersRound, CalendarDays, ChevronDown } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { chatApi } from "../../api/chatApi";
@@ -7,7 +7,6 @@ import { circleApi } from "../../api/circleApi";
 import { useWebSocket, type TypingEvent, type NoticeEvent } from "../hooks/useWebSocket";
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
-import EmojiPicker from "./EmojiPicker";
 import ChatInput from "./ChatInput";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
@@ -848,21 +847,28 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
             )}
             {/* 알림 */}
             <div style={{ position: "relative" }}>
-              <button className="chat-title-btn" style={{ ...s.titleBtn, display: 'flex', alignItems: 'center', position: 'relative' }} onClick={() => setShowNoti((v) => !v)}>
-                <Bell size={16} fill="rgba(255,255,255,0.85)" />{unreadNoti > 0 && <span style={s.nBadge}>{unreadNoti}</span>}
+              <button className="chat-title-btn" style={{ ...s.titleBtn, display: 'flex', alignItems: 'center', position: 'relative' }} onClick={() => {
+                if (!showNoti) {
+                  setShowNoti(true);
+                  if (unreadNoti > 0) notificationApi.readAll().catch(() => {});
+                } else {
+                  setShowNoti(false);
+                  setNotifications((p) => p.map((n) => ({ ...n, isRead: true })));
+                }
+              }}>
+                <Bell size={16} fill="rgba(255,255,255,0.85)" />{!showNoti && unreadNoti > 0 && <span style={s.nBadge}>{unreadNoti}</span>}
               </button>
               {showNoti && (
                 <div style={s.notiBox}>
                   <div style={s.notiHeader}>
                     <span>알림</span>
-                    <button style={s.notiReadAll} onClick={async () => { await notificationApi.readAll(); setNotifications((p) => p.map((n) => ({ ...n, isRead: true }))); }}>전체 읽음</button>
                   </div>
                   {chatNotifications.length === 0 ? (
                     <div style={s.notiEmpty}>알림 없음</div>
                   ) : (
                     chatNotifications.map((n) => (
-                      <div key={n.id} className="chat-noti-item" style={{ ...s.notiItem, background: n.isRead ? '#F8FAF9' : '#FDF1EC' }} onClick={() => handleNotiClick(n)}>
-                        <span style={s.notiMsg}>{n.message}</span>
+                      <div key={n.id} className="chat-noti-item" style={{ ...s.notiItem, background: n.isRead ? '#F8FAF9' : '#EAF4F0', borderLeft: n.isRead ? '3px solid transparent' : '3px solid #5F8F7B' }} onClick={() => handleNotiClick(n)}>
+                        <span style={{ ...s.notiMsg, fontWeight: n.isRead ? 400 : 600 }}>{n.message}</span>
                         <span style={s.notiTime}>{formatTime(n.createdAt)}</span>
                       </div>
                     ))

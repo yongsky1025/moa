@@ -115,7 +115,28 @@ export default function Navbar() {
       );
     }
     setShowActivityNoti(false);
-    navigate("/circle/my");
+    const id = n.referenceId;
+    switch (n.type) {
+      case "JOIN_REQUEST":
+        navigate(id ? `/circle/${id}/manage?tab=members` : "/circle/my");
+        break;
+      case "JOIN_APPROVED":
+        navigate(id ? `/circle/${id}` : "/circle/my");
+        break;
+      case "JOIN_REJECTED":
+      case "KICKED":
+      case "CIRCLE_DISBANDED":
+        navigate(id ? `/circle/${id}` : "/circle/my");
+        break;
+      case "REPLY":
+      case "CHILD_REPLY":
+      case "POST_LIKE":
+      case "REPLY_LIKE":
+        navigate(id ? `/board/free/${id}` : "/board");
+        break;
+      default:
+        navigate("/circle/my");
+    }
   };
 
   const ACTIVITY_NOTI_ICONS: Record<string, string> = {
@@ -127,6 +148,7 @@ export default function Navbar() {
     REPLY: "💬",
     CHILD_REPLY: "↩️",
     POST_LIKE: "👍",
+    REPLY_LIKE: "👍",
   };
 
   const navItems = ["관리자 페이지", "모임", "커뮤니티", "에너지", "플레이스"];
@@ -309,7 +331,15 @@ export default function Navbar() {
                 style={{ position: "relative", marginRight: 16 }}
               >
                 <button
-                  onClick={() => setShowActivityNoti((v) => !v)}
+                  onClick={() => {
+                    if (!showActivityNoti) {
+                      setShowActivityNoti(true);
+                      if (unreadActivityCount > 0) notificationApi.readAll().catch(() => {});
+                    } else {
+                      setShowActivityNoti(false);
+                      setActivityNoti((p) => p.map((n) => ({ ...n, isRead: true })));
+                    }
+                  }}
                   title="활동 알림"
                   style={{
                     width: 32,
@@ -326,7 +356,7 @@ export default function Navbar() {
                 >
                   <Bell size={20} color="#374151" strokeWidth={1.8} />
                 </button>
-                {unreadActivityCount > 0 && (
+                {!showActivityNoti && unreadActivityCount > 0 && (
                   <span
                     style={{
                       position: "absolute",
@@ -381,28 +411,6 @@ export default function Navbar() {
                       >
                         활동 알림
                       </span>
-                      <button
-                        onClick={async () => {
-                          const ids = activityNoti
-                            .filter((n) => !n.isRead)
-                            .map((n) => n.id);
-                          if (ids.length === 0) return;
-                          await notificationApi.readAll();
-                          setActivityNoti((p) =>
-                            p.map((n) => ({ ...n, isRead: true })),
-                          );
-                        }}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          fontSize: 12,
-                          color: "#5F8F7B",
-                          cursor: "pointer",
-                          fontWeight: 600,
-                        }}
-                      >
-                        전체 읽음
-                      </button>
                     </div>
                     <div style={{ maxHeight: 320, overflowY: "auto" }}>
                       {activityNoti.length === 0 ? (
@@ -429,6 +437,7 @@ export default function Navbar() {
                               cursor: "pointer",
                               background: n.isRead ? "#fff" : "#EAF4F0",
                               borderBottom: "1px solid #F3F4F6",
+                              borderLeft: n.isRead ? "3px solid transparent" : "3px solid #5F8F7B",
                             }}
                             onMouseEnter={(e) =>
                               (e.currentTarget.style.background = "#F9FAFB")
@@ -449,6 +458,7 @@ export default function Navbar() {
                                   fontSize: 13,
                                   color: "#1F2937",
                                   lineHeight: 1.4,
+                                  fontWeight: n.isRead ? 400 : 600,
                                 }}
                               >
                                 {n.message}

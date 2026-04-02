@@ -32,6 +32,8 @@ import com.soldesk.moa.reply.repository.ReplyRepository;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.entity.constant.UserRole;
 import com.soldesk.moa.users.repository.UsersRepository;
+import com.soldesk.moa.notification.domain.NotificationType;
+import com.soldesk.moa.notification.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -48,6 +50,7 @@ public class ReplyService {
     private final CirclePermissionService circlePermissionService;
     private final ProfanityFilterService profanityFilterService;
     private final ReplyReactionRepository replyReactionRepository;
+    private final NotificationService notificationService;
 
     // 댓글 리스트
     public Page<ReplyResponseDTO> list(Long postId, Long userId, int page, int size) {
@@ -216,6 +219,16 @@ public class ReplyService {
                     .reactionType(ReplyReactionType.LIKE)
                     .build());
             replyRepository.incrementLikeCount(replyId);
+            Long authorId = reply.getUserId().getUserId();
+            if (!authorId.equals(userId)) {
+                String label = reply.getDepth() == 0 ? "댓글" : "대댓글";
+                notificationService.sendAsync(
+                        authorId,
+                        NotificationType.REPLY_LIKE,
+                        user.getNickname() + "님이 회원님의 " + label + "을 좋아합니다.",
+                        postId
+                );
+            }
         } else if (existing.getReactionType() == ReplyReactionType.LIKE) {
             replyReactionRepository.delete(existing);
             replyRepository.decrementLikeCount(replyId);
