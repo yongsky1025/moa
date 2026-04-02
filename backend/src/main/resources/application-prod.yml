@@ -6,6 +6,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:seed-data.sql
 
 app:
   # 운영 프론트 도메인 URL (OAuth 리다이렉트 등에 사용)

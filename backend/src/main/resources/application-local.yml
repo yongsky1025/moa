@@ -14,6 +14,13 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      data-locations:
+        - classpath:seed-data.sql
+        - classpath:dummy-data.sql
 
 app:
   # 프론트 로그인/리다이렉트 기준 URL (로컬)

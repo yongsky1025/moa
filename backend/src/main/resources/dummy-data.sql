@@ -1,7 +1,8 @@
 -- ============================================================
 --  MOA Project - Dummy Data (MySQL)
 --  약 1년치 다채로운 데이터 (2025-04 ~ 2026-03)
---  실행: mysql -u team_moa -p12345 moa < data-dummy.sql
+--  전제: seed-data.sql 선행 실행 (관리자/글로벌 게시판/카테고리/태그)
+--  실행: mysql -u team_moa -p12345 moa < dummy-data.sql
 -- ============================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -18,18 +19,14 @@ DELETE FROM post_view_log;
 DELETE FROM post_reaction;
 DELETE FROM reply;
 DELETE FROM post;
-DELETE FROM board;
 DELETE FROM place_closed_day;
 DELETE FROM place_review;
 DELETE FROM place_tag;
 DELETE FROM reservation;
 DELETE FROM place;
-DELETE FROM tag;
-DELETE FROM tag_category;
 DELETE FROM circle_energy_profile;
 DELETE FROM circle_member;
 DELETE FROM circle;
-DELETE FROM circle_category;
 DELETE FROM sanction;
 DELETE FROM report;
 DELETE FROM admin_action_log;
@@ -38,15 +35,11 @@ DELETE FROM user_energy_profile;
 DELETE FROM refresh_token;
 DELETE FROM image;
 DELETE FROM common_file;
-DELETE FROM users;
 
 -- ============================================================
--- 1. Users (50명: admin 2 + user 48)
+-- 1. Users (48명: 일반 유저, 관리자 2명은 seed-data.sql 사용)
 -- ============================================================
 INSERT INTO users (user_id, name, email, password, nickname, birth_date, age, user_role, user_gender, provider, public_id, user_status, privacy_agreed_at, status_message, sanction_count, create_date, update_date) VALUES
--- 관리자 2명
-(1,  '김관리', 'admin@moa.com',     '{bcrypt}$2a$10$YoFoYMZu8cDn0QhwUIMV6Ov2JFIyiWWa1nZUT4HgS1UncuV6GSYNi', '관리자',     '1985-03-15', 41, 'ADMIN', 'MALE',   'LOCAL', UUID(), 'ACTIVE', '2025-04-01 09:00:00', '관리자입니다', 0, '2025-04-01 09:00:00', '2025-04-01 09:00:00'),
-(2,  '이운영', 'admin2@moa.com',    '{bcrypt}$2a$10$YoFoYMZu8cDn0QhwUIMV6Ov2JFIyiWWa1nZUT4HgS1UncuV6GSYNi', '부관리자',   '1990-07-22', 35, 'ADMIN', 'FEMALE', 'LOCAL', UUID(), 'ACTIVE', '2025-04-01 09:00:00', NULL, 0, '2025-04-01 09:00:00', '2025-04-01 09:00:00'),
 -- 일반 유저 48명 (다양한 연령대, 상태, 성별, 가입시기)
 (3,  '박지민', 'user01@gmail.com',  '{bcrypt}$2a$10$YoFoYMZu8cDn0QhwUIMV6Ov2JFIyiWWa1nZUT4HgS1UncuV6GSYNi', '지민이',     '1995-01-10', 31, 'USER', 'FEMALE', 'LOCAL',  UUID(), 'ACTIVE',    '2025-04-02 10:00:00', '오늘도 화이팅!', 0, '2025-04-02 10:00:00', '2025-04-02 10:00:00'),
 (4,  '최현우', 'user02@gmail.com',  '{bcrypt}$2a$10$YoFoYMZu8cDn0QhwUIMV6Ov2JFIyiWWa1nZUT4HgS1UncuV6GSYNi', '현우짱',     '1998-05-20', 27, 'USER', 'MALE',   'GOOGLE', UUID(), 'ACTIVE',    '2025-04-03 11:30:00', NULL, 0, '2025-04-03 11:30:00', '2025-04-03 11:30:00'),
@@ -136,17 +129,8 @@ INSERT INTO user_energy_profile (profile_id, user_id, social_load, interaction_m
 (30, 50, 5, 5, 3, 5, 5, 'ENERGY_SPREADER',       '2026-02-15 08:30:00', '2026-02-15 08:30:00');
 
 -- ============================================================
--- 3. Circle Categories (8개)
+-- 3. Circle Categories (seed-data.sql 사용)
 -- ============================================================
-INSERT INTO circle_category (category_id, category_name) VALUES
-(1, '독서/문화'),
-(2, '운동/스포츠'),
-(3, '음악/악기'),
-(4, '요리/맛집'),
-(5, '여행/아웃도어'),
-(6, '스터디/자기계발'),
-(7, '게임/IT'),
-(8, '예술/공예');
 
 -- ============================================================
 -- 4. Circles (20개 - 다양한 상태)
@@ -327,9 +311,7 @@ INSERT INTO circle_member (id, user_id, circle_id, role, status, create_date, up
 -- 7. Boards (공지+자유 + 모임별 게시판)
 -- ============================================================
 INSERT INTO board (board_id, board_type, circle_board_kind, name, deleted, circle_id, create_date, update_date) VALUES
--- 글로벌 게시판
-(1, 'NOTICE', NULL, '공지사항',   false, NULL, '2025-04-01 09:00:00', '2025-04-01 09:00:00'),
-(2, 'FREE',   NULL, '자유게시판', false, NULL, '2025-04-01 09:00:00', '2025-04-01 09:00:00'),
+-- 글로벌 게시판 2개는 seed-data.sql 사용
 -- 모임별 게시판
 (3,  'CIRCLE', 'CUSTOM', '일반 게시판', false, 1,  '2025-04-10 10:00:00', '2025-04-10 10:00:00'),
 (4,  'CIRCLE', 'CUSTOM', '독후감 공유', false, 1,  '2025-04-10 10:30:00', '2025-04-10 10:30:00'),
@@ -346,6 +328,43 @@ INSERT INTO board (board_id, board_type, circle_board_kind, name, deleted, circl
 (15, 'CIRCLE', 'CUSTOM', '일반 게시판', false, 10, '2025-07-01 07:00:00', '2025-07-01 07:00:00'),
 (16, 'CIRCLE', 'CUSTOM', '일반 게시판', false, 13, '2025-08-15 09:00:00', '2025-08-15 09:00:00'),
 (17, 'CIRCLE', 'CUSTOM', '일반 게시판', false, 20, '2026-03-01 10:00:00', '2026-03-01 10:00:00');
+
+-- 모임 활동 피드용 게시판 (ACTIVITY)
+INSERT INTO board (board_id, board_type, circle_board_kind, name, deleted, circle_id, create_date, update_date) VALUES
+(18, 'CIRCLE', 'ACTIVITY', '모임활동', false, 1,  '2025-04-10 10:40:00', '2025-04-10 10:40:00'),
+(19, 'CIRCLE', 'ACTIVITY', '모임활동', false, 2,  '2025-04-15 06:40:00', '2025-04-15 06:40:00'),
+(20, 'CIRCLE', 'ACTIVITY', '모임활동', false, 4,  '2025-05-01 12:40:00', '2025-05-01 12:40:00'),
+(21, 'CIRCLE', 'ACTIVITY', '모임활동', false, 10, '2025-07-01 07:10:00', '2025-07-01 07:10:00'),
+(22, 'CIRCLE', 'ACTIVITY', '모임활동', false, 13, '2025-08-15 09:10:00', '2025-08-15 09:10:00');
+
+-- 활동 게시글용 파일/이미지 더미
+INSERT INTO common_file (file_id, name, uuid, path, content_type, domain, owner_id, uploaded_by_user_id, deleted, status, create_date, update_date) VALUES
+(1,  'book-walk-1.jpg',   'cf-post-0001', '/uploads/images/post/book-walk-1.jpg',   'image/jpeg', 'POST', 81,  3,  false, 'USED', '2025-05-02 09:00:00', '2025-05-02 09:00:00'),
+(2,  'book-walk-2.jpg',   'cf-post-0002', '/uploads/images/post/book-walk-2.jpg',   'image/jpeg', 'POST', 82, 15, false, 'USED', '2025-05-18 10:00:00', '2025-05-18 10:00:00'),
+(3,  'run-shot-1.jpg',    'cf-post-0003', '/uploads/images/post/run-shot-1.jpg',    'image/jpeg', 'POST', 83,  6,  false, 'USED', '2025-06-01 06:50:00', '2025-06-01 06:50:00'),
+(4,  'run-shot-2.jpg',    'cf-post-0004', '/uploads/images/post/run-shot-2.jpg',    'image/jpeg', 'POST', 84, 26, false, 'USED', '2025-06-22 07:10:00', '2025-06-22 07:10:00'),
+(5,  'food-tour-1.jpg',   'cf-post-0005', '/uploads/images/post/food-tour-1.jpg',   'image/jpeg', 'POST', 85, 10, false, 'USED', '2025-07-12 20:00:00', '2025-07-12 20:00:00'),
+(6,  'food-tour-2.jpg',   'cf-post-0006', '/uploads/images/post/food-tour-2.jpg',   'image/jpeg', 'POST', 86, 23, false, 'USED', '2025-08-03 13:00:00', '2025-08-03 13:00:00'),
+(7,  'futsal-1.jpg',      'cf-post-0007', '/uploads/images/post/futsal-1.jpg',      'image/jpeg', 'POST', 87, 12, false, 'USED', '2025-08-10 15:00:00', '2025-08-10 15:00:00'),
+(8,  'futsal-2.jpg',      'cf-post-0008', '/uploads/images/post/futsal-2.jpg',      'image/jpeg', 'POST', 88, 34, false, 'USED', '2025-09-28 09:00:00', '2025-09-28 09:00:00'),
+(9,  'camp-1.jpg',        'cf-post-0009', '/uploads/images/post/camp-1.jpg',        'image/jpeg', 'POST', 89, 24, false, 'USED', '2025-10-04 17:00:00', '2025-10-04 17:00:00'),
+(10, 'camp-2.jpg',        'cf-post-0010', '/uploads/images/post/camp-2.jpg',        'image/jpeg', 'POST', 90, 32, false, 'USED', '2025-11-01 18:00:00', '2025-11-01 18:00:00'),
+(11, 'camp-fire-1.jpg',   'cf-post-0011', '/uploads/images/post/camp-fire-1.jpg',   'image/jpeg', 'POST', 91, 40, false, 'USED', '2025-11-23 22:00:00', '2025-11-23 22:00:00'),
+(12, 'winter-camping.jpg','cf-post-0012', '/uploads/images/post/winter-camping.jpg','image/jpeg', 'POST', 92, 48, false, 'USED', '2025-12-21 09:30:00', '2025-12-21 09:30:00');
+
+INSERT INTO image (image_id, name, uuid, path, domain, owner_id, uploaded_by_user_id, ord, deleted, status, create_date, update_date) VALUES
+(1,  'book-walk-1.jpg',    'img-post-0001', '/uploads/images/post/book-walk-1.jpg',    'POST', 81,  3,  1, false, 'USED', '2025-05-02 09:00:00', '2025-05-02 09:00:00'),
+(2,  'book-walk-2.jpg',    'img-post-0002', '/uploads/images/post/book-walk-2.jpg',    'POST', 82, 15, 1, false, 'USED', '2025-05-18 10:00:00', '2025-05-18 10:00:00'),
+(3,  'run-shot-1.jpg',     'img-post-0003', '/uploads/images/post/run-shot-1.jpg',     'POST', 83,  6,  1, false, 'USED', '2025-06-01 06:50:00', '2025-06-01 06:50:00'),
+(4,  'run-shot-2.jpg',     'img-post-0004', '/uploads/images/post/run-shot-2.jpg',     'POST', 84, 26, 1, false, 'USED', '2025-06-22 07:10:00', '2025-06-22 07:10:00'),
+(5,  'food-tour-1.jpg',    'img-post-0005', '/uploads/images/post/food-tour-1.jpg',    'POST', 85, 10, 1, false, 'USED', '2025-07-12 20:00:00', '2025-07-12 20:00:00'),
+(6,  'food-tour-2.jpg',    'img-post-0006', '/uploads/images/post/food-tour-2.jpg',    'POST', 86, 23, 1, false, 'USED', '2025-08-03 13:00:00', '2025-08-03 13:00:00'),
+(7,  'futsal-1.jpg',       'img-post-0007', '/uploads/images/post/futsal-1.jpg',       'POST', 87, 12, 1, false, 'USED', '2025-08-10 15:00:00', '2025-08-10 15:00:00'),
+(8,  'futsal-2.jpg',       'img-post-0008', '/uploads/images/post/futsal-2.jpg',       'POST', 88, 34, 1, false, 'USED', '2025-09-28 09:00:00', '2025-09-28 09:00:00'),
+(9,  'camp-1.jpg',         'img-post-0009', '/uploads/images/post/camp-1.jpg',         'POST', 89, 24, 1, false, 'USED', '2025-10-04 17:00:00', '2025-10-04 17:00:00'),
+(10, 'camp-2.jpg',         'img-post-0010', '/uploads/images/post/camp-2.jpg',         'POST', 90, 32, 1, false, 'USED', '2025-11-01 18:00:00', '2025-11-01 18:00:00'),
+(11, 'camp-fire-1.jpg',    'img-post-0011', '/uploads/images/post/camp-fire-1.jpg',    'POST', 91, 40, 1, false, 'USED', '2025-11-23 22:00:00', '2025-11-23 22:00:00'),
+(12, 'winter-camping.jpg', 'img-post-0012', '/uploads/images/post/winter-camping.jpg', 'POST', 92, 48, 1, false, 'USED', '2025-12-21 09:30:00', '2025-12-21 09:30:00');
 
 -- ============================================================
 -- 8. Posts (80건 - 공지, 자유, 모임)
@@ -450,6 +469,21 @@ INSERT INTO post (post_id, title, content, view_count, like_count, user_id, boar
 (79, 'QueryDSL 정리',                 'QueryDSL 기본 사용법 정리',                                   45, 6,  42, 11, false, '2025-12-01 20:00:00', '2025-12-01 20:00:00'),
 (80, 'Redis 캐싱 전략',               'Spring에서 Redis 캐싱 적용하기',                              38, 4,  50, 11, false, '2026-03-10 21:00:00', '2026-03-10 21:00:00');
 
+-- 모임 활동 피드용 게시글 (ACTIVITY + 공개)
+INSERT INTO post (post_id, title, content, view_count, like_count, user_id, board_id, image_id, activity_public, deleted, create_date, update_date) VALUES
+(81, '아침 산책 독서 모임 스냅',        '<p>오늘 아침 산책 후 같이 독서모임 진행했어요.</p><p><img src="/uploads/images/post/book-walk-1.jpg" alt="book walk"></p>', 63, 11, 3,  18, 1,  true, false, '2025-05-02 09:10:00', '2025-05-02 09:10:00'),
+(82, '5월 독서모임 베스트 컷',          '<p>다 같이 가져온 책 소개 시간! 분위기 정말 좋았습니다.</p><p><img src="/uploads/images/post/book-walk-2.jpg" alt="book club"></p>', 52, 8, 15, 18, 2,  true, false, '2025-05-18 10:10:00', '2025-05-18 10:10:00'),
+(83, '한강 새벽 러닝 기록',             '<p>오늘 6.2km 완주! 페이스도 안정적으로 잘 나왔어요.</p><p><img src="/uploads/images/post/run-shot-1.jpg" alt="running"></p>', 71, 14, 6,  19, 3,  true, false, '2025-06-01 07:00:00', '2025-06-01 07:00:00'),
+(84, '러닝 후 스트레칭 루틴 공유',      '<p>부상 방지용 스트레칭 루틴 공유합니다. 함께 해봐요!</p><p><img src="/uploads/images/post/run-shot-2.jpg" alt="stretching"></p>', 45, 6, 26, 19, 4,  true, false, '2025-06-22 07:20:00', '2025-06-22 07:20:00'),
+(85, '을지로 맛집 탐방 활동 사진',      '<p>오늘 모임에서 다녀온 을지로 파스타집 후기입니다.</p><p><img src="/uploads/images/post/food-tour-1.jpg" alt="food"></p>', 88, 17, 10, 20, 5,  true, false, '2025-07-12 20:10:00', '2025-07-12 20:10:00'),
+(86, '주말 브런치 투어 후기',           '<p>연남동 브런치 투어 성공! 다음 후보도 추천 받아요.</p><p><img src="/uploads/images/post/food-tour-2.jpg" alt="brunch"></p>', 57, 9, 23, 20, 6,  true, false, '2025-08-03 13:10:00', '2025-08-03 13:10:00'),
+(87, '잠실 풋살 친선전 기록',           '<p>오늘 친선전 4:3 승리! 모두 수고 많으셨습니다.</p><p><img src="/uploads/images/post/futsal-1.jpg" alt="futsal"></p>', 95, 21, 12, 21, 7,  true, false, '2025-08-10 15:10:00', '2025-08-10 15:10:00'),
+(88, '가을 풋살 리그 준비',             '<p>9월 리그 대비 포지션별 훈련 시작합니다.</p><p><img src="/uploads/images/post/futsal-2.jpg" alt="futsal team"></p>', 61, 10, 34, 21, 8,  true, false, '2025-09-28 09:10:00', '2025-09-28 09:10:00'),
+(89, '가평 캠핑 첫날 기록',             '<p>텐트 세팅 완료! 저녁 바베큐까지 완벽했어요.</p><p><img src="/uploads/images/post/camp-1.jpg" alt="camp"></p>', 77, 15, 24, 22, 9,  true, false, '2025-10-04 17:10:00', '2025-10-04 17:10:00'),
+(90, '캠핑 장비 세팅 팁',               '<p>초보용 체크리스트 공유합니다. 댓글로 팁도 남겨주세요.</p><p><img src="/uploads/images/post/camp-2.jpg" alt="camp gear"></p>', 49, 7, 32, 22, 10, true, false, '2025-11-01 18:10:00', '2025-11-01 18:10:00'),
+(91, '모닥불 토크 시간',                '<p>캠핑의 하이라이트는 역시 모닥불이죠.</p><p><img src="/uploads/images/post/camp-fire-1.jpg" alt="camp fire"></p>', 68, 12, 40, 22, 11, true, false, '2025-11-23 22:10:00', '2025-11-23 22:10:00'),
+(92, '겨울 캠핑 테스트',                '<p>겨울 장비 테스트 완료! 생각보다 따뜻하게 잘 보냈습니다.</p><p><img src="/uploads/images/post/winter-camping.jpg" alt="winter camp"></p>', 54, 9, 48, 22, 12, true, false, '2025-12-21 09:40:00', '2025-12-21 09:40:00');
+
 -- ============================================================
 -- 9. Replies (120건)
 -- ============================================================
@@ -550,6 +584,25 @@ INSERT INTO reply (reply_id, post_id, user_id, content, parent_id, depth, delete
 (89, 15, 9,  '삭제된 댓글입니다',                           NULL, 0, true,  '2025-05-15 16:00:00', '2025-10-01 10:00:00'),
 (90, 17, 20, '삭제된 댓글입니다',                           NULL, 0, true,  '2025-07-06 11:00:00', '2025-12-20 10:00:00');
 
+-- 활동 피드 게시글 댓글
+INSERT INTO reply (reply_id, post_id, user_id, content, parent_id, depth, deleted, create_date, update_date) VALUES
+(91,  81, 5,  '사진 분위기 진짜 좋네요!',                NULL, 0, false, '2025-05-02 10:00:00', '2025-05-02 10:00:00'),
+(92,  81, 17, '다음 산책독서 저도 참여하고 싶어요',      NULL, 0, false, '2025-05-02 10:10:00', '2025-05-02 10:10:00'),
+(93,  83, 4,  '페이스 유지가 대단하네요',               NULL, 0, false, '2025-06-01 07:20:00', '2025-06-01 07:20:00'),
+(94,  83, 12, '다음에는 저도 6km 도전할게요',           NULL, 0, false, '2025-06-01 07:35:00', '2025-06-01 07:35:00'),
+(95,  85, 15, '여기 저도 저장해뒀던 곳이에요!',         NULL, 0, false, '2025-07-12 20:30:00', '2025-07-12 20:30:00'),
+(96,  85, 23, '파스타 비주얼 미쳤네요',                 NULL, 0, false, '2025-07-12 20:40:00', '2025-07-12 20:40:00'),
+(97,  87, 26, '다음 친선전에도 꼭 갈게요',              NULL, 0, false, '2025-08-10 16:00:00', '2025-08-10 16:00:00'),
+(98,  87, 44, '수비 라인 정말 안정적이었어요',          NULL, 0, false, '2025-08-10 16:10:00', '2025-08-10 16:10:00'),
+(99,  89, 36, '가평 풍경 너무 좋다...',                NULL, 0, false, '2025-10-04 18:00:00', '2025-10-04 18:00:00'),
+(100, 89, 48, '바베큐 메뉴 공유 부탁해요!',             NULL, 0, false, '2025-10-04 18:15:00', '2025-10-04 18:15:00'),
+(101, 90, 24, '체크리스트 바로 캡쳐했습니다',            NULL, 0, false, '2025-11-01 18:30:00', '2025-11-01 18:30:00'),
+(102, 90, 40, '겨울 버너 추천도 부탁드려요',            NULL, 0, false, '2025-11-01 18:45:00', '2025-11-01 18:45:00'),
+(103, 91, 32, '모닥불 사진 감성 최고예요',              NULL, 0, false, '2025-11-23 22:30:00', '2025-11-23 22:30:00'),
+(104, 91, 50, '다음엔 기타도 챙겨가죠',                NULL, 0, false, '2025-11-23 22:45:00', '2025-11-23 22:45:00'),
+(105, 92, 24, '겨울침낭 정보도 알려주세요',             NULL, 0, false, '2025-12-21 10:10:00', '2025-12-21 10:10:00'),
+(106, 92, 40, '난로 세팅이 핵심이네요',                 NULL, 0, false, '2025-12-21 10:20:00', '2025-12-21 10:20:00');
+
 -- ============================================================
 -- 10. Post Reactions (좋아요 50건)
 -- ============================================================
@@ -580,278 +633,27 @@ INSERT INTO post_reaction (post_reaction_id, post_id, user_id, reaction_type, cr
 (24, 52, 42, 'LIKE', '2026-03-05 20:30:00', '2026-03-05 20:30:00'),
 (25, 55, 3,  'LIKE', '2025-12-28 23:30:00', '2025-12-28 23:30:00');
 
--- ============================================================
--- 11. Tag Categories & Tags (장소용 - 200+ tags, 15 categories)
---     참고: 스페이스클라우드, 에어비앤비, Booking, 소모임, 당근모임
--- ============================================================
-INSERT INTO tag_category (id, name, sort_order, is_active, schedule_enabled) VALUES
-(1,  '분위기',       1,  true,  false),
-(2,  '편의시설',     2,  true,  false),
-(3,  '용도',         3,  true,  true),
-(4,  '위치특성',     4,  true,  false),
-(5,  '공간유형',     5,  true,  false),
-(6,  '스포츠/운동',  6,  true,  true),
-(7,  '음악/공연',    7,  true,  true),
-(8,  '요리/식음',    8,  true,  true),
-(9,  '교육/스터디',  9,  true,  true),
-(10, '파티/이벤트',  10, true,  true),
-(11, '촬영/미디어',  11, true,  false),
-(12, '아웃도어',     12, true,  true),
-(13, '힐링/웰니스',  13, true,  true),
-(14, '비즈니스',     14, true,  false),
-(15, '특수시설',     15, true,  false);
+-- 활동 피드 게시글 좋아요
+INSERT INTO post_reaction (post_reaction_id, post_id, user_id, reaction_type, create_date, update_date) VALUES
+(26, 81, 17, 'LIKE', '2025-05-02 10:20:00', '2025-05-02 10:20:00'),
+(27, 81, 27, 'LIKE', '2025-05-02 10:25:00', '2025-05-02 10:25:00'),
+(28, 83, 8,  'LIKE', '2025-06-01 07:40:00', '2025-06-01 07:40:00'),
+(29, 83, 16, 'LIKE', '2025-06-01 07:45:00', '2025-06-01 07:45:00'),
+(30, 85, 3,  'LIKE', '2025-07-12 21:00:00', '2025-07-12 21:00:00'),
+(31, 85, 35, 'LIKE', '2025-07-12 21:05:00', '2025-07-12 21:05:00'),
+(32, 87, 4,  'LIKE', '2025-08-10 16:20:00', '2025-08-10 16:20:00'),
+(33, 87, 40, 'LIKE', '2025-08-10 16:22:00', '2025-08-10 16:22:00'),
+(34, 88, 12, 'LIKE', '2025-09-28 09:30:00', '2025-09-28 09:30:00'),
+(35, 89, 10, 'LIKE', '2025-10-04 18:20:00', '2025-10-04 18:20:00'),
+(36, 89, 44, 'LIKE', '2025-10-04 18:25:00', '2025-10-04 18:25:00'),
+(37, 90, 48, 'LIKE', '2025-11-01 19:00:00', '2025-11-01 19:00:00'),
+(38, 91, 24, 'LIKE', '2025-11-23 23:00:00', '2025-11-23 23:00:00'),
+(39, 92, 32, 'LIKE', '2025-12-21 10:30:00', '2025-12-21 10:30:00'),
+(40, 92, 50, 'LIKE', '2025-12-21 10:35:00', '2025-12-21 10:35:00');
 
-INSERT INTO tag (id, name, is_active, tag_category_id) VALUES
--- ── 분위기 (1) ──
-(1,   '조용한',           true, 1),
-(2,   '활기찬',           true, 1),
-(3,   '아늑한',           true, 1),
-(4,   '모던한',           true, 1),
-(5,   '빈티지',           true, 1),
-(6,   '인더스트리얼',     true, 1),
-(7,   '내추럴',           true, 1),
-(8,   '럭셔리',           true, 1),
-(9,   '미니멀',           true, 1),
-(10,  '화이트톤',         true, 1),
-(11,  '우드톤',           true, 1),
-(12,  '다크톤',           true, 1),
-(13,  '밝은조명',         true, 1),
-(14,  '무드조명',         true, 1),
-(15,  '감성적인',         true, 1),
-(16,  '개방감있는',       true, 1),
-(17,  '프라이빗',         true, 1),
-(18,  '캐주얼',           true, 1),
--- ── 편의시설 (2) ──
-(19,  '주차가능',         true, 2),
-(20,  'WIFI',             true, 2),
-(21,  '프로젝터',         true, 2),
-(22,  '음향시설',         true, 2),
-(23,  '에어컨',           true, 2),
-(24,  '난방',             true, 2),
-(25,  '화장실',           true, 2),
-(26,  '샤워실',           true, 2),
-(27,  '엘리베이터',       true, 2),
-(28,  '무선마이크',       true, 2),
-(29,  '화이트보드',       true, 2),
-(30,  'TV/모니터',        true, 2),
-(31,  '냉장고',           true, 2),
-(32,  '전자레인지',       true, 2),
-(33,  '정수기',           true, 2),
-(34,  '콘센트다수',       true, 2),
-(35,  '탈의실',           true, 2),
-(36,  '사물함',           true, 2),
-(37,  '반려동물가능',     true, 2),
-(38,  '장애인편의시설',   true, 2),
-(39,  '흡연구역',         true, 2),
-(40,  '유아시설',         true, 2),
-(41,  '취사가능',         true, 2),
-(42,  '음료제공',         true, 2),
-(43,  '간식제공',         true, 2),
--- ── 용도 (3) ──
-(44,  '회의',             true, 3),
-(45,  '파티',             true, 3),
-(46,  '스터디',           true, 3),
-(47,  '워크샵',           true, 3),
-(48,  '세미나',           true, 3),
-(49,  '강연',             true, 3),
-(50,  '독서모임',         true, 3),
-(51,  '소모임',           true, 3),
-(52,  '동아리',           true, 3),
-(53,  '팀빌딩',           true, 3),
-(54,  '네트워킹',         true, 3),
-(55,  '면접',             true, 3),
-(56,  '상담',             true, 3),
-(57,  '코워킹',           true, 3),
-(58,  '전시',             true, 3),
-(59,  '공연',             true, 3),
-(60,  '촬영',             true, 3),
-(61,  '라이브방송',       true, 3),
-(62,  '데이트',           true, 3),
-(63,  '가족모임',         true, 3),
-(64,  '동창회',           true, 3),
-(65,  '팬미팅',           true, 3),
-(66,  '플리마켓',         true, 3),
-(67,  '팝업스토어',       true, 3),
--- ── 위치특성 (4) ──
-(68,  '역세권',           true, 4),
-(69,  '주택가',           true, 4),
-(70,  '번화가',           true, 4),
-(71,  '한강근처',         true, 4),
-(72,  '산근처',           true, 4),
-(73,  '바다근처',         true, 4),
-(74,  '공원근처',         true, 4),
-(75,  '대학가',           true, 4),
-(76,  '오피스밀집',       true, 4),
-(77,  '주차편리',         true, 4),
-(78,  '골목안쪽',         true, 4),
-(79,  '대로변',           true, 4),
-(80,  '루프탑',           true, 4),
-(81,  '지하',             true, 4),
-(82,  '고층뷰',           true, 4),
-(83,  '테라스',           true, 4),
--- ── 공간유형 (5) ──
-(84,  '스튜디오',         true, 5),
-(85,  '카페',             true, 5),
-(86,  '라운지',           true, 5),
-(87,  '홀',               true, 5),
-(88,  '연습실',           true, 5),
-(89,  '레지던스',         true, 5),
-(90,  '펜션',             true, 5),
-(91,  '글램핑',           true, 5),
-(92,  '한옥',             true, 5),
-(93,  '갤러리',           true, 5),
-(94,  '루프탑바',         true, 5),
-(95,  '오피스',           true, 5),
-(96,  '공유주방',         true, 5),
-(97,  '컨퍼런스룸',       true, 5),
-(98,  '다목적홀',         true, 5),
-(99,  '실외공간',         true, 5),
-(100, '지하공간',         true, 5),
-(101, '복층',             true, 5),
-(102, '원룸형',           true, 5),
--- ── 스포츠/운동 (6) ──
-(103, '풋살',             true, 6),
-(104, '테니스',           true, 6),
-(105, '배드민턴',         true, 6),
-(106, '탁구',             true, 6),
-(107, '농구',             true, 6),
-(108, '볼링',             true, 6),
-(109, '당구/포켓볼',      true, 6),
-(110, '요가',             true, 6),
-(111, '필라테스',         true, 6),
-(112, '크로스핏',         true, 6),
-(113, '복싱',             true, 6),
-(114, '댄스',             true, 6),
-(115, '클라이밍',         true, 6),
-(116, '수영',             true, 6),
-(117, '서핑',             true, 6),
-(118, '스쿼시',           true, 6),
-(119, '골프연습장',       true, 6),
-(120, '양궁',             true, 6),
-(121, '승마',             true, 6),
-(122, '인라인/스케이트',  true, 6),
-(123, '스키/보드',        true, 6),
-(124, '프리다이빙',       true, 6),
--- ── 음악/공연 (7) ──
-(125, '밴드합주',         true, 7),
-(126, '드럼연습',         true, 7),
-(127, '피아노연습',       true, 7),
-(128, '기타/어쿠스틱',    true, 7),
-(129, '보컬연습',         true, 7),
-(130, 'DJ부스',           true, 7),
-(131, '녹음실',           true, 7),
-(132, '공연무대',         true, 7),
-(133, '버스킹',           true, 7),
-(134, '노래방시설',       true, 7),
-(135, '악기보관',         true, 7),
-(136, '방음완벽',         true, 7),
--- ── 요리/식음 (8) ──
-(137, '쿠킹클래스',       true, 8),
-(138, '베이킹',           true, 8),
-(139, '바리스타',         true, 8),
-(140, '와인/소믈리에',    true, 8),
-(141, '수제맥주',         true, 8),
-(142, 'BBQ/그릴',         true, 8),
-(143, '한식조리',         true, 8),
-(144, '양식조리',         true, 8),
-(145, '일식/초밥',        true, 8),
-(146, '디저트',           true, 8),
-(147, '칵테일',           true, 8),
-(148, '전통주',           true, 8),
-(149, '비건/채식',        true, 8),
-(150, '케이터링가능',     true, 8),
--- ── 교육/스터디 (9) ──
-(151, '코딩/IT',          true, 9),
-(152, '어학',             true, 9),
-(153, '수능/입시',        true, 9),
-(154, '자격증',           true, 9),
-(155, '독서토론',         true, 9),
-(156, '글쓰기/작문',      true, 9),
-(157, '미술/드로잉',      true, 9),
-(158, '사진/영상',        true, 9),
-(159, '공예/핸드메이드',  true, 9),
-(160, '플라워/화훼',      true, 9),
-(161, '캘리그라피',       true, 9),
-(162, '도예/도자기',      true, 9),
-(163, '가죽공예',         true, 9),
-(164, '뜨개질/자수',      true, 9),
-(165, '향수/캔들',        true, 9),
--- ── 파티/이벤트 (10) ──
-(166, '생일파티',         true, 10),
-(167, '베이비샤워',       true, 10),
-(168, '브라이덜샤워',     true, 10),
-(169, '졸업파티',         true, 10),
-(170, '송년회/신년회',    true, 10),
-(171, '기업행사',         true, 10),
-(172, '클럽파티',         true, 10),
-(173, '할로윈파티',       true, 10),
-(174, '크리스마스파티',   true, 10),
-(175, '수영장파티',       true, 10),
-(176, '코스프레',         true, 10),
-(177, '보드게임',         true, 10),
-(178, '방탈출',           true, 10),
--- ── 촬영/미디어 (11) ──
-(179, '사진촬영',         true, 11),
-(180, '영상촬영',         true, 11),
-(181, '유튜브/브이로그',  true, 11),
-(182, '팟캐스트',         true, 11),
-(183, '제품촬영',         true, 11),
-(184, '인물촬영',         true, 11),
-(185, '웨딩촬영',         true, 11),
-(186, '증명사진',         true, 11),
-(187, '크로마키',         true, 11),
-(188, '조명장비',         true, 11),
-(189, '드레스룸',         true, 11),
--- ── 아웃도어 (12) ──
-(190, '캠핑',             true, 12),
-(191, '글램핑',           true, 12),
-(192, '바베큐',           true, 12),
-(193, '트레킹/등산',      true, 12),
-(194, '자전거',           true, 12),
-(195, '카약/카누',        true, 12),
-(196, '낚시',             true, 12),
-(197, '별관측',           true, 12),
-(198, '루프탑정원',       true, 12),
-(199, '옥상텃밭',         true, 12),
-(200, '피크닉',           true, 12),
--- ── 힐링/웰니스 (13) ──
-(201, '명상',             true, 13),
-(202, '아로마테라피',     true, 13),
-(203, '스파/사우나',      true, 13),
-(204, '족욕',             true, 13),
-(205, '반신욕',           true, 13),
-(206, '마사지',           true, 13),
-(207, '숲치유',           true, 13),
-(208, '티세레모니',       true, 13),
-(209, '사운드힐링',       true, 13),
-(210, '독서치유',         true, 13),
--- ── 비즈니스 (14) ──
-(211, '프레젠테이션',     true, 14),
-(212, '화상회의',         true, 14),
-(213, '인터뷰룸',         true, 14),
-(214, '공유오피스',       true, 14),
-(215, '1인사무실',        true, 14),
-(216, '미팅룸',           true, 14),
-(217, '교육장',           true, 14),
-(218, '컨퍼런스',         true, 14),
-(219, '이사회실',         true, 14),
-(220, '법인설립주소',     true, 14),
--- ── 특수시설 (15) ──
-(221, '수영장',           true, 15),
-(222, '자쿠지',           true, 15),
-(223, '벽난로',           true, 15),
-(224, '노천탕',           true, 15),
-(225, '대형스크린',       true, 15),
-(226, '무대/스테이지',    true, 15),
-(227, '미러월',           true, 15),
-(228, '바카운터',         true, 15),
-(229, 'VR장비',           true, 15),
-(230, '포토존',           true, 15),
-(231, '키즈룸',           true, 15),
-(232, '짐/헬스장비',      true, 15),
-(233, '암벽',             true, 15),
-(234, '런닝머신',         true, 15),
-(235, '사격장',           true, 15);
+-- ============================================================
+-- 11. Tag Categories & Tags (seed-data.sql 사용)
+-- ============================================================
 
 -- ============================================================
 -- 12. Places (15개)
@@ -1177,3 +979,4 @@ INSERT INTO likes (id, target_type, target_id, user_id, create_date, update_date
 -- ============================================================
 SET FOREIGN_KEY_CHECKS = 1;
 SET SQL_MODE = @OLD_SQL_MODE;
+
