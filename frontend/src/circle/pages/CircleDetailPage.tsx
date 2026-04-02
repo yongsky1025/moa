@@ -181,6 +181,10 @@ export default function CircleDetailPage() {
       const map = new maps.Map(mapContainerRef.current, {
         center: position,
         level: 4,
+        draggable: false,
+        scrollwheel: false,
+        disableDoubleClick: true,
+        disableDoubleClickZoom: true,
       });
       mapRef.current = map;
       const marker = new maps.Marker({ map, position });
@@ -274,6 +278,7 @@ export default function CircleDetailPage() {
     bg: "#f3f4f6",
   };
   const isLeader = myMember?.role === "LEADER";
+  const isSubLeader = myMember?.role === "SUB_LEADER";
   const isMember = !!myMember;
 
   const AVATAR_COLORS = [
@@ -354,6 +359,22 @@ export default function CircleDetailPage() {
                   }}
                 >
                   리더
+                </span>
+              )}
+              {profileModal.role === "SUB_LEADER" && (
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#4E7C69",
+                    backgroundColor: "#EAF4F0",
+                    padding: "2px 8px",
+                    borderRadius: 4,
+                    marginTop: 6,
+                    display: "inline-block",
+                  }}
+                >
+                  부리더
                 </span>
               )}
             </div>
@@ -524,7 +545,7 @@ export default function CircleDetailPage() {
                   {likeCount > 0 && <span>{likeCount}</span>}
                 </button>
               )}
-              {isLeader && (
+              {(isLeader || isSubLeader) && (
                 <button
                   onClick={() => navigate(`/circle/${cid}/manage`)}
                   style={outlineBtnStyle}
@@ -950,11 +971,8 @@ export default function CircleDetailPage() {
               {isMember && circleReviews.length > 0 && (
                 <>
                   <div style={{ borderTop: "1px solid #f0f0f0", margin: "16px 0 14px" }} />
-                  <div style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#333", margin: 0 }}>최근 일정 후기</h3>
-                    <Link to={`/circle/${cid}/reviews`} style={{ fontSize: 12, color: "#5F8F7B", textDecoration: "none", fontWeight: 600 }}>
-                      전체 보기
-                    </Link>
+                  <div style={{ marginBottom: 16, display: "flex", alignItems: "center" }}>
+                    <h2 style={sectionTitleStyle}>최근 일정 후기</h2>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     {circleReviews.map((r) => {
@@ -1006,6 +1024,24 @@ export default function CircleDetailPage() {
                       );
                     })}
                   </div>
+                  <Link
+                    to={`/circle/${cid}/reviews`}
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      padding: "10px",
+                      borderRadius: 8,
+                      border: "1px solid #e5e5e5",
+                      backgroundColor: "#f5f5f5",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "#111",
+                      textDecoration: "none",
+                      marginTop: 8,
+                    }}
+                  >
+                    전체 후기 보기
+                  </Link>
                 </>
               )}
             </div>
@@ -1073,7 +1109,7 @@ export default function CircleDetailPage() {
                           borderRadius: "50%",
                           flexShrink: 0,
                           backgroundColor:
-                            m.role === "LEADER" ? "#111" : "#e5e7eb",
+                            m.role === "LEADER" ? "#111" : m.role === "SUB_LEADER" ? "#4E7C69" : "#e5e7eb",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1088,7 +1124,7 @@ export default function CircleDetailPage() {
                           height="15"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke={m.role === "LEADER" ? "white" : "#6b7280"}
+                          stroke={m.role === "LEADER" || m.role === "SUB_LEADER" ? "white" : "#6b7280"}
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -1132,6 +1168,21 @@ export default function CircleDetailPage() {
                           리더
                         </span>
                       )}
+                      {m.role === "SUB_LEADER" && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: "#4E7C69",
+                            backgroundColor: "#EAF4F0",
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            flexShrink: 0,
+                          }}
+                        >
+                          부리더
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1172,25 +1223,18 @@ export default function CircleDetailPage() {
                 </h2>
                 {nearestScheduleWithLocation ? (
                   <>
+                    <div style={{ marginBottom: 10 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "#111", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {nearestScheduleWithLocation.title}
+                      </p>
+                      <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
+                        {new Date(nearestScheduleWithLocation.startAt).toLocaleString("ko-KR", { month: "long", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
                     {nearestScheduleWithLocation.location && (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 5,
-                          marginBottom: 10,
-                          fontSize: 12,
-                          color: "#555",
-                        }}
-                      >
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10, fontSize: 12, color: "#555" }}>
                         <MapPin size={13} color="#888" />
-                        <span
-                          style={{
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {nearestScheduleWithLocation.location}
                         </span>
                       </div>

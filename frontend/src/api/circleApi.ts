@@ -107,6 +107,18 @@ export const circleApi = {
   delegateLeader: (circleId: number, memberId: number) =>
     api.post<void>(`/api/circles/${circleId}/members/${memberId}/delegate`),
 
+  // 부리더 지정 (리더만)
+  assignSubLeader: (circleId: number, memberId: number) =>
+    api.post<void>(`/api/circles/${circleId}/members/${memberId}/sub-leader`),
+
+  // 부리더 해제 (리더만)
+  revokeSubLeader: (circleId: number, memberId: number) =>
+    api.delete<void>(`/api/circles/${circleId}/members/${memberId}/sub-leader`),
+
+  // 부리더 사임 (본인)
+  resignSubLeader: (circleId: number) =>
+    api.delete<void>(`/api/circles/${circleId}/members/me/sub-leader`),
+
   // 좋아요 토글
   toggleCircleLike: (circleId: number) =>
     api.post<{ circleId: number; liked: boolean; likeCount: number }>(`/api/circles/${circleId}/like`),

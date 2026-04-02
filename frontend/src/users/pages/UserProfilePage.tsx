@@ -46,6 +46,7 @@ export default function UserProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [energy, setEnergy] = useState<EnergyProfileResponse | null>(null);
   const [circleCount, setCircleCount] = useState<number | null>(null);
+  const [likedCount, setLikedCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   // 모달 상태
@@ -72,11 +73,16 @@ export default function UserProfilePage() {
         .getMyCircles()
         .then((r) => r.data.length)
         .catch(() => null),
+      circleApi
+        .getLikedCircles()
+        .then((r) => r.data.length)
+        .catch(() => null),
     ])
-      .then(([p, e, cc]) => {
+      .then(([p, e, cc, lc]) => {
         setProfile(p);
         setEnergy(e);
         setCircleCount(cc);
+        setLikedCount(lc);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -282,7 +288,7 @@ export default function UserProfilePage() {
           </div>
           <div style={s.statDivider} />
           <div style={s.statBox}>
-            <span style={s.statNum}>0</span>
+            <span style={s.statNum}>{likedCount ?? 0}</span>
             <span style={s.statLabel}>찜한 모임</span>
           </div>
         </div>
@@ -314,10 +320,10 @@ export default function UserProfilePage() {
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
-          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/account")}>
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/circle/liked")}>
             <Heart size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>찜한 모임</span>
-            <span style={s.rowCount}>0</span>
+            <span style={s.rowCount}>{likedCount ?? 0}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
         </SectionCard>
