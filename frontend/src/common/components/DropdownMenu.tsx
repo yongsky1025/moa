@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 type DropdownMenuLinkItem = {
   type?: "link";
@@ -25,7 +25,10 @@ type DropdownMenuDivider = {
   key: string;
 };
 
-export type DropdownMenuItem = DropdownMenuLinkItem | DropdownMenuButtonItem | DropdownMenuDivider;
+export type DropdownMenuItem =
+  | DropdownMenuLinkItem
+  | DropdownMenuButtonItem
+  | DropdownMenuDivider;
 
 interface DropdownMenuProps {
   items: DropdownMenuItem[];
@@ -64,6 +67,9 @@ export default function DropdownMenu({
   zIndex = 100,
   style,
 }: DropdownMenuProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   return (
     <div
       style={{
@@ -109,10 +115,18 @@ export default function DropdownMenu({
                 ...itemBaseStyle,
                 color: textColor,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBackground)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = hoverBackground)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "transparent")
+              }
             >
-              {item.icon && <span style={{ color: iconColor, display: "flex" }}>{item.icon}</span>}
+              {item.icon && (
+                <span style={{ color: iconColor, display: "flex" }}>
+                  {item.icon}
+                </span>
+              )}
               {item.label}
             </button>
           );
@@ -122,15 +136,29 @@ export default function DropdownMenu({
           <Link
             key={item.key}
             to={item.href}
-            onClick={item.onClick}
+            onClick={(e) => {
+              if (location.pathname === item.href) {
+                e.preventDefault();
+                navigate(0);
+              }
+              item.onClick?.();
+            }}
             style={{
               ...itemBaseStyle,
               color: textColor,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBackground)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = hoverBackground)
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
           >
-            {item.icon && <span style={{ color: iconColor, display: "flex" }}>{item.icon}</span>}
+            {item.icon && (
+              <span style={{ color: iconColor, display: "flex" }}>
+                {item.icon}
+              </span>
+            )}
             {item.label}
           </Link>
         );

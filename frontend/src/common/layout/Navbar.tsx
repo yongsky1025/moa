@@ -1,12 +1,22 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
-import { Bell, MessageCircle, LayoutGrid, Users, User, Settings, LogOut } from "lucide-react";
+import {
+  Bell,
+  MessageCircle,
+  LayoutGrid,
+  Users,
+  User,
+  Settings,
+  LogOut,
+} from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
 import type { Notification } from "../../types/notification";
 import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
 import { useAlarmSocket } from "../../chat/hooks/useAlarmSocket";
-import DropdownMenu, { type DropdownMenuItem } from "../components/DropdownMenu";
+import DropdownMenu, {
+  type DropdownMenuItem,
+} from "../components/DropdownMenu";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -36,7 +46,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
+      ) {
         setProfileOpen(false);
       }
     };
@@ -111,7 +124,9 @@ export default function Navbar() {
       notificationApi
         .getAll()
         .then((list) => {
-          setUnreadChatCount(list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length);
+          setUnreadChatCount(
+            list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length,
+          );
           setActivityNoti(list.filter((n) => n.type !== "CHAT_MESSAGE"));
         })
         .catch(() => {});
@@ -123,7 +138,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
-      if (activityNotiRef.current && !activityNotiRef.current.contains(e.target as Node)) {
+      if (
+        activityNotiRef.current &&
+        !activityNotiRef.current.contains(e.target as Node)
+      ) {
         setShowActivityNoti(false);
       }
     };
@@ -134,7 +152,9 @@ export default function Navbar() {
   const handleActivityNotiClick = async (n: Notification) => {
     if (!n.isRead) {
       await notificationApi.readOne(n.id);
-      setActivityNoti((p) => p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
+      setActivityNoti((p) =>
+        p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)),
+      );
     }
     setShowActivityNoti(false);
     navigate("/circle/my");
@@ -151,7 +171,9 @@ export default function Navbar() {
     POST_LIKE: "👍",
   };
 
-  const energyPath = isLoggedIn ? "/users/energy-test/result" : "/users/energy-test";
+  const energyPath = isLoggedIn
+    ? "/users/energy-test/result"
+    : "/users/energy-test";
 
   const navItems = [
     { label: "에너지 테스트", href: energyPath },
@@ -162,7 +184,8 @@ export default function Navbar() {
   ];
 
   const isNavActive = (label: string, href: string) => {
-    if (label === "에너지 테스트") return location.pathname.startsWith("/users/energy-test");
+    if (label === "에너지 테스트")
+      return location.pathname.startsWith("/users/energy-test");
     if (label === "모임") return location.pathname.startsWith("/circle");
     if (label === "플레이스") return location.pathname.startsWith("/place");
     if (label === "커뮤니티") return location.pathname.startsWith("/board");
@@ -216,6 +239,10 @@ export default function Navbar() {
               color: "#111",
               textDecoration: "none",
             }}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/main");
+            }}
           >
             moa
           </Link>
@@ -236,7 +263,11 @@ export default function Navbar() {
                 return (
                   <div
                     key={item.label}
-                    style={{ position: "relative", display: "flex", alignItems: "center" }}
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
                     onMouseEnter={() => setHoveredItem(item.label)}
                     onMouseLeave={() => setHoveredItem(null)}
                   >
@@ -245,20 +276,31 @@ export default function Navbar() {
                       onClick={(e) => {
                         if (dropdownItems[item.label]?.length) {
                           e.preventDefault();
-                          setOpenDropdown((prev) => (prev === item.label ? null : item.label));
+                          setOpenDropdown((prev) =>
+                            prev === item.label ? null : item.label,
+                          );
+                        } else if (location.pathname === item.href) {
+                          e.preventDefault();
+                          navigate(0);
                         }
                       }}
                       style={{
                         fontSize: 15,
                         fontWeight: isActive ? 700 : 500,
-                        color: isActive ? "#5F8F7B" : isHovered ? "#1F2937" : "#666",
+                        color: isActive
+                          ? "#5F8F7B"
+                          : isHovered
+                            ? "#1F2937"
+                            : "#666",
                         textDecoration: "none",
                         display: "inline-flex",
                         alignItems: "center",
                         justifyContent: "center",
                         height: 68,
                         padding: "0 14px",
-                        borderBottom: isActive ? "2.5px solid #5F8F7B" : "2.5px solid transparent",
+                        borderBottom: isActive
+                          ? "2.5px solid #5F8F7B"
+                          : "2.5px solid transparent",
                         background: "transparent",
                         whiteSpace: "nowrap",
                         transition: "color 0.15s, border-color 0.15s",
@@ -267,22 +309,37 @@ export default function Navbar() {
                     >
                       {item.label}
                     </Link>
-                    {(isHovered || openDropdown === item.label) && dropdownItems[item.label]?.length && (
-                      <DropdownMenu items={dropdownItems[item.label]} />
-                    )}
+                    {(isHovered || openDropdown === item.label) &&
+                      dropdownItems[item.label]?.length && (
+                        <DropdownMenu items={dropdownItems[item.label]} />
+                      )}
                   </div>
                 );
               })}
             </nav>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 1, height: 20, background: "#E0E0E0", margin: "0 6px", flexShrink: 0 }} />
+            <div
+              style={{
+                width: 1,
+                height: 20,
+                background: "#E0E0E0",
+                margin: "0 6px",
+                flexShrink: 0,
+              }}
+            />
             {!isLoggedIn && (
               <div style={{ width: 78 }}>
                 <button
                   onClick={() => {
-                    const current = window.location.pathname + window.location.search;
-                    const noRedirect = ["/users/login", "/users/signup", "/users/onboarding", "/"];
+                    const current =
+                      window.location.pathname + window.location.search;
+                    const noRedirect = [
+                      "/users/login",
+                      "/users/signup",
+                      "/users/onboarding",
+                      "/",
+                    ];
                     if (!noRedirect.some((p) => current.startsWith(p))) {
                       sessionStorage.setItem("postLoginRedirect", current);
                     }
@@ -292,12 +349,12 @@ export default function Navbar() {
                     height: 34,
                     width: "100%",
                     borderRadius: 12,
-                    border: "1px solid #E38B6D",
+                    border: "1px solid #5F8F7B",
                     background: "transparent",
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: "pointer",
-                    color: "#E38B6D",
+                    color: "#5F8F7B",
                   }}
                 >
                   로그인
@@ -307,7 +364,11 @@ export default function Navbar() {
 
             {isLoggedIn && (
               <div ref={activityNotiRef} style={{ position: "relative" }}>
-                <button onClick={() => setShowActivityNoti((v) => !v)} title="활동 알림" style={utilityButtonStyle}>
+                <button
+                  onClick={() => setShowActivityNoti((v) => !v)}
+                  title="활동 알림"
+                  style={utilityButtonStyle}
+                >
                   <Bell size={20} color="#999" strokeWidth={1.8} />
                 </button>
                 {unreadActivityCount > 0 && (
@@ -367,10 +428,14 @@ export default function Navbar() {
                       </span>
                       <button
                         onClick={async () => {
-                          const ids = activityNoti.filter((n) => !n.isRead).map((n) => n.id);
+                          const ids = activityNoti
+                            .filter((n) => !n.isRead)
+                            .map((n) => n.id);
                           if (ids.length === 0) return;
                           await notificationApi.readAll();
-                          setActivityNoti((p) => p.map((n) => ({ ...n, isRead: true })));
+                          setActivityNoti((p) =>
+                            p.map((n) => ({ ...n, isRead: true })),
+                          );
                         }}
                         style={{
                           background: "none",
@@ -410,10 +475,18 @@ export default function Navbar() {
                               background: n.isRead ? "#fff" : "#EAF4F0",
                               borderBottom: "1px solid #F3F4F6",
                             }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = n.isRead ? "#fff" : "#EAF4F0")}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.background = "#F9FAFB")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.background = n.isRead
+                                ? "#fff"
+                                : "#EAF4F0")
+                            }
                           >
-                            <span style={{ fontSize: 18, flexShrink: 0 }}>{ACTIVITY_NOTI_ICONS[n.type] ?? "🔔"}</span>
+                            <span style={{ fontSize: 18, flexShrink: 0 }}>
+                              {ACTIVITY_NOTI_ICONS[n.type] ?? "🔔"}
+                            </span>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <p
                                 style={{
@@ -558,7 +631,15 @@ export default function Navbar() {
                         }}
                       >
                         {user?.profileImageUrl ? (
-                          <img src={user.profileImageUrl} alt="프로필" style={{ width: 32, height: 32, objectFit: "cover" }} />
+                          <img
+                            src={user.profileImageUrl}
+                            alt="프로필"
+                            style={{
+                              width: 32,
+                              height: 32,
+                              objectFit: "cover",
+                            }}
+                          />
                         ) : (
                           (user?.nickname?.[0]?.toUpperCase() ?? "U")
                         )}
@@ -581,7 +662,13 @@ export default function Navbar() {
                       </span>
                     </button>
                   </div>
-                  {profileOpen && <DropdownMenu items={profileDropdownItems} align="right" minWidth={150} />}
+                  {profileOpen && (
+                    <DropdownMenu
+                      items={profileDropdownItems}
+                      align="right"
+                      minWidth={150}
+                    />
+                  )}
                 </div>
               ) : (
                 <button
@@ -591,7 +678,7 @@ export default function Navbar() {
                     width: 80,
                     borderRadius: 12,
                     border: "none",
-                    background: "#E38B6D",
+                    background: "#5F8F7B",
                     color: "#fff",
                     fontSize: 13,
                     fontWeight: 600,
@@ -605,7 +692,12 @@ export default function Navbar() {
           </div>
         </div>
       </header>
-      {isLoggedIn && <FloatingChatWindow open={chatOpen} onClose={() => setChatOpen(false)} />}
+      {isLoggedIn && (
+        <FloatingChatWindow
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
     </>
   );
 }
