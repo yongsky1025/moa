@@ -24,6 +24,8 @@ interface AuthState {
   isLoggedIn: boolean;
   loading: boolean;
   error: string | null;
+  // authReady: 초기 인증 상태 판별 여부
+  authReady: boolean;
 
   // 동기 액션
   setAuth: (token: string, user: AuthUser) => void;
@@ -48,6 +50,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoggedIn: !!storedToken,
   loading: false,
   error: null,
+  authReady: false,
 
   setAuth: (token, user) => {
     localStorage.setItem("accessToken", token);
@@ -57,6 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       userId: decodeUserId(token),
       isAuthenticated: true,
       isLoggedIn: true,
+      authReady: true,
     });
   },
 
@@ -70,12 +74,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isLoggedIn: false,
       loading: false,
       error: null,
+      authReady: true,
     });
   },
 
   clearError: () => set({ error: null }),
 
-  setAuthFromOAuth: (user) => set({ user, isAuthenticated: true, isLoggedIn: true, loading: false, error: null }),
+  setAuthFromOAuth: (user) => set({ user, isAuthenticated: true, isLoggedIn: true, loading: false, error: null, authReady: true }),
 
   login: async (req) => {
     set({ loading: true, error: null });
@@ -127,9 +132,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   restoreAuth: async () => {
+    set({ authReady: false });
+
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      set({ user: null, isAuthenticated: false, isLoggedIn: false });
+      set({ token: null, user: null, userId: null, isAuthenticated: false, isLoggedIn: false, loading: false, error: null, authReady: true });
       return;
     }
     try {

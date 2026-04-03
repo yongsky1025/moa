@@ -50,7 +50,7 @@ api.interceptors.response.use(
 
     const original = error.config;
     const url = original?.url ?? "";
-    if (error.response?.status === 401 && !original._retry && url !== "/api/auth/refresh") {
+    if (error.response?.status === 401 && !original._retry && url !== "/api/auth/refresh" && url !== "/api/auth/login") {
       original._retry = true;
 
       if (isRefreshing) {

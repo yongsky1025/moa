@@ -1,6 +1,6 @@
-import { Heart } from "lucide-react";
+import LikeHeartButton from "./LikeHeartButton";
 
-interface CircleItem {
+export interface CircleItem {
   id: number;
   title: string;
   location: string;
@@ -18,11 +18,13 @@ interface CircleCardProps {
   onLike: () => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onClick?: () => void;
 }
 
-export default function CircleCard({ item, badge, badgeColor, isLiked, isHovered, onLike, onMouseEnter, onMouseLeave }: CircleCardProps) {
+export default function CircleCard({ item, badge, badgeColor, isLiked, isHovered, onLike, onMouseEnter, onMouseLeave, onClick }: CircleCardProps) {
   return (
     <div
+      onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       style={{
@@ -61,35 +63,19 @@ export default function CircleCard({ item, badge, badgeColor, isLiked, isHovered
         </div>
 
         {/* 좋아요 버튼 */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onLike();
-          }}
+        <LikeHeartButton
+          liked={isLiked}
+          onClick={onLike}
+          stopPropagation
+          activeColor="#E38B6D"
+          inactiveColor="#1F2937"
+          backgroundColor="white"
           style={{
             position: "absolute",
             top: 10,
             right: 10,
-            width: 30,
-            height: 30,
-            borderRadius: "50%",
-            border: "none",
-            backgroundColor: "white",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
           }}
-        >
-          <Heart
-            style={{
-              width: 14,
-              height: 14,
-              fill: isLiked ? "#E38B6D" : "none",
-              color: isLiked ? "#E38B6D" : "#1F2937",
-            }}
-          />
-        </button>
+        />
       </div>
 
       {/* 정보 영역 */}

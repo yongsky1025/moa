@@ -1,3 +1,5 @@
+import LikeHeartButton from "./LikeHeartButton";
+
 interface PlaceItem {
   id: number;
   name: string;
@@ -8,18 +10,22 @@ interface PlaceItem {
 
 interface PlaceCardProps {
   place: PlaceItem;
+  isLiked?: boolean;
+  onLike?: () => void;
+  onClick?: () => void;
 }
 
-export default function PlaceCard({ place }: PlaceCardProps) {
+export default function PlaceCard({ place, isLiked = false, onLike, onClick }: PlaceCardProps) {
   return (
     <div
+      onClick={onClick}
       style={{
         minWidth: 220,
         width: 220,
         border: "1px solid #ebebeb",
         borderRadius: 14,
         overflow: "hidden",
-        cursor: "pointer",
+        cursor: onClick ? "pointer" : "default",
         flexShrink: 0,
         boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
       }}
@@ -44,6 +50,23 @@ export default function PlaceCard({ place }: PlaceCardProps) {
         >
           {place.tag}
         </div>
+
+        {onLike && (
+          <LikeHeartButton
+            liked={isLiked}
+            onClick={onLike}
+            stopPropagation
+            activeColor="#EF4444"
+            inactiveColor="#111111"
+            backgroundColor="rgba(255,255,255,0.92)"
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+            }}
+          />
+        )}
       </div>
 
       {/* 정보 영역 */}
