@@ -3,6 +3,7 @@ package com.soldesk.moa.admin.dashboard.dto.postInfo;
 import java.time.LocalDateTime;
 
 import com.soldesk.moa.board.entity.constant.BoardType;
+import com.soldesk.moa.post.entity.constant.NoticeCategory;
 
 import lombok.Builder;
 
@@ -18,6 +19,7 @@ public record AdminPostResponseDTO(
     Long circleId,          // CIRCLE 타입일 때 동아리 ID
     int viewCount,
     long replyCount,
+    NoticeCategory noticeCategory,
     boolean deleted,
     LocalDateTime createDate
 ) {}

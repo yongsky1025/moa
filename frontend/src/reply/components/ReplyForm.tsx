@@ -32,7 +32,10 @@ export default function ReplyForm({
   onRequireLogin,
   initialContent,
 }: ReplyFormProps) {
-  const [content, setContent] = useState(initialContent ?? "");
+  const mentionPrefix = initialContent?.trim().startsWith("@")
+    ? `${initialContent.trim()} `
+    : "";
+  const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const hasBadWord = hasProfanity(content);
@@ -45,7 +48,7 @@ export default function ReplyForm({
     : (submitting ? "저장 중..." : submitText);
 
   useEffect(() => {
-    setContent(initialContent ?? "");
+    setContent("");
   }, [initialContent, parentId]);
 
   const submit = async (e: FormEvent) => {
@@ -63,7 +66,8 @@ export default function ReplyForm({
     setSubmitting(true);
     setError("");
     try {
-      const createdReplyId = await onSubmitReply(content, parentId);
+      const payload = `${mentionPrefix}${content}`.trim();
+      const createdReplyId = await onSubmitReply(payload, parentId);
       setContent("");
       if (typeof createdReplyId === "number") {
         onSuccess(createdReplyId);
@@ -77,33 +81,19 @@ export default function ReplyForm({
     }
   };
 
-  if (variant === "panel") {
-    return (
-      <form onSubmit={submit} className="reply-panel-form">
-        {error && <p style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
-        {hasBadWord && <p style={{ color: "#dc2626", margin: 0 }}>부적절한 표현이 포함되어 있습니다.</p>}
-        <ReplyComposer
-          variant="panel"
-          content={content}
-          onChangeContent={(e) => setContent(e.target.value)}
-          canWrite={canWrite}
-          currentUserName={currentUserName}
-          disableSubmit={disableSubmit}
-          submitButtonText={submitButtonText}
-          submitAriaLabel="댓글 등록"
-        />
-      </form>
-    );
-  }
+  const formClassName = variant === "panel"
+    ? "reply-panel-form"
+    : "reply-panel-form reply-panel-form-compact";
 
   return (
-    <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
+    <form onSubmit={submit} className={formClassName}>
       {error && <p style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
       {hasBadWord && <p style={{ color: "#dc2626", margin: 0 }}>부적절한 표현이 포함되어 있습니다.</p>}
       <ReplyComposer
-        variant="default"
+        variant={variant}
         content={content}
         onChangeContent={(e) => setContent(e.target.value)}
+        mentionPrefix={mentionPrefix}
         canWrite={canWrite}
         currentUserName={currentUserName}
         disableSubmit={disableSubmit}

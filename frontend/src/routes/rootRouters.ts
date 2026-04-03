@@ -9,6 +9,8 @@ import { adminRouter } from "./adminRouter";
 import { placeRouter } from "./placeRouter";
 import { chatRouter } from "./chatRouter";
 import ReportFormPage from "../admin/pages/ReportFormPage";
+import PaymentSuccessPage from "../place/pages/PaymentSuccessPage";
+import PaymentFailPage from "../place/pages/PaymentFailPage";
 
 const rootRouter = createBrowserRouter([
   {
@@ -28,6 +30,8 @@ const rootRouter = createBrowserRouter([
     Component: MainIndexWrapper,
   },
   { path: "/oauth2/callback", Component: OAuthCallbackPage },
+  { path: "/payment/success", Component: PaymentSuccessPage },
+  { path: "/payment/fail", Component: PaymentFailPage },
   { path: "/users", children: userRouter() },
   { path: "/circle", children: circleRouter() },
   { path: "/board", children: boardRouter() },

@@ -3,6 +3,7 @@ package com.soldesk.moa.place.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.soldesk.moa.place.dto.MyUsedPlaceDTO;
 import com.soldesk.moa.place.dto.PlaceDetailResponseDTO;
 import com.soldesk.moa.place.dto.PlaceListResponseDTO;
 import com.soldesk.moa.place.dto.PlaceRecommendResponseDTO;
@@ -17,13 +18,20 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import com.soldesk.moa.payment.dto.OccupiedSlotDTO;
 
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 
@@ -99,5 +107,21 @@ public class PlaceController {
     @GetMapping("/{id}/images")
     public List<String> getPlaceImages(@PathVariable Long id) {
         return placeImageService.getPlaceImages(id);
+    }
+
+    // 날짜별 예약 불가 시간대 조회 (비회원도 조회 가능 - SecurityConfig에서 /api/places/** permitAll)
+    @GetMapping("/{id}/slots")
+    public ResponseEntity<List<OccupiedSlotDTO>> getOccupiedSlots(
+            @PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(placeService.getOccupiedSlots(id, date));
+    }
+
+    // 내가 이용한 장소 목록 (직접 예약 COMPLETED + 일정 멤버 참여 COMPLETED)
+    @GetMapping("/my/used")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<MyUsedPlaceDTO>> getMyUsedPlaces(
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+        return ResponseEntity.ok(placeService.getMyUsedPlaces(authUserDTO.getUserId()));
     }
 }

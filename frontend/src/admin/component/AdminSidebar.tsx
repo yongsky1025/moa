@@ -150,11 +150,15 @@ export default function AdminSidebar() {
                     }
                   : { color: "#3D5F52" }
               }
-              onClick={() =>
-                item.children
-                  ? toggleMenu(item.key)
-                  : item.path && navigate(item.path)
-              }
+              onClick={() => {
+                if (item.children) {
+                  toggleMenu(item.key);
+                } else if (item.path) {
+                  location.pathname === item.path
+                    ? navigate(0)
+                    : navigate(item.path);
+                }
+              }}
             >
               <span className="flex items-center gap-2">
                 <span className="text-sm leading-none">{item.icon}</span>
@@ -184,7 +188,11 @@ export default function AdminSidebar() {
                         ? { background: "#EAF4F0", color: "#5F8F7B" }
                         : { color: "#6B7280" }
                     }
-                    onClick={() => navigate(child.path)}
+                    onClick={() =>
+                      location.pathname === child.path
+                        ? navigate(0)
+                        : navigate(child.path)
+                    }
                   >
                     └ {child.label}
                   </button>

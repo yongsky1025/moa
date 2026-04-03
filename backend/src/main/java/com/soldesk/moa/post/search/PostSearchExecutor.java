@@ -3,6 +3,7 @@ package com.soldesk.moa.post.search;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.common.search.dto.SearchPage;
 import com.soldesk.moa.post.dto.PostSearchHitDTO;
+import com.soldesk.moa.post.dto.PostSearchTarget;
 
 public interface PostSearchExecutor {
 
@@ -10,7 +11,9 @@ public interface PostSearchExecutor {
 
     SearchPage<PostSearchHitDTO> search(
             String keyword,
+            PostSearchTarget target,
             BoardType boardType,
+            Long boardId,
             Long circleId,
             int page,
             int size,

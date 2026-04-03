@@ -16,6 +16,7 @@ public class SearchQuery {
     private final Integer size;
     private final String filter;
     private final List<String> sort;
+    private final List<String> attributesToSearchOn;
     private final List<String> attributesToRetrieve;
 }
 

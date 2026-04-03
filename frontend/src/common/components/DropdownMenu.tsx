@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 type DropdownMenuLinkItem = {
   type?: "link";
@@ -56,14 +56,10 @@ function getHoverBackground(tone: "default" | "danger") {
   return tone === "danger" ? "#fff5f5" : "#f5f5f5";
 }
 
-export default function DropdownMenu({
-  items,
-  align = "left",
-  top = "calc(100% + 8px)",
-  minWidth = 160,
-  zIndex = 100,
-  style,
-}: DropdownMenuProps) {
+export default function DropdownMenu({ items, align = "left", top = "calc(100% + 8px)", minWidth = 160, zIndex = 100, style }: DropdownMenuProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   return (
     <div
       style={{
@@ -122,7 +118,13 @@ export default function DropdownMenu({
           <Link
             key={item.key}
             to={item.href}
-            onClick={item.onClick}
+            onClick={(e) => {
+              if (location.pathname === item.href) {
+                e.preventDefault();
+                navigate(0);
+              }
+              item.onClick?.();
+            }}
             style={{
               ...itemBaseStyle,
               color: textColor,

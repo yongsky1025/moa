@@ -367,7 +367,7 @@ export default function UserProfilePage() {
         {/* 나의 장소 */}
         <div style={s.sectionTitle}>나의 장소</div>
         <SectionCard>
-          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/places/my")}>
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/place/my")}>
             <MapPin size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>이용한 장소</span>
             <span style={s.rowCount}>0</span>
@@ -389,13 +389,13 @@ export default function UserProfilePage() {
               opacity: reviewOpen ? 1 : 0,
             }}
           >
-            <button className="mp-row mp-row-list" style={s.subRow}>
+            <button className="mp-row mp-row-list" style={s.subRow} onClick={() => navigate("/place/my-reviews?tab=pending")}>
               <PenLine size={16} color="#A9C8BB" />
               <span style={s.subRowLabel}>작성 가능한 후기</span>
               <span style={{ ...s.rowCount, color: "#5F8F7B", fontWeight: 700 }}>0</span>
               <ChevronRight size={16} color="#c0c0c0" />
             </button>
-            <button className="mp-row mp-row-list" style={s.subRow}>
+            <button className="mp-row mp-row-list" style={s.subRow} onClick={() => navigate("/place/my-reviews?tab=written")}>
               <MessageSquare size={16} color="#A9C8BB" />
               <span style={s.subRowLabel}>내가 쓴 후기</span>
               <span style={s.rowCount}>0</span>
@@ -403,14 +403,14 @@ export default function UserProfilePage() {
             </button>
           </div>
           <RowDivider />
-          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/places/liked")}>
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/place/liked")}>
             <Bookmark size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>찜한 장소</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
-          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/places/")}>
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/place/my-reservations")}>
             <CalendarDays size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>예약 내역</span>
             <span style={s.rowCount}>0</span>

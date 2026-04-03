@@ -1,15 +1,26 @@
 package com.soldesk.moa.place.service;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.soldesk.moa.payment.dto.OccupiedSlotDTO;
+import com.soldesk.moa.place.repository.PlaceReviewRepository;
+import com.soldesk.moa.place.repository.ReservationRepository;
 
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
 import com.soldesk.moa.common.entity.Likes;
 import com.soldesk.moa.common.entity.constant.LikeTargetType;
 import com.soldesk.moa.common.repository.LikesRepository;
+import com.soldesk.moa.place.dto.MyLikedPlaceDTO;
+import com.soldesk.moa.place.dto.MyUsedPlaceDTO;
 import com.soldesk.moa.place.dto.PlaceCreateDTO;
 import com.soldesk.moa.place.dto.PlaceClosedDayDTO;
 import com.soldesk.moa.place.dto.PlaceDetailResponseDTO;
@@ -19,6 +30,7 @@ import com.soldesk.moa.place.dto.PlaceResponseDTO;
 import com.soldesk.moa.place.dto.PlaceSearchDTO;
 import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.place.entity.Place;
+import com.soldesk.moa.place.entity.Reservation;
 import com.soldesk.moa.place.repository.PlaceRepository;
 import com.soldesk.moa.users.entity.Users;
 
@@ -35,6 +47,8 @@ public class PlaceService {
         private final LikesRepository likesRepository;
         private final AdminUsersRepository usersRepository;
         private final PlaceImageService placeImageService;
+        private final ReservationRepository reservationRepository;
+        private final PlaceReviewRepository placeReviewRepository;
 
         // 장소 단건 상세 조회
         @Transactional(readOnly = true)
@@ -200,6 +214,106 @@ public class PlaceService {
         // 삭제
         public void deletePlace(Long id) {
                 placeRepository.deleteById(id);
+        }
+
+        // 날짜별 예약된(점유된) 시간대 조회
+        @Transactional(readOnly = true)
+        public List<OccupiedSlotDTO> getOccupiedSlots(Long placeId, LocalDate date) {
+                return reservationRepository.findOccupiedSlots(placeId, date)
+                                .stream()
+                                .map(r -> new OccupiedSlotDTO(
+                                                r.getStartTime().toLocalTime().toString(),
+                                                r.getEndTime().toLocalTime().toString()))
+                                .toList();
+        }
+
+        // 내가 찜한 장소 목록
+        @Transactional(readOnly = true)
+        public List<MyLikedPlaceDTO> getMyLikedPlaces(Long userId) {
+                Users user = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+
+                List<Long> likedPlaceIds = likesRepository.findByUserAndTargetType(user, LikeTargetType.PLACE)
+                                .stream()
+                                .map(Likes::getTargetId)
+                                .toList();
+
+                if (likedPlaceIds.isEmpty()) return List.of();
+
+                List<Place> places = placeRepository.findByIdsWithTags(likedPlaceIds);
+                Map<Long, String> repImages = placeImageService.getRepresentativeImages(likedPlaceIds);
+
+                return places.stream()
+                                .map(p -> new MyLikedPlaceDTO(
+                                                p.getId(),
+                                                p.getName(),
+                                                p.getCity(),
+                                                p.getDistrict(),
+                                                p.getCapacity(),
+                                                p.getAverageRating() != null ? p.getAverageRating() : 0.0,
+                                                p.getReviewCount() != null ? p.getReviewCount() : 0,
+                                                p.getPricePerHour(),
+                                                repImages.get(p.getId()),
+                                                p.getTags().stream()
+                                                                .map(pt -> pt.getTag().getName())
+                                                                .limit(5)
+                                                                .toList()))
+                                .toList();
+        }
+
+        // 내가 이용한 장소 목록 (직접 예약 COMPLETED + 일정 멤버 참여 COMPLETED)
+        @Transactional(readOnly = true)
+        public List<MyUsedPlaceDTO> getMyUsedPlaces(Long userId) {
+                List<Reservation> direct = reservationRepository.findMyDirectCompletedReservations(userId);
+                List<Reservation> schedule = reservationRepository.findMyScheduleCompletedReservations(userId);
+
+                List<Long> allReservationIds = Stream.concat(
+                                direct.stream().map(Reservation::getId),
+                                schedule.stream().map(Reservation::getId))
+                                .toList();
+
+                Set<Long> reviewedIds = allReservationIds.isEmpty()
+                                ? Set.of()
+                                : placeReviewRepository.findReviewedReservationIds(userId, allReservationIds);
+
+                List<Long> placeIds = Stream.concat(
+                                direct.stream().map(r -> r.getPlace().getId()),
+                                schedule.stream().map(r -> r.getPlace().getId()))
+                                .distinct()
+                                .toList();
+
+                Map<Long, String> repImages = placeImageService.getRepresentativeImages(placeIds);
+
+                List<MyUsedPlaceDTO> result = new ArrayList<>();
+
+                direct.stream()
+                                .map(r -> new MyUsedPlaceDTO(
+                                                r.getId(),
+                                                r.getPlace().getId(),
+                                                r.getPlace().getName(),
+                                                r.getStartTime(),
+                                                r.getEndTime(),
+                                                r.getTotalPrice(),
+                                                repImages.get(r.getPlace().getId()),
+                                                "DIRECT",
+                                                reviewedIds.contains(r.getId())))
+                                .forEach(result::add);
+
+                schedule.stream()
+                                .map(r -> new MyUsedPlaceDTO(
+                                                r.getId(),
+                                                r.getPlace().getId(),
+                                                r.getPlace().getName(),
+                                                r.getStartTime(),
+                                                r.getEndTime(),
+                                                r.getTotalPrice(),
+                                                repImages.get(r.getPlace().getId()),
+                                                "SCHEDULE",
+                                                reviewedIds.contains(r.getId())))
+                                .forEach(result::add);
+
+                result.sort(Comparator.comparing(MyUsedPlaceDTO::startTime).reversed());
+                return result;
         }
 
 }

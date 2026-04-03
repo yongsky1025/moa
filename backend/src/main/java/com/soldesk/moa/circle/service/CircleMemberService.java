@@ -114,13 +114,13 @@ public class CircleMemberService {
                         throw new AccessDeniedException("서클이 일치하지 않습니다.");
                 }
 
-                // 리더 권한 체크
+                // 리더 또는 부리더 권한 체크
                 circleMemberRepository
-                                .findByCircleAndUserAndRole(
+                                .findByCircleAndUserAndRoleIn(
                                                 member.getCircle(),
                                                 loginUser,
-                                                CircleRole.LEADER)
-                                .orElseThrow(() -> new AccessDeniedException("리더만 가능"));
+                                                List.of(CircleRole.LEADER, CircleRole.SUB_LEADER))
+                                .orElseThrow(() -> new AccessDeniedException("리더 또는 부리더만 가능"));
 
                 // 상태 검증
                 if (member.getStatus() != CircleMemberStatus.PENDING) {
@@ -181,13 +181,13 @@ public class CircleMemberService {
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클 없음"));
 
-                // 리더 체크
+                // 리더 또는 부리더 체크
                 circleMemberRepository
-                                .findByCircleAndUserAndRole(
+                                .findByCircleAndUserAndRoleIn(
                                                 circle,
                                                 loginUser,
-                                                CircleRole.LEADER)
-                                .orElseThrow(() -> new AccessDeniedException("리더만 조회 가능"));
+                                                List.of(CircleRole.LEADER, CircleRole.SUB_LEADER))
+                                .orElseThrow(() -> new AccessDeniedException("리더 또는 부리더만 조회 가능"));
 
                 PageResultDTO<CircleMember> result = circleMemberRepository.findMembers(
                                 circleId,
@@ -311,6 +311,73 @@ public class CircleMemberService {
                         NotificationType.KICKED,
                         "'" + circle.getName() + "' 모임에서 강퇴되었습니다."
                 );
+        }
+
+        // 부리더 지정 (리더만 가능)
+        @Transactional
+        public void assignSubLeader(Long circleId, Long targetMemberId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                // 리더만 부리더를 지정할 수 있음
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 부리더를 지정할 수 있습니다."));
+
+                CircleMember target = circleMemberRepository.findById(targetMemberId)
+                                .orElseThrow(() -> new IllegalArgumentException("멤버가 존재하지 않습니다."));
+
+                if (!target.getCircle().getCircleId().equals(circleId)) {
+                        throw new IllegalArgumentException("해당 서클의 멤버가 아닙니다.");
+                }
+
+                if (target.getStatus() != CircleMemberStatus.ACTIVE) {
+                        throw new IllegalStateException("활동 중인 멤버만 부리더로 지정할 수 있습니다.");
+                }
+
+                if (target.getRole() != CircleRole.MEMBER) {
+                        throw new IllegalStateException("일반 멤버만 부리더로 지정할 수 있습니다.");
+                }
+
+                target.changeRole(CircleRole.SUB_LEADER);
+                notificationService.send(
+                        target.getUser().getUserId(),
+                        NotificationType.JOIN_APPROVED,
+                        "'" + circle.getName() + "' 모임의 부리더로 지정되었습니다."
+                );
+        }
+
+        // 부리더 해제 (리더만 가능)
+        @Transactional
+        public void revokeSubLeader(Long circleId, Long targetMemberId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                // 리더만 부리더를 해제할 수 있음
+                circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("리더만 부리더를 해제할 수 있습니다."));
+
+                CircleMember target = circleMemberRepository.findById(targetMemberId)
+                                .orElseThrow(() -> new IllegalArgumentException("멤버가 존재하지 않습니다."));
+
+                if (!target.getCircle().getCircleId().equals(circleId)) {
+                        throw new IllegalArgumentException("해당 서클의 멤버가 아닙니다.");
+                }
+
+                if (target.getRole() != CircleRole.SUB_LEADER) {
+                        throw new IllegalStateException("부리더만 해제할 수 있습니다.");
+                }
+
+                target.changeRole(CircleRole.MEMBER);
         }
 
         // 리더 권한 위임

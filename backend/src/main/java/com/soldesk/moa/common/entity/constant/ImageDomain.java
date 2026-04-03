@@ -10,7 +10,8 @@ public enum ImageDomain {
     PLACE,
     CHAT,
     REPORT,
-    PLACE_REVIEW;
+    PLACE_REVIEW,
+    SCHEDULE_REVIEW;
 
     public static ImageDomain from(String raw) {
         if (raw == null || raw.isBlank()) {

@@ -24,6 +24,7 @@ spring:
       max-file-size: 10MB
       max-request-size: 30MB
 jwt:
+  secret: ${JWT_SECRET}
   access-exp-ms: 1800000
   refresh-exp-ms: 1209600000
   guest-token-exp-ms: 86400000
@@ -33,3 +34,8 @@ meilisearch:
   host: ${MEILISEARCH_HOST}
   master-api-key: ${MEILISEARCH_MASTER_API_KEY:${MEILI_MASTER_KEY:}}
   search-api-key: ${MEILISEARCH_SEARCH_API_KEY}
+
+toss:
+  payments:
+    client-key: ${TOSS_CLIENT_KEY}
+    secret-key: ${TOSS_SECRET_KEY}

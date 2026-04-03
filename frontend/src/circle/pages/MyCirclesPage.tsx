@@ -63,6 +63,12 @@ export default function MyCirclesPage() {
       <Navbar />
       <main style={{ maxWidth: 860, margin: '0 auto', padding: '36px 20px 60px' }}>
 
+        <button
+          onClick={() => navigate('/users/profile')}
+          style={{ fontSize: 13, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8, padding: 0 }}
+        >
+          ← 마이페이지로 돌아가기
+        </button>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1f2937', marginBottom: 24 }}>내 모임</h1>
 
         {/* 탭 */}

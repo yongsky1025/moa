@@ -6,8 +6,9 @@ export type CircleStatus = "OPEN" | "FULL" | "CLOSED" | "PENDING" | "REJECTED";
 export type CircleMemberRole = "LEADER" | "MEMBER";
 
 export type BoardType = "NOTICE" | "FREE" | "SUPPORT" | "CIRCLE";
+export type NoticeCategory = "ANNOUNCEMENT" | "EVENT" | "UPDATE";
 
-export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE";
+export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE" | "PLACE_REVIEW" | "CHAT";
 export type ReportStatus = "PENDING" | "REVIEWING" | "RESOLVED" | "REJECTED";
 export type SanctionState = "ACTIVE" | "LIFTED" | "CANCELLED";
 
@@ -292,6 +293,7 @@ export interface AdminPostResponseDTO {
   circleId: number | null;
   viewCount: number;
   replyCount: number;
+  noticeCategory?: NoticeCategory | null;
   deleted: boolean;
   createDate: string;
 }
@@ -319,6 +321,7 @@ export interface AdminPostDetailDTO {
   circleId: number | null;
   boardId: number;
   viewCount: number;
+  noticeCategory?: NoticeCategory | null;
   deleted: boolean;
   sanctionId: number | null;
   createDate: string;
@@ -329,6 +332,7 @@ export interface AdminPostDetailDTO {
 export interface AdminNoticeRequestDTO {
   title: string;
   content: string;
+  noticeCategory: NoticeCategory;
 }
 
 // ==========신고관리===============
@@ -384,6 +388,20 @@ export interface ReportTargetContentDTO {
   userStatus?: string | null;
   userSanctionCount?: number | null;
   userRecentActivities?: UserRecentActivityDTO[] | null;
+  // PLACE_REVIEW
+  placeReviewContent?: string | null;
+  placeReviewRating?: number | null;
+  placeReviewAuthorName?: string | null;
+  placeReviewPlaceName?: string | null;
+  placeReviewPlaceId?: number | null;
+  placeReviewCreatedAt?: string | null;
+  // CHAT
+  chatContent?: string | null;
+  chatSenderName?: string | null;
+  chatSenderUserId?: number | null;
+  chatRoomId?: number | null;
+  chatRoomType?: string | null;
+  chatCreatedAt?: string | null;
 }
 
 export interface ReportResponseDTO {
@@ -505,7 +523,6 @@ export interface SanctionApplyRequest {
 }
 
 export interface SanctionCancelRequest {
-  adminId: number;
   cancelReason: string;
 }
 
@@ -519,6 +536,16 @@ export type ActionType =
   | "WITHDRAW"
   | "JOIN_CIRCLE"
   | "LEAVE_CIRCLE"
+  | "APPROVE"
+  | "REJECT"
+  | "CLOSE"
+  | "RESTORE"
+  | "SANCTION"
+  | "CANCEL_SANCTION"
+  | "REPORT"
+  | "RESOLVE_REPORT"
+  | "RESERVE"
+  | "CANCEL_RESERVATION"
   | "UNKNOWN";
 
 export interface AdminActionLog {
@@ -532,6 +559,7 @@ export interface AdminActionLog {
   ipAddress: string | null;
   userAgent: string | null;
   timestamp: string; // ISO datetime
+  success: boolean | null; // null = 구버전 로그
 }
 
 export interface LogSearchDTO extends PageRequestDTO {}

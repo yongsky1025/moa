@@ -19,12 +19,18 @@ public interface ScheduleMemberRepository extends JpaRepository<ScheduleMember, 
 
         long countBySchedule(Schedule schedule);
 
+        // 상태별 카운트 (PENDING 수 집계용)
+        long countByScheduleAndStatus(Schedule schedule, ScheduleMemberStatus status);
+
         void deleteAllBySchedule(Schedule schedule);
 
-        // 일정 참여 정보 조회
+        // 일정 참여 정보 조회 (상태 무관)
         Optional<ScheduleMember> findByScheduleAndCircleMember(
                         Schedule schedule,
                         CircleMember circleMember);
+
+        // 상태별 참여자 목록 조회 (JOIN만, PENDING만 등)
+        List<ScheduleMember> findByScheduleAndStatus(Schedule schedule, ScheduleMemberStatus status);
 
         // 참여 취소용
         void deleteByScheduleAndCircleMember(
@@ -34,12 +40,13 @@ public interface ScheduleMemberRepository extends JpaRepository<ScheduleMember, 
         // 특정 CircleMember의 모든 ScheduleMember 조회 (탈퇴/강퇴 시 정리용)
         List<ScheduleMember> findByCircleMember(CircleMember circleMember);
 
-        // 일정의 참여자 목록 조회
+        // 일정의 참여자 목록 조회 (상태 무관)
         List<ScheduleMember> findBySchedule(Schedule schedule);
 
-        // 내가 참석한 일정 목록 (날짜 범위 필터 선택적)
+        // 내가 참석한 일정 목록 (JOIN 상태만, 날짜 범위 필터 선택적)
         @Query("SELECT sm FROM ScheduleMember sm " +
                         "WHERE sm.circleMember.user.userId = :userId " +
+                        "AND sm.status = com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus.JOIN " +
                         "AND (:from IS NULL OR sm.schedule.startAt >= :from) " +
                         "AND (:to IS NULL OR sm.schedule.startAt <= :to) " +
                         "ORDER BY sm.schedule.startAt ASC")

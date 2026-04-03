@@ -216,6 +216,10 @@ export default function Navbar() {
               color: "#111",
               textDecoration: "none",
             }}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/main");
+            }}
           >
             moa
           </Link>
@@ -236,7 +240,11 @@ export default function Navbar() {
                 return (
                   <div
                     key={item.label}
-                    style={{ position: "relative", display: "flex", alignItems: "center" }}
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
                     onMouseEnter={() => setHoveredItem(item.label)}
                     onMouseLeave={() => setHoveredItem(null)}
                   >
@@ -246,6 +254,9 @@ export default function Navbar() {
                         if (dropdownItems[item.label]?.length) {
                           e.preventDefault();
                           setOpenDropdown((prev) => (prev === item.label ? null : item.label));
+                        } else if (location.pathname === item.href) {
+                          e.preventDefault();
+                          navigate(0);
                         }
                       }}
                       style={{
@@ -276,7 +287,15 @@ export default function Navbar() {
             </nav>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 1, height: 20, background: "#E0E0E0", margin: "0 6px", flexShrink: 0 }} />
+            <div
+              style={{
+                width: 1,
+                height: 20,
+                background: "#E0E0E0",
+                margin: "0 6px",
+                flexShrink: 0,
+              }}
+            />
             {!isLoggedIn && (
               <div style={{ width: 78 }}>
                 <button
@@ -292,12 +311,12 @@ export default function Navbar() {
                     height: 34,
                     width: "100%",
                     borderRadius: 12,
-                    border: "1px solid #E38B6D",
+                    border: "1px solid #5F8F7B",
                     background: "transparent",
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: "pointer",
-                    color: "#E38B6D",
+                    color: "#5F8F7B",
                   }}
                 >
                   로그인
@@ -558,7 +577,15 @@ export default function Navbar() {
                         }}
                       >
                         {user?.profileImageUrl ? (
-                          <img src={user.profileImageUrl} alt="프로필" style={{ width: 32, height: 32, objectFit: "cover" }} />
+                          <img
+                            src={user.profileImageUrl}
+                            alt="프로필"
+                            style={{
+                              width: 32,
+                              height: 32,
+                              objectFit: "cover",
+                            }}
+                          />
                         ) : (
                           (user?.nickname?.[0]?.toUpperCase() ?? "U")
                         )}
@@ -591,7 +618,7 @@ export default function Navbar() {
                     width: 80,
                     borderRadius: 12,
                     border: "none",
-                    background: "#E38B6D",
+                    background: "#5F8F7B",
                     color: "#fff",
                     fontSize: 13,
                     fontWeight: 600,

@@ -3,6 +3,7 @@ package com.soldesk.moa.board.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.soldesk.moa.board.entity.constant.CircleBoardKind;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.common.entity.BaseEntity;
@@ -42,6 +43,10 @@ public class Board extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private BoardType boardType; // GLOBAL,CIRCLE
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private CircleBoardKind circleBoardKind;
 
     private String name;
 

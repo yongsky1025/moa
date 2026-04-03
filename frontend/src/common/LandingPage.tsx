@@ -33,9 +33,9 @@ export default function LandingPage() {
           >
             <Link
               to="/users/login"
-              className="rounded-lg border-2 border-[rgba(255,255,255,0.6)] bg-transparent px-8 py-3 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#4a5568] hover:shadow-lg md:text-base"
+              className="rounded-lg border-2 border-[rgba(255,255,255,0.6)] bg-transparent px-8 py-3 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#4a5568] hover:shadow-lg md:text-base hover:border-[#5F6F7B]"
             >
-              시작하기
+              로그인 / 회원가입
             </Link>
             <Link
               to="/users/energy-test"
@@ -45,7 +45,7 @@ export default function LandingPage() {
             </Link>
             <Link
               to="/main"
-              className="rounded-lg bg-[#5F6F7B] px-8 py-3 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:text-white hover:shadow-lg md:text-base"
+              className="rounded-lg border-[#5F6F7B] border-2 bg-[#5F6F7B] px-8 py-3 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-transparent hover:text-white hover:shadow-lg md:text-base hover:border-2 hover:border-white"
             >
               메인페이지
             </Link>

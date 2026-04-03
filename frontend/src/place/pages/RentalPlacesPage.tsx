@@ -30,6 +30,9 @@ export default function RentalPlacesPage() {
   const lastIdRef = useRef<number | null>(null);
   const isFetchingRef = useRef(false);
 
+  const [mapPlaces, setMapPlaces] = useState<PlaceCardDTO[]>([]);
+  const [mapLoading, setMapLoading] = useState(false);
+
   // 태그 그룹 초기 로드
   useEffect(() => {
     fetchTagsGrouped()
@@ -59,6 +62,27 @@ export default function RentalPlacesPage() {
       } finally {
         setLoading(false);
         isFetchingRef.current = false;
+      }
+    },
+    [],
+  );
+
+  // 지도용 전체 조회 — 페이지네이션 없이 필터 조건에 맞는 전체 로드
+  const fetchAllForMap = useCallback(
+    async (searchParams: PlaceSearchParams, searchKeyword: string) => {
+      setMapLoading(true);
+      try {
+        const res: PlaceListResponse = await fetchPlaces({
+          ...searchParams,
+          keyword: searchKeyword || undefined,
+          lastId: undefined,
+          size: 9999,
+        });
+        setMapPlaces(res.places ?? []);
+      } catch {
+        // 네트워크 오류 등 무시
+      } finally {
+        setMapLoading(false);
       }
     },
     [],
@@ -96,16 +120,24 @@ export default function RentalPlacesPage() {
     const next = { ...params, ...partial, size: DEFAULT_SIZE };
     setParams(next);
     search(next, keyword);
+    if (view === "map") fetchAllForMap(next, keyword);
   };
 
   const handleSearch = () => {
     search(params, keyword);
+    if (view === "map") fetchAllForMap(params, keyword);
   };
 
   const handleReset = () => {
     setKeyword("");
     setParams(DEFAULT_PARAMS);
     search(DEFAULT_PARAMS, "");
+    if (view === "map") fetchAllForMap(DEFAULT_PARAMS, "");
+  };
+
+  const handleViewChange = (next: "list" | "map") => {
+    setView(next);
+    if (next === "map") fetchAllForMap(params, keyword);
   };
 
   return (
@@ -173,7 +205,7 @@ export default function RentalPlacesPage() {
             padding: 4, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
           }}>
             <button
-              onClick={() => setView("list")}
+              onClick={() => handleViewChange("list")}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
                 borderRadius: 6, padding: "6px 14px", fontSize: 13, fontWeight: 500,
@@ -186,7 +218,7 @@ export default function RentalPlacesPage() {
               목록
             </button>
             <button
-              onClick={() => setView("map")}
+              onClick={() => handleViewChange("map")}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
                 borderRadius: 6, padding: "6px 14px", fontSize: 13, fontWeight: 500,
@@ -209,8 +241,10 @@ export default function RentalPlacesPage() {
             hasNext={hasNext}
             onLoadMore={loadMore}
           />
+        ) : mapLoading ? (
+          <div style={{ textAlign: "center", padding: 60, color: "#888" }}>지도 데이터를 불러오는 중...</div>
         ) : (
-          <PlaceMapView places={places} />
+          <PlaceMapView places={mapPlaces} />
         )}
       </div>
 

@@ -7,11 +7,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.soldesk.moa.circle.dto.CircleCategoryResponseDTO;
 import com.soldesk.moa.circle.dto.CircleCreateRequestDTO;
 import com.soldesk.moa.circle.dto.CircleResponseDTO;
 import com.soldesk.moa.circle.dto.CircleUpdateRequestDTO;
+import com.soldesk.moa.board.service.BoardService;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.CircleCategory;
 import com.soldesk.moa.circle.entity.CircleEnergyProfile;
@@ -49,6 +52,7 @@ public class CircleService {
         private final ChatRoomService chatRoomService;
         private final NotificationService notificationService;
         private final LikesRepository likesRepository;
+        private final BoardService boardService;
 
         // 서클 생성 (POST multipart - Tomcat이 POST multipart 정상 처리)
         @Transactional
@@ -100,6 +104,7 @@ public class CircleService {
                                 .build();
 
                 circleMemberRepository.save(leader);
+                boardService.createDefaultCircleBoards(savedCircle.getCircleId());
 
                 // 모임 생성 시 그룹 채팅방 자동 생성 + 모임장 입장
                 chatRoomService.getOrCreateGroupRoom(savedCircle.getCircleId(), userId);
@@ -353,14 +358,22 @@ public class CircleService {
                                 categoryIds,
                                 pageRequestDTO);
 
+                List<Circle> circles = result.getDtoList();
+                List<Long> ids = circles.stream().map(Circle::getCircleId).toList();
+
+                // 좋아요 수 일괄 집계 (1 query) — 목록별 N회 호출 방지
+                Map<Long, Long> countMap = ids.isEmpty() ? Map.of()
+                                : likesRepository.countGroupByTargetIdIn(LikeTargetType.CIRCLE, ids)
+                                                .stream()
+                                                .collect(Collectors.toMap(
+                                                                row -> (Long) row[0],
+                                                                row -> (Long) row[1]));
+
                 return PageResultDTO.<CircleResponseDTO>withAll()
-                                .dtoList(
-                                                result.getDtoList()
-                                                                .stream()
-                                                                .map(c -> CircleResponseDTO.from(c,
-                                                                        likesRepository.countByTargetTypeAndTargetId(
-                                                                                LikeTargetType.CIRCLE, c.getCircleId())))
-                                                                .toList())
+                                .dtoList(circles.stream()
+                                                .map(c -> CircleResponseDTO.from(c,
+                                                                countMap.getOrDefault(c.getCircleId(), 0L)))
+                                                .toList())
                                 .pageRequestDTO(pageRequestDTO)
                                 .totalCount(result.getTotalCount())
                                 .build();

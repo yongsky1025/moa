@@ -8,6 +8,7 @@ import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.common.search.dto.SearchPage;
 import com.soldesk.moa.common.search.dto.SearchQuery;
 import com.soldesk.moa.post.dto.PostSearchHitDTO;
+import com.soldesk.moa.post.dto.PostSearchTarget;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,7 +26,9 @@ public class MeiliPostSearchExecutor implements PostSearchExecutor {
     @Override
     public SearchPage<PostSearchHitDTO> search(
             String keyword,
+            PostSearchTarget target,
             BoardType boardType,
+            Long boardId,
             Long circleId,
             int page,
             int size,
@@ -38,6 +41,7 @@ public class MeiliPostSearchExecutor implements PostSearchExecutor {
                 .size(size)
                 .filter(filter)
                 .sort(List.of("createDate:desc"))
+                .attributesToSearchOn(resolveAttributesToSearchOn(target))
                 .attributesToRetrieve(List.of(
                         "id",
                         "postId",
@@ -56,6 +60,16 @@ public class MeiliPostSearchExecutor implements PostSearchExecutor {
                 .build();
 
         return postDomainSearchSupport.searchPosts(query);
+    }
+
+    private List<String> resolveAttributesToSearchOn(PostSearchTarget target) {
+        if (target == PostSearchTarget.TITLE) {
+            return List.of("title", "titleChosung");
+        }
+        if (target == PostSearchTarget.CONTENT) {
+            return List.of("content", "contentChosung");
+        }
+        return List.of("title", "content", "titleChosung", "contentChosung");
     }
 }
 

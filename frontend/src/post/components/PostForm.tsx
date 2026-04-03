@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import type { PostFormValues } from "../types/postTypes";
-import { validatePostForm } from "../utils/postValidators";
+import { hasPostBodyContent, validatePostForm } from "../utils/postValidators";
 import { hasProfanity, stripHtmlToText } from "../../common/utils/profanityFilter";
 import PostCkEditor from "./PostCkEditor";
 
@@ -25,11 +25,19 @@ export default function PostForm({
 }: PostFormProps) {
   const [values, setValues] = useState<PostFormValues>(initialValue ?? EMPTY_FORM);
   const [localError, setLocalError] = useState("");
+  const normalizedTitle = values.title.trim();
   const plainContent = stripHtmlToText(values.content);
   const hasBadWordInTitle = hasProfanity(values.title);
   const hasBadWordInContent = hasProfanity(plainContent);
   const hasBadWord = hasBadWordInTitle || hasBadWordInContent;
-  const disableSubmit = submitting || deleting || hasBadWord || !values.title.trim() || !plainContent;
+  const hasBodyContent = hasPostBodyContent(values.content);
+  const disableSubmit =
+    submitting ||
+    deleting ||
+    hasBadWord ||
+    normalizedTitle.length < 2 ||
+    normalizedTitle.length > 80 ||
+    !hasBodyContent;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -58,6 +66,7 @@ export default function PostForm({
           value={values.title}
           onChange={(e) => setValues((prev) => ({ ...prev, title: e.target.value }))}
           placeholder="제목을 입력하세요"
+          maxLength={80}
           className="post-editor-title-input"
         />
       </div>

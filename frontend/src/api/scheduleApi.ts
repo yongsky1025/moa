@@ -4,6 +4,8 @@ import type {
   ScheduleCreateRequest,
   ScheduleUpdateRequest,
   ScheduleMember,
+  ScheduleReview,
+  ScheduleReviewCreateRequest,
 } from '../schedule/types/schedule';
 export type { ScheduleResponse };
 import type { TagCategoryGroup } from './placeApi';
@@ -43,9 +45,21 @@ export const scheduleApi = {
   deleteSchedule: (circleId: number, scheduleId: number) =>
     api.delete<void>(`/api/circles/${circleId}/schedules/${scheduleId}`),
 
-  // 일정 참여
+  // 일정 참여 (result: 'JOIN' | 'PENDING')
   joinSchedule: (circleId: number, scheduleId: number) =>
-    api.post<void>(`/api/circles/${circleId}/schedules/${scheduleId}/join`),
+    api.post<{ result: 'JOIN' | 'PENDING' }>(`/api/circles/${circleId}/schedules/${scheduleId}/join`),
+
+  // 승인 대기 멤버 목록 조회 (생성자 또는 리더만)
+  getPendingMembers: (circleId: number, scheduleId: number) =>
+    api.get<import('../schedule/types/schedule').ScheduleMember[]>(`/api/circles/${circleId}/schedules/${scheduleId}/members/pending`),
+
+  // 승인 대기 멤버 승인
+  approveMember: (circleId: number, scheduleId: number, scheduleMemberId: number) =>
+    api.post<void>(`/api/circles/${circleId}/schedules/${scheduleId}/members/${scheduleMemberId}/approve`),
+
+  // 승인 대기 멤버 거절
+  rejectMember: (circleId: number, scheduleId: number, scheduleMemberId: number) =>
+    api.delete<void>(`/api/circles/${circleId}/schedules/${scheduleId}/members/${scheduleMemberId}/reject`),
 
   // 일정 참여 취소
   cancelSchedule: (circleId: number, scheduleId: number) =>
@@ -58,5 +72,21 @@ export const scheduleApi = {
   // 내가 참석한 일정 목록
   getMySchedules: (params?: { from?: string; to?: string }) =>
     api.get<ScheduleResponse[]>('/api/schedules/my', { params }),
+
+  // 후기 작성
+  createReview: (circleId: number, scheduleId: number, data: ScheduleReviewCreateRequest) =>
+    api.post<ScheduleReview>(`/api/circles/${circleId}/schedules/${scheduleId}/reviews`, data),
+
+  // 후기 목록 조회
+  getReviews: (circleId: number, scheduleId: number) =>
+    api.get<ScheduleReview[]>(`/api/circles/${circleId}/schedules/${scheduleId}/reviews`),
+
+  // 후기 삭제
+  deleteReview: (circleId: number, scheduleId: number, reviewId: number) =>
+    api.delete<void>(`/api/circles/${circleId}/schedules/${scheduleId}/reviews/${reviewId}`),
+
+  // 서클 후기 조회 (page/size 옵션)
+  getCircleReviews: (circleId: number, params?: { page?: number; size?: number }) =>
+    api.get<ScheduleReview[]>(`/api/circles/${circleId}/schedules/reviews`, { params }),
 };
 

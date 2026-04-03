@@ -8,6 +8,7 @@ import com.soldesk.moa.admin.report.dto.SanctionFilterDTO;
 import com.soldesk.moa.admin.report.dto.SanctionRequestDTO;
 import com.soldesk.moa.admin.report.dto.SanctionResponseDTO;
 import com.soldesk.moa.admin.report.service.SanctionService;
+import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +20,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -59,9 +61,9 @@ public class SanctionController {
 
     @PostMapping
     @Operation(summary = "제재 승인")
-    public ResponseEntity<Void> applySanction(@RequestParam Long adminId, @RequestBody SanctionRequestDTO dto) {
-        log.info("제재 승인 admin id {}", adminId);
-        sanctionService.applySanction(adminId, dto);
+    public ResponseEntity<Void> applySanction(@AuthenticationPrincipal AuthUserDTO authUser, @RequestBody SanctionRequestDTO dto) {
+        log.info("제재 승인 admin id {}", authUser.getUserId());
+        sanctionService.applySanction(authUser.getUserId(), dto);
         return ResponseEntity.ok().build();
     }
 
@@ -77,10 +79,10 @@ public class SanctionController {
     @Operation(summary = "제재 취소")
     public ResponseEntity<Void> cancelSanction(
             @PathVariable Long sanctionId,
-            @RequestParam Long adminId,
+            @AuthenticationPrincipal AuthUserDTO authUser,
             @RequestParam String cancelReason) {
-        log.info("제재 취소 요청 adminId={} sanctionId={}", adminId, sanctionId);
-        sanctionService.cancelSanction(sanctionId, adminId, cancelReason);
+        log.info("제재 취소 요청 adminId={} sanctionId={}", authUser.getUserId(), sanctionId);
+        sanctionService.cancelSanction(sanctionId, authUser.getUserId(), cancelReason);
         return ResponseEntity.ok().build();
     }
 
