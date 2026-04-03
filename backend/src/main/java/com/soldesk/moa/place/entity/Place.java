@@ -62,8 +62,7 @@ public class Place extends BaseEntity {
     @Column(nullable = false)
     private Integer pricePerHour;
 
-    @Column(nullable = false)
-    @Lob
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String description;
 
     @Column(nullable = false)
