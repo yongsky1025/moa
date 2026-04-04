@@ -28,9 +28,9 @@ const STATUS_LABEL: Record<string, { text: string; color: string }> = {
 };
 
 const ROLE_BADGE: Record<string, { text: string; bg: string; color: string }> = {
-  LEADER:     { text: '리더',   bg: '#eaf4f0', color: '#5f8f7b' },
-  SUB_LEADER: { text: '부리더', bg: '#EAF4F0', color: '#4E7C69' },
-  MEMBER:     { text: '멤버',   bg: '#f3f4f6', color: '#6b7280' },
+  LEADER:     { text: '리더',   bg: '#5f8f7b', color: 'white' },
+  SUB_LEADER: { text: '부리더', bg: '#4E7C69', color: 'white' },
+  MEMBER:     { text: '멤버',   bg: 'rgba(0,0,0,0.45)', color: 'white' },
 };
 
 type Tab = 'all' | 'leader' | 'sub_leader' | 'member';
@@ -73,7 +73,7 @@ export default function MyCirclesPage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
       <Navbar />
-      <main style={{ maxWidth: 860, margin: '0 auto', padding: '36px 20px 60px' }}>
+      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '36px 20px 60px' }}>
 
         <button
           onClick={() => navigate('/users/profile')}
@@ -84,9 +84,10 @@ export default function MyCirclesPage() {
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1f2937', marginBottom: 24 }}>가입한 모임</h1>
 
         {/* 탭 */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 0, marginBottom: 28, borderBottom: '2px solid #f0f0f0' }}>
           {TABS.map(({ key, label }) => {
-            const count = key === 'all' ? circles.length
+            const count = key === 'all'
+              ? circles.length
               : circles.filter(c => c.myRole === key.toUpperCase()).length;
             const active = tab === key;
             return (
@@ -94,14 +95,22 @@ export default function MyCirclesPage() {
                 key={key}
                 onClick={() => setTab(key)}
                 style={{
-                  padding: '7px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  border: `1px solid ${active ? '#5f8f7b' : '#e5e5e5'}`,
-                  backgroundColor: active ? '#5f8f7b' : 'white',
-                  color: active ? 'white' : '#555',
-                  transition: 'all 0.15s',
+                  padding: '12px 20px', fontSize: 14, fontWeight: active ? 700 : 500,
+                  color: active ? '#5f8f7b' : '#888',
+                  background: 'none', border: 'none',
+                  borderBottom: active ? '2px solid #5f8f7b' : '2px solid transparent',
+                  marginBottom: -2, cursor: 'pointer', transition: 'color 0.15s',
+                  display: 'flex', alignItems: 'center', gap: 6,
                 }}
               >
-                {label} {count > 0 && <span style={{ opacity: 0.8 }}>({count})</span>}
+                {label}
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 999,
+                  backgroundColor: active ? '#EAF4F0' : '#f3f4f6',
+                  color: active ? '#4E7C69' : '#999',
+                }}>
+                  {count}
+                </span>
               </button>
             );
           })}
@@ -128,7 +137,7 @@ export default function MyCirclesPage() {
             )}
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
             {filtered.map(circle => {
               const statusInfo = STATUS_LABEL[circle.status] ?? { text: circle.status, color: '#888' };
               const bgGradient = CATEGORY_COLORS[circle.categoryName] ?? DEFAULT_GRADIENT;
@@ -138,71 +147,105 @@ export default function MyCirclesPage() {
               return (
                 <div
                   key={circle.circleId}
-                  style={{
-                    display: 'flex', alignItems: 'stretch', gap: 0,
-                    backgroundColor: 'white', borderRadius: 16, overflow: 'hidden',
-                    border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                    cursor: 'pointer', transition: 'box-shadow 0.2s, transform 0.2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                   onClick={() => navigate(`/circle/${circle.circleId}`)}
+                  style={{
+                    backgroundColor: 'white', borderRadius: 16, overflow: 'hidden',
+                    border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    cursor: 'pointer', transition: 'box-shadow 0.2s, transform 0.2s',
+                    display: 'flex', flexDirection: 'column',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
-                  {/* 썸네일 */}
-                  <div style={{ width: 110, flexShrink: 0, background: circle.coverImageUrl ? 'none' : bgGradient, position: 'relative' }}>
+                  {/* 이미지 영역 */}
+                  <div style={{ position: 'relative', height: 160, background: circle.coverImageUrl ? 'none' : bgGradient, flexShrink: 0 }}>
                     {circle.coverImageUrl && (
                       <img src={circle.coverImageUrl} alt={circle.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                     )}
+
+                    {/* 카테고리 (좌상단) */}
+                    <div style={{
+                      position: 'absolute', top: 10, left: 10,
+                      padding: '3px 8px', borderRadius: 999,
+                      backgroundColor: 'rgba(0,0,0,0.55)',
+                      fontSize: 11, fontWeight: 700, color: 'white',
+                    }}>
+                      {circle.categoryName}
+                    </div>
+
+                    {/* 상태 (우상단) */}
+                    <div style={{
+                      position: 'absolute', top: 10, right: 10,
+                      padding: '3px 8px', borderRadius: 999,
+                      backgroundColor: 'rgba(255,255,255,0.92)',
+                      fontSize: 11, fontWeight: 700, color: statusInfo.color,
+                    }}>
+                      {statusInfo.text}
+                    </div>
+
+                    {/* 역할 뱃지 (좌하단) */}
+                    {roleBadge && (
+                      <div style={{
+                        position: 'absolute', bottom: 8, left: 10,
+                        padding: '3px 8px', borderRadius: 999,
+                        backgroundColor: roleBadge.bg,
+                        fontSize: 11, fontWeight: 700, color: roleBadge.color,
+                      }}>
+                        {roleBadge.text}
+                      </div>
+                    )}
+
+                    {/* 좋아요 수 (우하단) */}
+                    {(circle.likeCount ?? 0) > 0 && (
+                      <div style={{
+                        position: 'absolute', bottom: 8, right: 10,
+                        display: 'flex', alignItems: 'center', gap: 3,
+                        padding: '2px 7px', borderRadius: 999,
+                        backgroundColor: 'rgba(0,0,0,0.45)',
+                        fontSize: 11, fontWeight: 700, color: 'white',
+                      }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="#ff8a8a" stroke="#ff8a8a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                        </svg>
+                        {circle.likeCount}
+                      </div>
+                    )}
                   </div>
 
-                  {/* 정보 */}
-                  <div style={{ flex: 1, padding: '16px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
-                    <div>
-                      {/* 역할 뱃지 + 카테고리 + 상태 */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-                        {roleBadge && (
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 4, backgroundColor: roleBadge.bg, color: roleBadge.color }}>
-                            {roleBadge.text}
-                          </span>
-                        )}
-                        <span style={{ fontSize: 11, color: '#9ca3af' }}>{circle.categoryName}</span>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: statusInfo.color }}>{statusInfo.text}</span>
-                      </div>
+                  {/* 정보 영역 */}
+                  <div style={{ padding: '12px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <h3 style={{
+                      margin: '0 0 4px', fontSize: 14, fontWeight: 800, lineHeight: 1.4, color: '#1f2937',
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                    }}>
+                      {circle.name}
+                    </h3>
+                    <p style={{
+                      margin: '0 0 10px', fontSize: 12, color: '#6b7280', lineHeight: 1.5, flex: 1,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                    }}>
+                      {circle.description || '소개글이 없습니다.'}
+                    </p>
 
-                      {/* 모임 이름 */}
-                      <h3 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: '#1f2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {circle.name}
-                      </h3>
-
-                      {/* 설명 */}
-                      <p style={{ margin: 0, fontSize: 12, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {circle.description || '소개글이 없습니다.'}
-                      </p>
+                    {/* 인원 */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280', marginBottom: canManage ? 10 : 0 }}>
+                      <Users style={{ width: 12, height: 12 }} />
+                      {circle.currentMember}/{circle.maxMember}명
                     </div>
 
-                    {/* 하단: 인원 + 버튼 */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#9ca3af' }}>
-                        <Users style={{ width: 13, height: 13 }} />
-                        {circle.currentMember}/{circle.maxMember}명
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
-                        {canManage && (
-                          <button
-                            onClick={() => navigate(`/circle/${circle.circleId}/manage`)}
-                            style={{ padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', backgroundColor: '#5f8f7b', color: 'white', border: 'none' }}
-                          >
-                            관리하기
-                          </button>
-                        )}
-                        <button
-                          onClick={() => navigate(`/circle/${circle.circleId}`)}
-                          style={{ padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', backgroundColor: 'white', color: '#5f8f7b', border: '1px solid #5f8f7b' }}
-                        >
-                          바로가기
-                        </button>
-                      </div>
-                    </div>
+                    {/* 관리하기 버튼 (리더/부리더만) */}
+                    {canManage && (
+                      <button
+                        onClick={e => { e.stopPropagation(); navigate(`/circle/${circle.circleId}/manage`); }}
+                        style={{
+                          width: '100%', padding: '7px 0', borderRadius: 8,
+                          backgroundColor: '#5f8f7b', color: 'white',
+                          border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                        }}
+                      >
+                        관리하기
+                      </button>
+                    )}
                   </div>
                 </div>
               );

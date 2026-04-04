@@ -779,14 +779,6 @@ export default function CircleDetailPage() {
                       >
                         + 일정 만들기
                       </Link>
-                      {pastSchedules.length > 0 && (
-                        <button
-                          onClick={() => setScheduleTab('past')}
-                          style={{ fontSize: 12, color: "#6b7280", background: 'none', border: '1px solid #e5e5e5', borderRadius: 6, padding: '4px 12px', cursor: 'pointer' }}
-                        >
-                          지나간 일정 {pastSchedules.length}개 보기
-                        </button>
-                      )}
                     </div>
                   ) : null}
                 </div>
