@@ -1,4 +1,3 @@
-import axios from 'axios';
 import type {
   ReportFilterDTO,
   ReportRequestDTO,
@@ -6,12 +5,13 @@ import type {
   SanctionApplyRequest,
   SanctionCancelRequest,
   SanctionFilterDTO,
-} from '../types/adminTypes';
-import { API_SERVER_HOST_ADMIN } from './adminDashboardApi';
+} from "../types/adminTypes";
+import { API_SERVER_HOST_ADMIN } from "./adminDashboardApi";
+import api from "../../api/axiosInstance";
 
 // 신고
 export const fetchReportList = async (dto: ReportFilterDTO) => {
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/reports/list`, {
+  const res = await api.get(`${API_SERVER_HOST_ADMIN}/reports/list`, {
     params: {
       page: dto.page,
       size: dto.size,
@@ -22,21 +22,21 @@ export const fetchReportList = async (dto: ReportFilterDTO) => {
       category: dto.category,
     },
   });
-  console.log('report list data', res);
+  console.log("report list data", res);
 
   return res.data;
 };
 
 export const fetchReportDetail = async (id: number) => {
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/reports/${id}`);
-  console.log('report detail', res);
+  const res = await api.get(`${API_SERVER_HOST_ADMIN}/reports/${id}`);
+  console.log("report detail", res);
 
   return res.data;
 };
 
-export const postReport = async (id: number, dto: ReportRequestDTO) => {
-  const res = await axios.post(`${API_SERVER_HOST_ADMIN}/reports`, dto);
-  console.log('post report', id, dto);
+export const postReport = async (dto: ReportRequestDTO) => {
+  const res = await api.post(`${API_SERVER_HOST_ADMIN}/reports`, dto);
+  console.log("post report", dto);
 
   return res.data;
 };
@@ -45,7 +45,7 @@ export const patchReportStatus = async (
   id: number,
   request: ReportStatusUpdateRequest,
 ) => {
-  const res = await axios.patch(
+  const res = await api.patch(
     `${API_SERVER_HOST_ADMIN}/reports/${id}/status`,
     null,
     {
@@ -55,14 +55,14 @@ export const patchReportStatus = async (
       },
     },
   );
-  console.log('patch report status', id, request);
+  console.log("patch report status", id, request);
 
   return res.data;
 };
 
 // 제재
 export const fetchSanctionList = async (dto: SanctionFilterDTO) => {
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/sanctions/list`, {
+  const res = await api.get(`${API_SERVER_HOST_ADMIN}/sanctions/list`, {
     params: {
       page: dto.page,
       size: dto.size,
@@ -73,58 +73,51 @@ export const fetchSanctionList = async (dto: SanctionFilterDTO) => {
       sanctionState: dto.sanctionState,
     },
   });
-  console.log('fetch sanction list', res);
+  console.log("fetch sanction list", res);
 
   return res.data;
 };
 
 export const fetchSanctionDetail = async (id: number) => {
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/sanctions/${id}`);
-  console.log('sanction detail', res);
+  const res = await api.get(`${API_SERVER_HOST_ADMIN}/sanctions/${id}`);
+  console.log("sanction detail", res);
 
   return res.data;
 };
 
 export const fetchUserSanctionHistory = async (id: number) => {
-  const res = await axios.get(`${API_SERVER_HOST_ADMIN}/sanctions/users/${id}`);
-  console.log('user sanction history', res);
+  const res = await api.get(`${API_SERVER_HOST_ADMIN}/sanctions/users/${id}`);
+  console.log("user sanction history", res);
 
   return res.data;
 };
 
-export const applySanction = async (id: number, dto: SanctionApplyRequest) => {
-  const res = await axios.post(`${API_SERVER_HOST_ADMIN}/sanctions`, dto, {
-    params: {
-      adminId: id,
-    },
-  });
-  console.log('apply sanction', res);
+export const applySanction = async (dto: SanctionApplyRequest) => {
+  const res = await api.post(`${API_SERVER_HOST_ADMIN}/sanctions`, dto);
+  console.log("apply sanction", res);
 
   return res.data;
 };
 
 export const liftSanction = async (id: number) => {
-  const res = await axios.delete(`${API_SERVER_HOST_ADMIN}/sanctions/${id}`);
-  console.log('lift sanction', res);
+  const res = await api.delete(`${API_SERVER_HOST_ADMIN}/sanctions/${id}`);
+  console.log("lift sanction", res);
 
   return res.data;
 };
 
 export const cancelSanction = async (
   sanctionId: number,
-  request: SanctionCancelRequest,
+  cancelReason: string,
 ) => {
-  const res = await axios.post(
+  const res = await api.post(
     `${API_SERVER_HOST_ADMIN}/sanctions/${sanctionId}/cancel`,
     null,
     {
-      params: {
-        adminId: request.adminId,
-        cancelReason: request.cancelReason,
-      },
+      params: { cancelReason },
     },
   );
-  console.log('cancel sanction', res);
+  console.log("cancel sanction", res);
 
   return res.data;
 };

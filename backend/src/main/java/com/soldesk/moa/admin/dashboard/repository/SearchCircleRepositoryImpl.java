@@ -11,11 +11,14 @@ import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.springframework.data.domain.Sort;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
 import com.soldesk.moa.circle.entity.Circle;
 import com.soldesk.moa.circle.entity.QCircle;
@@ -118,7 +121,21 @@ public class SearchCircleRepositoryImpl extends QuerydslRepositorySupport
                 }
 
                 tuple.where(builder);
-                tuple.orderBy(circle.circleId.asc());
+
+                Sort sortSpec = pageable.getSort();
+                if (sortSpec.isSorted()) {
+                        for (Sort.Order order : sortSpec) {
+                                Order dir = order.isAscending() ? Order.ASC : Order.DESC;
+                                switch (order.getProperty()) {
+                                        case "name"          -> tuple.orderBy(new OrderSpecifier<>(dir, circle.name));
+                                        case "currentMember" -> tuple.orderBy(new OrderSpecifier<>(dir, circle.currentMember));
+                                        case "createDate"    -> tuple.orderBy(new OrderSpecifier<>(dir, circle.createDate));
+                                        default              -> tuple.orderBy(new OrderSpecifier<>(dir, circle.circleId));
+                                }
+                        }
+                } else {
+                        tuple.orderBy(circle.circleId.desc());
+                }
 
                 tuple.offset(pageable.getOffset());
                 tuple.limit(pageable.getPageSize());

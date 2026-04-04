@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { notificationApi } from "../../api/notificationApi";
 import type { Notification } from "../../types/notification";
+import { useAlarmSocket } from "../hooks/useAlarmSocket";
+import { useAuthStore } from "../../store/authStore";
 
 const typeLabel: Record<string, string> = {
   CHAT_MESSAGE: "새 메시지",
@@ -9,9 +11,13 @@ const typeLabel: Record<string, string> = {
   JOIN_REJECTED: "가입 거절",
   KICKED: "강퇴",
   CIRCLE_DISBANDED: "모임 해산",
+  REPLY: "댓글",
+  CHILD_REPLY: "대댓글",
+  POST_LIKE: "좋아요",
 };
 
 export default function NotificationBell() {
+  const { userId } = useAuthStore();
   const [open, setOpen] = useState(false);
   const [list, setList] = useState<Notification[]>([]);
 
@@ -26,11 +32,16 @@ export default function NotificationBell() {
     }
   };
 
+  useAlarmSocket(userId, (noti) => {
+    setList((prev) => [{ ...noti, isRead: false }, ...prev]);
+  });
+
   useEffect(() => {
+    if (!userId) return;
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [userId]);
 
   const handleReadAll = async () => {
     await notificationApi.readAll();

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -57,12 +58,36 @@ public class ReplyService {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 100);
         Pageable pageable = PageRequest.of(safePage, safeSize);
-        Map<Long, Long> childCountByParentId = buildRootChildCountMap(postId);
+        Map<Long, Long> childCountByParentId = buildChildCountMap(postId);
 
-        Page<Reply> replies = replyRepository.findByPostId_PostIdOrderByCreateDateAscReplyIdAsc(postId, pageable);
-        Map<Long, String> myReactionByReplyId = buildMyReactionMap(replies.getContent(), userId);
+        // 페이지네이션은 부모 댓글만 기준으로 수행한다.
+        Page<Reply> rootPage = replyRepository.findByPostId_PostIdAndParentIdIsNullOrderByCreateDateAscReplyIdAsc(postId,
+                pageable);
+        List<Reply> allReplies = replyRepository.findByPostId_PostIdOrderByCreateDateAsc(postId);
 
-        return replies.map((reply) -> toResponse(reply, childCountByParentId, myReactionByReplyId));
+        List<Long> rootIds = rootPage.getContent().stream()
+                .map(Reply::getReplyId)
+                .toList();
+        if (rootIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, rootPage.getTotalElements());
+        }
+
+        List<Reply> pageRepliesWithDescendants = allReplies.stream()
+                .filter(reply -> {
+                    if (reply.getParentId() == null) {
+                        return rootIds.contains(reply.getReplyId());
+                    }
+                    Reply root = findRootReply(reply);
+                    return rootIds.contains(root.getReplyId());
+                })
+                .toList();
+
+        Map<Long, String> myReactionByReplyId = buildMyReactionMap(pageRepliesWithDescendants, userId);
+        List<ReplyResponseDTO> dtoList = pageRepliesWithDescendants.stream()
+                .map(reply -> toResponse(reply, childCountByParentId, myReactionByReplyId))
+                .toList();
+
+        return new PageImpl<>(dtoList, pageable, rootPage.getTotalElements());
     }
 
     // 댓글 생성
@@ -102,7 +127,6 @@ public class ReplyService {
             throw new ReplyForbiddenException("[#REPLY] 해당 게시글에 속한 댓글이 아닙니다.");
         }
 
-        Reply rootParent = findRootReply(target);
         requireWritePermission(target.getPostId(), userId);
 
         Users user = usersRepository.findById(userId)
@@ -112,9 +136,9 @@ public class ReplyService {
                 .postId(target.getPostId())
                 .userId(user)
                 .content(req.getContent())
-                .parentId(rootParent)
+                .parentId(target)
                 .replyToUserId(target.getUserId())
-                .depth(1)
+                .depth(target.getDepth() + 1)
                 .deleted(false)
                 .build();
 
@@ -207,12 +231,11 @@ public class ReplyService {
     private ReplyResponseDTO toResponse(Reply r, Map<Long, Long> childCountByParentId,
             Map<Long, String> myReactionByReplyId) {
         String content = r.isDeleted() ? "삭제된 댓글입니다." : r.getContent();
-        String author = r.isDeleted() ? "" : r.getUserId().getName();
+        String author = r.isDeleted() ? "" : r.getUserId().getNickname();
         String authorPublicId = r.isDeleted() ? null : r.getUserId().getPublicId();
         Long authorUserId = r.isDeleted() ? null : r.getUserId().getUserId();
-        Reply rootReply = findRootReply(r);
-        Long normalizedParentId = r.getParentId() == null ? null : rootReply.getReplyId();
-        int depth = r.getParentId() == null ? 0 : 1;
+        Long normalizedParentId = r.getParentId() == null ? null : r.getParentId().getReplyId();
+        int depth = r.getDepth();
         long replyCount = childCountByParentId.getOrDefault(r.getReplyId(), 0L);
         String myReaction = r.isDeleted() ? null : myReactionByReplyId.get(r.getReplyId());
 
@@ -223,9 +246,11 @@ public class ReplyService {
                 .authorPublicId(authorPublicId)
                 .authorUserId(authorUserId)
                 .createDate(r.getCreateDate())
+                .updateDate(r.getUpdateDate())
                 .parentId(normalizedParentId)
                 .depth(depth)
                 .replyToUserId(r.getReplyToUserId() != null ? r.getReplyToUserId().getUserId() : null)
+                .replyToAuthorName(r.getReplyToUserId() != null ? r.getReplyToUserId().getNickname() : null)
                 .deleted(r.isDeleted())
                 .likeCount(r.getLikeCount())
                 .myReaction(myReaction)
@@ -291,17 +316,25 @@ public class ReplyService {
         return current;
     }
 
-    private Map<Long, Long> buildRootChildCountMap(Long postId) {
+    private Map<Long, Long> buildChildCountMap(Long postId) {
         List<Reply> allReplies = replyRepository.findByPostId_PostIdOrderByCreateDateAsc(postId);
-        Map<Long, Long> countByRootId = new HashMap<>();
+        Map<Long, Long> parentIdByReplyId = new HashMap<>();
+        Map<Long, Long> countByAncestorId = new HashMap<>();
+
         for (Reply reply : allReplies) {
-            if (reply.getParentId() == null) {
-                continue;
-            }
-            Long rootId = findRootReply(reply).getReplyId();
-            countByRootId.merge(rootId, 1L, Long::sum);
+            Long parentId = reply.getParentId() != null ? reply.getParentId().getReplyId() : null;
+            parentIdByReplyId.put(reply.getReplyId(), parentId);
         }
-        return countByRootId;
+
+        for (Reply reply : allReplies) {
+            Long ancestorId = parentIdByReplyId.get(reply.getReplyId());
+            while (ancestorId != null) {
+                countByAncestorId.merge(ancestorId, 1L, Long::sum);
+                ancestorId = parentIdByReplyId.get(ancestorId);
+            }
+        }
+
+        return countByAncestorId;
     }
 
     private Map<Long, String> buildMyReactionMap(List<Reply> replies, Long userId) {

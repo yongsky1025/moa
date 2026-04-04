@@ -17,6 +17,7 @@ import com.soldesk.moa.security.JwtTokenProvider;
 import com.soldesk.moa.security.oauth2.dto.CustomOAuth2User;
 import com.soldesk.moa.users.entity.Users;
 
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,8 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @Component
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
+
+    private static final String REFRESH_COOKIE_NAME = "refreshToken";
 
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
@@ -60,7 +63,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         // 2) Refresh token → HttpOnly 쿠키
         long maxAgeSeconds = Math.max(1L, jwtProperties.getRefreshTokenTtlMs() / 1000L);
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+        ResponseCookie refreshCookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken)
                 .httpOnly(true)
                 .secure(secureCookie)
                 .path("/api/auth")
@@ -71,7 +74,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         // 3) 프론트엔드로 리다이렉트 (access token은 URL 파라미터로 전달)
         // isNew: 개인정보 동의 미완료 신규 소셜 유저
-        boolean isNew = user.getPrivacyAgreedAt() == null;
+        boolean isNew = user.needsSocialSignUp();
         String encodedToken = URLEncoder.encode(accessToken, StandardCharsets.UTF_8);
         String redirectUrl = frontendUrl + "/oauth2/callback?token=" + encodedToken + "&isNew=" + isNew;
 

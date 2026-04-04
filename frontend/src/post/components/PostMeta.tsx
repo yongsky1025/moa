@@ -1,13 +1,14 @@
 import type { PostResponse } from "../types/postTypes";
-import { formatDate } from "../utils/dateFormat";
+import { formatDate, isEdited } from "../utils/dateFormat";
+import UserAvatar from "../../common/components/UserAvatar";
 
 interface PostMetaProps {
   post: PostResponse;
 }
 
 export default function PostMeta({ post }: PostMetaProps) {
-  const authorInitial = post.authorName?.trim().charAt(0) || "?";
-  const metaText = `${post.authorName} · ${formatDate(post.createDate)} · 조회 ${post.viewCount}`;
+  const edited = isEdited(post.createDate, post.updateDate);
+  const metaText = `${post.authorName} · ${formatDate(post.createDate)}${edited ? " (수정됨)" : ""} · 조회 ${post.viewCount}`;
 
   return (
     <div
@@ -19,23 +20,7 @@ export default function PostMeta({ post }: PostMetaProps) {
         flexWrap: "wrap",
       }}
     >
-      <div
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          backgroundColor: "#eef2f7",
-          color: "#111827",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 14,
-          fontWeight: 700,
-          flexShrink: 0,
-        }}
-      >
-        {authorInitial}
-      </div>
+      <UserAvatar name={post.authorName} size={36} ariaHidden initialMode="nickname" />
       <span
         style={{
           fontSize: 15,

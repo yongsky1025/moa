@@ -6,8 +6,9 @@ export type CircleStatus = "OPEN" | "FULL" | "CLOSED" | "PENDING" | "REJECTED";
 export type CircleMemberRole = "LEADER" | "MEMBER";
 
 export type BoardType = "NOTICE" | "FREE" | "SUPPORT" | "CIRCLE";
+export type NoticeCategory = "ANNOUNCEMENT" | "EVENT" | "UPDATE";
 
-export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE";
+export type ReportTargetType = "USER" | "POST" | "REPLY" | "CIRCLE" | "PLACE_REVIEW" | "CHAT";
 export type ReportStatus = "PENDING" | "REVIEWING" | "RESOLVED" | "REJECTED";
 export type SanctionState = "ACTIVE" | "LIFTED" | "CANCELLED";
 
@@ -91,11 +92,33 @@ export interface DashboardChartDTO {
   withdrawnChart: MonthlyCountDTO[];
 }
 
+export interface PopularPlaceDTO {
+  placeId: number;
+  name: string;
+  city: string;
+  score: number;
+  averageRating: number;
+  recentReservationCount: number;
+  recentLikeCount: number;
+}
+
+export interface ReservationCountDTO {
+  todayCount: number;
+  yesterdayCount: number;
+  todayChangeRate: number;
+  weekCount: number;
+  lastWeekCount: number;
+  weekChangeRate: number;
+}
+
 export interface AdminMainDTO {
   userCountDTO: UserCountDTO;
   userStatusDTO: UserStatusDTO;
   circleSummaryDTO: CircleSummaryDTO;
   dashboardChartDTO: DashboardChartDTO;
+  popularPlaceDTOs: PopularPlaceDTO[];
+  reservationCountDTO: ReservationCountDTO;
+  placeUtilizationRateDTO: number;
 }
 
 export interface DailyCountDTO {
@@ -110,11 +133,14 @@ export interface PostActivitySummaryDTO {
   weeklyReplies: DailyCountDTO[];
 }
 
+// export interface
+
 // ================= 유저관리 ==============
 export interface AdminUserSearchDTO extends PageRequestDTO {
   gender?: UserGender;
   status?: UserStatus;
   role?: UserRole;
+  sort?: string;
 }
 
 export interface AdminUserResponseDTO {
@@ -174,6 +200,7 @@ export interface AdminCircleSearchDTO extends PageRequestDTO {
   categoryName?: string;
   status?: CircleStatus;
   leaderName?: string;
+  sort?: string;
 }
 
 export interface AdminCircleResponseDTO {
@@ -266,6 +293,7 @@ export interface AdminPostResponseDTO {
   circleId: number | null;
   viewCount: number;
   replyCount: number;
+  noticeCategory?: NoticeCategory | null;
   deleted: boolean;
   createDate: string;
 }
@@ -293,6 +321,7 @@ export interface AdminPostDetailDTO {
   circleId: number | null;
   boardId: number;
   viewCount: number;
+  noticeCategory?: NoticeCategory | null;
   deleted: boolean;
   sanctionId: number | null;
   createDate: string;
@@ -303,6 +332,7 @@ export interface AdminPostDetailDTO {
 export interface AdminNoticeRequestDTO {
   title: string;
   content: string;
+  noticeCategory: NoticeCategory;
 }
 
 // ==========신고관리===============
@@ -317,6 +347,7 @@ export interface ReportRequestDTO {
   targetId: number;
   category: ReportCategory;
   description: string;
+  imagePaths?: string[];
 }
 
 export interface UserRecentActivityDTO {
@@ -357,6 +388,20 @@ export interface ReportTargetContentDTO {
   userStatus?: string | null;
   userSanctionCount?: number | null;
   userRecentActivities?: UserRecentActivityDTO[] | null;
+  // PLACE_REVIEW
+  placeReviewContent?: string | null;
+  placeReviewRating?: number | null;
+  placeReviewAuthorName?: string | null;
+  placeReviewPlaceName?: string | null;
+  placeReviewPlaceId?: number | null;
+  placeReviewCreatedAt?: string | null;
+  // CHAT
+  chatContent?: string | null;
+  chatSenderName?: string | null;
+  chatSenderUserId?: number | null;
+  chatRoomId?: number | null;
+  chatRoomType?: string | null;
+  chatCreatedAt?: string | null;
 }
 
 export interface ReportResponseDTO {
@@ -370,6 +415,7 @@ export interface ReportResponseDTO {
   adminNote?: string | null;
   createdAt: string;
   targetContent?: ReportTargetContentDTO | null;
+  imagePaths?: string[] | null;
 }
 
 export interface ReportStatusUpdateRequest {
@@ -411,6 +457,38 @@ export interface AgeCategoryRetentionStatsDTO {
   rate: number; // 0.0 ~ 100.0
 }
 
+export interface CategoryUsageDTO {
+  categoryName: string;
+  count: number;
+  percentage: number;
+}
+
+export interface CityDistDTO {
+  city: string;
+  count: number;
+  percentage: number;
+}
+
+export interface PlaceConversionRateDTO {
+  rate: number;
+  linkedSchedules: number;
+  totalSchedules: number;
+}
+
+export interface AdminPlaceStatisticDTO {
+  categoryUsageDTOs: CategoryUsageDTO[];
+  cityDistDTOs: CityDistDTO[];
+  placeConversionRateDTO: PlaceConversionRateDTO;
+}
+
+export interface DistrictDistDTO {
+  city: string;
+  district: string;
+  count: number;
+  percentage: number;
+  monthOverMonthChange: number;
+}
+
 // ===== 제재 관리 =====
 export interface SanctionFilterDTO extends PageRequestDTO {
   targetType?: ReportTargetType;
@@ -445,7 +523,6 @@ export interface SanctionApplyRequest {
 }
 
 export interface SanctionCancelRequest {
-  adminId: number;
   cancelReason: string;
 }
 
@@ -459,6 +536,16 @@ export type ActionType =
   | "WITHDRAW"
   | "JOIN_CIRCLE"
   | "LEAVE_CIRCLE"
+  | "APPROVE"
+  | "REJECT"
+  | "CLOSE"
+  | "RESTORE"
+  | "SANCTION"
+  | "CANCEL_SANCTION"
+  | "REPORT"
+  | "RESOLVE_REPORT"
+  | "RESERVE"
+  | "CANCEL_RESERVATION"
   | "UNKNOWN";
 
 export interface AdminActionLog {
@@ -472,6 +559,7 @@ export interface AdminActionLog {
   ipAddress: string | null;
   userAgent: string | null;
   timestamp: string; // ISO datetime
+  success: boolean | null; // null = 구버전 로그
 }
 
 export interface LogSearchDTO extends PageRequestDTO {}
@@ -496,6 +584,7 @@ export interface AdminPlaceResponseDTO {
   address: string;
   city: string;
   district: string;
+  dong?: string;
   capacity: number;
   pricePerHour: number;
   avgRating: number;
@@ -509,6 +598,7 @@ export interface AdminPlaceDetailDTO {
   address: string;
   city: string;
   district: string;
+  dong?: string;
   latitude: number;
   longitude: number;
   capacity: number;
@@ -525,6 +615,7 @@ export interface AdminPlaceDetailDTO {
   reviewCount: number;
   tagIds: number[];
   closedDays: ClosedDayDTO[];
+  imagePaths: string[] | null;
 }
 
 export interface ClosedDayDTO {
@@ -562,6 +653,7 @@ export interface PlaceCreateRequest {
   address: string;
   city: string;
   district: string;
+  dong?: string;
   latitude: number;
   longitude: number;
   capacity: number;
@@ -575,6 +667,7 @@ export interface PlaceCreateRequest {
   maxReservationMinutes: number;
   tagIds: number[];
   placeClosedDays: PlaceClosedDayRequest[];
+  imagePaths?: string[];
 }
 
 // ── 장소 목록 ──────────────────────────────
@@ -585,6 +678,7 @@ export interface PlaceListItem {
   address: string;
   city: string;
   district: string;
+  dong?: string;
   capacity: number;
   pricePerHour: number;
   avgRating: number;

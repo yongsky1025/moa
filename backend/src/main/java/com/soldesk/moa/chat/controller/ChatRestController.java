@@ -172,4 +172,14 @@ public class ChatRestController {
     ) {
         return ResponseEntity.ok(messageService.deleteMessage(messageId, auth.getUserId()));
     }
+
+    /** 리액션 토글 */
+    @PostMapping("/messages/{messageId}/reactions")
+    public ResponseEntity<ChatMessageResponse> toggleReaction(
+            @PathVariable Long messageId,
+            @RequestParam String emoji,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        return ResponseEntity.ok(messageService.toggleReaction(messageId, auth.getUserId(), emoji));
+    }
 }

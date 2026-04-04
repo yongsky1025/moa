@@ -1,16 +1,22 @@
 import api from './axiosInstance';
-import authApi from '../users/utils/jwtUtil';
 
 export interface UserProfile {
   name: string;
   publicId: string;
   nickname: string;
   email: string;
+  provider: 'LOCAL' | 'GOOGLE' | 'KAKAO' | 'NAVER' | null;
   age: number;
   userGender: 'MALE' | 'FEMALE';
   birthDate: string;
   statusMessage: string | null;
   profileImageUrl?: string | null;
+}
+
+export interface PasswordChangeRequest {
+  currentPassword: string;
+  newPassword: string;
+  newPasswordConfirm: string;
 }
 
 export interface EnergyProfileRequest {
@@ -56,18 +62,26 @@ export const profileApi = {
     api.get('/api/users/profile/check-nickname', { params: { nickname } }),
 };
 
+export const accountApi = {
+  changePassword: (data: PasswordChangeRequest) =>
+    api.post('/api/users/account/password', data),
+
+  withdraw: (password: string) =>
+    api.post('/api/users/account/withdraw', { password }),
+};
+
 export const energyProfileApi = {
   create: (data: EnergyProfileRequest) =>
-    authApi.post<EnergyProfileResponse>('/api/users/me/energy-profile/create', data),
+    api.post<EnergyProfileResponse>('/api/users/me/energy-profile/create', data),
 
   update: (data: EnergyProfileRequest) =>
-    authApi.put<EnergyProfileResponse>('/api/users/me/energy-profile/update', data),
+    api.put<EnergyProfileResponse>('/api/users/me/energy-profile/update', data),
 
   check: () =>
-    authApi.get<EnergyProfileResponse>('/api/users/me/energy-profile/check'),
+    api.get<EnergyProfileResponse>('/api/users/me/energy-profile/check'),
 
   recommend: (limit: number = 5) =>
-    authApi.post<RecommendationResponse[]>(
+    api.post<RecommendationResponse[]>(
       `/api/users/me/energy-profile/recommend?limit=${limit}`,
     ),
 };

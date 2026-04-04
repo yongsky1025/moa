@@ -21,6 +21,7 @@ export interface ChatMessage {
   createdAt: string;
   updatedAt: string | null;
   isDeleted: boolean;
+  messageType?: 'NORMAL' | 'SYSTEM';
 }
 
 export interface SendMessageRequest {

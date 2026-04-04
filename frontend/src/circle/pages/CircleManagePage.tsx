@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useAuthStore } from '../../store/authStore';
 import { Settings, Trash2, Users, Calendar } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
@@ -9,7 +9,7 @@ import { scheduleApi } from '../../api/scheduleApi';
 import { getErrorMessage } from '../../common/utils/errorMessage';
 import type { CircleResponse, CircleMember } from '../types/circle';
 import type { ScheduleResponse } from '../../schedule/types/schedule';
-import type { RootState } from '../../users/reducers/store';
+import AdminConfirmModal from '../../admin/component/AdminConfirmModal';
 
 type Menu = 'edit' | 'delete' | 'members' | 'schedules';
 
@@ -24,7 +24,7 @@ export default function CircleManagePage() {
   const { circleId } = useParams<{ circleId: string }>();
   const cid = Number(circleId);
   const navigate = useNavigate();
-  const { user } = useSelector((s: RootState) => s.auth);
+  const { user } = useAuthStore();
 
   const [activeMenu, setActiveMenu] = useState<Menu>('edit');
   const [circle, setCircle] = useState<CircleResponse | null>(null);
@@ -33,6 +33,14 @@ export default function CircleManagePage() {
   const [schedules, setSchedules] = useState<ScheduleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
+  const [hoveredMemberId, setHoveredMemberId] = useState<number | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean; title: string; message: string;
+    confirmLabel?: string; confirmColor?: 'green' | 'red'; onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, confirmColor: 'green' | 'red' = 'red', confirmLabel = '확인') =>
+    setConfirmModal({ open: true, title, message, confirmLabel, confirmColor, onConfirm });
 
   // 서클 수정 폼
   const [editForm, setEditForm] = useState({ name: '', description: '', maxMember: 10 });
@@ -68,15 +76,18 @@ export default function CircleManagePage() {
     loadData();
   }, [loadData]);
 
-  // 리더 아닌 경우 접근 차단
+  // 리더/부리더 아닌 경우 접근 차단
   useEffect(() => {
     if (!loading && activeMembers.length > 0 && user) {
       const me = activeMembers.find(m => m.nickname === user.nickname);
-      if (!me || me.role !== 'LEADER') {
+      if (!me || (me.role !== 'LEADER' && me.role !== 'SUB_LEADER')) {
         navigate(`/circle/${cid}`, { replace: true });
       }
     }
   }, [loading, activeMembers, user]);
+
+  const myRole = activeMembers.find(m => m.nickname === user?.nickname)?.role;
+  const isLeader = myRole === 'LEADER';
 
   const action = async (fn: () => Promise<unknown>, successMsg: string) => {
     try {
@@ -110,28 +121,42 @@ export default function CircleManagePage() {
   };
 
   // 서클 삭제
-  const handleDelete = () => {
-    if (!confirm('서클을 삭제하시겠습니까? 모든 데이터가 사라지며 복구할 수 없습니다.')) return;
-    action(async () => { await circleApi.deleteCircle(cid); navigate('/circle'); }, '삭제됐습니다.');
-  };
+  const handleDelete = () =>
+    openConfirm('서클 삭제', '서클을 삭제하시겠습니까? 모든 데이터가 사라지며 복구할 수 없습니다.', () =>
+      action(async () => { await circleApi.deleteCircle(cid); navigate('/circle'); }, '삭제됐습니다.')
+    );
 
   // 멤버 관련
   const handleApprove = (id: number) => action(() => circleApi.updateMemberStatus(cid, id, 'ACTIVE'), '승인했습니다.');
   const handleRejectMember = (id: number) => action(() => circleApi.updateMemberStatus(cid, id, 'REJECTED'), '거절했습니다.');
-  const handleKick = (id: number, nickname: string) => {
-    if (!confirm(`${nickname}님을 강퇴하시겠습니까?`)) return;
-    action(() => circleApi.kickMember(cid, id), '강퇴했습니다.');
-  };
-  const handleDelegate = (id: number, nickname: string) => {
-    if (!confirm(`${nickname}님에게 리더를 위임하시겠습니까?`)) return;
-    action(() => circleApi.delegateLeader(cid, id), '리더를 위임했습니다.');
-  };
+  const handleKick = (id: number, nickname: string) =>
+    openConfirm('멤버 강퇴', `${nickname}님을 강퇴하시겠습니까?`, () =>
+      action(() => circleApi.kickMember(cid, id), '강퇴했습니다.')
+    );
+  const handleDelegate = (id: number, nickname: string) =>
+    openConfirm('리더 위임', `${nickname}님에게 리더를 위임하시겠습니까?`, () =>
+      action(() => circleApi.delegateLeader(cid, id), '리더를 위임했습니다.'),
+      'green', '위임하기'
+    );
+  const handleAssignSubLeader = (id: number, nickname: string) =>
+    openConfirm('부리더 위임', `${nickname}님을 부리더로 지정하시겠습니까?`, () =>
+      action(() => circleApi.assignSubLeader(cid, id), '부리더로 지정했습니다.'),
+      'green', '지정하기'
+    );
+  const handleRevokeSubLeader = (id: number, nickname: string) =>
+    openConfirm('부리더 해제', `${nickname}님의 부리더를 해제하시겠습니까?`, () =>
+      action(() => circleApi.revokeSubLeader(cid, id), '부리더를 해제했습니다.')
+    );
+  const handleResignSubLeader = () =>
+    openConfirm('부리더 사임', '부리더 역할을 사임하시겠습니까?', () =>
+      action(() => circleApi.resignSubLeader(cid), '부리더를 사임했습니다.')
+    );
 
   // 일정 삭제
-  const handleDeleteSchedule = (sid: number, title: string) => {
-    if (!confirm(`"${title}" 일정을 삭제하시겠습니까?`)) return;
-    action(() => scheduleApi.deleteSchedule(cid, sid), '일정이 삭제됐습니다.');
-  };
+  const handleDeleteSchedule = (sid: number, title: string) =>
+    openConfirm('일정 삭제', `"${title}" 일정을 삭제하시겠습니까?`, () =>
+      action(() => scheduleApi.deleteSchedule(cid, sid), '일정이 삭제됐습니다.')
+    );
 
   if (loading) return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
@@ -176,7 +201,7 @@ export default function CircleManagePage() {
           {/* 왼쪽 사이드바 */}
           <aside style={{ width: 200, flexShrink: 0 }}>
             <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-              {MENU_ITEMS.map(item => (
+              {MENU_ITEMS.filter(item => isLeader || (item.key !== 'edit' && item.key !== 'delete')).map(item => (
                 <button
                   key={item.key}
                   onClick={() => { setActiveMenu(item.key); setMsg(''); }}
@@ -337,15 +362,26 @@ export default function CircleManagePage() {
                   <h2 style={panelTitleStyle}>활성 멤버 ({activeMembers.length}명)</h2>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {activeMembers.map(m => (
-                      <div key={m.circleMemberId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f5f5f5' }}>
+                      <div
+                        key={m.circleMemberId}
+                        onMouseEnter={() => setHoveredMemberId(m.circleMemberId)}
+                        onMouseLeave={() => setHoveredMemberId(null)}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '12px 8px', borderBottom: '1px solid #f5f5f5',
+                          borderRadius: 8,
+                          backgroundColor: hoveredMemberId === m.circleMemberId ? '#f9fafb' : 'transparent',
+                          transition: 'background-color 0.15s',
+                        }}
+                      >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{
                             width: 36, height: 36, borderRadius: '50%',
-                            backgroundColor: m.role === 'LEADER' ? '#111' : '#e5e7eb',
+                            backgroundColor: m.role === 'LEADER' ? '#111' : m.role === 'SUB_LEADER' ? '#4E7C69' : '#e5e7eb',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                              stroke={m.role === 'LEADER' ? 'white' : '#6b7280'}
+                              stroke={m.role === 'LEADER' || m.role === 'SUB_LEADER' ? 'white' : '#6b7280'}
                               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
                             </svg>
@@ -357,21 +393,47 @@ export default function CircleManagePage() {
                                 리더
                               </span>
                             )}
+                            {m.role === 'SUB_LEADER' && (
+                              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: '#4E7C69', backgroundColor: '#EAF4F0', padding: '2px 6px', borderRadius: 4 }}>
+                                부리더
+                              </span>
+                            )}
                             {m.nickname === user?.nickname && m.role !== 'LEADER' && (
                               <span style={{ marginLeft: 6, fontSize: 11, color: '#aaa' }}>나</span>
                             )}
                           </div>
                         </div>
-                        {m.role !== 'LEADER' && (
+                        {m.role !== 'LEADER' && hoveredMemberId === m.circleMemberId && (
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button onClick={() => handleDelegate(m.circleMemberId, m.nickname)}
-                              style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#6b7280', border: '1px solid #e5e5e5' }}>
-                              리더 위임
-                            </button>
-                            <button onClick={() => handleKick(m.circleMemberId, m.nickname)}
-                              style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#dc2626', border: '1px solid #fca5a5' }}>
-                              강퇴
-                            </button>
+                            {isLeader && (
+                              <>
+                                <button onClick={() => handleDelegate(m.circleMemberId, m.nickname)}
+                                  style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#6b7280', border: '1px solid #e5e5e5' }}>
+                                  리더 위임
+                                </button>
+                                {m.role === 'SUB_LEADER' ? (
+                                  <button onClick={() => handleRevokeSubLeader(m.circleMemberId, m.nickname)}
+                                    style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#4E7C69', border: '1px solid #A9C8BB' }}>
+                                    부리더 해제
+                                  </button>
+                                ) : (
+                                  <button onClick={() => handleAssignSubLeader(m.circleMemberId, m.nickname)}
+                                    style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#4E7C69', border: '1px solid #A9C8BB' }}>
+                                    부리더 위임
+                                  </button>
+                                )}
+                                <button onClick={() => handleKick(m.circleMemberId, m.nickname)}
+                                  style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#dc2626', border: '1px solid #fca5a5' }}>
+                                  강퇴
+                                </button>
+                              </>
+                            )}
+                            {m.nickname === user?.nickname && m.role === 'SUB_LEADER' && (
+                              <button onClick={() => handleResignSubLeader()}
+                                style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#dc2626', border: '1px solid #fca5a5' }}>
+                                부리더 사임
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -433,6 +495,15 @@ export default function CircleManagePage() {
         </div>
       </main>
       <Footer />
+      <AdminConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        confirmColor={confirmModal.confirmColor}
+        onConfirm={() => { setConfirmModal(m => ({ ...m, open: false })); confirmModal.onConfirm(); }}
+        onCancel={() => setConfirmModal(m => ({ ...m, open: false }))}
+      />
     </div>
   );
 }

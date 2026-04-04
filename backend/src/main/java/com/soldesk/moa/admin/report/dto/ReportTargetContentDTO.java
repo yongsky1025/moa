@@ -41,7 +41,23 @@ public record ReportTargetContentDTO(
         String userEmail,
         String userStatus,
         int userSanctionCount,
-        List<UserRecentActivityDTO> userRecentActivities) {
+        List<UserRecentActivityDTO> userRecentActivities,
+
+        // PLACE_REVIEW
+        String placeReviewContent,
+        Integer placeReviewRating,
+        String placeReviewAuthorName,
+        String placeReviewPlaceName,
+        Long placeReviewPlaceId,
+        LocalDateTime placeReviewCreatedAt,
+
+        // CHAT
+        String chatContent,
+        String chatSenderName,
+        Long chatSenderUserId,
+        Long chatRoomId,
+        String chatRoomType,
+        LocalDateTime chatCreatedAt) {
 
     @Builder
     public record UserRecentActivityDTO(

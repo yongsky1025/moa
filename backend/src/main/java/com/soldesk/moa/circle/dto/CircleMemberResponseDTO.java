@@ -16,6 +16,7 @@ public class CircleMemberResponseDTO {
     private String nickname;
     private CircleRole role;
     private CircleMemberStatus status;
+    private String statusMessage;
 
     public static CircleMemberResponseDTO from(CircleMember member) {
         return new CircleMemberResponseDTO(
@@ -23,7 +24,8 @@ public class CircleMemberResponseDTO {
                 member.getUser().getUserId(),
                 member.getUser().getNickname(),
                 member.getRole(),
-                member.getStatus()
+                member.getStatus(),
+                member.getUser().getStatusMessage()
         );
     }
 }

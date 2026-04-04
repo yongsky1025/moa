@@ -1,5 +1,6 @@
 package com.soldesk.moa.users.dto.account;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -23,7 +24,14 @@ public class PasswordUpdateRequestDTO {
     @NotBlank
     private String newPasswordConfirm;
 
-    public void updatePassword(String currentPassword) {
-        this.currentPassword = currentPassword;
+    @AssertTrue(message = "새 비밀번호와 새 비밀번호 확인이 일치하지 않습니다.")
+    public boolean isNewPasswordMatched() {
+        if (newPassword == null || newPassword.isBlank()) {
+            return true;
+        }
+        if (newPasswordConfirm == null || newPasswordConfirm.isBlank()) {
+            return true;
+        }
+        return newPassword.equals(newPasswordConfirm);
     }
 }

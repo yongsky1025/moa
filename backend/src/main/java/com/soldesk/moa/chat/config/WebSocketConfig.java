@@ -7,14 +7,18 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import com.soldesk.moa.common.config.CorsProperties;
+
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final ChatChannelInterceptor chatChannelInterceptor;
+    private final CorsProperties corsProperties;
 
-    public WebSocketConfig(ChatChannelInterceptor chatChannelInterceptor) {
+    public WebSocketConfig(ChatChannelInterceptor chatChannelInterceptor, CorsProperties corsProperties) {
         this.chatChannelInterceptor = chatChannelInterceptor;
+        this.corsProperties = corsProperties;
     }
 
     /**
@@ -25,12 +29,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // 브라우저용 (SockJS 폴백 지원)
         registry.addEndpoint("/ws/chat")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns(corsProperties.getAllowedOriginPatterns().toArray(new String[0]))
                 .withSockJS();
 
         // Postman / 앱 클라이언트용 (Raw WebSocket)
         registry.addEndpoint("/ws/chat-raw")
-                .setAllowedOriginPatterns("*");
+                .setAllowedOriginPatterns(corsProperties.getAllowedOriginPatterns().toArray(new String[0]));
     }
 
     /**

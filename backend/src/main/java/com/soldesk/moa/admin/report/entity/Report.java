@@ -40,9 +40,9 @@ public class Report extends BaseEntity {
     @JoinColumn(name = "reporter_id", nullable = false)
     private Users reporter;
 
-    // 신고 대상 타입 (USER / POST / REPLY / CIRCLE)
+    // 신고 대상 타입 (USER / POST / REPLY / CIRCLE / PLACE_REVIEW)
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private ReportTargetType targetType;
 
     // 신고 대상의 id (userid인지 postid인지)

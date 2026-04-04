@@ -13,38 +13,7 @@ INSERT INTO users (name, email, password, nickname, birth_date, age, user_role, 
 ('테스트유저4', 'tester4@moa.com', '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'tester4', '2000-01-30', 25, 'USER', 'FEMALE', 'LOCAL', 'aabbccdd-0004-0004-0004-aabbccdd0004', 'ACTIVE', '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
 ('테스트유저5', 'tester5@moa.com', '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'tester5', '1997-05-18', 27, 'USER', 'MALE',   'LOCAL', 'aabbccdd-0005-0005-0005-aabbccdd0005', 'ACTIVE', '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', '2025-01-01 00:00:00');
 
--- 2. 태그 (100개)
-INSERT INTO tag (name) VALUES
--- 분위기 (10)
-('아늑한'), ('모던한'), ('인스타감성'), ('빈티지'), ('럭셔리'),
-('캐주얼'), ('조용한'), ('활기찬'), ('아기자기한'), ('미니멀한'),
--- 학습/업무 (10)
-('스터디'), ('회의'), ('집중력향상'), ('프레젠테이션'), ('강의'),
-('코딩'), ('그룹스터디'), ('독서'), ('자격증'), ('언어학습'),
--- 모임/파티 (10)
-('파티'), ('생일파티'), ('소셜모임'), ('동아리'), ('팀빌딩'),
-('워크샵'), ('기업행사'), ('웨딩촬영'), ('돌잔치'), ('친목'),
--- 편의시설 (15)
-('주차'), ('와이파이'), ('에어컨'), ('빔프로젝터'), ('화이트보드'),
-('음향장비'), ('조명'), ('주방'), ('샤워실'), ('스크린'),
-('냉장고'), ('전자레인지'), ('마이크'), ('악기대여'), ('방음'),
--- 스포츠/운동 (10)
-('요가'), ('필라테스'), ('댄스'), ('클라이밍'), ('탁구'),
-('배드민턴'), ('복싱'), ('헬스'), ('스트레칭'), ('수영'),
--- 음식/음료 (10)
-('바베큐'), ('케이터링'), ('카페음료'), ('주류'), ('요리실습'),
-('베이킹'), ('와인'), ('커피머신'), ('간식'), ('채식'),
--- 문화/예술 (10)
-('미술'), ('음악'), ('사진'), ('영상제작'), ('도예'),
-('목공'), ('드로잉'), ('공예'), ('악기연습'), ('창작'),
--- 위치/특성 (10)
-('역세권'), ('루프탑'), ('한강뷰'), ('도심뷰'), ('자연채광'),
-('야외'), ('금연'), ('24시간'), ('반려동물'), ('친환경'),
--- 엔터테인먼트 (10)
-('보드게임'), ('방탈출'), ('VR'), ('노래방'), ('당구'),
-('게임'), ('마술'), ('공연'), ('영화감상'), ('파티게임'),
--- 규모/대상 (5)
-('소규모'), ('대형'), ('프라이빗'), ('커플'), ('가족');
+-- 2. 태그 카테고리/태그는 seed-data.sql 사용
 
 -- 3. 장소 (50개)
 INSERT INTO place (name, address, city, district, latitude, longitude, capacity, price_per_hour, description, min_reservation_hour, max_reservation_hour, open_time, close_time, create_date, update_date) VALUES
@@ -107,56 +76,63 @@ INSERT INTO place (name, address, city, district, latitude, longitude, capacity,
 ('북한산 트레킹 베이스캠프','서울 강북구 우이동 산1-1',         '서울', '강북구',   37.6609, 126.9764, 30, 5000,  '북한산 등산로 입구의 트레킹 베이스캠프입니다. 등산 장비 대여, 등산 지도, 안전 브리핑을 제공하며 트레킹 후 휴식 쉼터도 갖추고 있습니다. 등산 동호회와 아웃도어 소셜 클럽에 적합한 자연 속 힐링 공간입니다.', 2, 6, '06:00:00', '18:00:00', '2025-01-01 00:00:00', '2025-01-01 00:00:00');
 
 -- 4. 장소-태그 연결
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 집중 스터디룸'      AND t.name IN ('스터디','조용한','집중력향상','방음','와이파이','에어컨','역세권','프라이빗');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 코워킹 스페이스'    AND t.name IN ('회의','모던한','코딩','와이파이','프레젠테이션','역세권','활기찬','팀빌딩','소셜모임');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '성수 스마트 오피스'      AND t.name IN ('회의','팀빌딩','워크샵','빔프로젝터','화이트보드','스크린','인스타감성','모던한');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '여의도 비즈니스 센터'    AND t.name IN ('회의','기업행사','프레젠테이션','화이트보드','미니멀한','럭셔리','에어컨','역세권','음향장비');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '종로 조용한 독서실'      AND t.name IN ('독서','스터디','조용한','집중력향상','자격증','24시간','방음','에어컨','소규모');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 스터디 카페'        AND t.name IN ('스터디','언어학습','카페음료','커피머신','와이파이','아늑한','캐주얼','역세권');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '건대 그룹 스터디룸'      AND t.name IN ('그룹스터디','스터디','화이트보드','빔프로젝터','자격증','코딩','역세권','조용한');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '신촌 프리미엄 독서실'    AND t.name IN ('독서','자격증','집중력향상','조용한','방음','미니멀한','역세권','에어컨','소규모');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '압구정 프라이빗 오피스'  AND t.name IN ('회의','럭셔리','프라이빗','기업행사','에어컨','도심뷰','미니멀한','소규모');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '이태원 글로벌 코워킹'    AND t.name IN ('언어학습','회의','와이파이','코딩','소셜모임','역세권','활기찬','모던한');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 럭셔리 파티룸'      AND t.name IN ('파티','생일파티','럭셔리','음향장비','조명','케이터링','소셜모임','댄스','활기찬','대형');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 인스타 파티룸'      AND t.name IN ('파티','생일파티','인스타감성','조명','소셜모임','활기찬','사진','주류');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '성수 빈티지 파티룸'      AND t.name IN ('파티','빈티지','소셜모임','주류','조명','인스타감성','친목','동아리');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '한남 루프탑 파티공간'    AND t.name IN ('파티','루프탑','도심뷰','바베큐','야외','주류','소셜모임','기업행사','케이터링','대형');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '이태원 프라이빗 파티룸'  AND t.name IN ('파티','프라이빗','주류','소셜모임','음향장비','활기찬','친목');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 생일파티 전용룸'    AND t.name IN ('생일파티','아기자기한','소규모','파티','사진','친목','커플');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '여의도 한강뷰 파티룸'    AND t.name IN ('파티','한강뷰','럭셔리','기업행사','돌잔치','대형','케이터링','조명');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '종로 레트로 파티룸'      AND t.name IN ('파티','빈티지','친목','동아리','소셜모임','캐주얼','음향장비');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '압구정 VIP 파티룸'       AND t.name IN ('파티','럭셔리','프라이빗','기업행사','케이터링','음향장비','조명','대형');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '건대 소셜 파티룸'        AND t.name IN ('파티','소셜모임','동아리','보드게임','파티게임','캐주얼','활기찬','친목');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 프리미엄 헬스장'    AND t.name IN ('헬스','스트레칭','샤워실','모던한','소셜모임','역세권','에어컨');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 댄스 스튜디오'      AND t.name IN ('댄스','음향장비','조명','동아리','창작','활기찬','공연');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '성수 요가 스튜디오'      AND t.name IN ('요가','스트레칭','자연채광','조용한','소규모','금연','친환경','아늑한');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '여의도 필라테스 스튜디오' AND t.name IN ('필라테스','스트레칭','소규모','금연','조용한','역세권');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 클라이밍 센터'      AND t.name IN ('클라이밍','동아리','활기찬','샤워실','소셜모임','팀빌딩');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '종로 탁구 클럽'          AND t.name IN ('탁구','동아리','소셜모임','캐주얼','활기찬','역세권');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '이태원 복싱 짐'          AND t.name IN ('복싱','헬스','스트레칭','샤워실','소셜모임','동아리');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '건대 배드민턴 센터'      AND t.name IN ('배드민턴','동아리','소셜모임','활기찬','역세권','대형');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 아트 스튜디오'      AND t.name IN ('미술','드로잉','창작','동아리','인스타감성','자연채광','소규모');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '성수 포토 스튜디오'      AND t.name IN ('사진','인스타감성','조명','창작','동아리','모던한','웨딩촬영');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '종로 음악 연습실'        AND t.name IN ('음악','악기연습','악기대여','방음','밴드','동아리','창작','공연');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 도예 공방'          AND t.name IN ('도예','공예','창작','아늑한','소규모','동아리','친환경','커플');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 드로잉 클래스룸'    AND t.name IN ('드로잉','미술','창작','동아리','소규모','강의');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '이태원 공예 스튜디오'    AND t.name IN ('공예','창작','동아리','아늑한','소규모','커플');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '신촌 영상 제작 스튜디오' AND t.name IN ('영상제작','사진','창작','동아리','조명','음향장비','방음');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '압구정 플라워 클래스룸'  AND t.name IN ('공예','창작','아늑한','럭셔리','소규모','커플','친환경');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 쿠킹 스튜디오'      AND t.name IN ('요리실습','주방','동아리','소셜모임','강의','팀빌딩');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 베이킹 클래스'      AND t.name IN ('베이킹','요리실습','주방','동아리','소셜모임','간식','아늑한','커플');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 바베큐 파티룸'      AND t.name IN ('바베큐','야외','파티','소셜모임','주류','동아리','활기찬','주방');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '여의도 요리 교실'        AND t.name IN ('요리실습','주방','강의','동아리','소셜모임','채식');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '성수 쉐프 테이블'        AND t.name IN ('요리실습','와인','주방','럭셔리','소규모','프라이빗','카페음료');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '이태원 월드푸드 쿠킹'    AND t.name IN ('요리실습','주방','동아리','소셜모임','캐주얼','강의','채식');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 보드게임 카페'      AND t.name IN ('보드게임','게임','파티게임','카페음료','간식','동아리','소셜모임','캐주얼','활기찬');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 방탈출 스튜디오'    AND t.name IN ('방탈출','게임','팀빌딩','소셜모임','동아리','활기찬');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '건대 VR 체험공간'        AND t.name IN ('VR','게임','팀빌딩','동아리','소셜모임','활기찬','모던한');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 노래방 프라이빗 룸' AND t.name IN ('노래방','음악','방음','음향장비','마이크','파티','친목','프라이빗');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '신촌 당구장'             AND t.name IN ('당구','게임','동아리','캐주얼','소셜모임','역세권');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '종로 전통 게임 공간'     AND t.name IN ('보드게임','게임','전통','동아리','소셜모임','가족','아늑한');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '한강 야외 피크닉 공간'   AND t.name IN ('야외','한강뷰','바베큐','소셜모임','친목','동아리','친환경','가족','활기찬');
-INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '북한산 트레킹 베이스캠프' AND t.name IN ('야외','친환경','동아리','소셜모임','가족','스트레칭','자연채광');
+-- [1-10] 스터디/업무 공간
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 집중 스터디룸'      AND t.name IN ('스터디','자격증','독서모임','조용한','프라이빗','WIFI','에어컨','역세권','방음완벽');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 코워킹 스페이스'    AND t.name IN ('회의','코워킹','네트워킹','팀빌딩','코딩/IT','모던한','WIFI','역세권','활기찬');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '성수 스마트 오피스'      AND t.name IN ('회의','워크샵','팀빌딩','프레젠테이션','프로젝터','화이트보드','대형스크린','모던한');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '여의도 비즈니스 센터'    AND t.name IN ('회의','세미나','기업행사','컨퍼런스','프레젠테이션','화상회의','화이트보드','음향시설','미니멀','럭셔리','역세권');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '종로 조용한 독서실'      AND t.name IN ('스터디','독서모임','수능/입시','자격증','조용한','에어컨','역세권','방음완벽');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 스터디 카페'        AND t.name IN ('스터디','어학','소모임','WIFI','아늑한','캐주얼','역세권','음료제공');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '건대 그룹 스터디룸'      AND t.name IN ('스터디','코딩/IT','자격증','화이트보드','TV/모니터','역세권','조용한','소모임');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '신촌 프리미엄 독서실'    AND t.name IN ('스터디','수능/입시','자격증','조용한','미니멀','역세권','에어컨','프라이빗','방음완벽');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '압구정 프라이빗 오피스'  AND t.name IN ('회의','기업행사','이사회실','프레젠테이션','럭셔리','프라이빗','에어컨','미니멀');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '이태원 글로벌 코워킹'    AND t.name IN ('어학','회의','코워킹','네트워킹','WIFI','코딩/IT','소모임','역세권','활기찬','모던한');
+-- [11-20] 파티/모임 공간
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 럭셔리 파티룸'      AND t.name IN ('파티','생일파티','기업행사','클럽파티','럭셔리','음향시설','케이터링가능','소모임','활기찬','DJ부스','댄스');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 인스타 파티룸'      AND t.name IN ('파티','생일파티','소모임','감성적인','음향시설','조명장비','포토존','활기찬');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '성수 빈티지 파티룸'      AND t.name IN ('파티','소모임','동창회','빈티지','인더스트리얼','무드조명','바카운터','캐주얼');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '한남 루프탑 파티공간'    AND t.name IN ('파티','기업행사','소모임','루프탑','바베큐','고층뷰','테라스','활기찬','칵테일','케이터링가능');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '이태원 프라이빗 파티룸'  AND t.name IN ('파티','소모임','프라이빗','음향시설','활기찬','바카운터','칵테일');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 생일파티 전용룸'    AND t.name IN ('생일파티','파티','소모임','데이트','포토존','감성적인','캐주얼');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '여의도 한강뷰 파티룸'    AND t.name IN ('파티','기업행사','가족모임','생일파티','럭셔리','한강근처','고층뷰','케이터링가능');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '종로 레트로 파티룸'      AND t.name IN ('파티','동창회','소모임','빈티지','캐주얼','음향시설');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '압구정 VIP 파티룸'       AND t.name IN ('파티','기업행사','생일파티','럭셔리','프라이빗','케이터링가능','음향시설','조명장비');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '건대 소셜 파티룸'        AND t.name IN ('파티','소모임','동아리','보드게임','캐주얼','활기찬');
+-- [21-28] 스포츠/운동
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 프리미엄 헬스장'    AND t.name IN ('짐/헬스장비','런닝머신','샤워실','탈의실','모던한','소모임','역세권','에어컨');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 댄스 스튜디오'      AND t.name IN ('댄스','공연','동아리','음향시설','무대/스테이지','미러월','활기찬');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '성수 요가 스튜디오'      AND t.name IN ('요가','명상','조용한','내추럴','소모임','감성적인','아늑한');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '여의도 필라테스 스튜디오' AND t.name IN ('필라테스','조용한','소모임','역세권','에어컨','미러월');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 클라이밍 센터'      AND t.name IN ('클라이밍','동아리','활기찬','샤워실','소모임','팀빌딩','암벽');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '종로 탁구 클럽'          AND t.name IN ('탁구','동아리','소모임','캐주얼','활기찬','역세권');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '이태원 복싱 짐'          AND t.name IN ('복싱','짐/헬스장비','샤워실','탈의실','소모임','동아리');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '건대 배드민턴 센터'      AND t.name IN ('배드민턴','동아리','소모임','활기찬','역세권','다목적홀');
+-- [29-36] 문화/예술
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 아트 스튜디오'      AND t.name IN ('미술/드로잉','동아리','소모임','감성적인','내추럴','스튜디오','전시');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '성수 포토 스튜디오'      AND t.name IN ('사진촬영','인물촬영','영상촬영','동아리','조명장비','모던한','스튜디오','웨딩촬영');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '종로 음악 연습실'        AND t.name IN ('밴드합주','피아노연습','드럼연습','기타/어쿠스틱','보컬연습','방음완벽','동아리','악기보관','연습실');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 도예 공방'          AND t.name IN ('도예/도자기','공예/핸드메이드','동아리','아늑한','소모임','데이트');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 드로잉 클래스룸'    AND t.name IN ('미술/드로잉','동아리','소모임','강연','조용한');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '이태원 공예 스튜디오'    AND t.name IN ('공예/핸드메이드','가죽공예','뜨개질/자수','동아리','아늑한','소모임','데이트');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '신촌 영상 제작 스튜디오' AND t.name IN ('영상촬영','유튜브/브이로그','사진촬영','동아리','크로마키','조명장비','음향시설','방음완벽');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '압구정 플라워 클래스룸'  AND t.name IN ('플라워/화훼','공예/핸드메이드','동아리','아늑한','소모임','데이트','럭셔리');
+-- [37-42] 요리/베이킹
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 쿠킹 스튜디오'      AND t.name IN ('쿠킹클래스','한식조리','양식조리','동아리','소모임','팀빌딩','취사가능','공유주방');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 베이킹 클래스'      AND t.name IN ('베이킹','디저트','동아리','소모임','데이트','취사가능','캐주얼','아늑한');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 바베큐 파티룸'      AND t.name IN ('BBQ/그릴','파티','소모임','바베큐','실외공간','케이터링가능','활기찬');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '여의도 요리 교실'        AND t.name IN ('쿠킹클래스','한식조리','양식조리','일식/초밥','동아리','소모임','취사가능','공유주방');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '성수 쉐프 테이블'        AND t.name IN ('와인/소믈리에','쿠킹클래스','양식조리','소모임','럭셔리','감성적인','취사가능');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '이태원 월드푸드 쿠킹'    AND t.name IN ('쿠킹클래스','한식조리','양식조리','동아리','소모임','어학','취사가능');
+-- [43-48] 게임/엔터테인먼트
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '홍대 보드게임 카페'      AND t.name IN ('보드게임','소모임','동아리','캐주얼','활기찬','음료제공','간식제공');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '강남 방탈출 스튜디오'    AND t.name IN ('방탈출','팀빌딩','소모임','동아리','활기찬');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '건대 VR 체험공간'        AND t.name IN ('VR장비','팀빌딩','동아리','소모임','활기찬','모던한');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '마포 노래방 프라이빗 룸' AND t.name IN ('노래방시설','방음완벽','소모임','동아리','음향시설','프라이빗','무선마이크');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '신촌 당구장'             AND t.name IN ('당구/포켓볼','동아리','소모임','캐주얼','활기찬','역세권');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '종로 전통 게임 공간'     AND t.name IN ('보드게임','소모임','동아리','캐주얼','아늑한','가족모임');
+-- [49-50] 야외/특별
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '한강 야외 피크닉 공간'   AND t.name IN ('피크닉','바베큐','파티','실외공간','한강근처','공원근처','소모임','가족모임','활기찬');
+INSERT INTO place_tag (place_id, tag_id) SELECT p.id, t.id FROM place p, tag t WHERE p.name = '북한산 트레킹 베이스캠프' AND t.name IN ('트레킹/등산','실외공간','산근처','소모임','동아리','내추럴','숲치유');
 
 -- 5. 장소 리뷰 (장소별 0~5개, 각 장소 특성에 맞게)
 -- 강남 집중 스터디룸 (4개)

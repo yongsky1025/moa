@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,6 +47,7 @@ public class AdminCircleController {
 
     @GetMapping("/categories")
     @Operation(summary = "admin circle category name list")
+    @PreAuthorize("hasRole('ADMIN')")
     public List<String> getCategories() {
         return circleCategoryRepository.findAll().stream()
                 .map(CircleCategory::getCategoryName)
@@ -54,12 +56,14 @@ public class AdminCircleController {
 
     @GetMapping("/list")
     @Operation(summary = "admin circle list data")
+    @PreAuthorize("hasRole('ADMIN')")
     public PageResultDTO<AdminCircleResponseDTO> getCircleList(AdminCircleSearchDTO searchDTO) {
         log.info("서클 리스트 요청");
 
         return adminService.getAllCircleInfo(searchDTO);
     }
 
+    // 메인 페이지에서 쓸수있으니 권한 설정 x
     @GetMapping("/popular-circles")
     @Operation(summary = "admin circle top5 data")
     public ResponseEntity<List<PopularCircleDTO>> getPopularCircels() {
@@ -72,6 +76,7 @@ public class AdminCircleController {
     // 모임 상세 조회
     @GetMapping("/{circleId}")
     @Operation(summary = "admin circle detail data")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminCircleDetailDTO> getCircleDetail(@PathVariable Long circleId) {
         log.info("모임 상세 조회 요청: {}", circleId);
         return ResponseEntity.ok(adminService.getCircleDetail(circleId));
@@ -80,6 +85,7 @@ public class AdminCircleController {
     // 모임 가입 회원 목록
     @GetMapping("/{circleId}/members")
     @Operation(summary = "admin circle members data")
+    @PreAuthorize("hasRole('ADMIN')")
     public PageResultDTO<AdminCircleMemberDTO> getCircleMembers(
             @PathVariable Long circleId, PageRequestDTO pageRequestDTO) {
         log.info("모임 회원 목록 요청: {}", circleId);
@@ -89,6 +95,7 @@ public class AdminCircleController {
     // 모임 최근 게시물
     @GetMapping("/{circleId}/posts")
     @Operation(summary = "admin circle posts data")
+    @PreAuthorize("hasRole('ADMIN')")
     public PageResultDTO<AdminCirclePostDTO> getCirclePosts(
             @PathVariable Long circleId, PageRequestDTO pageRequestDTO) {
         log.info("모임 게시물 목록 요청: {}", circleId);
@@ -97,12 +104,14 @@ public class AdminCircleController {
 
     // 보류 중인 서클 목록 조회
     @GetMapping("/pending")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<CircleResponseDTO>> getPendingCircles() {
         return ResponseEntity.ok(circleService.getPendingCircles());
     }
 
     // 서클 승인
     @PatchMapping("/{circleId}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CircleResponseDTO> approveCircle(
             @PathVariable Long circleId) {
         return ResponseEntity.ok(circleService.approveCircle(circleId));
@@ -110,6 +119,7 @@ public class AdminCircleController {
 
     // 서클 거절
     @PatchMapping("/{circleId}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> rejectCircle(
             @PathVariable Long circleId) {
         circleService.rejectCircle(circleId);
@@ -118,6 +128,7 @@ public class AdminCircleController {
 
     // 서클 강제 해산
     @PatchMapping("/{circleId}/close")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCircle(
             @PathVariable Long circleId) {
         circleService.adminDeleteCircle(circleId);

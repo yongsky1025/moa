@@ -33,6 +33,8 @@ import com.soldesk.moa.admin.dashboard.dto.circleInfo.AdminCircleSearchDTO;
 import com.soldesk.moa.admin.dashboard.dto.circleInfo.PopularCircleDTO;
 import com.soldesk.moa.admin.dashboard.dto.maindashboard.AdminMainDTO;
 import com.soldesk.moa.admin.dashboard.dto.maindashboard.CircleDataDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.PopularPlaceDTO;
+import com.soldesk.moa.admin.dashboard.dto.maindashboard.ReservationCountDTO;
 import com.soldesk.moa.admin.dashboard.dto.maindashboard.CircleSummaryDTO;
 import com.soldesk.moa.admin.dashboard.dto.maindashboard.DailyCountDTO;
 import com.soldesk.moa.admin.dashboard.dto.maindashboard.DashboardChartDTO;
@@ -57,6 +59,7 @@ import com.soldesk.moa.admin.dashboard.repository.AdminScheduleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.post.entity.Post;
+import com.soldesk.moa.post.entity.constant.NoticeCategory;
 import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.repository.BoardRepository;
@@ -74,6 +77,8 @@ import com.soldesk.moa.admin.dashboard.dto.placeInfo.AdminPlaceSearchDTO;
 import com.soldesk.moa.common.dto.PageRequestDTO;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.common.entity.Image;
+import com.soldesk.moa.common.entity.constant.ImageDomain;
+import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.place.dto.PlaceCreateDTO;
 import com.soldesk.moa.place.entity.Place;
 import com.soldesk.moa.place.entity.PlaceClosedDay;
@@ -82,6 +87,7 @@ import com.soldesk.moa.place.entity.Tag;
 import com.soldesk.moa.place.entity.constant.ClosedType;
 import com.soldesk.moa.place.entity.constant.PlaceStatus;
 import com.soldesk.moa.place.repository.PlaceClosedDayRepository;
+import com.soldesk.moa.place.repository.PlaceImageRepository;
 import com.soldesk.moa.place.repository.PlaceRepository;
 import com.soldesk.moa.place.repository.PlaceTagRepository;
 import com.soldesk.moa.place.repository.TagRepository;
@@ -109,6 +115,7 @@ public class AdminService {
         private final TagRepository tagRepository;
         private final PlaceTagRepository placeTagRepository;
         private final PlaceClosedDayRepository placeClosedDayRepository;
+        private final PlaceImageRepository placeImageRepository;
 
         // admin main page
         @Transactional(readOnly = true)
@@ -209,6 +216,9 @@ public class AdminService {
                                 .userStatusDTO(userStatusDTO)
                                 .circleSummaryDTO(circleSummaryDTO)
                                 .dashboardChartDTO(dashboardChartDTO)
+                                .reservationCountDTO(getPlaceReservationCounts())
+                                .popularPlaceDTOs(getPopularPlaces())
+                                .placeUtilizationRateDTO(getPlaceUtilizationRate())
                                 .build();
 
                 return dto;
@@ -217,8 +227,9 @@ public class AdminService {
         // 유저 정보 일람
         @Transactional(readOnly = true)
         public PageResultDTO<AdminUserResponseDTO> getAllUserInfo(AdminUserSearchDTO searchDTO) {
+                Sort userSort = buildUserSort(searchDTO.getSort());
                 Pageable pageable = PageRequest.of(searchDTO.getPage() - 1,
-                                searchDTO.getSize(), Sort.by("userId"));
+                                searchDTO.getSize(), userSort);
                 Page<Users> result = adminUsersRepository.getUsersInfo(pageable, searchDTO);
 
                 List<AdminUserResponseDTO> dtoList = result.getContent().stream().map(this::entityToUserResponseDTO)
@@ -232,6 +243,28 @@ public class AdminService {
                                 .build();
 
                 return pageResultDTO;
+        }
+
+        private Sort buildUserSort(String sort) {
+                if (sort == null) return Sort.by(Sort.Direction.DESC, "userId");
+                return switch (sort) {
+                        case "oldest"   -> Sort.by(Sort.Direction.ASC,  "userId");
+                        case "name"     -> Sort.by(Sort.Direction.ASC,  "name");
+                        case "age_asc"  -> Sort.by(Sort.Direction.ASC,  "age");
+                        case "age_desc" -> Sort.by(Sort.Direction.DESC, "age");
+                        default         -> Sort.by(Sort.Direction.DESC, "userId");
+                };
+        }
+
+        private Sort buildCircleSort(String sort) {
+                if (sort == null) return Sort.by(Sort.Direction.DESC, "circleId");
+                return switch (sort) {
+                        case "oldest"      -> Sort.by(Sort.Direction.ASC,  "circleId");
+                        case "name"        -> Sort.by(Sort.Direction.ASC,  "name");
+                        case "member_desc" -> Sort.by(Sort.Direction.DESC, "currentMember");
+                        case "member_asc"  -> Sort.by(Sort.Direction.ASC,  "currentMember");
+                        default            -> Sort.by(Sort.Direction.DESC, "circleId");
+                };
         }
 
         // 유저 상세프로필(관리자용) 조회
@@ -308,7 +341,8 @@ public class AdminService {
         // 모임 리스트 일람
         @Transactional(readOnly = true)
         public PageResultDTO<AdminCircleResponseDTO> getAllCircleInfo(AdminCircleSearchDTO adminCircleSearchDTO) {
-                Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, adminCircleSearchDTO.getSize());
+                Sort circleSort = buildCircleSort(adminCircleSearchDTO.getSort());
+                Pageable pageable = PageRequest.of(adminCircleSearchDTO.getPage() - 1, adminCircleSearchDTO.getSize(), circleSort);
                 Page<Object[]> result = adminCircleRepository.getCircleInfo(pageable, adminCircleSearchDTO);
 
                 long totalCount = result.getTotalElements();
@@ -531,6 +565,7 @@ public class AdminService {
                                                                         : null)
                                                         .viewCount(post.getViewCount())
                                                         .replyCount(replyCount != null ? replyCount : 0L)
+                                                        .noticeCategory(resolveNoticeCategory(post))
                                                         .deleted(post.isDeleted())
                                                         .createDate(post.getCreateDate())
                                                         .build();
@@ -594,6 +629,7 @@ public class AdminService {
                                 .circleId(board.getCircleId() != null ? board.getCircleId().getCircleId() : null)
                                 .boardId(board.getBoardId())
                                 .viewCount(post.getViewCount())
+                                .noticeCategory(resolveNoticeCategory(post))
                                 .deleted(post.isDeleted())
                                 .sanctionId(sanctionId)
                                 .createDate(post.getCreateDate())
@@ -606,7 +642,7 @@ public class AdminService {
 
         // 공지사항 작성
         @Transactional
-        public Long createNotice(Long adminId, String title, String content) {
+        public Long createNotice(Long adminId, String title, String content, NoticeCategory noticeCategory) {
                 Users admin = adminUsersRepository.findById(adminId)
                                 .orElseThrow(() -> new IllegalArgumentException("해당 관리자를 찾을 수 없습니다."));
 
@@ -618,6 +654,7 @@ public class AdminService {
                                 .content(content)
                                 .userId(admin)
                                 .boardId(noticeBoard)
+                                .noticeCategory(resolveNoticeCategory(noticeCategory))
                                 .build();
 
                 return adminPostRepository.save(notice).getPostId();
@@ -625,7 +662,7 @@ public class AdminService {
 
         // 공지사항 수정
         @Transactional
-        public void updateNotice(Long postId, String title, String content) {
+        public void updateNotice(Long postId, String title, String content, NoticeCategory noticeCategory) {
                 Post post = adminPostRepository.findById(postId)
                                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
 
@@ -635,6 +672,7 @@ public class AdminService {
 
                 post.changeTitle(title);
                 post.changeContent(content);
+                post.changeNoticeCategory(resolveNoticeCategory(noticeCategory));
         }
 
         // 공지사항 삭제 (soft delete - 제재 시스템 미사용)
@@ -667,15 +705,30 @@ public class AdminService {
                 post.restore();
         }
 
+        private NoticeCategory resolveNoticeCategory(NoticeCategory category) {
+                return category != null ? category : NoticeCategory.ANNOUNCEMENT;
+        }
+
+        private NoticeCategory resolveNoticeCategory(Post post) {
+                if (post.getBoardId().getBoardType() != BoardType.NOTICE) {
+                        return null;
+                }
+                return post.getNoticeCategory() != null ? post.getNoticeCategory() : NoticeCategory.ANNOUNCEMENT;
+        }
+
         // ── 장소 관리 ──────────────────────────────────────────────────────
 
         // 장소 생성
-        public Long createPlace(PlaceCreateDTO dto) {
+        @Transactional
+        public Long createPlace(PlaceCreateDTO dto, Long userId) {
+                // 24:00 → 23:59 컨벤션 (LocalTime은 24:00 불가)
                 LocalTime openTime = LocalTime.of(dto.openTimeHour(), dto.openTimeMinute());
-                LocalTime closeTime = LocalTime.of(dto.closeTimeHour(), dto.closeTimeMinute());
+                LocalTime closeTime = (dto.closeTimeHour() == 24)
+                                ? LocalTime.of(23, 59)
+                                : LocalTime.of(dto.closeTimeHour(), dto.closeTimeMinute());
 
-                if (openTime.isAfter(closeTime)) {
-                        throw new IllegalArgumentException("운영시간이 올바르지 않음");
+                if (!closeTime.isAfter(openTime) && closeTime != LocalTime.of(23, 59)) {
+                        throw new IllegalArgumentException("운영시간이 올바르지 않습니다. (오픈 < 마감)");
                 }
 
                 Place place = Place.builder()
@@ -683,6 +736,7 @@ public class AdminService {
                                 .address(dto.address())
                                 .city(dto.city())
                                 .district(dto.district())
+                                .dong(dto.dong())
                                 .latitude(dto.latitude())
                                 .longitude(dto.longitude())
                                 .capacity(dto.capacity())
@@ -713,31 +767,103 @@ public class AdminService {
                                 .toList();
                 placeClosedDayRepository.saveAll(closedDays);
 
+                // 이미지 연결 (ord = 리스트 인덱스, 0번이 대표이미지)
+                if (dto.imagePaths() != null && !dto.imagePaths().isEmpty()) {
+                        List<String> paths = dto.imagePaths();
+                        for (int i = 0; i < paths.size(); i++) {
+                                placeImageRepository.linkImageWithOrd(userId, paths.get(i),
+                                                ImageStatus.TEMP, ImageStatus.USED, ImageDomain.PLACE, place.getId(),
+                                                (long) i);
+                        }
+                }
+
                 return place.getId();
         }
 
         // 장소 수정
-        public Long updatePlace(Long id, PlaceCreateDTO dto) {
+        @Transactional
+        public Long updatePlace(Long id, PlaceCreateDTO dto, Long userId) {
                 Place place = placeRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("place not found"));
 
+                // 24:00 → 23:59 컨벤션
+                LocalTime openTime = LocalTime.of(dto.openTimeHour(), dto.openTimeMinute());
+                LocalTime closeTime = (dto.closeTimeHour() == 24)
+                                ? LocalTime.of(23, 59)
+                                : LocalTime.of(dto.closeTimeHour(), dto.closeTimeMinute());
+
+                if (!closeTime.isAfter(openTime) && closeTime != LocalTime.of(23, 59)) {
+                        throw new IllegalArgumentException("운영시간이 올바르지 않습니다. (오픈 < 마감)");
+                }
+
+                place.setName(dto.name());
                 place.setAddress(dto.address());
-                place.setCapacity(dto.capacity());
                 place.setCity(dto.city());
-                place.setDescription(dto.description());
                 place.setDistrict(dto.district());
+                place.setDong(dto.dong());
+                place.setLatitude(dto.latitude());
+                place.setLongitude(dto.longitude());
+                place.setCapacity(dto.capacity());
+                place.setPricePerHour(dto.pricePerHour());
+                place.setDescription(dto.description());
+                place.setOpenTime(openTime);
+                place.setCloseTime(closeTime);
                 place.setMinReservationMinutes(dto.minReservationMinutes());
                 place.setMaxReservationMinutes(dto.maxReservationMinutes());
-                place.setName(dto.name());
-                place.setPricePerHour(dto.pricePerHour());
+
+                // 태그 업데이트
+                placeTagRepository.deleteAllByPlace(place);
+                List<Tag> tags = tagRepository.findAllById(dto.tagIds());
+                List<PlaceTag> placeTags = tags.stream()
+                                .map(tag -> PlaceTag.builder().place(place).tag(tag).build())
+                                .toList();
+                placeTagRepository.saveAll(placeTags);
+
+                // 이미지 차등 업데이트
+                if (dto.imagePaths() != null) {
+                        List<String> newPaths = dto.imagePaths();
+
+                        if (newPaths.isEmpty()) {
+                                // 새 목록이 비어있으면 기존 이미지 전부 soft delete
+                                placeImageRepository.softDeleteExcludingPaths(ImageDomain.PLACE, id,
+                                                List.of("__NO_MATCH__"));
+                        } else {
+                                // 새 목록에 없는 기존 이미지 soft delete
+                                placeImageRepository.softDeleteExcludingPaths(ImageDomain.PLACE, id, newPaths);
+
+                                // 현재 USED 이미지 경로 목록
+                                List<String> currentPaths = placeImageRepository
+                                                .findByDomainAndOwnerIdAndDeletedFalse(ImageDomain.PLACE, id)
+                                                .stream().map(Image::getPath).toList();
+
+                                for (int i = 0; i < newPaths.size(); i++) {
+                                        String path = newPaths.get(i);
+                                        if (currentPaths.contains(path)) {
+                                                // 기존 이미지: ord만 업데이트
+                                                placeImageRepository.updateOrd(ImageDomain.PLACE, id, path, (long) i);
+                                        } else {
+                                                // 신규 이미지: TEMP → USED + ord 설정
+                                                placeImageRepository.linkImageWithOrd(userId, path,
+                                                                ImageStatus.TEMP, ImageStatus.USED, ImageDomain.PLACE,
+                                                                id, (long) i);
+                                        }
+                                }
+                        }
+                }
 
                 return place.getId();
         }
 
         // 장소 소프트 삭제
+        @Transactional
         public void deletePlace(Long id) {
                 Place place = placeRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("place not found"));
+
+                if (place.getStatus() == PlaceStatus.INACTIVE) {
+                        throw new IllegalStateException("이미 비활성화된 장소입니다.");
+                }
+
                 place.setStatus(PlaceStatus.INACTIVE);
         }
 
@@ -754,6 +880,7 @@ public class AdminService {
                                                 .address(place.getAddress())
                                                 .city(place.getCity())
                                                 .district(place.getDistrict())
+                                                .dong(place.getDong())
                                                 .capacity(place.getCapacity())
                                                 .pricePerHour(place.getPricePerHour())
                                                 .avgRating(place.getAverageRating() != null ? place.getAverageRating()
@@ -797,6 +924,7 @@ public class AdminService {
                                 .address(place.getAddress())
                                 .city(place.getCity())
                                 .district(place.getDistrict())
+                                .dong(place.getDong())
                                 .latitude(place.getLatitude())
                                 .longitude(place.getLongitude())
                                 .capacity(place.getCapacity())
@@ -804,8 +932,10 @@ public class AdminService {
                                 .description(place.getDescription())
                                 .openTimeHour(place.getOpenTime().getHour())
                                 .openTimeMinute(place.getOpenTime().getMinute())
-                                .closeTimeHour(place.getCloseTime().getHour())
-                                .closeTimeMinute(place.getCloseTime().getMinute())
+                                .closeTimeHour(place.getCloseTime().equals(LocalTime.of(23, 59)) ? 24
+                                                : place.getCloseTime().getHour())
+                                .closeTimeMinute(place.getCloseTime().equals(LocalTime.of(23, 59)) ? 0
+                                                : place.getCloseTime().getMinute())
                                 .minReservationMinutes(place.getMinReservationMinutes())
                                 .maxReservationMinutes(place.getMaxReservationMinutes())
                                 .status(place.getStatus().name())
@@ -813,6 +943,12 @@ public class AdminService {
                                 .reviewCount(place.getReviewCount() != null ? place.getReviewCount() : 0)
                                 .tagIds(tagIds)
                                 .closedDays(closedDays)
+                                .imagePaths(placeImageRepository
+                                                .findByDomainAndOwnerIdAndDeletedFalse(ImageDomain.PLACE, id)
+                                                .stream()
+                                                .sorted(Comparator.comparingLong(Image::getOrd))
+                                                .map(Image::getPath)
+                                                .toList())
                                 .build();
         }
 
@@ -865,6 +1001,27 @@ public class AdminService {
                 }
 
                 placeClosedDayRepository.delete(closedDay);
+        }
+
+        // ──────────────────────────────────────────────
+        // 장소 대시보드 메서드
+        // ──────────────────────────────────────────────
+
+        @Transactional(readOnly = true)
+        public ReservationCountDTO getPlaceReservationCounts() {
+                return placeRepository.getReservationCounts();
+        }
+
+        @Transactional(readOnly = true)
+        public List<PopularPlaceDTO> getPopularPlaces() {
+                return placeRepository.findTop5PopularPlaces(
+                                LocalDateTime.now().minusDays(30));
+        }
+
+        @Transactional(readOnly = true)
+        public Double getPlaceUtilizationRate() {
+                return placeRepository.calculateUtilizationRate(
+                                LocalDateTime.now().minusDays(30));
         }
 
         // 변환 전용 메소드
@@ -1020,5 +1177,4 @@ public class AdminService {
                                 .build();
                 return dto;
         }
-
 }

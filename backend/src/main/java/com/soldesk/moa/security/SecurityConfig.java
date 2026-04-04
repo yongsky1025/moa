@@ -20,6 +20,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.soldesk.moa.common.config.CorsProperties;
 import com.soldesk.moa.security.oauth2.handler.OAuth2LoginFailureHandler;
 import com.soldesk.moa.security.oauth2.handler.OAuth2LoginSuccessHandler;
 import com.soldesk.moa.security.oauth2.repository.HttpCookieOAuth2AuthorizationRequestRepository;
@@ -44,19 +45,22 @@ public class SecurityConfig {
         private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
         private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
         private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
+        private final CorsProperties corsProperties;
 
         public SecurityConfig(JwtTokenProvider jwtTokenProvider,
                         UserDetailsService userDetailsService,
                         CustomOAuth2UserService customOAuth2UserService,
                         OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
                         OAuth2LoginFailureHandler oAuth2LoginFailureHandler,
-                        HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository) {
+                        HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository,
+                        CorsProperties corsProperties) {
                 this.jwtTokenProvider = jwtTokenProvider;
                 this.userDetailsService = userDetailsService;
                 this.customOAuth2UserService = customOAuth2UserService;
                 this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
                 this.oAuth2LoginFailureHandler = oAuth2LoginFailureHandler;
                 this.cookieAuthorizationRequestRepository = cookieAuthorizationRequestRepository;
+                this.corsProperties = corsProperties;
         }
 
         @Bean
@@ -100,8 +104,9 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 // ----------- 서클 시큐리티 파트 ----------
 
-                                                .requestMatchers(HttpMethod.GET, "/circles", "/circles/categories",
-                                                                "/circles/*")
+                                                .requestMatchers(HttpMethod.GET, "/api/circles",
+                                                                "/api/circles/categories",
+                                                                "/api/circles/*")
                                                 .permitAll()
 
                                                 // ----------- 보드 시큐리티 파트 ----------
@@ -111,6 +116,12 @@ public class SecurityConfig {
                                                 .requestMatchers("/notice/**", "/free/**", "/support/**").permitAll()
                                                 .requestMatchers("/api/notice/**", "/api/free/**", "/api/support/**")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/boards/global/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/community").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/community/sidebar").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/community/activities/**").permitAll()
+                                                .requestMatchers("/api/posts/search", "/api/posts/search/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/posts/search").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/posts/*/replies").permitAll()
                                                 // board 써클 회원만 열람?(예정)
                                                 // .requestMatchers("/circle/**").permitAll()
@@ -127,9 +138,19 @@ public class SecurityConfig {
                                                 .requestMatchers("/chat/**").authenticated()
                                                 .requestMatchers("/api/chat/**").authenticated()
 
-                                                // ---------- 관리자, 장소 ----------
-                                                .requestMatchers("/api/admin/**").permitAll() // 임시로 다 열어둠
-                                                .requestMatchers("/api/place/**").permitAll()
+                                                // ---------- 관리자----------
+                                                .requestMatchers("/api/admin/circles/popular-circles").permitAll() // 메인페이지에
+                                                // 써야할수있으니 허용
+                                                .requestMatchers(HttpMethod.POST, "/api/admin/reports")
+                                                .authenticated() // 신고 접수는 일반 유저도 가능
+                                                .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 security 적용
+                                                // .requestMatchers("/api/admin/**").permitAll() // 개발중에만 허용
+                                                // ---------------- 장소(place) -----------------
+                                                .requestMatchers("/api/places/**").permitAll()
+                                                .requestMatchers("/api/tags/**").permitAll() // 장소&일정 태그 다 열어야함
+                                                .requestMatchers("/api/place-reviews/**").authenticated() // 장소 후기
+                                                // ------------------- 예약+결제(payment) -----------
+                                                .requestMatchers("/api/reservations/**").authenticated()
                                                 // ----------------------------------
                                                 // swagger 임시 허용(개발중)
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
@@ -168,7 +189,7 @@ public class SecurityConfig {
         @Bean
         CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
-                configuration.addAllowedOriginPattern("http://localhost:5173");
+                configuration.setAllowedOriginPatterns(corsProperties.getAllowedOriginPatterns());
                 configuration.setAllowedMethods(Arrays.asList("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH"));
                 configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
                 configuration.setAllowCredentials(true);

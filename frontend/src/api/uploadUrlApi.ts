@@ -1,5 +1,5 @@
 import axios from "axios";
-import api from "../users/utils/jwtUtil";
+import api from "./axiosInstance";
 
 export interface UploadUrlRequest {
   domain: string;

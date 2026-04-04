@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.board.dto.BoardRequestDTO;
 import com.soldesk.moa.board.dto.BoardResponseDTO;
+import com.soldesk.moa.board.dto.BoardNameRequestDTO;
 import com.soldesk.moa.board.entity.constant.BoardType;
 import com.soldesk.moa.board.service.BoardService;
 import com.soldesk.moa.post.dto.PostRequestDTO;
@@ -54,7 +55,7 @@ public class CircleBoardRestController {
         return boardService.listCircleBoards(circleId, auth.getUserId());
     }
 
-    // 게시판 생성 (일단 로그인만 컷, 방장/관리자 확장은 나중에)
+    // 게시판 생성 (써클 리더 전용)
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Circle/Board 생성", description = "해당 써클의 게시판 추가 API")
     @PostMapping
@@ -75,7 +76,7 @@ public class CircleBoardRestController {
     @PutMapping("/{boardId}")
     public Long update(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
-            @RequestBody @Valid BoardRequestDTO req,
+            @RequestBody @Valid BoardNameRequestDTO req,
             @AuthenticationPrincipal AuthUserDTO auth) {
 
         return boardService.updateCircleBoardName(circleId, boardId, req.getName(), auth.getUserId());
@@ -91,4 +92,5 @@ public class CircleBoardRestController {
 
         boardService.deleteCircleBoard(circleId, boardId, auth.getUserId());
     }
+
 }

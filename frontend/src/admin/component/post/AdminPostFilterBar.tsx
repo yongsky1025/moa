@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import DatePicker from "react-datepicker";
+import DatePicker, { registerLocale } from "react-datepicker";
+import { ko } from "date-fns/locale/ko";
 import "react-datepicker/dist/react-datepicker.css";
+
+registerLocale("ko", ko);
 import { useAdminPosts } from "../../context/AdminPostsContext";
 import type { BoardType } from "../../types/adminTypes";
 import { fetchCircleList } from "../../api/adminCircleApi";
@@ -423,6 +426,10 @@ export default function AdminPostFilterBar() {
           endDate={endDate ?? undefined}
           placeholderText="시작일"
           dateFormat="yyyy-MM-dd"
+          locale="ko"
+          showYearDropdown
+          scrollableYearDropdown
+          yearDropdownItemNumber={5}
           className={`${filterSelectCls(!!startDate)} w-32 text-center`}
           isClearable
         />
@@ -436,6 +443,10 @@ export default function AdminPostFilterBar() {
           minDate={startDate ?? undefined}
           placeholderText="종료일"
           dateFormat="yyyy-MM-dd"
+          locale="ko"
+          showYearDropdown
+          scrollableYearDropdown
+          yearDropdownItemNumber={5}
           className={`${filterSelectCls(!!endDate)} w-32 text-center`}
           isClearable
         />

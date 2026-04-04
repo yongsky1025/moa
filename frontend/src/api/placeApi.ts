@@ -1,4 +1,15 @@
-import api from '../users/utils/jwtUtil';
+import api from './axiosInstance';
+
+export interface TagItem {
+  id: number;
+  name: string;
+}
+
+export interface TagCategoryGroup {
+  categoryId: number;
+  categoryName: string;
+  tags: TagItem[];
+}
 
 export interface PlaceRecommendResponse {
   id: number;
@@ -14,9 +25,13 @@ export interface PlaceRecommendResponse {
   similarity: number;
   distanceKm: number | null;
   score: number;
+  representativeImagePath: string | null;
 }
 
 export const placeApi = {
+  getTagsGrouped: () =>
+    api.get<TagCategoryGroup[]>('/api/tags/grouped'),
+
   recommendPlaces: (
     title: string,
     description?: string,
@@ -25,7 +40,7 @@ export const placeApi = {
     lng?: number,
     topN = 5,
   ) =>
-    api.get<PlaceRecommendResponse[]>('/api/place/recommend', {
+    api.get<PlaceRecommendResponse[]>('/api/places/recommend', {
       params: { title, description, tags, lat, lng, topN },
     }),
 };

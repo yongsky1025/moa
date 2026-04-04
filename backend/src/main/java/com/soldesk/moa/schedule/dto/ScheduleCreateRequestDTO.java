@@ -36,5 +36,5 @@ public class ScheduleCreateRequestDTO {
     private Double longitude;
 
     // 태그 (선택)
-    private List<String> tags;
+    private List<Long> tagIds;
 }

@@ -3,6 +3,10 @@ import type { PostResponse } from "../types/postTypes";
 import type { PostKind } from "../types/postTypes";
 import { postRoutes } from "../routes/postRoutes";
 import { formatDate } from "../utils/dateFormat";
+import {
+  NOTICE_CATEGORY_BADGE_PALETTE,
+  NOTICE_CATEGORY_LABEL,
+} from "../constants/noticeCategory";
 
 interface PostCardProps {
   post: PostResponse;
@@ -15,7 +19,15 @@ function detailPath(kind: Exclude<PostKind, "circle">, postId: number) {
 }
 
 export default function PostCard({ post, kind }: PostCardProps) {
-  const plainContent = post.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const plainContent = post.content
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const noticeCategoryLabel =
+    post.noticeCategory != null
+      ? (NOTICE_CATEGORY_LABEL[post.noticeCategory] ?? "공지")
+      : "공지";
+  const noticeCategoryStyle = NOTICE_CATEGORY_BADGE_PALETTE[post.noticeCategory ?? "ANNOUNCEMENT"];
 
   if (kind === "notice") {
     return (
@@ -40,14 +52,14 @@ export default function PostCard({ post, kind }: PostCardProps) {
               width: 66,
               height: 28,
               borderRadius: 999,
-              border: "1px solid #cfd8e3",
-              backgroundColor: "#f8fbff",
-              color: "#1d4ed8",
+              border: `1px solid ${noticeCategoryStyle.borderColor}`,
+              backgroundColor: noticeCategoryStyle.backgroundColor,
+              color: noticeCategoryStyle.color,
               fontSize: 12,
               fontWeight: 700,
             }}
           >
-            공지
+            {noticeCategoryLabel}
           </span>
           <div style={{ minWidth: 0 }}>
             <div
@@ -76,7 +88,8 @@ export default function PostCard({ post, kind }: PostCardProps) {
               {plainContent || "본문이 없습니다."}
             </div>
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-              {post.authorName} · 조회 {post.viewCount} · 댓글 {post.replyCount}
+              {post.authorName} · 조회 {post.viewCount} · 댓글 {post.replyCount}{" "}
+              · 좋아요 {post.likeCount}
             </div>
           </div>
           <div style={{ fontSize: 12, color: "#6b7280", textAlign: "right" }}>
@@ -125,7 +138,8 @@ export default function PostCard({ post, kind }: PostCardProps) {
           {plainContent || "본문이 없습니다."}
         </div>
         <div style={{ fontSize: 13, color: "#6b7280" }}>
-          {post.authorName} · {formatDate(post.createDate)} · 조회 {post.viewCount} · 댓글 {post.replyCount}
+          {post.authorName} · {formatDate(post.createDate)} · 조회{" "}
+          {post.viewCount} · 댓글 {post.replyCount}
         </div>
       </Link>
     </li>

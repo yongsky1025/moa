@@ -8,4 +8,6 @@ import com.soldesk.moa.post.entity.PostReaction;
 
 public interface PostReactionRepository extends JpaRepository<PostReaction, Long> {
     Optional<PostReaction> findByPost_PostIdAndUser_UserId(Long postId, Long userId);
+
+    long countByPost_PostId(Long postId);
 }

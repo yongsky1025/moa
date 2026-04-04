@@ -31,6 +31,10 @@ dependencyManagement {
 }
 
 dependencies {
+	// 토스페이먼츠 결제 기능을 위한 라이브러리
+	// WebClient
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	
 	// Spring AI - OpenAI 임베딩
 	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 
@@ -73,6 +77,7 @@ dependencies {
 	implementation 'org.modelmapper:modelmapper:3.2.6'
 	// 3.x => spring boot 4.x 버전만 가능(swagger-ui)
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'

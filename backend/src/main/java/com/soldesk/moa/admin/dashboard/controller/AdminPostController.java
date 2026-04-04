@@ -1,6 +1,7 @@
 package com.soldesk.moa.admin.dashboard.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -30,11 +31,12 @@ import lombok.extern.log4j.Log4j2;
 @RequestMapping("/api/admin/posts")
 @Tag(name = "Admin post section", description = "게시글 관리 API")
 @Log4j2
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminPostController {
 
     private final AdminService adminService;
 
-    // 게시글 관리 
+    // 게시글 관리
 
     @GetMapping("/list")
     @Operation(summary = "게시글 목록 조회 (필터/검색/정렬)")
@@ -59,7 +61,7 @@ public class AdminPostController {
             @RequestParam Long adminId,
             @RequestBody AdminNoticeRequestDTO dto) {
         log.info("공지사항 작성 adminId={}", adminId);
-        Long postId = adminService.createNotice(adminId, dto.title(), dto.content());
+        Long postId = adminService.createNotice(adminId, dto.title(), dto.content(), dto.noticeCategory());
         return ResponseEntity.ok(postId);
     }
 
@@ -69,7 +71,7 @@ public class AdminPostController {
             @PathVariable Long postId,
             @RequestBody AdminNoticeRequestDTO dto) {
         log.info("공지사항 수정 postId={}", postId);
-        adminService.updateNotice(postId, dto.title(), dto.content());
+        adminService.updateNotice(postId, dto.title(), dto.content(), dto.noticeCategory());
         return ResponseEntity.ok().build();
     }
 

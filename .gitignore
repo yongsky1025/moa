@@ -169,6 +169,8 @@ dist
 
 # SvelteKit build / generate output
 .svelte-kit
+.vite/
+frontend/.vite/
 
 ### react ###
 .DS_*
@@ -270,14 +272,17 @@ gradle-app.setting
 src/main/resources/application.properties
 
 # Claude Code
-.claude/
+.claude/**
 
 # Uploaded files
 /uploads/**
 /backend/uploads/**
 
+# Meilisearch local data
+data.ms/
+
 # Ignore all files under any test directory
 **/test/**
 
-# Local-only seed runner
-backend/src/main/java/com/soldesk/moa/seed/LocalSeedDataRunner.java
+# Seed data directory
+seed/

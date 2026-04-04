@@ -71,4 +71,9 @@ public class RefreshTokenService {
         }
         refreshTokenRepository.deleteByToken(token);
     }
+
+    @Transactional
+    public void revokeByUserId(Long userId) {
+        refreshTokenRepository.deleteByUser_UserId(userId);
+    }
 }

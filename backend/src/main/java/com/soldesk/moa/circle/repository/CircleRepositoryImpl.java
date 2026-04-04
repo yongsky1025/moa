@@ -24,8 +24,8 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
     }
 
     @Override
-    public PageResultDTO<Circle> findByCategory_CategoryId(
-            Long categoryId,
+    public PageResultDTO<Circle> findByCategories(
+            List<Long> categoryIds,
             PageRequestDTO pageRequestDTO) {
 
         QCircle circle = QCircle.circle;
@@ -40,7 +40,7 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
                 .selectFrom(circle)
                 .join(circle.category, category).fetchJoin()
                 .where(
-                        categoryEq(categoryId),
+                        categoryIn(categoryIds),
                         keywordContains(pageRequestDTO.getKeyword()),
                         statusFilter(pageRequestDTO.getType()))
                 .offset((long) page * size)
@@ -53,7 +53,7 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
                 .select(circle.count())
                 .from(circle)
                 .where(
-                        categoryEq(categoryId),
+                        categoryIn(categoryIds),
                         keywordContains(pageRequestDTO.getKeyword()),
                         statusFilter(pageRequestDTO.getType()))
                 .fetchOne();
@@ -103,9 +103,14 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
 
     //
     // 조건 메서드들
-    private BooleanExpression categoryEq(Long categoryId) {
-        return categoryId == null ? null
-                : QCircle.circle.category.categoryId.eq(categoryId);
+    private BooleanExpression categoryIn(List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) return null;
+        BooleanExpression condition = null;
+        for (Long id : categoryIds) {
+            BooleanExpression eq = QCircle.circle.category.categoryId.eq(id);
+            condition = condition == null ? eq : condition.or(eq);
+        }
+        return condition;
     }
 
     private BooleanExpression keywordContains(String keyword) {
@@ -120,9 +125,12 @@ public class CircleRepositoryImpl implements CircleRepositoryCustom {
             return QCircle.circle.status.notIn(CircleStatus.PENDING, CircleStatus.REJECTED, CircleStatus.CLOSED);
         }
 
-        // type=OPEN 일 때만 모집중 필터
         if ("OPEN".equalsIgnoreCase(type)) {
             return QCircle.circle.status.eq(CircleStatus.OPEN);
+        }
+
+        if ("FULL".equalsIgnoreCase(type)) {
+            return QCircle.circle.status.eq(CircleStatus.FULL);
         }
 
         return null;

@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import type { AdminPlaceResponseDTO } from "../../types/adminTypes";
 import { useAdminPlaces } from "../../context/AdminPlacesContext";
 import { deletePlace } from "../../api/adminPlaceApi";
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil, Eye } from "lucide-react";
 import MoaPaginate from "../Moapaginate";
 import AdminPlaceStatusBadge from "./AdminPlaceStatusBadge";
 import AdminConfirmModal from "../AdminConfirmModal";
 import AdminResultModal from "../AdminResultModal";
+import { useAdminToast } from "../../hooks/useAdminToast";
+import AdminToast from "../AdminToast";
 
 const HEADERS = [
   "No.",
@@ -31,6 +33,8 @@ export default function AdminPlaceTable() {
   const totalCount = data?.totalCount ?? 0;
   const current = data?.current ?? 1;
 
+  const { toast, showToast } = useAdminToast();
+
   // 삭제 모달 상태
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const [resultMsg, setResultMsg] = useState("");
@@ -42,9 +46,10 @@ export default function AdminPlaceTable() {
       setDeleteTarget(null);
       setResultMsg(`"${deleteTarget.name}" 장소가 비활성화되었습니다.`);
       refresh();
-    } catch {
+    } catch (e: any) {
       setDeleteTarget(null);
-      setResultMsg("장소 삭제에 실패했습니다.");
+      const msg = e?.response?.data?.message ?? "장소 비활성화에 실패했습니다.";
+      showToast(msg, { type: "error" });
     }
   };
 
@@ -124,7 +129,7 @@ export default function AdminPlaceTable() {
                       {p.address}
                     </td>
                     <td className="text-moa-secondary px-5 py-3.5 text-xs whitespace-nowrap">
-                      {p.city} {p.district}
+                      {p.city} {p.district} {p.dong}
                     </td>
                     <td className="text-moa-secondary px-5 py-3.5 text-right font-mono text-xs whitespace-nowrap">
                       {p.capacity}명
@@ -147,6 +152,13 @@ export default function AdminPlaceTable() {
                     >
                       <div className="flex items-center justify-end gap-1">
                         <button
+                          onClick={() => navigate(`/admin/places/${p.id}`)}
+                          className="cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-green-50 hover:text-green-600"
+                          title="상세보기"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => navigate(`/admin/places/${p.id}/edit`)}
                           className="cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-blue-50 hover:text-blue-500"
                           title="수정"
@@ -154,7 +166,13 @@ export default function AdminPlaceTable() {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => setDeleteTarget({ id: p.id, name: p.name })}
+                          onClick={() => {
+                            if (p.status === "INACTIVE") {
+                              showToast("이미 비활성화된 장소입니다.", { type: "error" });
+                              return;
+                            }
+                            setDeleteTarget({ id: p.id, name: p.name });
+                          }}
                           className="cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
                           title="비활성화"
                         >
@@ -204,6 +222,8 @@ export default function AdminPlaceTable() {
         message={resultMsg}
         onClose={() => setResultMsg("")}
       />
+
+      <AdminToast toast={toast} />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -22,7 +23,10 @@ import java.time.LocalDateTime;
 import com.soldesk.moa.schedule.entity.constant.ScheduleStatus;
 
 @Entity
-@Table(name = "schedule")
+@Table(name = "schedule", indexes = {
+    @Index(name = "idx_schedule_circle_startat",   columnList = "circle_id, start_at"),
+    @Index(name = "idx_schedule_creator_startat",  columnList = "creator_circle_member_id, start_at"),
+})
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -101,5 +105,9 @@ public class Schedule {
             throw new IllegalStateException("현재 인원이 0명입니다.");
         }
         this.currentMember--;
+    }
+
+    public void changeCreator(CircleMember newCreator) {
+        this.creator = newCreator;
     }
 }

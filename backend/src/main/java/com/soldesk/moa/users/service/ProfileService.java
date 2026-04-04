@@ -30,6 +30,7 @@ public class ProfileService {
                 .publicId(user.getPublicId())
                 .nickname(user.getNickname())
                 .email(user.getEmail())
+                .provider(user.getProvider())
                 .userGender(user.getUserGender())
                 .birthDate(user.getBirthDate())
                 .age(user.getAge())

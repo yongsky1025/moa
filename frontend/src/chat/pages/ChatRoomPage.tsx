@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { chatApi } from "../../api/chatApi";
 import { circleApi } from "../../api/circleApi";
-import { useWebSocket } from "../hooks/useWebSocket";
+import { useWebSocket, type TypingEvent } from "../hooks/useWebSocket";
 import { useAuthStore } from "../../store/authStore";
 import EmojiPicker from "../components/EmojiPicker";
 import type { ChatMessage, ChatRoomSummary } from "../types/chat";
@@ -32,6 +32,9 @@ export default function ChatRoomPage() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   // userId → lastReadAt (ISO string)
   const [readStatus, setReadStatus] = useState<Record<number, string>>({});
+  const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
+  const typingTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const typingCooldownRef = useRef(false);
   const headerCtxRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -177,7 +180,16 @@ export default function ChatRoomPage() {
     [rid],
   );
 
-  const { sendMessage } = useWebSocket({ roomId: rid, onMessage: handleNewMessage, onReadEvent: handleReadEvent });
+  const handleTyping = useCallback((event: TypingEvent) => {
+    if (event.userId === userId) return;
+    setTypingUsers((prev) => ({ ...prev, [event.userId]: event.nickname }));
+    if (typingTimersRef.current[event.userId]) clearTimeout(typingTimersRef.current[event.userId]);
+    typingTimersRef.current[event.userId] = setTimeout(() => {
+      setTypingUsers((prev) => { const next = { ...prev }; delete next[event.userId]; return next; });
+    }, 3000);
+  }, [userId]);
+
+  const { sendMessage, sendTyping } = useWebSocket({ roomId: rid, onMessage: handleNewMessage, onReadEvent: handleReadEvent, onTyping: handleTyping });
 
   const handleSend = () => {
     const content = input.trim();
@@ -270,6 +282,16 @@ export default function ChatRoomPage() {
 
   return (
     <div style={styles.container}>
+      <style>{`
+        @keyframes typing-bounce {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-5px); opacity: 1; }
+        }
+        .typing-dots { display: flex; gap: 4px; align-items: center; height: 14px; }
+        .typing-dots span { width: 7px; height: 7px; border-radius: 50%; background: #9CA3AF; animation: typing-bounce 1.2s infinite; display: inline-block; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+      `}</style>
       {/* 에러 토스트 */}
       {toastMsg && (
         <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', background: '#c62828', color: '#fff', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 'bold', zIndex: 99999, display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.25)', maxWidth: 380 }}>
@@ -456,6 +478,17 @@ export default function ChatRoomPage() {
             </div>
           );
         })}
+        {Object.entries(typingUsers).map(([uid, nickname]) => (
+          <div key={uid} style={{ ...styles.msgRow, justifyContent: 'flex-start' }}>
+            <div style={{ ...styles.avatar, background: nickColor(nickname) }}>{nickname.charAt(0)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <span style={styles.nick}>{nickname}</span>
+              <div style={{ ...styles.bubble, background: '#fff', border: '1px solid #e8e8e8', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', padding: '12px 16px' }}>
+                <div className="typing-dots"><span /><span /><span /></div>
+              </div>
+            </div>
+          </div>
+        ))}
         <div ref={bottomRef} />
       </div>
 
@@ -541,7 +574,14 @@ export default function ChatRoomPage() {
           style={styles.textInput}
           placeholder="메시지를 입력하세요..."
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            if (!typingCooldownRef.current && e.target.value.trim()) {
+              sendTyping(user?.nickname ?? '');
+              typingCooldownRef.current = true;
+              setTimeout(() => { typingCooldownRef.current = false; }, 2000);
+            }
+          }}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
         />
         <button ref={emojiBtnRef} style={styles.fileBtn} onClick={() => setShowEmoji((v) => !v)}>

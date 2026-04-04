@@ -21,6 +21,17 @@ export interface ChatMessage {
   createdAt: string;
   updatedAt: string | null;
   isDeleted: boolean;
+  replyToId?: number | null;
+  replyToContent?: string | null;
+  replyToNickname?: string | null;
+  messageType?: 'NORMAL' | 'SYSTEM';
+  reactions?: ReactionSummary[];
+}
+
+export interface ReactionSummary {
+  emoji: string;
+  count: number;
+  myReaction: boolean;
 }
 
 export interface SendMessageRequest {

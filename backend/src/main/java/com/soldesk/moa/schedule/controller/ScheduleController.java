@@ -2,6 +2,7 @@ package com.soldesk.moa.schedule.controller;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.soldesk.moa.schedule.dto.ScheduleCreateRequestDTO;
 import com.soldesk.moa.schedule.dto.ScheduleMemberResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleResponseDTO;
+import com.soldesk.moa.schedule.dto.ScheduleReviewCreateRequestDTO;
+import com.soldesk.moa.schedule.dto.ScheduleReviewResponseDTO;
 import com.soldesk.moa.schedule.dto.ScheduleUpdateRequestDTO;
+import com.soldesk.moa.schedule.service.ScheduleReviewService;
 import com.soldesk.moa.schedule.service.ScheduleService;
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 
@@ -28,10 +32,11 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/circles/{circleId}/schedules")
+@RequestMapping("/api/circles/{circleId}/schedules")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
+    private final ScheduleReviewService scheduleReviewService;
 
     // 서클 일정 목록 조회 (서클 멤버만, from/to 날짜 필터 선택적)
     @GetMapping
@@ -92,14 +97,50 @@ public class ScheduleController {
         return ResponseEntity.ok(response);
     }
 
-    // 일정 참여
+    // 일정 참여 (result: JOIN = 즉시 참여, PENDING = 생성자 승인 대기)
     @PostMapping("/{scheduleId}/join")
-    public ResponseEntity<Void> joinSchedule(
+    public ResponseEntity<Map<String, String>> joinSchedule(
             @PathVariable Long scheduleId,
             @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
-        scheduleService.joinSchedule(scheduleId, authUserDTO.getUserId());
+        com.soldesk.moa.schedule.entity.constant.ScheduleMemberStatus result =
+                scheduleService.joinSchedule(scheduleId, authUserDTO.getUserId());
+        return ResponseEntity.ok(Map.of("result", result.name()));
+    }
+
+    // 승인 대기 멤버 목록 조회 (생성자 또는 리더만)
+    @GetMapping("/{scheduleId}/members/pending")
+    public ResponseEntity<List<ScheduleMemberResponseDTO>> getPendingMembers(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(
+                scheduleService.getPendingMembers(circleId, scheduleId, authUserDTO.getUserId()));
+    }
+
+    // 승인 대기 멤버 승인 (생성자 또는 리더만)
+    @PostMapping("/{scheduleId}/members/{scheduleMemberId}/approve")
+    public ResponseEntity<Void> approveMember(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @PathVariable Long scheduleMemberId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        scheduleService.approveMember(circleId, scheduleId, scheduleMemberId, authUserDTO.getUserId());
         return ResponseEntity.ok().build();
+    }
+
+    // 승인 대기 멤버 거절 (생성자 또는 리더만)
+    @DeleteMapping("/{scheduleId}/members/{scheduleMemberId}/reject")
+    public ResponseEntity<Void> rejectMember(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @PathVariable Long scheduleMemberId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        scheduleService.rejectMember(circleId, scheduleId, scheduleMemberId, authUserDTO.getUserId());
+        return ResponseEntity.noContent().build();
     }
 
     // 일정 참여 취소
@@ -113,18 +154,99 @@ public class ScheduleController {
         return ResponseEntity.noContent().build();
     }
 
-    // 일정 삭제 (생성자만 가능)
+    // 일정 생성자 위임 (생성자가 다른 참여자에게 위임하고 본인 참여 취소)
+    @PostMapping("/{scheduleId}/delegate-creator")
+    public ResponseEntity<Void> delegateScheduleCreator(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @RequestBody Map<String, Long> body,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        Long newCreatorScheduleMemberId = body.get("scheduleMemberId");
+        if (newCreatorScheduleMemberId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        scheduleService.delegateScheduleCreator(
+                circleId,
+                scheduleId,
+                newCreatorScheduleMemberId,
+                authUserDTO.getUserId());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // 일정 삭제 (생성자 또는 서클 리더)
     @DeleteMapping("/{scheduleId}")
     public ResponseEntity<Void> deleteSchedule(
             @PathVariable Long circleId,
             @PathVariable Long scheduleId,
+            @RequestParam(defaultValue = "false") boolean cancelReservation,
             @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
         scheduleService.deleteSchedule(
                 circleId,
                 scheduleId,
-                authUserDTO.getUserId());
+                authUserDTO.getUserId(),
+                cancelReservation);
 
+        return ResponseEntity.noContent().build();
+    }
+
+    // 일정에 활성 예약이 있는지 확인 (삭제 전 프론트 팝업용)
+    @GetMapping("/{scheduleId}/has-reservation")
+    public ResponseEntity<Map<String, Boolean>> hasActiveReservation(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+        boolean hasReservation = scheduleService.hasActiveReservation(scheduleId);
+        return ResponseEntity.ok(Map.of("hasActiveReservation", hasReservation));
+    }
+
+    // 후기 작성 (완료된 일정 참여자만)
+    @PostMapping("/{scheduleId}/reviews")
+    public ResponseEntity<ScheduleReviewResponseDTO> createReview(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @RequestBody @Valid ScheduleReviewCreateRequestDTO request,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(
+                scheduleReviewService.createReview(circleId, scheduleId, request, authUserDTO.getUserId()));
+    }
+
+    // 후기 목록 조회 (서클 멤버만)
+    @GetMapping("/{scheduleId}/reviews")
+    public ResponseEntity<List<ScheduleReviewResponseDTO>> getReviews(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(
+                scheduleReviewService.getReviews(circleId, scheduleId, authUserDTO.getUserId()));
+    }
+
+    // 서클 전체 후기 목록 조회 (page/size 파라미터, 기본값: 0/6)
+    @GetMapping("/reviews")
+    public ResponseEntity<List<ScheduleReviewResponseDTO>> getCircleReviews(
+            @PathVariable Long circleId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        return ResponseEntity.ok(
+                scheduleReviewService.getCircleReviews(circleId, authUserDTO.getUserId(), page, size));
+    }
+
+    // 후기 삭제 (작성자 본인 또는 리더/부리더)
+    @DeleteMapping("/{scheduleId}/reviews/{reviewId}")
+    public ResponseEntity<Void> deleteReview(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @PathVariable Long reviewId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        scheduleReviewService.deleteReview(circleId, scheduleId, reviewId, authUserDTO.getUserId());
         return ResponseEntity.noContent().build();
     }
 }

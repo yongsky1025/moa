@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.soldesk.moa.notification.service.ReplyNotificationEventListener;
 import com.soldesk.moa.reply.dto.ReplyRequestDTO;
 import com.soldesk.moa.reply.dto.ReplyReactionSummaryDTO;
 import com.soldesk.moa.reply.dto.ReplyResponseDTO;
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class ReplyRestController {
 
     private final ReplyService replyService;
+    private final ReplyNotificationEventListener replyNotification;
 
     @GetMapping
     public Page<ReplyResponseDTO> list(@PathVariable("postId") Long postId,
@@ -43,7 +45,9 @@ public class ReplyRestController {
     public Long create(@PathVariable("postId") Long postId,
             @RequestBody @Valid ReplyRequestDTO req,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        return replyService.createReply(postId, auth.getUserId(), req);
+        Long replyId = replyService.createReply(postId, auth.getUserId(), req);
+        try { replyNotification.onReplyCreated(postId, auth.getUserId()); } catch (Exception ignored) {}
+        return replyId;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -52,7 +56,9 @@ public class ReplyRestController {
             @PathVariable("replyId") Long replyId,
             @RequestBody @Valid ReplyRequestDTO req,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        return replyService.createChildReply(postId, replyId, auth.getUserId(), req);
+        Long savedId = replyService.createChildReply(postId, replyId, auth.getUserId(), req);
+        try { replyNotification.onChildReplyCreated(replyId, auth.getUserId()); } catch (Exception ignored) {}
+        return savedId;
     }
 
     @PreAuthorize("isAuthenticated()")

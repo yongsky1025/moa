@@ -13,6 +13,8 @@ import com.soldesk.moa.admin.dashboard.repository.AdminCircleRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminPostRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
+import com.soldesk.moa.chat.domain.ChatMessage;
+import com.soldesk.moa.chat.repository.ChatMessageRepository;
 import com.soldesk.moa.admin.report.dto.SanctionFilterDTO;
 import com.soldesk.moa.admin.report.dto.SanctionRequestDTO;
 import com.soldesk.moa.admin.report.dto.SanctionResponseDTO;
@@ -53,6 +55,7 @@ public class SanctionService {
     private final AdminCircleRepository adminCircleRepository;
     private final CircleMemberRepository circleMemberRepository;
     private final NotificationService notificationService;
+    private final ChatMessageRepository chatMessageRepository;
 
     // 제재 목록 조회
     public PageResultDTO<SanctionResponseDTO> getSanctions(SanctionFilterDTO filter) {
@@ -138,6 +141,10 @@ public class SanctionService {
                     .markDeleted();
 
             case CIRCLE -> executeCircleSanction(dto);
+
+            case CHAT -> chatMessageRepository.findById(dto.targetId())
+                    .orElseThrow(() -> new IllegalArgumentException("채팅 메세지를 찾을 수 없습니다."))
+                    .markReported();
 
         }
     };
@@ -272,6 +279,11 @@ public class SanctionService {
                 break;
             case CIRCLE:
                 rollbackCircleSanction(sanction);
+                break;
+            case CHAT:
+                ChatMessage chatMessage = chatMessageRepository.findById(sanction.getTargetId())
+                        .orElseThrow(() -> new IllegalArgumentException("채팅 메세지를 찾을 수 없습니다."));
+                chatMessage.restore();
                 break;
         }
     }

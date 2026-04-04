@@ -3,6 +3,8 @@ package com.soldesk.moa.schedule.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.entity.constant.ScheduleStatus;
 
@@ -16,6 +18,7 @@ import lombok.NoArgsConstructor;
 public class ScheduleResponseDTO {
 
     private Long scheduleId;
+    private Long circleId;
     private String title;
     private String description;
     private LocalDateTime startAt;
@@ -27,11 +30,18 @@ public class ScheduleResponseDTO {
     private Double latitude;
     private Double longitude;
     private boolean joined;
-    private List<String> tags;
+    @JsonProperty("isPending")
+    private boolean isPending;
+    @JsonProperty("isCreator")
+    private boolean isCreator;
+    private int pendingCount;
+    private List<TagResponseDTO> tags;
     private Long chatRoomId;
+    private ScheduleReservationDTO reservation;
 
     public ScheduleResponseDTO(Schedule schedule) {
         this.scheduleId = schedule.getScheduleId();
+        this.circleId = schedule.getCircle().getCircleId();
         this.title = schedule.getTitle();
         this.description = schedule.getDescription();
         this.startAt = schedule.getStartAt();
@@ -50,7 +60,7 @@ public class ScheduleResponseDTO {
         this.joined = joined;
     }
 
-    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<String> tags) {
+    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<TagResponseDTO> tags) {
         this(schedule, joined);
         this.tags = tags;
     }
@@ -60,8 +70,18 @@ public class ScheduleResponseDTO {
         this.chatRoomId = chatRoomId;
     }
 
-    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<String> tags, Long chatRoomId) {
+    public ScheduleResponseDTO(Schedule schedule, boolean joined, List<TagResponseDTO> tags, Long chatRoomId) {
         this(schedule, joined, tags);
         this.chatRoomId = chatRoomId;
+    }
+
+    // 일정 상세 조회 전용 생성자 (isPending, isCreator, pendingCount, reservation 포함)
+    public ScheduleResponseDTO(Schedule schedule, boolean joined, boolean isPending, boolean isCreator,
+            int pendingCount, List<TagResponseDTO> tags, ScheduleReservationDTO reservation) {
+        this(schedule, joined, tags);
+        this.isPending = isPending;
+        this.isCreator = isCreator;
+        this.pendingCount = pendingCount;
+        this.reservation = reservation;
     }
 }

@@ -63,13 +63,22 @@ public class Reservation extends BaseEntity {
     private Users reservedBy;
 
     @Column
-    private LocalDateTime holdExpiredAt; // holding 상태 만료 시각(결제 대기)
+    private LocalDateTime holdExpiredAt; // holding 상태 만료 시각(결제 대기) 20분으로 할거임
 
     @Version
     private Integer version; // 동시 예약 방지 낙관적락 사용 version
 
+    // 결제 위변조 검증용 hold시점 주문번호
+    @Column(unique = true, length = 100)
+    private String orderId;
+
     // 예약 상태 변경 스케줄러
     public void setReservationStatus(ReservationStatus reservationStatus) {
         this.reservationStatus = reservationStatus;
+    }
+
+    // 일정 삭제하나 장소는 취소 안할때
+    public void detachSchedule() {
+        this.schedule = null;
     }
 }

@@ -29,11 +29,15 @@ public class ReplyResponseDTO {
 
     private LocalDateTime createDate;
 
+    private LocalDateTime updateDate;
+
     private Long parentId;
 
     private int depth;
 
     private Long replyToUserId;
+
+    private String replyToAuthorName;
 
     private boolean deleted;
 

@@ -3,7 +3,9 @@ import { createPortal } from "react-dom";
 import { chatApi } from "../../api/chatApi";
 import { circleApi } from "../../api/circleApi";
 import { notificationApi } from "../../api/notificationApi";
-import { useWebSocket } from "../hooks/useWebSocket";
+import { reportApi, CATEGORY_LABELS } from "../../api/reportApi";
+import type { ReportCategory } from "../../api/reportApi";
+import { useWebSocket, type TypingEvent } from "../hooks/useWebSocket";
 import { useAuthStore } from "../../store/authStore";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
@@ -42,8 +44,9 @@ const EMOJIS = [
 ];
 
 const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
+const isFileUrl = (c: string) => c.startsWith('/uploads/') || c.startsWith('/api/chat/files/');
 function renderMsgContent(content: string, mine: boolean) {
-  if (content.startsWith('/api/chat/files/')) {
+  if (isFileUrl(content)) {
     if (IMAGE_EXTS.test(content)) {
       return (
         <img
@@ -83,16 +86,29 @@ export default function ChatPopupPage() {
   const [menuId, setMenuId] = useState<number | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
   const [editMsgContent, setEditMsgContent] = useState("");
+  const [replyTo, setReplyTo] = useState<{ messageId: number; content: string; nickname: string } | null>(null);
+  const [reportModal, setReportModal] = useState<{ messageId: number } | null>(null);
+  const [reportCategory, setReportCategory] = useState<ReportCategory>('ABUSE');
+  const [reportDesc, setReportDesc] = useState("");
   const [roomCtxMenu, setRoomCtxMenu] = useState<{ x: number; y: number; room: ChatRoomSummary } | null>(null);
   const [renaming, setRenaming] = useState<{ roomId: number; value: string } | null>(null);
   const [profileModal, setProfileModal] = useState<{ nickname: string; senderId: number } | null>(null);
   const [profileChatError, setProfileChatError] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [readStatus, setReadStatus] = useState<Record<number, string>>({});
+  const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
+  const typingTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const typingCooldownRef = useRef(false);
+  const [mutedRooms, setMutedRooms] = useState<Set<number>>(() =>
+    new Set(JSON.parse(localStorage.getItem('moa_muted_rooms') ?? '[]'))
+  );
+  const mutedRoomsRef = useRef(mutedRooms);
+  mutedRoomsRef.current = mutedRooms;
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const chatNotifications = notifications.filter((n) => n.type === 'CHAT_MESSAGE');
   const unreadNoti = chatNotifications.filter((n) => !n.isRead).length;
@@ -156,6 +172,9 @@ export default function ChatPopupPage() {
 
   useEffect(() => {
     if (!activeRoom) return;
+    setTypingUsers({});
+    Object.values(typingTimersRef.current).forEach(clearTimeout);
+    typingTimersRef.current = {};
     setRooms((prev) => prev.map((r) => r.roomId === activeRoom.roomId ? { ...r, unreadCount: 0 } : r));
     setLoadingMsg(true);
     chatApi
@@ -261,7 +280,7 @@ export default function ChatPopupPage() {
       setRooms((prev) =>
         prev.map((r) =>
           r.roomId === msg.roomId
-            ? { ...r, lastMessage: msg.content, lastMessageAt: msg.createdAt, unreadCount: r.roomId === activeRoom?.roomId ? 0 : r.unreadCount + 1 }
+            ? { ...r, lastMessage: msg.content, lastMessageAt: msg.createdAt, unreadCount: (r.roomId === activeRoom?.roomId || mutedRoomsRef.current.has(r.roomId)) ? 0 : r.unreadCount + 1 }
             : r,
         ),
       );
@@ -273,12 +292,41 @@ export default function ChatPopupPage() {
     setReadStatus((prev) => ({ ...prev, [event.userId]: event.lastReadAt }));
   }, []);
 
+  // 메인창에서 뮤트 변경 시 동기화
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'moa_muted_rooms') {
+        setMutedRooms(new Set(JSON.parse(e.newValue ?? '[]')));
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  const toggleMute = (roomId: number) => {
+    setMutedRooms((prev) => {
+      const next = new Set(prev);
+      if (next.has(roomId)) { next.delete(roomId); } else { next.add(roomId); }
+      localStorage.setItem('moa_muted_rooms', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const handleTyping = useCallback((event: TypingEvent) => {
+    if (event.userId === userId) return;
+    setTypingUsers((prev) => ({ ...prev, [event.userId]: event.nickname }));
+    if (typingTimersRef.current[event.userId]) clearTimeout(typingTimersRef.current[event.userId]);
+    typingTimersRef.current[event.userId] = setTimeout(() => {
+      setTypingUsers((prev) => { const next = { ...prev }; delete next[event.userId]; return next; });
+    }, 3000);
+  }, [userId]);
+
   const handleNotification = useCallback((noti: import('../../types/notification').Notification) => {
     setNotifications((prev) => {
-      if (prev.some((n) => n.id === noti.id)) return prev;
+      if (noti.id != null && prev.some((n) => n.id === noti.id)) return prev;
       return [noti, ...prev];
     });
-    if (noti.type === 'CHAT_MESSAGE' && noti.referenceId) {
+    if (noti.type === 'CHAT_MESSAGE' && noti.referenceId && !mutedRoomsRef.current.has(noti.referenceId)) {
       setRooms((prev) =>
         prev.map((r) =>
           r.roomId === noti.referenceId && r.roomId !== activeRoom?.roomId
@@ -289,12 +337,26 @@ export default function ChatPopupPage() {
     }
   }, [activeRoom]);
 
-  const { sendMessage } = useWebSocket({
+  const handleReaction = useCallback((msg: ChatMessage) => {
+    setMessages(prev => prev.map(m => m.messageId === msg.messageId ? { ...m, reactions: msg.reactions } : m));
+  }, []);
+
+  const handleToggleReaction = async (messageId: number, emoji: string) => {
+    setMenuId(null);
+    try {
+      const updated = await chatApi.toggleReaction(messageId, emoji);
+      setMessages(prev => prev.map(m => m.messageId === messageId ? { ...m, reactions: updated.reactions } : m));
+    } catch {}
+  };
+
+  const { sendMessage, sendTyping } = useWebSocket({
     roomId: activeRoom?.roomId ?? 0,
     userId: userId ?? undefined,
     onMessage: handleNewMessage,
     onReadEvent: handleReadEvent,
     onNotification: handleNotification,
+    onTyping: handleTyping,
+    onReaction: handleReaction,
   });
 
   const handleSend = () => {
@@ -309,6 +371,9 @@ export default function ChatPopupPage() {
       createdAt: new Date().toISOString(),
       updatedAt: null,
       isDeleted: false,
+      replyToId: replyTo?.messageId ?? null,
+      replyToContent: replyTo?.content ?? null,
+      replyToNickname: replyTo?.nickname ?? null,
     };
     setMessages((prev) => [...prev, tempMsg]);
     setRooms((prev) => prev.map((r) =>
@@ -318,7 +383,11 @@ export default function ChatPopupPage() {
     ));
     setInput("");
     setShowEmoji(false);
-    sendMessage(content);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+    sendMessage(content, replyTo?.messageId);
+    setReplyTo(null);
   };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -371,6 +440,17 @@ export default function ChatPopupPage() {
       alert("삭제 실패");
     }
     setMenuId(null);
+  };
+
+  const handleReportSubmit = async () => {
+    if (!reportModal) return;
+    try {
+      await reportApi.submit({ targetType: 'CHAT_MESSAGE', targetId: reportModal.messageId, category: reportCategory, description: reportDesc });
+      setReportModal(null);
+      setReportDesc("");
+    } catch (e: any) {
+      alert(e?.response?.data?.message ?? '신고 접수 실패');
+    }
   };
 
   const startEditMsg = (msg: { messageId: number; content: string }) => {
@@ -456,34 +536,17 @@ export default function ChatPopupPage() {
   const totalUnread = rooms.reduce((s, r) => s + r.unreadCount, 0);
 
   return (
+    <>
     <div style={s.root}>
       <style>{`
-        .bubble-mine {
-          border-radius: 18px 18px 4px 18px !important;
+        @keyframes typing-bounce {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-5px); opacity: 1; }
         }
-        .bubble-mine::after {
-          content: '';
-          position: absolute;
-          bottom: -8px;
-          right: 0;
-          width: 0;
-          height: 0;
-          border-bottom: 9px solid #5F8F7B;
-          border-left: 9px solid transparent;
-        }
-        .bubble-other {
-          border-radius: 18px 18px 18px 4px !important;
-        }
-        .bubble-other::after {
-          content: '';
-          position: absolute;
-          bottom: -8px;
-          left: 0;
-          width: 0;
-          height: 0;
-          border-bottom: 9px solid #ffffff;
-          border-right: 9px solid transparent;
-        }
+        .typing-dots { display: flex; gap: 4px; align-items: center; height: 14px; }
+        .typing-dots span { width: 7px; height: 7px; border-radius: 50%; background: #9CA3AF; animation: typing-bounce 1.2s infinite; display: inline-block; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
       `}</style>
       {/* 에러 토스트 */}
       {errorMsg && (
@@ -565,7 +628,10 @@ export default function ChatPopupPage() {
                   </div>
                   <div style={s.roomTop}>
                     <span style={s.roomLast}>{r.lastMessage ?? ""}</span>
-                    {r.unreadCount > 0 && <span style={s.unreadBadge}>{r.unreadCount}</span>}
+                    {mutedRooms.has(r.roomId)
+                      ? <span style={{ fontSize: 13, color: '#9CA3AF' }}>🔕</span>
+                      : r.unreadCount > 0 && <span style={s.unreadBadge}>{r.unreadCount}</span>
+                    }
                   </div>
                 </div>
               </div>
@@ -591,6 +657,9 @@ export default function ChatPopupPage() {
               ✏️ 방 이름 변경
             </button>
           )}
+          <button style={s.ctxItem} onClick={() => { toggleMute(roomCtxMenu.room.roomId); setRoomCtxMenu(null); }}>
+            {mutedRooms.has(roomCtxMenu.room.roomId) ? '🔔 알림 켜기' : '🔕 알림 끄기'}
+          </button>
           <button style={{ ...s.ctxItem, color: "#c62828" }} onClick={() => handleRoomLeave(roomCtxMenu.room.roomId)}>
             🚪 채팅방 나가기
           </button>
@@ -793,32 +862,62 @@ export default function ChatPopupPage() {
                               </div>
                             ) : (
                               <div
-                                className={(!msg.content.startsWith('/api/chat/files/') && !msg.isDeleted) ? (mine ? 'bubble-mine' : 'bubble-other') : undefined}
                                 style={{
                                   ...s.bubble,
                                   position: 'relative',
-                                  background: msg.isDeleted ? '#e0e0e0' : !msg.content.startsWith('/api/chat/files/') ? (mine ? '#5F8F7B' : '#fff') : 'transparent',
-                                  color: msg.isDeleted ? '#999' : mine ? '#fff' : '#1F2937',
+                                  background: msg.isDeleted ? '#e0e0e0' : !isFileUrl(msg.content) ? (mine ? '#FEE500' : '#F0F0F0') : 'transparent',
+                                  color: msg.isDeleted ? '#999' : '#1A1A1A',
                                   fontStyle: msg.isDeleted ? 'italic' : 'normal',
-                                  borderRadius: msg.isDeleted ? 18 : msg.content.startsWith('/api/chat/files/') ? 8 : undefined,
-                                  padding: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 0 : undefined,
-                                  boxShadow: msg.content.startsWith('/api/chat/files/') && !msg.isDeleted ? 'none' : mine ? '0 2px 6px rgba(95,143,123,0.35)' : '0 2px 6px rgba(0,0,0,0.10)',
-                                  border: !msg.content.startsWith('/api/chat/files/') && !mine && !msg.isDeleted ? '1px solid #E5E7EB' : 'none',
+                                  borderRadius: msg.isDeleted ? 18 : isFileUrl(msg.content) ? 8 : (mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px'),
+                                  padding: (isFileUrl(msg.content) && !msg.isDeleted) || msg.replyToId ? 0 : '8px 12px',
+                                  overflow: msg.replyToId ? 'hidden' : undefined,
+                                  boxShadow: isFileUrl(msg.content) && !msg.isDeleted ? 'none' : mine ? '0 1px 3px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.12)',
+                                  border: !isFileUrl(msg.content) && !mine && !msg.isDeleted ? '1px solid rgba(0,0,0,0.08)' : 'none',
                                 }}
-                                onContextMenu={mine && !msg.isDeleted ? (e) => {
+                                onContextMenu={!msg.isDeleted ? (e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   setMenuId(menuId === msg.messageId ? null : msg.messageId);
                                 } : undefined}
                               >
-                                {msg.isDeleted ? '삭제된 메시지입니다.' : renderMsgContent(msg.content, mine)}
-                                {!msg.isDeleted && msg.updatedAt && (
-                                  <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 6 }}>(수정됨)</span>
+                                {/* 답장 인용 */}
+                                {msg.replyToId && (
+                                  <div style={{ background: mine ? 'rgba(0,0,0,0.1)' : '#F0F0F0', padding: '7px 12px 6px', borderBottom: '1px solid ' + (mine ? 'rgba(0,0,0,0.08)' : '#DDE1E6') }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: mine ? 'rgba(0,0,0,0.7)' : '#5F8F7B', marginBottom: 2 }}>{msg.replyToNickname}에게 답장</div>
+                                    <div style={{ fontSize: 11, color: mine ? 'rgba(0,0,0,0.5)' : '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{msg.replyToContent}</div>
+                                  </div>
                                 )}
+                                <div style={msg.replyToId ? { padding: '8px 12px' } : undefined}>
+                                  {msg.isDeleted ? '삭제된 메시지입니다.' : renderMsgContent(msg.content, mine)}
+                                  {!msg.isDeleted && msg.updatedAt && (
+                                    <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 6 }}>(수정됨)</span>
+                                  )}
+                                </div>
                                 {menuId === msg.messageId && (
                                   <div style={s.menuBox} onClick={(e) => e.stopPropagation()}>
-                                    <button style={s.menuItem} onClick={() => startEditMsg(msg)}>수정</button>
-                                    <button style={{ ...s.menuItem, color: '#e53935' }} onClick={() => handleDeleteMsg(msg.messageId)}>삭제</button>
+                                    {/* 리액션 */}
+                                    <div style={{ display: 'flex', gap: 4, padding: '8px 10px', borderBottom: '1px solid #f0f0f0' }}>
+                                      {['👍', '❤️'].map(emoji => {
+                                        const r = msg.reactions?.find(x => x.emoji === emoji);
+                                        return (
+                                          <button key={emoji} onClick={() => handleToggleReaction(msg.messageId, emoji)} style={{ background: r?.myReaction ? '#EAF4F0' : 'none', border: '1px solid #e5e7eb', borderRadius: 16, padding: '4px 8px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                            {emoji}{r && r.count > 0 ? <span style={{ fontSize: 11, color: '#374151' }}>{r.count}</span> : null}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                    <button style={s.menuItem} onClick={() => { setReplyTo({ messageId: msg.messageId, content: isFileUrl(msg.content) ? '📎 파일' : msg.content, nickname: msg.senderNickname ?? '?' }); setMenuId(null); textareaRef.current?.focus(); }}>답장</button>
+                                    {!isFileUrl(msg.content) && (
+                                      <button style={s.menuItem} onClick={() => { navigator.clipboard.writeText(msg.content); setMenuId(null); }}>복사</button>
+                                    )}
+                                    {mine ? (
+                                      <>
+                                        <button style={s.menuItem} onClick={() => startEditMsg(msg)}>수정</button>
+                                        <button style={{ ...s.menuItem, color: '#e53935' }} onClick={() => handleDeleteMsg(msg.messageId)}>삭제</button>
+                                      </>
+                                    ) : (
+                                      <button style={{ ...s.menuItem, color: '#e53935' }} onClick={() => { setMenuId(null); setReportCategory('ABUSE'); setReportDesc(''); setReportModal({ messageId: msg.messageId }); }}>신고</button>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -831,11 +930,32 @@ export default function ChatPopupPage() {
                           })()}
                           <span style={s.msgTime}>{formatTime(msg.createdAt)}</span>
                         </div>
+                        {/* 리액션 표시 */}
+                        {msg.reactions && msg.reactions.length > 0 && (
+                          <div style={{ display: 'flex', gap: 4, marginTop: 3, flexWrap: 'wrap', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                            {msg.reactions.map(r => (
+                              <button key={r.emoji} onClick={() => handleToggleReaction(msg.messageId, r.emoji)} style={{ background: r.myReaction ? '#EAF4F0' : '#F3F4F6', border: '1px solid ' + (r.myReaction ? '#5F8F7B' : '#E5E7EB'), borderRadius: 16, padding: '3px 8px', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 3, color: '#374151' }}>
+                                {r.emoji} <span style={{ fontSize: 11 }}>{r.count}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
                 })
               }
+              {Object.entries(typingUsers).map(([uid, nickname]) => (
+                <div key={uid} style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                  <div style={{ ...s.avatar, background: avatarColor(Number(uid)) }}>{nickname.charAt(0)}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <span style={s.senderName}>{nickname}</span>
+                    <div className="bubble-other" style={{ ...s.bubble, position: 'relative', background: '#fff', border: '1px solid #E5E7EB', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', padding: '12px 16px' }}>
+                      <div className="typing-dots"><span /><span /><span /></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
               <div ref={bottomRef} />
             </div>
 
@@ -847,6 +967,17 @@ export default function ChatPopupPage() {
                     {e}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* 답장 미리보기 */}
+            {replyTo && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: '#F0F7F4', borderTop: '1px solid #D1E8DF', borderLeft: '3px solid #5F8F7B', flexShrink: 0 }}>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ fontSize: 11, color: '#5F8F7B', fontWeight: 600 }}>{replyTo.nickname}에게 답장</div>
+                  <div style={{ fontSize: 12, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{replyTo.content}</div>
+                </div>
+                <button onClick={() => setReplyTo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 16, padding: '0 2px', flexShrink: 0 }}>✕</button>
               </div>
             )}
 
@@ -863,11 +994,21 @@ export default function ChatPopupPage() {
               </div>
               <div style={s.inputRow}>
                 <textarea
+                  ref={textareaRef}
                   style={s.textarea}
                   placeholder="메시지를 입력하세요"
                   value={input}
                   rows={1}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = e.target.scrollHeight + "px";
+                    if (!typingCooldownRef.current && e.target.value.trim()) {
+                      sendTyping(user?.nickname ?? '');
+                      typingCooldownRef.current = true;
+                      setTimeout(() => { typingCooldownRef.current = false; }, 2000);
+                    }
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -884,6 +1025,33 @@ export default function ChatPopupPage() {
         )}
       </div>
     </div>
+
+    {/* 신고 모달 */}
+    {reportModal && createPortal(
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }} onClick={() => setReportModal(null)}>
+        <div style={{ background: '#fff', borderRadius: 14, padding: '24px', width: 320, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ fontWeight: 700, fontSize: 16, color: '#1F2937', marginBottom: 16 }}>메시지 신고</div>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>신고 유형</div>
+            <select value={reportCategory} onChange={(e) => setReportCategory(e.target.value as ReportCategory)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none' }}>
+              {(Object.entries(CATEGORY_LABELS) as [ReportCategory, string][]).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 6 }}>상세 내용 (선택)</div>
+            <textarea value={reportDesc} onChange={(e) => setReportDesc(e.target.value)} placeholder="신고 내용을 입력하세요" maxLength={500} rows={3} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button onClick={() => setReportModal(null)} style={{ padding: '8px 16px', background: '#EAF4F0', color: '#1F2937', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>취소</button>
+            <button onClick={handleReportSubmit} style={{ padding: '8px 16px', background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>신고하기</button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
   );
 }
 
@@ -1058,8 +1226,8 @@ const s: Record<string, React.CSSProperties> = {
   msgRow: { display: 'flex', alignItems: 'flex-end', gap: 8 },
   avatar: { width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: 14, flexShrink: 0, alignSelf: 'flex-start' },
   senderName: { fontSize: 11, color: '#6B7280', marginBottom: 4, marginLeft: 4 },
-  bubble: { padding: '10px 14px', borderRadius: 18, fontSize: 14, lineHeight: 1.55, wordBreak: 'break-word' as const, wordWrap: 'break-word' as const, width: 'fit-content', textAlign: 'left' as const },
-  msgTime: { fontSize: 11, color: '#A9C8BB', flexShrink: 0, marginBottom: 10 },
+  bubble: { padding: '8px 12px', borderRadius: 18, fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word' as const, wordWrap: 'break-word' as const, width: 'fit-content', maxWidth: 320, textAlign: 'left' as const },
+  msgTime: { fontSize: 11, color: '#999', flexShrink: 0, marginBottom: 10 },
   unreadCount: { fontSize: 11, color: '#E9C46A', fontWeight: 'bold', flexShrink: 0, marginBottom: 10, lineHeight: 1 },
 
   // 메시지 수정/삭제 메뉴
@@ -1095,7 +1263,7 @@ const s: Record<string, React.CSSProperties> = {
     outline: "none",
     resize: "none" as const,
     lineHeight: 1.5,
-    maxHeight: 100,
+    maxHeight: 120,
     overflowY: "auto" as const,
     fontFamily: "inherit",
   },

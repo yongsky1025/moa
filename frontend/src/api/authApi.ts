@@ -1,6 +1,7 @@
-import api from "../users/utils/jwtUtil";
+import api from "./axiosInstance";
 import type {
   AuthResponse,
+  AuthUser,
   LoginRequest,
   SignUpRequest,
   SocialSignUpCompleteRequest,
@@ -18,6 +19,13 @@ export const authApi = {
 
   refresh: () =>
     api.post<AuthResponse>("/api/auth/refresh"),
+
+  /** accessToken만으로 현재 유저 정보 조회 (refresh 쿠키 불필요) */
+  getMe: () =>
+    api.get<AuthUser>("/api/auth/me"),
+
+  agreePrivacyConsent: () =>
+    api.post("/api/auth/privacy-consent"),
 
   socialSignUpComplete: (req: SocialSignUpCompleteRequest) =>
     api.post("/api/auth/social-complete", req),

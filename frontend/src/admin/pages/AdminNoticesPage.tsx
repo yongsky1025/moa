@@ -8,6 +8,7 @@ import { usePageSize } from "../hooks/usePageSize";
 import { useAdminToast } from "../hooks/useAdminToast";
 import AdminToast from "../component/AdminToast";
 import AdminConfirmModal from "../component/AdminConfirmModal";
+import { NOTICE_CATEGORY_LABEL } from "../../post/constants/noticeCategory";
 
 const formatDateTime = (date: string | null | undefined) => {
   if (!date) return "-";
@@ -26,7 +27,7 @@ const DELETED_OPTIONS = [
   { value: "true", label: "삭제됨" },
 ];
 
-const HEADERS = ["No.", "제목", "작성자", "조회수", "작성일", "상태", ""];
+const HEADERS = ["No.", "카테고리", "제목", "작성자", "조회수", "작성일", "상태", ""];
 
 export default function AdminNoticesPage() {
   const navigate = useNavigate();
@@ -218,6 +219,13 @@ export default function AdminNoticesPage() {
                     <td className="text-moa-subtle px-5 py-3.5 font-mono text-xs">
                       {no}
                     </td>
+                    <td className="px-5 py-3.5">
+                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        {p.noticeCategory
+                          ? (NOTICE_CATEGORY_LABEL[p.noticeCategory] ?? "공지")
+                          : "공지"}
+                      </span>
+                    </td>
                     <td className="max-w-sm px-5 py-3.5">
                       <span className="text-moa-text truncate font-semibold">
                         {p.title}
@@ -307,23 +315,23 @@ export default function AdminNoticesPage() {
       </div>
 
       {/* 확인 모달 */}
-      {confirmTarget && (
-        <AdminConfirmModal
-          title={
-            confirmTarget.action === "delete"
-              ? "공지사항 삭제"
-              : "공지사항 복원"
-          }
-          message={
-            confirmTarget.action === "delete"
-              ? "이 공지사항을 삭제하시겠습니까?"
-              : "이 공지사항을 복원하시겠습니까?"
-          }
-          confirmLabel={confirmTarget.action === "delete" ? "삭제" : "복원"}
-          onConfirm={handleAction}
-          onCancel={() => setConfirmTarget(null)}
-        />
-      )}
+      <AdminConfirmModal
+        open={!!confirmTarget}
+        title={
+          confirmTarget?.action === "delete"
+            ? "공지사항 삭제"
+            : "공지사항 복원"
+        }
+        message={
+          confirmTarget?.action === "delete"
+            ? "이 공지사항을 삭제하시겠습니까?"
+            : "이 공지사항을 복원하시겠습니까?"
+        }
+        confirmLabel={confirmTarget?.action === "delete" ? "삭제" : "복원"}
+        confirmColor={confirmTarget?.action === "delete" ? "red" : "green"}
+        onConfirm={handleAction}
+        onCancel={() => setConfirmTarget(null)}
+      />
 
       <AdminToast toast={toast} />
     </div>

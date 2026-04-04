@@ -1,6 +1,6 @@
-export type CircleStatus = 'PENDING' | 'OPEN' | 'FULL' | 'REJECTED' | 'CLOSED';
-export type CircleMemberStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'WITHDRAWN';
-export type CircleRole = 'LEADER' | 'MEMBER';
+export type CircleStatus = "PENDING" | "OPEN" | "FULL" | "REJECTED" | "CLOSED";
+export type CircleMemberStatus = "PENDING" | "ACTIVE" | "REJECTED" | "WITHDRAWN";
+export type CircleRole = "LEADER" | "SUB_LEADER" | "MEMBER";
 
 export interface CircleResponse {
   circleId: number;
@@ -12,6 +12,8 @@ export interface CircleResponse {
   categoryId: number;
   categoryName: string;
   coverImageUrl?: string;
+  myRole?: CircleRole;
+  likeCount?: number;
 }
 
 export interface CircleCreateRequest {
@@ -38,6 +40,7 @@ export interface CircleMember {
   nickname: string;
   role: CircleRole;
   status: CircleMemberStatus;
+  statusMessage?: string;
 }
 
 export interface RecommendationItem {
@@ -46,12 +49,17 @@ export interface RecommendationItem {
   description: string;
   categoryName: string;
   similarity: number;
+  status: CircleStatus;
+  maxMember: number;
+  currentMember: number;
+  coverImageUrl?: string;
 }
 
 export interface RecommendationBundle {
-  overall: RecommendationItem[];  // 5축 전체 매칭
-  social: RecommendationItem[];   // socialLoad + interactionMode
+  overall: RecommendationItem[]; // 5축 전체 매칭
+  social: RecommendationItem[]; // socialLoad + interactionMode
   activity: RecommendationItem[]; // activityIntensity + commitmentLevel + structureLevel
+  overallReason?: string;
 }
 
 // 백엔드 PageResultDTO 구조

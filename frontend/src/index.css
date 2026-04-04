@@ -30,7 +30,7 @@ button {
 /* 랜딩페이지 전용 css */
 
 [data-moa-landing] .moa-landing__hero-bg {
-  background-image: url("https://d2xsxph8kpxj0f.cloudfront.net/310519663408313920/fMf9gXP2KonUhfCYUJkC6j/moa-hero-bg-cafe-green-QMJnWNRGbtb7JaUaJjRFoS.webp");
+  background-image: url("/landing/landing_m.jpg");
 }
 
 [data-moa-landing] .moa-landing__font-serif {

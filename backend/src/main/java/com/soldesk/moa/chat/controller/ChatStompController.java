@@ -4,9 +4,12 @@ import com.soldesk.moa.chat.dto.request.SendMessageRequest;
 import com.soldesk.moa.chat.service.ChatMessageService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.util.Map;
 
 /**
  * STOMP 메시지 수신 및 브로드캐스트 처리.
@@ -21,9 +24,11 @@ import java.security.Principal;
 public class ChatStompController {
 
     private final ChatMessageService messageService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatStompController(ChatMessageService messageService) {
+    public ChatStompController(ChatMessageService messageService, SimpMessagingTemplate messagingTemplate) {
         this.messageService = messageService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @MessageMapping("/chat/{roomId}")
@@ -32,7 +37,24 @@ public class ChatStompController {
             SendMessageRequest request,
             Principal principal
     ) {
+        if (principal == null) {
+            System.err.println("[ChatStompController] principal is null — JWT expired or missing. roomId=" + roomId);
+            return;
+        }
         Long senderId = Long.parseLong(principal.getName());
-        messageService.send(roomId, senderId, request.content());
+        messageService.send(roomId, senderId, request.content(), request.replyToId());
+    }
+
+    /** 타이핑 이벤트 브로드캐스트 (DB 저장 없음) */
+    @MessageMapping("/chat/{roomId}/typing")
+    public void handleTyping(
+            @DestinationVariable Long roomId,
+            @Payload Map<String, Object> body,
+            Principal principal
+    ) {
+        if (principal == null) return;
+        Long userId = Long.parseLong(principal.getName());
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/typing",
+                Map.of("userId", userId, "nickname", body.getOrDefault("nickname", "")));
     }
 }
