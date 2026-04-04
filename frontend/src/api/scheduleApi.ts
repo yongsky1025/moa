@@ -65,6 +65,10 @@ export const scheduleApi = {
   cancelSchedule: (circleId: number, scheduleId: number) =>
     api.delete<void>(`/api/circles/${circleId}/schedules/${scheduleId}/join`),
 
+  // 일정 생성자 위임 (생성자가 다른 참여자에게 위임하고 본인 참여 취소)
+  delegateScheduleCreator: (circleId: number, scheduleId: number, scheduleMemberId: number) =>
+    api.post<void>(`/api/circles/${circleId}/schedules/${scheduleId}/delegate-creator`, { scheduleMemberId }),
+
   // 제목+설명 기반 태그 추천
   suggestTags: (title: string, description: string) =>
     api.post<TagSuggestResult[]>('/api/tags/suggest', { title, description }),

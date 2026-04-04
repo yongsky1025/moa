@@ -154,6 +154,28 @@ public class ScheduleController {
         return ResponseEntity.noContent().build();
     }
 
+    // 일정 생성자 위임 (생성자가 다른 참여자에게 위임하고 본인 참여 취소)
+    @PostMapping("/{scheduleId}/delegate-creator")
+    public ResponseEntity<Void> delegateScheduleCreator(
+            @PathVariable Long circleId,
+            @PathVariable Long scheduleId,
+            @RequestBody Map<String, Long> body,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
+
+        Long newCreatorScheduleMemberId = body.get("scheduleMemberId");
+        if (newCreatorScheduleMemberId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        scheduleService.delegateScheduleCreator(
+                circleId,
+                scheduleId,
+                newCreatorScheduleMemberId,
+                authUserDTO.getUserId());
+
+        return ResponseEntity.noContent().build();
+    }
+
     // 일정 삭제 (생성자 또는 서클 리더)
     @DeleteMapping("/{scheduleId}")
     public ResponseEntity<Void> deleteSchedule(

@@ -33,6 +33,7 @@ export default function CircleManagePage() {
   const [schedules, setSchedules] = useState<ScheduleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
+  const [hoveredMemberId, setHoveredMemberId] = useState<number | null>(null);
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean; title: string; message: string;
     confirmLabel?: string; confirmColor?: 'green' | 'red'; onConfirm: () => void;
@@ -75,15 +76,18 @@ export default function CircleManagePage() {
     loadData();
   }, [loadData]);
 
-  // 리더 아닌 경우 접근 차단
+  // 리더/부리더 아닌 경우 접근 차단
   useEffect(() => {
     if (!loading && activeMembers.length > 0 && user) {
       const me = activeMembers.find(m => m.nickname === user.nickname);
-      if (!me || me.role !== 'LEADER') {
+      if (!me || (me.role !== 'LEADER' && me.role !== 'SUB_LEADER')) {
         navigate(`/circle/${cid}`, { replace: true });
       }
     }
   }, [loading, activeMembers, user]);
+
+  const myRole = activeMembers.find(m => m.nickname === user?.nickname)?.role;
+  const isLeader = myRole === 'LEADER';
 
   const action = async (fn: () => Promise<unknown>, successMsg: string) => {
     try {
@@ -133,6 +137,19 @@ export default function CircleManagePage() {
     openConfirm('리더 위임', `${nickname}님에게 리더를 위임하시겠습니까?`, () =>
       action(() => circleApi.delegateLeader(cid, id), '리더를 위임했습니다.'),
       'green', '위임하기'
+    );
+  const handleAssignSubLeader = (id: number, nickname: string) =>
+    openConfirm('부리더 위임', `${nickname}님을 부리더로 지정하시겠습니까?`, () =>
+      action(() => circleApi.assignSubLeader(cid, id), '부리더로 지정했습니다.'),
+      'green', '지정하기'
+    );
+  const handleRevokeSubLeader = (id: number, nickname: string) =>
+    openConfirm('부리더 해제', `${nickname}님의 부리더를 해제하시겠습니까?`, () =>
+      action(() => circleApi.revokeSubLeader(cid, id), '부리더를 해제했습니다.')
+    );
+  const handleResignSubLeader = () =>
+    openConfirm('부리더 사임', '부리더 역할을 사임하시겠습니까?', () =>
+      action(() => circleApi.resignSubLeader(cid), '부리더를 사임했습니다.')
     );
 
   // 일정 삭제
@@ -184,7 +201,7 @@ export default function CircleManagePage() {
           {/* 왼쪽 사이드바 */}
           <aside style={{ width: 200, flexShrink: 0 }}>
             <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-              {MENU_ITEMS.map(item => (
+              {MENU_ITEMS.filter(item => isLeader || (item.key !== 'edit' && item.key !== 'delete')).map(item => (
                 <button
                   key={item.key}
                   onClick={() => { setActiveMenu(item.key); setMsg(''); }}
@@ -345,15 +362,26 @@ export default function CircleManagePage() {
                   <h2 style={panelTitleStyle}>활성 멤버 ({activeMembers.length}명)</h2>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {activeMembers.map(m => (
-                      <div key={m.circleMemberId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f5f5f5' }}>
+                      <div
+                        key={m.circleMemberId}
+                        onMouseEnter={() => setHoveredMemberId(m.circleMemberId)}
+                        onMouseLeave={() => setHoveredMemberId(null)}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '12px 8px', borderBottom: '1px solid #f5f5f5',
+                          borderRadius: 8,
+                          backgroundColor: hoveredMemberId === m.circleMemberId ? '#f9fafb' : 'transparent',
+                          transition: 'background-color 0.15s',
+                        }}
+                      >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{
                             width: 36, height: 36, borderRadius: '50%',
-                            backgroundColor: m.role === 'LEADER' ? '#111' : '#e5e7eb',
+                            backgroundColor: m.role === 'LEADER' ? '#111' : m.role === 'SUB_LEADER' ? '#4E7C69' : '#e5e7eb',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                              stroke={m.role === 'LEADER' ? 'white' : '#6b7280'}
+                              stroke={m.role === 'LEADER' || m.role === 'SUB_LEADER' ? 'white' : '#6b7280'}
                               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
                             </svg>
@@ -365,21 +393,47 @@ export default function CircleManagePage() {
                                 리더
                               </span>
                             )}
+                            {m.role === 'SUB_LEADER' && (
+                              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: '#4E7C69', backgroundColor: '#EAF4F0', padding: '2px 6px', borderRadius: 4 }}>
+                                부리더
+                              </span>
+                            )}
                             {m.nickname === user?.nickname && m.role !== 'LEADER' && (
                               <span style={{ marginLeft: 6, fontSize: 11, color: '#aaa' }}>나</span>
                             )}
                           </div>
                         </div>
-                        {m.role !== 'LEADER' && (
+                        {m.role !== 'LEADER' && hoveredMemberId === m.circleMemberId && (
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button onClick={() => handleDelegate(m.circleMemberId, m.nickname)}
-                              style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#6b7280', border: '1px solid #e5e5e5' }}>
-                              리더 위임
-                            </button>
-                            <button onClick={() => handleKick(m.circleMemberId, m.nickname)}
-                              style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#dc2626', border: '1px solid #fca5a5' }}>
-                              강퇴
-                            </button>
+                            {isLeader && (
+                              <>
+                                <button onClick={() => handleDelegate(m.circleMemberId, m.nickname)}
+                                  style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#6b7280', border: '1px solid #e5e5e5' }}>
+                                  리더 위임
+                                </button>
+                                {m.role === 'SUB_LEADER' ? (
+                                  <button onClick={() => handleRevokeSubLeader(m.circleMemberId, m.nickname)}
+                                    style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#4E7C69', border: '1px solid #A9C8BB' }}>
+                                    부리더 해제
+                                  </button>
+                                ) : (
+                                  <button onClick={() => handleAssignSubLeader(m.circleMemberId, m.nickname)}
+                                    style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#4E7C69', border: '1px solid #A9C8BB' }}>
+                                    부리더 위임
+                                  </button>
+                                )}
+                                <button onClick={() => handleKick(m.circleMemberId, m.nickname)}
+                                  style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#dc2626', border: '1px solid #fca5a5' }}>
+                                  강퇴
+                                </button>
+                              </>
+                            )}
+                            {m.nickname === user?.nickname && m.role === 'SUB_LEADER' && (
+                              <button onClick={() => handleResignSubLeader()}
+                                style={{ ...smallBtnStyle, backgroundColor: 'white', color: '#dc2626', border: '1px solid #fca5a5' }}>
+                                부리더 사임
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>

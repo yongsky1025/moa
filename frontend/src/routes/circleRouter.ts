@@ -1,5 +1,6 @@
 import CircleListPage from '../circle/pages/CircleListPage';
 import MyCirclesPage from '../circle/pages/MyCirclesPage';
+import LikedCirclesPage from '../circle/pages/LikedCirclesPage';
 import CircleDetailPage from '../circle/pages/CircleDetailPage';
 import CircleFormPage from '../circle/pages/CircleFormPage';
 import CircleMembersPage from '../circle/pages/CircleMembersPage';
@@ -16,6 +17,7 @@ import ScheduleFormPage from '../schedule/pages/ScheduleFormPage';
 export const circleRouter = () => [
   { index: true, Component: CircleListPage },
   { path: 'my', Component: MyCirclesPage },
+  { path: 'liked', Component: LikedCirclesPage },
   { path: 'create', Component: CircleFormPage },
   { path: ':circleId', Component: CircleDetailPage },
   { path: ':circleId/board', Component: CircleBoardTabPage },

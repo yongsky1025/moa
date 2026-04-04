@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users } from 'lucide-react';
+import { Users, Heart } from 'lucide-react';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
 import { circleApi } from '../../api/circleApi';
@@ -27,48 +27,44 @@ const STATUS_LABEL: Record<string, { text: string; color: string }> = {
   CLOSED:   { text: '종료됨',  color: '#6b7280' },
 };
 
-const ROLE_BADGE: Record<string, { text: string; bg: string; color: string }> = {
-  LEADER:     { text: '리더',   bg: '#5f8f7b', color: 'white' },
-  SUB_LEADER: { text: '부리더', bg: '#4E7C69', color: 'white' },
-  MEMBER:     { text: '멤버',   bg: 'rgba(0,0,0,0.45)', color: 'white' },
-};
-
-type Tab = 'all' | 'leader' | 'sub_leader' | 'member';
-
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'all',        label: '전체' },
-  { key: 'leader',     label: '내가 리더' },
-  { key: 'sub_leader', label: '내가 부리더' },
-  { key: 'member',     label: '참여중' },
-];
-
-const EMPTY_MSG: Record<Tab, string> = {
-  all:        '아직 가입한 모임이 없습니다.',
-  leader:     '리더로 있는 모임이 없습니다.',
-  sub_leader: '부리더로 있는 모임이 없습니다.',
-  member:     '참여 중인 모임이 없습니다.',
-};
-
-export default function MyCirclesPage() {
+export default function LikedCirclesPage() {
   const navigate = useNavigate();
   const [circles, setCircles] = useState<CircleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<Tab>('all');
+  const [unlikingId, setUnlikingId] = useState<number | null>(null);
 
   useEffect(() => {
-    circleApi.getMyCircles()
+    circleApi.getLikedCircles()
       .then(res => setCircles(res.data))
       .catch(e => setError(getErrorMessage(e)))
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = circles.filter(c => {
-    if (tab === 'leader')     return c.myRole === 'LEADER';
-    if (tab === 'sub_leader') return c.myRole === 'SUB_LEADER';
-    if (tab === 'member')     return c.myRole === 'MEMBER';
-    return true;
-  });
+  const handleUnlike = async (e: React.MouseEvent, circleId: number) => {
+    e.stopPropagation();
+    setUnlikingId(circleId);
+    try {
+      await circleApi.toggleCircleLike(circleId);
+      setCircles(prev => prev.filter(c => c.circleId !== circleId));
+    } catch {
+      // 무시
+    } finally {
+      setUnlikingId(null);
+    }
+  };
+
+  const handleJoin = async (e: React.MouseEvent, circleId: number) => {
+    e.stopPropagation();
+    try {
+      await circleApi.joinCircle(circleId);
+      setCircles(prev => prev.map(c =>
+        c.circleId === circleId ? { ...c, myRole: 'MEMBER' } : c
+      ));
+    } catch {
+      navigate(`/circle/${circleId}`);
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
@@ -81,39 +77,11 @@ export default function MyCirclesPage() {
         >
           ← 마이페이지로 돌아가기
         </button>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1f2937', marginBottom: 24 }}>가입한 모임</h1>
-
-        {/* 탭 */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 28, borderBottom: '2px solid #f0f0f0' }}>
-          {TABS.map(({ key, label }) => {
-            const count = key === 'all'
-              ? circles.length
-              : circles.filter(c => c.myRole === key.toUpperCase()).length;
-            const active = tab === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setTab(key)}
-                style={{
-                  padding: '12px 20px', fontSize: 14, fontWeight: active ? 700 : 500,
-                  color: active ? '#5f8f7b' : '#888',
-                  background: 'none', border: 'none',
-                  borderBottom: active ? '2px solid #5f8f7b' : '2px solid transparent',
-                  marginBottom: -2, cursor: 'pointer', transition: 'color 0.15s',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                }}
-              >
-                {label}
-                <span style={{
-                  fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 999,
-                  backgroundColor: active ? '#EAF4F0' : '#f3f4f6',
-                  color: active ? '#4E7C69' : '#999',
-                }}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1f2937', margin: 0 }}>찜한 모임</h1>
+          {circles.length > 0 && (
+            <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>{circles.length}개</span>
+          )}
         </div>
 
         {error && (
@@ -124,25 +92,24 @@ export default function MyCirclesPage() {
 
         {loading ? (
           <p style={{ textAlign: 'center', color: '#888', padding: '60px 0' }}>로딩 중...</p>
-        ) : filtered.length === 0 ? (
+        ) : circles.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: '#aaa' }}>
-            <p style={{ fontSize: 15, marginBottom: 12 }}>{EMPTY_MSG[tab]}</p>
-            {tab === 'all' && (
-              <button
-                onClick={() => navigate('/circle')}
-                style={{ padding: '10px 20px', borderRadius: 8, backgroundColor: '#5f8f7b', color: 'white', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-              >
-                모임 찾아보기
-              </button>
-            )}
+            <Heart size={40} style={{ color: '#e5e7eb', marginBottom: 12 }} />
+            <p style={{ fontSize: 15, marginBottom: 12 }}>찜한 모임이 없습니다.</p>
+            <button
+              onClick={() => navigate('/circle')}
+              style={{ padding: '10px 20px', borderRadius: 8, backgroundColor: '#5f8f7b', color: 'white', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            >
+              모임 찾아보기
+            </button>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
-            {filtered.map(circle => {
+            {circles.map(circle => {
               const statusInfo = STATUS_LABEL[circle.status] ?? { text: circle.status, color: '#888' };
               const bgGradient = CATEGORY_COLORS[circle.categoryName] ?? DEFAULT_GRADIENT;
-              const roleBadge = circle.myRole ? ROLE_BADGE[circle.myRole] : null;
-              const canManage = circle.myRole === 'LEADER' || circle.myRole === 'SUB_LEADER';
+              const isMember = !!circle.myRole;
+              const canJoin = circle.status === 'OPEN' && !isMember;
 
               return (
                 <div
@@ -183,15 +150,15 @@ export default function MyCirclesPage() {
                       {statusInfo.text}
                     </div>
 
-                    {/* 역할 뱃지 (좌하단) */}
-                    {roleBadge && (
+                    {/* 가입 여부 (좌하단) */}
+                    {isMember && (
                       <div style={{
                         position: 'absolute', bottom: 8, left: 10,
                         padding: '3px 8px', borderRadius: 999,
-                        backgroundColor: roleBadge.bg,
-                        fontSize: 11, fontWeight: 700, color: roleBadge.color,
+                        backgroundColor: 'rgba(95,143,123,0.9)',
+                        fontSize: 11, fontWeight: 700, color: 'white',
                       }}>
-                        {roleBadge.text}
+                        가입됨
                       </div>
                     )}
 
@@ -228,24 +195,55 @@ export default function MyCirclesPage() {
                     </p>
 
                     {/* 인원 */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280', marginBottom: canManage ? 10 : 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280', marginBottom: 10 }}>
                       <Users style={{ width: 12, height: 12 }} />
                       {circle.currentMember}/{circle.maxMember}명
                     </div>
 
-                    {/* 관리하기 버튼 (리더/부리더만) */}
-                    {canManage && (
+                    {/* 버튼 영역 */}
+                    <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                      {/* 좋아요 취소 */}
                       <button
-                        onClick={e => { e.stopPropagation(); navigate(`/circle/${circle.circleId}/manage`); }}
+                        onClick={e => handleUnlike(e, circle.circleId)}
+                        disabled={unlikingId === circle.circleId}
                         style={{
-                          width: '100%', padding: '7px 0', borderRadius: 8,
-                          backgroundColor: '#5f8f7b', color: 'white',
-                          border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                          flex: 1, padding: '7px 0', borderRadius: 8,
+                          backgroundColor: 'white', color: '#e3886d',
+                          border: '1px solid #fcd3c1',
+                          fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                          opacity: unlikingId === circle.circleId ? 0.5 : 1,
                         }}
                       >
-                        관리하기
+                        <Heart style={{ width: 12, height: 12, fill: '#e3886d' }} />
+                        찜 취소
                       </button>
-                    )}
+
+                      {/* 가입하기 or 바로가기 */}
+                      {canJoin ? (
+                        <button
+                          onClick={e => handleJoin(e, circle.circleId)}
+                          style={{
+                            flex: 1, padding: '7px 0', borderRadius: 8,
+                            backgroundColor: '#5f8f7b', color: 'white',
+                            border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                          }}
+                        >
+                          가입하기
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => navigate(`/circle/${circle.circleId}`)}
+                          style={{
+                            flex: 1, padding: '7px 0', borderRadius: 8,
+                            backgroundColor: 'white', color: '#5f8f7b',
+                            border: '1px solid #5f8f7b', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                          }}
+                        >
+                          바로가기
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

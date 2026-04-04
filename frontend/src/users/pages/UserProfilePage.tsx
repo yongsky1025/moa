@@ -4,6 +4,7 @@ import { profileApi, energyProfileApi, type UserProfile, type EnergyProfileRespo
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { useAuthStore } from "../../store/authStore";
 import { circleApi } from "../../api/circleApi";
+import { scheduleApi } from "../../api/scheduleApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
@@ -47,6 +48,9 @@ export default function UserProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [energy, setEnergy] = useState<EnergyProfileResponse | null>(null);
   const [circleCount, setCircleCount] = useState<number | null>(null);
+  const [likedCount, setLikedCount] = useState<number | null>(null);
+  const [upcomingCount, setUpcomingCount] = useState<number>(0);
+  const [completedCount, setCompletedCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   // 모달 상태
@@ -63,21 +67,31 @@ export default function UserProfilePage() {
   const reviewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    const oneYearAgo = new Date(now.getFullYear()-1, now.getMonth(), now.getDate());
+    const oneYearLater = new Date(now.getFullYear()+1, now.getMonth(), now.getDate());
+
     Promise.all([
       profileApi.getMyProfile(),
-      energyProfileApi
-        .check()
-        .then((r) => r.data)
-        .catch(() => null),
-      circleApi
-        .getMyCircles()
-        .then((r) => r.data.length)
-        .catch(() => null),
+      energyProfileApi.check().then((r) => r.data).catch(() => null),
+      circleApi.getMyCircles().then((r) => r.data.length).catch(() => null),
+      circleApi.getLikedCircles().then((r) => r.data.length).catch(() => null),
+      scheduleApi.getMySchedules({ from: toISO(now), to: toISO(oneYearLater) })
+        .then((r) => r.data.filter(s => s.status === 'UPCOMING' || s.status === 'IN_PROGRESS').length)
+        .catch(() => 0),
+      scheduleApi.getMySchedules({ from: toISO(oneYearAgo), to: toISO(now) })
+        .then((r) => r.data.filter(s => s.status === 'COMPLETED').length)
+        .catch(() => 0),
     ])
-      .then(([p, e, cc]) => {
+      .then(([p, e, cc, lc, uc, dc]) => {
         setProfile(p);
         setEnergy(e);
         setCircleCount(cc);
+        setLikedCount(lc);
+        setUpcomingCount(uc);
+        setCompletedCount(dc);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -272,25 +286,21 @@ export default function UserProfilePage() {
             </div>
           </div>
 
-          {/* 구분선 */}
-          <div style={{ height: 1, background: "rgba(255,255,255,0.15)", margin: "0 20px" }} />
-
-          {/* 통계 */}
-          <div style={s.statsCard}>
-            <div style={s.statBox}>
-              <span style={s.statNum}>{circleCount ?? 0}</span>
-              <span style={s.statLabel}>가입 모임</span>
-            </div>
-            <div style={s.statDivider} />
-            <div style={s.statBox}>
-              <span style={s.statNum}>0</span>
-              <span style={s.statLabel}>참석 일정</span>
-            </div>
-            <div style={s.statDivider} />
-            <div style={s.statBox}>
-              <span style={s.statNum}>0</span>
-              <span style={s.statLabel}>찜한 모임</span>
-            </div>
+        {/* 통계 */}
+        <div style={s.statsCard}>
+          <div style={s.statBox}>
+            <span style={s.statNum}>{circleCount ?? 0}</span>
+            <span style={s.statLabel}>가입 모임</span>
+          </div>
+          <div style={s.statDivider} />
+          <div style={s.statBox}>
+            <span style={s.statNum}>{upcomingCount}</span>
+            <span style={s.statLabel}>예정 일정</span>
+          </div>
+          <div style={s.statDivider} />
+          <div style={s.statBox}>
+            <span style={s.statNum}>{likedCount ?? 0}</span>
+            <span style={s.statLabel}>찜한 모임</span>
           </div>
         </div>
       </div>
@@ -352,14 +362,14 @@ export default function UserProfilePage() {
           <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/my-schedules")}>
             <Calendar size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>참석한 일정</span>
-            <span style={s.rowCount}>0</span>
+            <span style={s.rowCount}>{completedCount}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
-          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/account")}>
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/circle/liked")}>
             <Heart size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>찜한 모임</span>
-            <span style={s.rowCount}>0</span>
+            <span style={s.rowCount}>{likedCount ?? 0}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
         </SectionCard>

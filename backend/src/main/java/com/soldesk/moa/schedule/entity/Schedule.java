@@ -106,4 +106,8 @@ public class Schedule {
         }
         this.currentMember--;
     }
+
+    public void changeCreator(CircleMember newCreator) {
+        this.creator = newCreator;
+    }
 }
