@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import PlaceRecommendModal from '../../place/components/PlaceRecommendModal';
+import type { ScheduleContextForRecommend } from '../../place/components/PlaceRecommendModal';
 import { Clock, Users, MapPin, Star, Trash2, Building2, ChevronRight, UserCheck, UserX } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import Navbar from '../../common/layout/Navbar';
@@ -36,6 +38,10 @@ export default function ScheduleDetailPage() {
   const cid = Number(circleId);
   const sid = Number(scheduleId);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [recommendOpen, setRecommendOpen] = useState(
+    (location.state as { showRecommend?: boolean } | null)?.showRecommend ?? false
+  );
 
   const [schedule, setSchedule] = useState<ScheduleResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +53,7 @@ export default function ScheduleDetailPage() {
   const [pendingMembers, setPendingMembers] = useState<ScheduleMember[]>([]);
 
   const currentUser = useAuthStore(s => s.user);
+  const userId = useAuthStore(s => s.userId);
   const [reviews, setReviews] = useState<ScheduleReview[]>([]);
   const [reviewContent, setReviewContent] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
@@ -267,6 +274,7 @@ export default function ScheduleDetailPage() {
   const statusInfo = STATUS_LABEL[schedule.status];
   const isUpcoming = schedule.status === 'UPCOMING';
   const hasLocation = !!(schedule.latitude && schedule.longitude);
+  const isLeader = !!userId && members.some(m => m.userId === userId && m.role === 'LEADER');
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
@@ -478,6 +486,26 @@ export default function ScheduleDetailPage() {
             <p style={{ marginTop: 10, fontSize: 12, color: '#aaa' }}>
               클릭하면 장소 상세 페이지로 이동합니다.
             </p>
+          </div>
+        )}
+
+        {/* 장소 추천 받기 버튼 — 서클장 + UPCOMING + 예약 없을 때 */}
+        {isLeader && isUpcoming && !schedule.reservation && (
+          <div style={{ marginTop: 20 }}>
+            <button
+              onClick={() => setRecommendOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                width: '100%', padding: '14px 20px', borderRadius: 16,
+                border: '1.5px dashed #5F8F7B', backgroundColor: '#EAF4F0',
+                cursor: 'pointer', color: '#5F8F7B', fontSize: 14, fontWeight: 600,
+                transition: 'background-color 0.15s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d4ebe3')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#EAF4F0')}
+            >
+              ✦ 일정에 어울리는 장소 AI 추천 받기
+            </button>
           </div>
         )}
 
@@ -800,6 +828,21 @@ export default function ScheduleDetailPage() {
             </div>
           </div>
         </div>
+      )}
+      {recommendOpen && schedule && (
+        <PlaceRecommendModal
+          open={recommendOpen}
+          onClose={() => setRecommendOpen(false)}
+          schedule={{
+            scheduleId: schedule.scheduleId,
+            circleId: schedule.circleId ?? cid,
+            title: schedule.title,
+            description: schedule.description,
+            tags: schedule.tags ?? [],
+            latitude: schedule.latitude ?? undefined,
+            longitude: schedule.longitude ?? undefined,
+          } satisfies ScheduleContextForRecommend}
+        />
       )}
     </div>
   );

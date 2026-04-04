@@ -21,6 +21,7 @@ spring:
       data-locations:
         - classpath:seed-data.sql
         - classpath:dummy-data.sql
+        - classpath:dummy-data-place.sql
 
 app:
   # 프론트 로그인/리다이렉트 기준 URL (로컬)

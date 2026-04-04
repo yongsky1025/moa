@@ -13,6 +13,8 @@ import com.soldesk.moa.place.entity.Place;
 import com.soldesk.moa.place.entity.PlaceReview;
 import com.soldesk.moa.place.repository.PlaceRepository;
 
+import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -26,6 +28,7 @@ public class PlaceRecommendService {
 
         private final PlaceRepository placeRepository;
         private final EmbeddingModel embeddingModel;
+        private final PlaceImageService placeImageService;
 
         //
         // 일정 정보를 기반으로 장소를 추천.
@@ -53,6 +56,10 @@ public class PlaceRecommendService {
 
                 boolean hasLocation = lat != null && lng != null;
 
+                // 대표 이미지 배치 조회 (별도 쿼리 1회)
+                List<Long> placeIds = places.stream().map(Place::getId).toList();
+                Map<Long, String> repImages = placeImageService.getRepresentativeImages(placeIds);
+
                 return IntStream.range(0, places.size())
                                 .mapToObj(i -> {
                                         Place p = places.get(i);
@@ -74,7 +81,8 @@ public class PlaceRecommendService {
                                                         p.getCity(), p.getDistrict(),
                                                         p.getLatitude(), p.getLongitude(),
                                                         p.getCapacity(), p.getPricePerHour(),
-                                                        tagNames, similarity, distanceKm, score);
+                                                        tagNames, similarity, distanceKm, score,
+                                                        repImages.get(p.getId()));
                                 })
                                 .filter(dto -> dto.similarity() >= MIN_SIMILARITY)
                                 .sorted(Comparator.comparingDouble(PlaceRecommendResponseDTO::score).reversed())
