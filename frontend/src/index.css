@@ -34,16 +34,14 @@ button {
 }
 
 [data-moa-landing] .moa-landing__font-serif {
-  font-family: "Noto Serif KR", serif;
+  font-family: "Arial", sans-serif;
 }
 
 [data-moa-landing] .moa-landing__font-pretendard {
   font-family:
-    "Pretendard",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+    "Arial",
+    /* -apple-system,
+    BlinkMacSystemFont, */ "sans-serif";
 }
 
 @keyframes moa-landing-fadeInUp {

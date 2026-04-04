@@ -2,6 +2,7 @@ package com.soldesk.moa.security.oauth2.repository;
 
 import java.util.Base64;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,12 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
     private static final String COOKIE_NAME = "oauth2_auth_request";
     private static final int COOKIE_EXPIRE_SECONDS = 180; // 3분
+
+    @Value("${app.cookie.secure:false}")
+    private boolean secureCookie;
+
+    @Value("${app.cookie.same-site:Lax}")
+    private String sameSite;
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
@@ -40,6 +47,8 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
         Cookie cookie = new Cookie(COOKIE_NAME, serialized);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
+        cookie.setSecure(secureCookie);
+        cookie.setAttribute("SameSite", sameSite);
         cookie.setMaxAge(COOKIE_EXPIRE_SECONDS);
         response.addCookie(cookie);
     }
@@ -80,6 +89,8 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
                 Cookie clear = new Cookie(name, "");
                 clear.setPath("/");
                 clear.setHttpOnly(true);
+                clear.setSecure(true);
+                clear.setAttribute("SameSite", "Lax");
                 clear.setMaxAge(0);
                 response.addCookie(clear);
             }

@@ -5,7 +5,7 @@ export interface CircleItem {
   title: string;
   location: string;
   tag: string;
-  date: string;
+  data: string;
   image: string;
 }
 
@@ -13,9 +13,9 @@ interface CircleCardProps {
   item: CircleItem;
   badge: string;
   badgeColor: string;
-  isLiked: boolean;
+  isLiked?: boolean;
   isHovered: boolean;
-  onLike: () => void;
+  onLike?: () => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onClick?: () => void;
@@ -43,7 +43,22 @@ export default function CircleCard({ item, badge, badgeColor, isLiked, isHovered
     >
       {/* 이미지 영역 */}
       <div style={{ position: "relative" }}>
-        <img src={item.image} alt={item.title} style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }} />
+        {item.image ? (
+          <img src={item.image} alt={item.title} style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }} />
+        ) : (
+          <div
+            style={{
+              width: "100%",
+              height: 160,
+              backgroundColor: "#EAF4F0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span style={{ fontSize: 20, fontWeight: 800, color: "#A9C8BB", letterSpacing: 2 }}>MOA</span>
+          </div>
+        )}
 
         {/* 뱃지 */}
         <div
@@ -63,19 +78,23 @@ export default function CircleCard({ item, badge, badgeColor, isLiked, isHovered
         </div>
 
         {/* 좋아요 버튼 */}
-        <LikeHeartButton
-          liked={isLiked}
-          onClick={onLike}
-          stopPropagation
-          activeColor="#E38B6D"
-          inactiveColor="#1F2937"
-          backgroundColor="white"
-          style={{
-            position: "absolute",
-            top: 10,
-            right: 10,
-          }}
-        />
+        {onLike && (
+          <LikeHeartButton
+            liked={!!isLiked}
+            onClick={onLike}
+            stopPropagation
+            activeColor="#E38B6D"
+            inactiveColor="white"
+            backgroundColor="rgba(0,0,0,0.05)"
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+            }}
+            iconSize={18}
+            size={34}
+          />
+        )}
       </div>
 
       {/* 정보 영역 */}
@@ -124,7 +143,7 @@ export default function CircleCard({ item, badge, badgeColor, isLiked, isHovered
         </div>
 
         {/* 날짜 */}
-        <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 400 }}>{item.date}</div>
+        <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 400 }}>{item.data}</div>
       </div>
     </div>
   );

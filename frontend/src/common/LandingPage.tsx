@@ -64,7 +64,7 @@ export default function LandingPage() {
       </section>
 
       <section className="w-full bg-white px-4 py-20">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-5xl">
           <h2 className="moa-landing__font-serif mb-6 text-center text-3xl font-semibold tracking-[-0.03em] text-gray-800 md:text-5xl">MOA란?</h2>
           <p className="mx-auto mb-12 max-w-3xl text-center text-base leading-8 text-gray-500 md:text-lg">
             MOA는 5축 에너지 프로필을 기반으로 당신의 현재 에너지 상태와 가장 잘 맞는 소규모 모임을 추천하는 플랫폼입니다. 기존의 관심사 기반 매칭과
@@ -74,11 +74,11 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
             {[
-              { title: "사회적 상호작용", desc: "대화량과 친목 압력" },
-              { title: "상호작용 깊이", desc: "교류의 깊이와 강도" },
-              { title: "활동 강도", desc: "신체 및 인지 활동" },
-              { title: "참여 부담", desc: "필참, 회비, 규칙" },
-              { title: "구조화 정도", desc: "진행 구조와 역할" },
+              { title: "사교 범위", desc: "대화량과 친목 정도" },
+              { title: "몰입도", desc: "교류의 깊이와 강도" },
+              { title: "움직임", desc: "신체 및 인지 활동" },
+              { title: "참여 빈도", desc: "필참, 회비, 규칙" },
+              { title: "구조감", desc: "진행 구조와 역할" },
             ].map((dimension, index) => (
               <div key={index} className="moa-landing__font-serif rounded-lg border border-gray-200 bg-white p-6 transition-shadow hover:shadow-md">
                 <h3 className="mb-2 text-base font-semibold text-gray-800">{dimension.title}</h3>

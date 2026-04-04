@@ -92,7 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loading: false });
       return user;
     } catch (err: unknown) {
-      let message = "로그인 실패";
+      let message = "아이디 또는 비밀번호가 일치하지 않습니다.";
       if (isAxiosError(err)) {
         const errorCode = err.response?.data?.errorCode;
         if (errorCode && ACCOUNT_STATUS_CODES.has(errorCode)) {
