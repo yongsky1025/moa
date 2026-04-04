@@ -68,21 +68,33 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    const oneYearAgo = new Date(now.getFullYear()-1, now.getMonth(), now.getDate());
-    const oneYearLater = new Date(now.getFullYear()+1, now.getMonth(), now.getDate());
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const toISO = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const oneYearLater = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
 
     Promise.all([
       profileApi.getMyProfile(),
-      energyProfileApi.check().then((r) => r.data).catch(() => null),
-      circleApi.getMyCircles().then((r) => r.data.length).catch(() => null),
-      circleApi.getLikedCircles().then((r) => r.data.length).catch(() => null),
-      scheduleApi.getMySchedules({ from: toISO(now), to: toISO(oneYearLater) })
-        .then((r) => r.data.filter(s => s.status === 'UPCOMING' || s.status === 'IN_PROGRESS').length)
+      energyProfileApi
+        .check()
+        .then((r) => r.data)
+        .catch(() => null),
+      circleApi
+        .getMyCircles()
+        .then((r) => r.data.length)
+        .catch(() => null),
+      circleApi
+        .getLikedCircles()
+        .then((r) => r.data.length)
+        .catch(() => null),
+      scheduleApi
+        .getMySchedules({ from: toISO(now), to: toISO(oneYearLater) })
+        .then((r) => r.data.filter((s) => s.status === "UPCOMING" || s.status === "IN_PROGRESS").length)
         .catch(() => 0),
-      scheduleApi.getMySchedules({ from: toISO(oneYearAgo), to: toISO(now) })
-        .then((r) => r.data.filter(s => s.status === 'COMPLETED').length)
+      scheduleApi
+        .getMySchedules({ from: toISO(oneYearAgo), to: toISO(now) })
+        .then((r) => r.data.filter((s) => s.status === "COMPLETED").length)
         .catch(() => 0),
     ])
       .then(([p, e, cc, lc, uc, dc]) => {
@@ -286,21 +298,22 @@ export default function UserProfilePage() {
             </div>
           </div>
 
-        {/* 통계 */}
-        <div style={s.statsCard}>
-          <div style={s.statBox}>
-            <span style={s.statNum}>{circleCount ?? 0}</span>
-            <span style={s.statLabel}>가입 모임</span>
-          </div>
-          <div style={s.statDivider} />
-          <div style={s.statBox}>
-            <span style={s.statNum}>{upcomingCount}</span>
-            <span style={s.statLabel}>예정 일정</span>
-          </div>
-          <div style={s.statDivider} />
-          <div style={s.statBox}>
-            <span style={s.statNum}>{likedCount ?? 0}</span>
-            <span style={s.statLabel}>찜한 모임</span>
+          {/* 통계 */}
+          <div style={s.statsCard}>
+            <div style={s.statBox}>
+              <span style={s.statNum}>{circleCount ?? 0}</span>
+              <span style={s.statLabel}>가입 모임</span>
+            </div>
+            <div style={s.statDivider} />
+            <div style={s.statBox}>
+              <span style={s.statNum}>{upcomingCount}</span>
+              <span style={s.statLabel}>예정 일정</span>
+            </div>
+            <div style={s.statDivider} />
+            <div style={s.statBox}>
+              <span style={s.statNum}>{likedCount ?? 0}</span>
+              <span style={s.statLabel}>찜한 모임</span>
+            </div>
           </div>
         </div>
       </div>
@@ -467,7 +480,9 @@ export default function UserProfilePage() {
   );
 }
 
-/* ── moa 토큰 기반 스타일 ── */
+{
+  /* /* ── moa 토큰 기반 스타일 ── */
+}
 const s: Record<string, React.CSSProperties> = {
   page: { minHeight: "100vh", background: "#F8FAF9" },
 
