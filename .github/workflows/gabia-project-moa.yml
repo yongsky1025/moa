@@ -26,6 +26,8 @@ jobs:
 
       - name: Build frontend
         working-directory: frontend
+        env:
+          VITE_TOSS_CLIENT_KEY: ${{ secrets.VITE_TOSS_CLIENT_KEY }}
         run: |
           npm ci
           npm run build
@@ -147,6 +149,3 @@ jobs:
           # 5. 보안을 위해 키 삭제
           rm ./private_key
           rm -f ~/.ssh/cm-*
-
-# 서버 원격 명령 실행
-# export OPENAI_API_KEY=\"${{ secrets.OPENAI_API_KEY }}\"
