@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
 import { Image as ImageIcon, Plus, X } from "lucide-react";
 import { requestUploadUrl, uploadImageFile } from "../../api/adminPlaceApi";
-
-const API_HOST = "http://localhost:8080";
+import { toAssetUrl } from "../../../common/utils/assetUrl";
 const MAX_IMAGES = 15;
 
 interface Props {
@@ -82,7 +81,7 @@ export default function PlaceImageUploader({
             className="group relative aspect-square overflow-hidden rounded-lg border border-gray-100"
           >
             <img
-              src={`${API_HOST}${path}`}
+              src={toAssetUrl(path)}
               alt={`이미지 ${idx + 1}`}
               className="h-full w-full object-cover"
             />

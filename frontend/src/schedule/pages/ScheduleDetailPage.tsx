@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import type { ScheduleResponse, ScheduleMember, ScheduleReview, ReservationStatus } from '../types/schedule';
 import ScheduleReviewCkEditor from '../components/ScheduleReviewCkEditor';
 import AdminConfirmModal from '../../admin/component/AdminConfirmModal';
+import { rewriteHtmlAssetUrls } from '../../common/utils/assetUrl';
 
 const STATUS_LABEL = {
   UPCOMING:    { text: '예정',   color: '#2563eb', bg: '#dbeafe' },
@@ -728,7 +729,7 @@ export default function ScheduleDetailPage() {
                     </div>
                     <div
                       className="ck-content"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(review.content) }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(rewriteHtmlAssetUrls(review.content)) }}
                       style={{ fontSize: 14, color: '#444', lineHeight: 1.7 }}
                     />
                   </div>

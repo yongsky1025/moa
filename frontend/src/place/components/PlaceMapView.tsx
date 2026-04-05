@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Star, Users, X } from "lucide-react";
 import type { PlaceCardDTO } from "../types/placeTypes";
-
-const API_HOST = "http://localhost:8080";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 interface Props {
   places: PlaceCardDTO[];
@@ -174,7 +173,7 @@ export default function PlaceMapView({ places }: Props) {
               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
                 {p.representativeImagePath ? (
                   <img
-                    src={`${API_HOST}${p.representativeImagePath}`}
+                    src={toAssetUrl(p.representativeImagePath)}
                     alt={p.name}
                     className="h-full w-full object-cover"
                   />
@@ -210,7 +209,7 @@ export default function PlaceMapView({ places }: Props) {
           <div className="aspect-video w-full overflow-hidden bg-gray-100">
             {selected.representativeImagePath ? (
               <img
-                src={`${API_HOST}${selected.representativeImagePath}`}
+                src={toAssetUrl(selected.representativeImagePath)}
                 alt={selected.name}
                 className="h-full w-full object-cover"
               />

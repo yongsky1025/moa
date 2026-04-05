@@ -28,6 +28,7 @@ import {
   LogOut,
   CalendarDays,
 } from "lucide-react";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
 const nickColor = (nick: string) => AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
@@ -265,7 +266,7 @@ export default function UserProfilePage() {
           </button>
           <div style={s.profileTop}>
             {profile.profileImageUrl ? (
-              <img src={profile.profileImageUrl} alt="프로필" style={s.avatarImg} />
+              <img src={toAssetUrl(profile.profileImageUrl)} alt="프로필" style={s.avatarImg} />
             ) : (
               <div style={{ ...s.avatar, background: avatarBg }}>{profile.nickname.charAt(0)}</div>
             )}

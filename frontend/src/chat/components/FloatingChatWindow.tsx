@@ -12,6 +12,7 @@ import EmojiPicker from "./EmojiPicker";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
 import type { CircleMember } from "../../circle/types/circle";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
 const isFileUrl = (c: string) => c.startsWith('/uploads/') || c.startsWith('/api/chat/files/');
@@ -29,19 +30,20 @@ function highlightText(text: string, query: string): React.ReactNode {
 
 function renderMsgContent(content: string, mine: boolean, searchQuery = "") {
   if (isFileUrl(content)) {
+    const resolvedContent = toAssetUrl(content);
     if (IMAGE_EXTS.test(content)) {
       return (
         <img
-          src={content}
+          src={resolvedContent}
           alt="이미지"
           style={{ maxWidth: 180, maxHeight: 180, borderRadius: 12, display: 'block', cursor: 'pointer', objectFit: 'cover' }}
-          onClick={() => window.open(content, '_blank')}
+          onClick={() => window.open(resolvedContent, '_blank')}
         />
       );
     }
     const fileName = content.split('/').pop() ?? '파일';
     return (
-      <a href={content} download style={{ color: mine ? '#fff' : '#5F8F7B', textDecoration: 'underline', fontSize: 12 }}>
+      <a href={resolvedContent} download style={{ color: mine ? '#fff' : '#5F8F7B', textDecoration: 'underline', fontSize: 12 }}>
         📎 {fileName}
       </a>
     );

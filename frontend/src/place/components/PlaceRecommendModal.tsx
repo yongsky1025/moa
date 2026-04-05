@@ -10,8 +10,7 @@ import {
   ZoomIn,
 } from "lucide-react";
 import { placeApi, type PlaceRecommendResponse } from "../../api/placeApi";
-
-const API_HOST = "http://localhost:8080";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 // ── 타입 ──────────────────────────────────────────────────────────────────────
 
@@ -106,9 +105,7 @@ function RecommendCard({ place, onClick }: RecommendCardProps) {
   const badge = similarityBadge(place.score);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const imageSrc = place.representativeImagePath
-    ? `${API_HOST}${place.representativeImagePath}`
-    : null;
+  const imageSrc = place.representativeImagePath ? toAssetUrl(place.representativeImagePath) : null;
 
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // 카드 클릭(navigate)으로 이벤트 전파 차단

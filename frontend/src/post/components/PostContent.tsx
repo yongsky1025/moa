@@ -1,13 +1,14 @@
 import { memo, useMemo } from "react";
 import DOMPurify from "dompurify";
 import "ckeditor5/ckeditor5.css";
+import { rewriteHtmlAssetUrls } from "../../common/utils/assetUrl";
 
 interface PostContentProps {
   html: string;
 }
 
 function PostContent({ html }: PostContentProps) {
-  const sanitized = useMemo(() => DOMPurify.sanitize(html), [html]);
+  const sanitized = useMemo(() => DOMPurify.sanitize(rewriteHtmlAssetUrls(html)), [html]);
 
   return (
     <article

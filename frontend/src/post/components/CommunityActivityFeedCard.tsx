@@ -7,6 +7,7 @@ import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { RemoveScroll } from "react-remove-scroll";
 import type { PostResponse } from "../types/postTypes";
 import CommentBubbleIcon from "../../common/components/CommentBubbleIcon";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 interface CommunityActivityFeedCardProps {
   post: PostResponse;
@@ -50,7 +51,7 @@ export default function CommunityActivityFeedCard({
   metaAction,
 }: CommunityActivityFeedCardProps) {
   const bodyText = summary;
-  const images = previewImages.filter(Boolean);
+  const images = previewImages.filter(Boolean).map((url) => toAssetUrl(url));
   const imageCount = images.length;
   const [zoomedImageIdx, setZoomedImageIdx] = useState<number | null>(null);
   const hasZoomImage = zoomedImageIdx !== null && !!images[zoomedImageIdx];

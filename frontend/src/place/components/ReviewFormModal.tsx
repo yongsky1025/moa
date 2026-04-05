@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
 import { Star, X, ImagePlus, Trash2 } from "lucide-react";
 import { uploadReviewImage } from "../api/placeReviewApi";
-
-const API_HOST = "http://localhost:8080";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 const MAX_IMAGES = 3;
 
 interface Props {
@@ -163,7 +162,7 @@ export default function ReviewFormModal({
                   className="group relative h-20 w-20 overflow-hidden rounded-xl border border-gray-200"
                 >
                   <img
-                    src={`${API_HOST}${path}`}
+                    src={toAssetUrl(path)}
                     alt={`후기 이미지 ${idx + 1}`}
                     className="h-full w-full object-cover"
                   />

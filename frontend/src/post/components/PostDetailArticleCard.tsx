@@ -10,6 +10,7 @@ import {
 import { formatDate, isEdited } from "../utils/dateFormat";
 import CommentBubbleIcon from "../../common/components/CommentBubbleIcon";
 import UserAvatar from "../../common/components/UserAvatar";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 interface PostDetailArticleCardProps {
   post: PostResponse;
@@ -40,32 +41,33 @@ export default function PostDetailArticleCard({
 }: PostDetailArticleCardProps) {
   const [zoomedImageIdx, setZoomedImageIdx] = useState<number | null>(null);
   const edited = isEdited(post.createDate, post.updateDate);
+  const resolvedAlbumImages = albumImages.map((url) => toAssetUrl(url));
   const noticeCategoryLabel =
     post.noticeCategory != null
       ? NOTICE_CATEGORY_LABEL[post.noticeCategory] ?? "공지"
       : null;
   const noticeCategoryStyle = NOTICE_CATEGORY_BADGE_PALETTE[post.noticeCategory ?? "ANNOUNCEMENT"];
-  const hasZoomImage = zoomedImageIdx !== null && !!albumImages[zoomedImageIdx];
+  const hasZoomImage = zoomedImageIdx !== null && !!resolvedAlbumImages[zoomedImageIdx];
 
   const handlePrevImage = () => {
-    if (!albumImages.length) return;
+    if (!resolvedAlbumImages.length) return;
     setZoomedImageIdx((prev) => {
       if (prev == null) return 0;
-      return (prev - 1 + albumImages.length) % albumImages.length;
+      return (prev - 1 + resolvedAlbumImages.length) % resolvedAlbumImages.length;
     });
   };
 
   const handleNextImage = () => {
-    if (!albumImages.length) return;
+    if (!resolvedAlbumImages.length) return;
     setZoomedImageIdx((prev) => {
       if (prev == null) return 0;
-      return (prev + 1) % albumImages.length;
+      return (prev + 1) % resolvedAlbumImages.length;
     });
   };
 
   const openCurrentZoomImageInNewTab = () => {
     if (zoomedImageIdx == null) return;
-    const url = albumImages[zoomedImageIdx];
+    const url = resolvedAlbumImages[zoomedImageIdx];
     if (!url) return;
     window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -89,7 +91,7 @@ export default function PostDetailArticleCard({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [hasZoomImage, albumImages.length]);
+  }, [hasZoomImage, resolvedAlbumImages.length]);
 
   return (
     <section
@@ -190,14 +192,14 @@ export default function PostDetailArticleCard({
 
       <div style={{ padding: contentPadding, minHeight: minContentHeight }}>
         {hideTitle ? (
-          <div className={`community-twitter-content-split ${albumImages.length > 0 ? "has-image" : ""}`}>
+          <div className={`community-twitter-content-split ${resolvedAlbumImages.length > 0 ? "has-image" : ""}`}>
             <div className="community-twitter-content-text">
               {activitySummaryText && <p className="community-twitter-text">{activitySummaryText}</p>}
             </div>
-            {albumImages.length === 1 && (
+            {resolvedAlbumImages.length === 1 && (
               <div className="community-twitter-media">
                 <img
-                  src={albumImages[0]}
+                  src={resolvedAlbumImages[0]}
                   alt="활동 이미지 1"
                   loading="lazy"
                   style={{ cursor: "pointer" }}
@@ -205,9 +207,9 @@ export default function PostDetailArticleCard({
                 />
               </div>
             )}
-            {albumImages.length === 2 && (
+            {resolvedAlbumImages.length === 2 && (
               <div className="community-twitter-album community-twitter-album-2">
-                {albumImages.slice(0, 2).map((url, idx) => (
+                {resolvedAlbumImages.slice(0, 2).map((url, idx) => (
                   <div key={`${url}-${idx}`} className="community-twitter-album-cell">
                     <img
                       src={url}
@@ -220,11 +222,11 @@ export default function PostDetailArticleCard({
                 ))}
               </div>
             )}
-            {albumImages.length === 3 && (
+            {resolvedAlbumImages.length === 3 && (
               <div className="community-twitter-album community-twitter-album-side">
                 <div className="community-twitter-album-main">
                   <img
-                    src={albumImages[0]}
+                    src={resolvedAlbumImages[0]}
                     alt="활동 이미지 1"
                     loading="lazy"
                     style={{ cursor: "pointer" }}
@@ -232,7 +234,7 @@ export default function PostDetailArticleCard({
                   />
                 </div>
                 <div className="community-twitter-album-stack">
-                  {albumImages.slice(1, 3).map((url, idx) => (
+                  {resolvedAlbumImages.slice(1, 3).map((url, idx) => (
                     <div key={`${url}-${idx}`} className="community-twitter-album-cell">
                       <img
                         src={url}
@@ -246,11 +248,11 @@ export default function PostDetailArticleCard({
                 </div>
               </div>
             )}
-            {albumImages.length >= 4 && (
+            {resolvedAlbumImages.length >= 4 && (
               <div className="community-twitter-album community-twitter-album-side">
                 <div className="community-twitter-album-main">
                   <img
-                    src={albumImages[0]}
+                    src={resolvedAlbumImages[0]}
                     alt="활동 이미지 1"
                     loading="lazy"
                     style={{ cursor: "pointer" }}
@@ -258,8 +260,8 @@ export default function PostDetailArticleCard({
                   />
                 </div>
                 <div className="community-twitter-album-stack three">
-                  {albumImages.slice(1, 4).map((url, idx) => {
-                    const extraCount = albumImages.length - 4;
+                  {resolvedAlbumImages.slice(1, 4).map((url, idx) => {
+                    const extraCount = resolvedAlbumImages.length - 4;
                     const showMore = idx === 2 && extraCount > 0;
                     return (
                       <div key={`${url}-${idx}`} className="community-twitter-album-cell">
@@ -283,12 +285,12 @@ export default function PostDetailArticleCard({
         ) : (
           <>
             <PostContent html={contentHtml ?? post.content} />
-            {albumImages.length > 0 && (
+            {resolvedAlbumImages.length > 0 && (
               <div style={{ margin: "0 auto 18px", maxWidth: 760 }}>
-                {albumImages.length === 1 && (
+                {resolvedAlbumImages.length === 1 && (
                   <div className="community-twitter-media" style={{ width: "100%" }}>
                     <img
-                      src={albumImages[0]}
+                      src={resolvedAlbumImages[0]}
                       alt="활동 이미지 1"
                       loading="lazy"
                       style={{ cursor: "pointer" }}
@@ -296,9 +298,9 @@ export default function PostDetailArticleCard({
                     />
                   </div>
                 )}
-                {albumImages.length === 2 && (
+                {resolvedAlbumImages.length === 2 && (
                   <div className="community-twitter-album community-twitter-album-2" style={{ width: "100%" }}>
-                    {albumImages.slice(0, 2).map((url, idx) => (
+                    {resolvedAlbumImages.slice(0, 2).map((url, idx) => (
                       <div key={`${url}-${idx}`} className="community-twitter-album-cell">
                         <img
                           src={url}
@@ -311,11 +313,11 @@ export default function PostDetailArticleCard({
                     ))}
                   </div>
                 )}
-                {albumImages.length === 3 && (
+                {resolvedAlbumImages.length === 3 && (
                   <div className="community-twitter-album community-twitter-album-side" style={{ width: "100%" }}>
                     <div className="community-twitter-album-main">
                       <img
-                        src={albumImages[0]}
+                        src={resolvedAlbumImages[0]}
                         alt="활동 이미지 1"
                         loading="lazy"
                         style={{ cursor: "pointer" }}
@@ -323,7 +325,7 @@ export default function PostDetailArticleCard({
                       />
                     </div>
                     <div className="community-twitter-album-stack">
-                      {albumImages.slice(1, 3).map((url, idx) => (
+                      {resolvedAlbumImages.slice(1, 3).map((url, idx) => (
                         <div key={`${url}-${idx}`} className="community-twitter-album-cell">
                           <img
                             src={url}
@@ -337,11 +339,11 @@ export default function PostDetailArticleCard({
                     </div>
                   </div>
                 )}
-                {albumImages.length >= 4 && (
+                {resolvedAlbumImages.length >= 4 && (
                   <div className="community-twitter-album community-twitter-album-side" style={{ width: "100%" }}>
                     <div className="community-twitter-album-main">
                       <img
-                        src={albumImages[0]}
+                        src={resolvedAlbumImages[0]}
                         alt="활동 이미지 1"
                         loading="lazy"
                         style={{ cursor: "pointer" }}
@@ -349,8 +351,8 @@ export default function PostDetailArticleCard({
                       />
                     </div>
                     <div className="community-twitter-album-stack three">
-                      {albumImages.slice(1, 4).map((url, idx) => {
-                        const extraCount = albumImages.length - 4;
+                      {resolvedAlbumImages.slice(1, 4).map((url, idx) => {
+                        const extraCount = resolvedAlbumImages.length - 4;
                         const showMore = idx === 2 && extraCount > 0;
                         return (
                           <div key={`${url}-${idx}`} className="community-twitter-album-cell">
@@ -445,7 +447,7 @@ export default function PostDetailArticleCard({
                   margin: "0 auto",
                 }}
               >
-                {albumImages.length > 1 && (
+                {resolvedAlbumImages.length > 1 && (
                   <button
                     type="button"
                     aria-label="이전 이미지"
@@ -473,7 +475,7 @@ export default function PostDetailArticleCard({
                   </button>
                 )}
                 <img
-                  src={albumImages[zoomedImageIdx]}
+                  src={resolvedAlbumImages[zoomedImageIdx]}
                   alt={`확대 이미지 ${zoomedImageIdx + 1}`}
                   onClick={openCurrentZoomImageInNewTab}
                   style={{
@@ -487,7 +489,7 @@ export default function PostDetailArticleCard({
                     cursor: "zoom-in",
                   }}
                 />
-                {albumImages.length > 1 && (
+                {resolvedAlbumImages.length > 1 && (
                   <button
                     type="button"
                     aria-label="다음 이미지"
@@ -515,7 +517,7 @@ export default function PostDetailArticleCard({
                   </button>
                 )}
               </div>
-              {albumImages.length > 1 && (
+              {resolvedAlbumImages.length > 1 && (
                 <div
                   style={{
                     width: "100%",
@@ -526,7 +528,7 @@ export default function PostDetailArticleCard({
                   }}
                 >
                   <p style={{ margin: 0, color: "#e5e7eb", fontSize: 13 }}>
-                    {zoomedImageIdx + 1} / {albumImages.length}
+                    {zoomedImageIdx + 1} / {resolvedAlbumImages.length}
                   </p>
                   <div
                     style={{
@@ -537,7 +539,7 @@ export default function PostDetailArticleCard({
                       justifyContent: "center",
                     }}
                   >
-                    {albumImages.map((url, idx) => (
+                    {resolvedAlbumImages.map((url, idx) => (
                       <button
                         key={`${url}-${idx}`}
                         type="button"

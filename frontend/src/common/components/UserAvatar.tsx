@@ -1,3 +1,5 @@
+import { toAssetUrl } from "../utils/assetUrl";
+
 interface UserAvatarProps {
   name?: string | null;
   imageUrl?: string | null;
@@ -31,7 +33,7 @@ export default function UserAvatar({
   if (imageUrl) {
     return (
       <img
-        src={imageUrl}
+        src={toAssetUrl(imageUrl)}
         alt={ariaHidden ? "" : "프로필"}
         aria-hidden={ariaHidden}
         className={className}

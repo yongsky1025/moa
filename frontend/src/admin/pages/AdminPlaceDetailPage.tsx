@@ -4,8 +4,7 @@ import { MapPin, Users, DollarSign, Clock, Star, MessageSquare, Pencil, ArrowLef
 import { fetchAdminPlace, fetchTagsGrouped } from "../api/adminPlaceApi";
 import type { AdminPlaceDetailDTO, TagCategoryGroupDTO } from "../types/adminTypes";
 import AdminPlaceStatusBadge from "../component/place/AdminPlaceStatusBadge";
-
-const API_HOST = "http://localhost:8080";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 function formatTime(hour: number, minute: number) {
   if (hour === 24) return "24:00";
@@ -215,7 +214,7 @@ export default function AdminPlaceDetailPage() {
                     className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg border border-gray-100"
                   >
                     <img
-                      src={`${API_HOST}${path}`}
+                      src={toAssetUrl(path)}
                       alt={`장소 이미지 ${i + 1}`}
                       className="h-full w-full object-cover transition group-hover:scale-105"
                     />
@@ -329,7 +328,7 @@ export default function AdminPlaceDetailPage() {
 
           {/* 이미지 */}
           <img
-            src={`${API_HOST}${images[selectedIdx]}`}
+            src={toAssetUrl(images[selectedIdx])}
             alt={`장소 이미지 ${selectedIdx + 1}`}
             className="max-h-[85vh] max-w-[80vw] rounded-xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}

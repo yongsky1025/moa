@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, X, ImageOff } from "lucide-react";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 interface Props {
   images: string[];
@@ -9,8 +10,9 @@ interface Props {
 export default function PlaceImageGallery({ images, name }: Props) {
   const [current, setCurrent] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+  const resolvedImages = images.map((image) => toAssetUrl(image));
 
-  if (images.length === 0) {
+  if (resolvedImages.length === 0) {
     return (
       <div
         style={{
@@ -27,8 +29,8 @@ export default function PlaceImageGallery({ images, name }: Props) {
     );
   }
 
-  const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length);
-  const next = () => setCurrent((c) => (c + 1) % images.length);
+  const prev = () => setCurrent((c) => (c - 1 + resolvedImages.length) % resolvedImages.length);
+  const next = () => setCurrent((c) => (c + 1) % resolvedImages.length);
 
   return (
     <>
@@ -43,11 +45,11 @@ export default function PlaceImageGallery({ images, name }: Props) {
           onClick={() => setLightbox(true)}
         >
           <img
-            src={images[current]}
+            src={resolvedImages[current]}
             alt={name}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
-          {images.length > 1 && (
+          {resolvedImages.length > 1 && (
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); prev(); }}
@@ -79,16 +81,16 @@ export default function PlaceImageGallery({ images, name }: Props) {
                 fontSize: 12, fontWeight: 600,
                 padding: "3px 10px", borderRadius: 999,
               }}>
-                {current + 1} / {images.length}
+                {current + 1} / {resolvedImages.length}
               </div>
             </>
           )}
         </div>
 
         {/* 썸네일 열 (최대 4개) */}
-        {images.length > 1 && (
+        {resolvedImages.length > 1 && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-            {images.slice(0, 4).map((img, idx) => (
+            {resolvedImages.slice(0, 4).map((img, idx) => (
               <div
                 key={idx}
                 onClick={() => setCurrent(idx)}
@@ -104,14 +106,14 @@ export default function PlaceImageGallery({ images, name }: Props) {
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
                 {/* 마지막 썸네일에 +N 표시 */}
-                {idx === 3 && images.length > 4 && (
+                {idx === 3 && resolvedImages.length > 4 && (
                   <div style={{
                     position: "absolute", inset: 0,
                     backgroundColor: "rgba(0,0,0,0.45)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     color: "white", fontSize: 18, fontWeight: 700,
                   }}>
-                    +{images.length - 4}
+                    +{resolvedImages.length - 4}
                   </div>
                 )}
               </div>
@@ -153,7 +155,7 @@ export default function PlaceImageGallery({ images, name }: Props) {
             <ChevronLeft style={{ width: 26, height: 26, color: "white" }} />
           </button>
           <img
-            src={images[current]}
+            src={resolvedImages[current]}
             alt={name}
             onClick={(e) => e.stopPropagation()}
             style={{ maxHeight: "90vh", maxWidth: "90vw", objectFit: "contain", borderRadius: 8 }}
@@ -173,7 +175,7 @@ export default function PlaceImageGallery({ images, name }: Props) {
             position: "absolute", bottom: 20,
             color: "rgba(255,255,255,0.7)", fontSize: 13,
           }}>
-            {current + 1} / {images.length}
+            {current + 1} / {resolvedImages.length}
           </div>
         </div>
       )}

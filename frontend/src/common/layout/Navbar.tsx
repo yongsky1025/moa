@@ -17,6 +17,7 @@ import { useAlarmSocket } from "../../chat/hooks/useAlarmSocket";
 import DropdownMenu, {
   type DropdownMenuItem,
 } from "../components/DropdownMenu";
+import { toAssetUrl } from "../utils/assetUrl";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -632,7 +633,7 @@ export default function Navbar() {
                       >
                         {user?.profileImageUrl ? (
                           <img
-                            src={user.profileImageUrl}
+                            src={toAssetUrl(user.profileImageUrl)}
                             alt="프로필"
                             style={{
                               width: 32,

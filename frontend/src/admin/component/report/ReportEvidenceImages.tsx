@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ShieldAlert, X, ChevronLeft, ChevronRight } from "lucide-react";
-
-const API_HOST = "http://localhost:8080";
+import { toAssetUrl } from "../../../common/utils/assetUrl";
 
 interface Props {
   imagePaths?: string[] | null;
@@ -39,7 +38,7 @@ export default function ReportEvidenceImages({ imagePaths }: Props) {
                 className="group relative aspect-square overflow-hidden rounded-lg border-2 border-orange-200 bg-white transition hover:border-orange-400"
               >
                 <img
-                  src={`${API_HOST}${path}`}
+                  src={toAssetUrl(path)}
                   alt={`증거 ${idx + 1}`}
                   className="h-full w-full object-cover transition group-hover:opacity-90"
                 />
@@ -73,7 +72,7 @@ export default function ReportEvidenceImages({ imagePaths }: Props) {
             </div>
 
             <img
-              src={`${API_HOST}${images[selectedIdx]}`}
+              src={toAssetUrl(images[selectedIdx])}
               alt={`증거 ${selectedIdx + 1}`}
               className="max-h-[80vh] max-w-[80vw] rounded-xl object-contain shadow-2xl"
             />

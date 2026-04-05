@@ -3,8 +3,7 @@ import { Star, Pencil, Trash2, MapPin, Calendar } from "lucide-react";
 import type { MyPlaceReviewDTO } from "../types/placeTypes";
 import ReviewFormModal from "./ReviewFormModal";
 import { updateReview, deleteReview } from "../api/placeReviewApi";
-
-const API_HOST = "http://localhost:8080";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 interface Props {
   review: MyPlaceReviewDTO;
@@ -106,7 +105,7 @@ export default function ReviewCard({ review, onUpdated, onDeleted }: Props) {
             {review.images.map((path, idx) => (
               <img
                 key={path}
-                src={`${API_HOST}${path}`}
+                src={toAssetUrl(path)}
                 alt={`후기 이미지 ${idx + 1}`}
                 className="h-16 w-16 rounded-xl object-cover border border-gray-100"
               />

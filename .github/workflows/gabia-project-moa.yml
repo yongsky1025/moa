@@ -28,6 +28,7 @@ jobs:
         working-directory: frontend
         env:
           VITE_TOSS_CLIENT_KEY: ${{ secrets.VITE_TOSS_CLIENT_KEY }}
+          VITE_BACKEND_URL: ${{ secrets.APP_BACKEND_URL }}
         run: |
           npm ci
           npm run build

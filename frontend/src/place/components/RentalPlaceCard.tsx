@@ -4,8 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import type { PlaceCardDTO } from "../types/placeTypes";
 import { togglePlaceLike } from "../api/placeRentalApi";
-
-const API_HOST = "http://localhost:8080";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 function formatMinutes(m: number) {
   if (m < 60) return `${m}분`;
@@ -31,9 +30,7 @@ export default function RentalPlaceCard({
     .filter(Boolean)
     .join(" ");
 
-  const imageSrc = place.representativeImagePath
-    ? `${API_HOST}${place.representativeImagePath}`
-    : null;
+  const imageSrc = place.representativeImagePath ? toAssetUrl(place.representativeImagePath) : null;
 
   const minMinutes = minReservationMinutes ?? place.minReservationMinutes;
 

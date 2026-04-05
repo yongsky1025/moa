@@ -9,6 +9,7 @@ import { circleApi } from "../../api/circleApi";
 import { scheduleApi } from "../../api/scheduleApi";
 import type { ScheduleReview } from "../../schedule/types/schedule";
 import type { CircleResponse } from "../types/circle";
+import { rewriteHtmlAssetUrls, toAssetUrl } from "../../common/utils/assetUrl";
 
 const PAGE_SIZE = 20;
 
@@ -59,7 +60,7 @@ function ReviewDetailModal({ review, circleId, onClose }: { review: ScheduleRevi
         {/* 본문 */}
         <div
           style={{ padding: "20px", fontSize: 14, color: "#333", lineHeight: 1.8 }}
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(review.content) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(rewriteHtmlAssetUrls(review.content)) }}
         />
 
         {/* 작성자 + 날짜 */}
@@ -77,7 +78,7 @@ function ReviewDetailModal({ review, circleId, onClose }: { review: ScheduleRevi
 
 function ReviewCard({ review, onClick }: { review: ScheduleReview; onClick: () => void }) {
   const imgMatch = review.content.match(/<img[^>]*\bsrc\s*=\s*['"]([^'"]+)['"]/i);
-  const thumbSrc = imgMatch ? imgMatch[1] : null;
+  const thumbSrc = imgMatch ? toAssetUrl(imgMatch[1]) : null;
   const plainText = review.content.replace(/<[^>]+>/g, "").trim();
 
   return (

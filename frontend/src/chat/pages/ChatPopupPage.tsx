@@ -10,6 +10,7 @@ import { useAuthStore } from "../../store/authStore";
 import type { ChatRoomSummary, ChatMessage } from "../types/chat";
 import type { Notification } from "../../types/notification";
 import type { CircleMember } from "../../circle/types/circle";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
 const avatarColor = (id: number) => AVATAR_COLORS[id % AVATAR_COLORS.length];
@@ -47,19 +48,20 @@ const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
 const isFileUrl = (c: string) => c.startsWith('/uploads/') || c.startsWith('/api/chat/files/');
 function renderMsgContent(content: string, mine: boolean) {
   if (isFileUrl(content)) {
+    const resolvedContent = toAssetUrl(content);
     if (IMAGE_EXTS.test(content)) {
       return (
         <img
-          src={content}
+          src={resolvedContent}
           alt="이미지"
           style={{ maxWidth: 220, maxHeight: 220, borderRadius: 12, display: 'block', cursor: 'pointer', objectFit: 'cover' }}
-          onClick={() => window.open(content, '_blank')}
+          onClick={() => window.open(resolvedContent, '_blank')}
         />
       );
     }
     const fileName = content.split('/').pop() ?? '파일';
     return (
-      <a href={content} download style={{ color: mine ? '#fff' : '#5F8F7B', textDecoration: 'underline', fontSize: 13 }}>
+      <a href={resolvedContent} download style={{ color: mine ? '#fff' : '#5F8F7B', textDecoration: 'underline', fontSize: 13 }}>
         📎 {fileName}
       </a>
     );

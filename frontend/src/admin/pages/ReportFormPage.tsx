@@ -4,8 +4,7 @@ import { ShieldAlert, X, Plus } from "lucide-react";
 import type { ReportCategory, ReportTargetType } from "../types/adminTypes";
 import { postReport } from "../api/adminReportAndSanctionApi";
 import api from "../../api/axiosInstance";
-
-const API_HOST = "http://localhost:8080";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 async function requestUploadUrl(
   fileName: string,
@@ -231,7 +230,7 @@ export default function ReportFormPage() {
                 className="group relative aspect-square overflow-hidden rounded-xl border-2 border-orange-200"
               >
                 <img
-                  src={`${API_HOST}${path}`}
+                  src={toAssetUrl(path)}
                   alt={`첨부 ${idx + 1}`}
                   className="h-full w-full object-cover"
                 />
