@@ -9,11 +9,7 @@ spring:
     defer-datasource-initialization: true
   sql:
     init:
-      mode: always
-      data-locations:
-        - classpath:seed-data.sql
-        - classpath:dummy-data.sql
-        - classpath:dummy-data-place.sql
+      mode: never
 
 app:
   # 운영 프론트 도메인 URL (OAuth 리다이렉트 등에 사용)

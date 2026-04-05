@@ -1,0 +1,16 @@
+spring:
+  config:
+    activate:
+      # 운영 초기 1회 부트스트랩(스키마 생성 + 시드/더미 주입)용 프로파일
+      on-profile: prod-bootstrap
+  jpa:
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      data-locations:
+        - classpath:seed-data.sql
+        - classpath:dummy-data.sql
+        - classpath:dummy-data-place.sql
