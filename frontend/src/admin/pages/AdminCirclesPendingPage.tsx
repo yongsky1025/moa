@@ -5,12 +5,6 @@ import AdminCircleStatusBadge from '../component/circle/AdminCircleStatusBadge';
 import AdminConfirmModal from '../component/AdminConfirmModal';
 import AdminResultModal from '../component/AdminResultModal';
 
-const formatDate = (date: string | null) => {
-  if (!date) return '-';
-  const d = new Date(date);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-};
-
 export default function AdminCirclesPendingPage() {
   const [circles, setCircles] = useState<PendingCircleDTO[]>([]);
   const [loading, setLoading] = useState(false);

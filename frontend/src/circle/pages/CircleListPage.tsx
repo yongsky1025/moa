@@ -114,18 +114,6 @@ export default function CircleListPage() {
     [],
   );
 
-  // 필터 변경 시 처음부터 다시 로드
-  const resetAndLoad = useCallback(
-    (filters: { selectedCategoryIds: number[]; keyword: string; statusType: string }) => {
-      if (recommendFilter !== null) return;
-      pageRef.current = 1;
-      setCircles([]);
-      setHasMore(false);
-      fetchPage(1, false, filters);
-    },
-    [recommendFilter, fetchPage],
-  );
-
   // 최초 로드 및 필터 변경 시
   useEffect(() => {
     if (recommendFilter !== null) return;

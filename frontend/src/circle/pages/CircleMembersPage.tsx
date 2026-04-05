@@ -156,6 +156,3 @@ export default function CircleMembersPage() {
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 16,
 };
-const smallBtnStyle: React.CSSProperties = {
-  padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-};

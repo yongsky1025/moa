@@ -6,7 +6,6 @@ import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
 import CircleDetailTabs from "../../common/components/CircleDetailTabs";
 import { circleApi } from "../../api/circleApi";
-import { chatApi } from "../../api/chatApi";
 import { useDirectChat } from "../../chat/hooks/useDirectChat";
 import { scheduleApi } from "../../api/scheduleApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
@@ -78,9 +77,6 @@ export default function CircleDetailPage() {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<CircleMember | null>(
-    null,
-  );
   const [profileModal, setProfileModal] = useState<CircleMember | null>(null);
   const [kakaoReady, setKakaoReady] = useState(false);
 
@@ -133,13 +129,6 @@ export default function CircleDetailPage() {
       })
       .catch(() => {});
   }, [cid, isLoggedIn]);
-
-  // 바깥 클릭 시 팝오버 닫기
-  useEffect(() => {
-    const close = () => setSelectedMember(null);
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
-  }, []);
 
   // Kakao Maps SDK 대기
   useEffect(() => {
@@ -1286,13 +1275,6 @@ const outlineBtnStyle: React.CSSProperties = {
   background: "white",
   color: "#333",
   fontSize: 13,
-  fontWeight: 600,
-  cursor: "pointer",
-};
-const smallBtnStyle: React.CSSProperties = {
-  padding: "5px 12px",
-  borderRadius: 6,
-  fontSize: 12,
   fontWeight: 600,
   cursor: "pointer",
 };

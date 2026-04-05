@@ -101,6 +101,7 @@ interface Props {
 export default function PlaceFilterBar({ params, tagGroups, onParamsChange, onReset }: Props) {
   const [calOpen, setCalOpen] = useState(false);
   const calRef = useRef<HTMLDivElement>(null);
+  void tagGroups;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

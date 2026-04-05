@@ -3,7 +3,6 @@ import type {
   ReportRequestDTO,
   ReportStatusUpdateRequest,
   SanctionApplyRequest,
-  SanctionCancelRequest,
   SanctionFilterDTO,
 } from "../types/adminTypes";
 import { API_SERVER_HOST_ADMIN } from "./adminDashboardApi";

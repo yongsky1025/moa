@@ -209,7 +209,7 @@ export default function CircleReviewsPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
             <div>
               <h1 style={{ fontSize: 20, fontWeight: 800, color: "#111", margin: 0 }}>모임 후기</h1>
-              {circle && <p style={{ fontSize: 13, color: "#888", marginTop: 4, marginBottom: 0 }}>{circle.title}</p>}
+              {circle && <p style={{ fontSize: 13, color: "#888", marginTop: 4, marginBottom: 0 }}>{circle.name}</p>}
             </div>
             {avgRating && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, backgroundColor: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "8px 16px" }}>
