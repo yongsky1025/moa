@@ -18,10 +18,6 @@ app:
   cors:
     # 운영 프론트 도메인 Origin (배포 시 환경변수로 주입)
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERN}
-  cookie:
-    # HTTPS 운영 환경 기준
-    secure: true
-    same-site: None
 
 upload:
   # 운영 스토리지 경로 (서버 파일시스템)

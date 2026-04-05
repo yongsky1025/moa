@@ -29,9 +29,6 @@ app:
   cors:
     # 로컬 브라우저에서 백엔드 호출을 허용할 Origin
     allowed-origin-patterns: http://localhost:5173
-  cookie:
-    secure: false
-    same-site: Lax
 
 upload:
   root: ${user.dir}/uploads-local
