@@ -13,6 +13,8 @@ services:
       - mysql_data:/var/lib/mysql
     expose:
       - "3306"
+    ports:
+      - "127.0.0.1:3306:3306"
     command: >
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_0900_ai_ci
