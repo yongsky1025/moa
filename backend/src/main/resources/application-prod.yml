@@ -25,8 +25,19 @@ upload:
   # 업로드 파일 URL 생성 기준 도메인 (백엔드 도메인)
   base-url: ${APP_BACKEND_URL}
 
+server:
+  tomcat:
+    accesslog:
+      enabled: true
+      pattern: '%h %l %u %t "%r" %s %b %D'
+
 logging:
   level:
+    com:
+      soldesk:
+        moa: info
     org:
+      springframework:
+        web: info
       hibernate:
         SQL: info

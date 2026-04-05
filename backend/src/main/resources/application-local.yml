@@ -36,7 +36,12 @@ upload:
 
 logging:
   level:
+    com:
+      soldesk:
+        moa: debug
     org:
+      springframework:
+        web: debug
       hibernate:
         SQL: debug
         orm:
