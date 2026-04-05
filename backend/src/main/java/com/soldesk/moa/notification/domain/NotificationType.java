@@ -9,5 +9,7 @@ public enum NotificationType {
     CIRCLE_DISBANDED, // 모임 해산
     REPLY,            // 내 게시글에 댓글
     CHILD_REPLY,      // 내 댓글에 대댓글
-    POST_LIKE         // 내 게시글에 좋아요
+    POST_LIKE,        // 내 게시글에 좋아요
+    REPLY_LIKE,       // 내 댓글/대댓글에 좋아요
+    REPORT_SUBMITTED  // 관리자에게: 신고 접수
 }

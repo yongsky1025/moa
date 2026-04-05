@@ -1,3 +1,5 @@
+import LikeHeartButton from "./LikeHeartButton";
+
 interface PlaceItem {
   id: number;
   name: string;
@@ -8,20 +10,32 @@ interface PlaceItem {
 
 interface PlaceCardProps {
   place: PlaceItem;
+  isLiked?: boolean;
+  isHovered?: boolean;
+  onLike?: () => void;
+  onClick?: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
-export default function PlaceCard({ place }: PlaceCardProps) {
+export default function PlaceCard({ place, isLiked = false, isHovered = false, onLike, onClick, onMouseEnter, onMouseLeave }: PlaceCardProps) {
   return (
     <div
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       style={{
         minWidth: 220,
         width: 220,
         border: "1px solid #ebebeb",
         borderRadius: 14,
         overflow: "hidden",
-        cursor: "pointer",
+        cursor: onClick ? "pointer" : "default",
         flexShrink: 0,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+        backgroundColor: "#FFFFFF",
+        boxShadow: isHovered ? "0 8px 24px rgba(0,0,0,0.12)" : "0 2px 12px rgba(0,0,0,0.07)",
+        transition: "box-shadow 0.2s ease, transform 0.2s ease",
+        transform: isHovered ? "translateY(-2px)" : "translateY(0)",
       }}
     >
       {/* 이미지 영역 */}
@@ -44,6 +58,24 @@ export default function PlaceCard({ place }: PlaceCardProps) {
         >
           {place.tag}
         </div>
+
+        {onLike && (
+          <LikeHeartButton
+            liked={isLiked}
+            onClick={onLike}
+            stopPropagation
+            activeColor="#E38B6D"
+            inactiveColor="white"
+            backgroundColor="rgba(0,0,0,0.05)"
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+            }}
+            iconSize={18}
+            size={34}
+          />
+        )}
       </div>
 
       {/* 정보 영역 */}

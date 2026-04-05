@@ -5,8 +5,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.soldesk.moa.auth.dto.AuthUserDTO;
+import com.soldesk.moa.common.exception.InvalidTokenException;
+import com.soldesk.moa.security.JwtTokenProvider;
 import com.soldesk.moa.users.dto.energyprofile.EnergyProfileRequestDTO;
 import com.soldesk.moa.users.dto.energyprofile.EnergyProfileResponseDTO;
+import com.soldesk.moa.users.dto.energyprofile.ImportGuestTokenRequestDTO;
 import com.soldesk.moa.users.dto.energyprofile.RecommendationBundleDTO;
 import com.soldesk.moa.users.service.EnergyProfileService;
 import com.soldesk.moa.users.service.RecommendationService;
@@ -31,6 +34,7 @@ public class EnergyProfileController {
 
     private final EnergyProfileService energyProfileService;
     private final RecommendationService recommendationService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     // 온보딩 완료 : 에너지 프로필 최초 저장
     @PostMapping("/create")
@@ -59,6 +63,29 @@ public class EnergyProfileController {
 
         EnergyProfileResponseDTO response = energyProfileService.getProfile(authUser.getUserId());
         return ResponseEntity.ok(response);
+    }
+
+    // 게스트 에너지 토큰으로 프로필 가져오기 (온보딩 시 사용)
+    @PostMapping("/import-guest")
+    public ResponseEntity<EnergyProfileResponseDTO> importFromGuestToken(
+            @AuthenticationPrincipal AuthUserDTO authUser,
+            @Valid @RequestBody ImportGuestTokenRequestDTO request) {
+
+        String token = request.getGuestToken();
+
+        if (!jwtTokenProvider.isValidToken(token) || !jwtTokenProvider.isGuestEnergyPreviewToken(token)) {
+            throw new InvalidTokenException("유효한 게스트 에너지 토큰이 아닙니다.");
+        }
+
+        EnergyProfileRequestDTO profileRequest = new EnergyProfileRequestDTO(
+                jwtTokenProvider.getGuestScoreFromToken(token, "socialLoad"),
+                jwtTokenProvider.getGuestScoreFromToken(token, "interactionMode"),
+                jwtTokenProvider.getGuestScoreFromToken(token, "structureLevel"),
+                jwtTokenProvider.getGuestScoreFromToken(token, "activityIntensity"),
+                jwtTokenProvider.getGuestScoreFromToken(token, "commitmentLevel"));
+
+        EnergyProfileResponseDTO response = energyProfileService.createProfile(authUser.getUserId(), profileRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     // 에너지 기반 서클 추천

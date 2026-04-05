@@ -25,10 +25,7 @@ type DropdownMenuDivider = {
   key: string;
 };
 
-export type DropdownMenuItem =
-  | DropdownMenuLinkItem
-  | DropdownMenuButtonItem
-  | DropdownMenuDivider;
+export type DropdownMenuItem = DropdownMenuLinkItem | DropdownMenuButtonItem | DropdownMenuDivider;
 
 interface DropdownMenuProps {
   items: DropdownMenuItem[];
@@ -59,14 +56,7 @@ function getHoverBackground(tone: "default" | "danger") {
   return tone === "danger" ? "#fff5f5" : "#f5f5f5";
 }
 
-export default function DropdownMenu({
-  items,
-  align = "left",
-  top = "calc(100% + 8px)",
-  minWidth = 160,
-  zIndex = 100,
-  style,
-}: DropdownMenuProps) {
+export default function DropdownMenu({ items, align = "left", top = "calc(100% + 8px)", minWidth = 160, zIndex = 100, style }: DropdownMenuProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -115,18 +105,10 @@ export default function DropdownMenu({
                 ...itemBaseStyle,
                 color: textColor,
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = hoverBackground)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBackground)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
             >
-              {item.icon && (
-                <span style={{ color: iconColor, display: "flex" }}>
-                  {item.icon}
-                </span>
-              )}
+              {item.icon && <span style={{ color: iconColor, display: "flex" }}>{item.icon}</span>}
               {item.label}
             </button>
           );
@@ -147,18 +129,10 @@ export default function DropdownMenu({
               ...itemBaseStyle,
               color: textColor,
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = hoverBackground)
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "transparent")
-            }
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBackground)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
           >
-            {item.icon && (
-              <span style={{ color: iconColor, display: "flex" }}>
-                {item.icon}
-              </span>
-            )}
+            {item.icon && <span style={{ color: iconColor, display: "flex" }}>{item.icon}</span>}
             {item.label}
           </Link>
         );

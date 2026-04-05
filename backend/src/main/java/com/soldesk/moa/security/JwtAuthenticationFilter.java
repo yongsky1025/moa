@@ -40,6 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 인증/로그인 엔드포인트는 JWT 필터 적용X
         if (path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
+                || path.startsWith("/api/guest/")
                 || path.equals("/api/auth/login")
                 || path.equals("/api/auth/signup")
                 || path.equals("/api/auth/refresh")

@@ -122,6 +122,15 @@ public class ChatRestController {
         return ResponseEntity.ok().build();
     }
 
+    /** 채팅방 멤버 목록 조회 */
+    @GetMapping("/rooms/{roomId}/members")
+    public ResponseEntity<List<Map<String, Object>>> getRoomMembers(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        return ResponseEntity.ok(roomService.getRoomMembers(roomId, auth.getUserId()));
+    }
+
     /** 채팅방 나가기 */
     @DeleteMapping("/rooms/{roomId}/leave")
     public ResponseEntity<Void> leaveRoom(
@@ -181,5 +190,37 @@ public class ChatRestController {
             @AuthenticationPrincipal AuthUserDTO auth
     ) {
         return ResponseEntity.ok(messageService.toggleReaction(messageId, auth.getUserId(), emoji));
+    }
+
+    /** 채팅방 즐겨찾기(고정) 토글 */
+    @PostMapping("/rooms/{roomId}/pin")
+    public ResponseEntity<Map<String, Boolean>> togglePin(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        boolean isPinned = roomService.togglePin(roomId, auth.getUserId());
+        return ResponseEntity.ok(Map.of("isPinned", isPinned));
+    }
+
+    /** 채팅방 공지 설정 */
+    @PostMapping("/rooms/{roomId}/notice")
+    public ResponseEntity<Void> setNotice(
+            @PathVariable Long roomId,
+            @RequestBody Map<String, Object> body,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        Long messageId = Long.parseLong(body.get("messageId").toString());
+        roomService.setNotice(roomId, auth.getUserId(), messageId);
+        return ResponseEntity.ok().build();
+    }
+
+    /** 채팅방 공지 해제 */
+    @DeleteMapping("/rooms/{roomId}/notice")
+    public ResponseEntity<Void> clearNotice(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal AuthUserDTO auth
+    ) {
+        roomService.clearNotice(roomId, auth.getUserId());
+        return ResponseEntity.noContent().build();
     }
 }

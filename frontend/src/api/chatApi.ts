@@ -56,6 +56,26 @@ export const chatApi = {
   toggleReaction: (messageId: number, emoji: string) =>
     api.post<import('../chat/types/chat').ChatMessage>(`/api/chat/messages/${messageId}/reactions`, null, { params: { emoji } }).then(r => r.data),
 
+  // 즐겨찾기(고정) 토글
+  togglePin: (roomId: number) =>
+    api.post<{ isPinned: boolean }>(`/api/chat/rooms/${roomId}/pin`).then(r => r.data.isPinned),
+
+  // 공지 설정
+  setNotice: (roomId: number, messageId: number) =>
+    api.post(`/api/chat/rooms/${roomId}/notice`, { messageId }),
+
+  // 공지 해제
+  clearNotice: (roomId: number) =>
+    api.delete(`/api/chat/rooms/${roomId}/notice`),
+
+  // 채팅방 멤버 목록 조회 (일정/모임 공통)
+  getRoomMembers: (roomId: number) =>
+    api.get<{ userId: number; nickname: string; isLeader: boolean }[]>(`/api/chat/rooms/${roomId}/members`).then(r => r.data),
+
+  // AI 스마트 답변 제안
+  suggestReply: (roomId: number) =>
+    api.post<{ quickReplies: string[]; draft: string }>(`/api/ai/chat/rooms/${roomId}/suggest`).then(r => r.data),
+
   // 파일 업로드 (이미지: /api/images/upload-url, 일반파일: /api/files/upload-url)
   uploadFile: async (file: File) => {
     const isImage = file.type.startsWith("image/");

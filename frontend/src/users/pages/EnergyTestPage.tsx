@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { energyProfileApi } from "../../api/usersApi";
+import { energyProfileApi, guestEnergyApi } from "../../api/usersApi";
 import type { EnergyProfileRequest } from "../../api/usersApi";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../store/authStore";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import SignUpStepper from "../components/SignUpStepper";
+import { clearGuestEnergyImportIntent } from "../../common/utils/transientNavigationState";
 
 // ─── 질문 데이터 ───
 
@@ -61,6 +62,7 @@ const TOTAL_STEPS = questions.length;
 export default function EnergyTestPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode"); // "onboarding" | "retest" | null
 
@@ -83,6 +85,13 @@ export default function EnergyTestPage() {
 
   // 온보딩 모드인데 이미 프로필이 있으면 결과 페이지로 스킵
   useEffect(() => {
+    // guest/비로그인 상태에서는 로그인 전용 energy-profile checkAPI 호출X
+    if (!isLoggedIn) {
+      setHasProfile(false);
+      return;
+    }
+
+    // 로그인 유저만 check() 호출
     energyProfileApi
       .check()
       .then(() => {
@@ -93,9 +102,10 @@ export default function EnergyTestPage() {
         }
       })
       .catch(() => {
-        // 프로필 없음 = 정상, 테스트 진행
+        // 로그인은 되어 있지만, 에너지 프로필 없으면 create 흐름으로 진행
+        setHasProfile(false);
       });
-  }, []);
+  }, [isLoggedIn, mode, navigate]);
 
   const handleSelect = (value: number) => {
     if (!currentKey) return;
@@ -109,16 +119,33 @@ export default function EnergyTestPage() {
       setLoading(true);
       setError("");
       try {
-        // retest면 update, 그 외(onboarding 포함)는 create
-        if (hasProfile) {
-          await energyProfileApi.update(scores);
+        if (isLoggedIn) {
+          // 로그인 유저는 기존 로직 그대로 사용
+          if (hasProfile) {
+            await energyProfileApi.update(scores);
+          } else {
+            await energyProfileApi.create(scores);
+          }
+
+          // 로그인 유저의 auth 상태 갱신
+          const refreshed = await authApi.refresh();
+          setAuth(refreshed.data.accessToken, refreshed.data.user);
+          navigate("/users/energy-test/result", { replace: true });
+
+          // 이전에 남은 guest 토큰 있으면 제거
+          localStorage.removeItem("guestEnergyToken");
+          clearGuestEnergyImportIntent();
+
+          navigate("/users/energy-test/result", { replace: true });
         } else {
-          await energyProfileApi.create(scores);
+          // gust는 실제 유저 프로필 저장 대신 preview 토큰만 발급받음
+          const res = await guestEnergyApi.issueToken(scores);
+          clearGuestEnergyImportIntent();
+          console.log("issued guest token", res.data.guestToken);
+          localStorage.setItem("guestEnergyToken", res.data.guestToken);
+          console.log("stored guest token", localStorage.getItem("guestEnergyToken"));
+          navigate("/users/energy-test/result?guest=1", { replace: true });
         }
-        // auth 상태 갱신
-        const refreshed = await authApi.refresh();
-        setAuth(refreshed.data.accessToken, refreshed.data.user);
-        navigate("/users/energy-test/result", { replace: true });
       } catch (e) {
         setError(getErrorMessage(e));
       } finally {
@@ -135,32 +162,39 @@ export default function EnergyTestPage() {
 
   return (
     <div style={containerStyle}>
-      <div style={{ width: "100%", maxWidth: 480 }}>
-        {/* 로고 */}
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <span style={{ fontSize: 28, fontWeight: 900, color: "#111", letterSpacing: -1 }}>moa</span>
-          <p style={{ marginTop: 6, fontSize: 12, color: "#9CA3AF" }}>
-            {mode === "retest" ? "에너지 프로필을 다시 설정해요" : "나에게 맞는 모임을 찾아볼게요"}
-          </p>
+      {/* 상단 헤더 영역 — 풀 width 배경 */}
+      <div style={headerBgStyle}>
+        <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", padding: "0 16px" }}>
+          {/* 로고 */}
+          <div style={{ textAlign: "center", marginBottom: 16 }}>
+            <span style={{ fontSize: 30, fontWeight: 900, color: "#1F2937", letterSpacing: -1 }}>moa</span>
+            <p style={{ marginTop: 6, fontSize: 12, color: "#9CA3AF" }}>
+              {mode === "retest" ? "에너지 프로필을 다시 설정해요" : "나의 에너지 유형을 알아볼게요."}
+            </p>
+          </div>
+
+          {/* 온보딩 모드일 때만 스텝 바 표시 */}
+          {mode === "onboarding" && <SignUpStepper currentStep={3} />}
         </div>
+      </div>
 
-        {/* 온보딩 모드일 때만 스텝 바 표시 */}
-        {mode === "onboarding" && <SignUpStepper currentStep={3} />}
-
-        {/* 프로그레스 바 */}
+      {/* 프로그레스 바 — 헤더와 카드 사이 */}
+      <div style={{ width: "100%", maxWidth: 480, padding: "16px 16px 0" }}>
         <div style={progressContainerStyle}>
           <div style={{ ...progressBarStyle, width: `${((step + 1) / TOTAL_STEPS) * 100}%` }} />
         </div>
+      </div>
 
-        {/* 카드 */}
+      {/* 질문 영역 — 카드 */}
+      <div style={{ width: "100%", maxWidth: 480, padding: "0 16px" }}>
         <div style={cardStyle}>
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#6B7280" }}>
+              <span style={{ fontSize: 14, fontWeight: 400, color: "#999" }}>
                 {step + 1} / {TOTAL_STEPS}
               </span>
               <span style={{ width: 3, height: 3, borderRadius: "50%", backgroundColor: "#A9C8BB" }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#0F6E56" }}>{currentQuestion.title}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#5F8F7B" }}>{currentQuestion.title}</span>
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: "#111", lineHeight: 1.4 }}>{currentQuestion.question}</h2>
           </div>
@@ -244,8 +278,9 @@ export default function EnergyTestPage() {
               style={{
                 ...primaryBtnStyle,
                 flex: 1,
-                backgroundColor: currentValue === 0 || loading ? "#D1D5DB" : "#0F6E56",
-                color: currentValue === 0 || loading ? "#6B7280" : "#FFFFFF",
+                backgroundColor: currentValue === 0 || loading ? "transparent" : "#0F6E56",
+                color: currentValue === 0 || loading ? "#999" : "#FFFFFF",
+                border: currentValue === 0 || loading ? "1px solid #DDD" : "none",
                 cursor: currentValue === 0 || loading ? "not-allowed" : "pointer",
               }}
             >
@@ -264,31 +299,40 @@ const containerStyle: React.CSSProperties = {
   minHeight: "100vh",
   backgroundColor: "#f7f7f8",
   display: "flex",
+  flexDirection: "column",
   alignItems: "center",
-  justifyContent: "center",
-  padding: "24px 16px",
+  justifyContent: "flex-start",
+  padding: 0,
+};
+
+const headerBgStyle: React.CSSProperties = {
+  width: "100%",
+  background: "rgba(95, 143, 123, 0.10)",
+  padding: "32px 0 24px",
+  textAlign: "center" as const,
 };
 
 const progressContainerStyle: React.CSSProperties = {
-  height: 4,
-  backgroundColor: "#e5e5e5",
-  borderRadius: 2,
-  marginBottom: 16,
+  height: 8,
+  backgroundColor: "#E8E8E8",
+  borderRadius: 4,
+  marginBottom: 0,
   overflow: "hidden",
 };
 
 const progressBarStyle: React.CSSProperties = {
   height: "100%",
-  backgroundColor: "#0F6E56",
-  borderRadius: 2,
+  backgroundColor: "#5F8F7B",
+  borderRadius: 4,
   transition: "width 0.3s ease",
 };
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: "transparent",
-  borderRadius: 0,
-  padding: 0,
-  boxShadow: "none",
+  backgroundColor: "#FFFFFF",
+  borderRadius: 12,
+  padding: "28px 24px",
+  boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
+  marginTop: 16,
 };
 
 const primaryBtnStyle: React.CSSProperties = {

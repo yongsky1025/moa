@@ -4,10 +4,9 @@ import { useAuthStore } from "../store/authStore";
 const api = axios.create({
   baseURL: "/",
   withCredentials: true,
-  headers: { "Content-Type": "application/json" },
 });
 
-// 동시 401이 여러 개 올 때 refresh를 한 번만 호출하기 위한 락
+// 동시 401이 여러 개 올 때 refresh를 한 번만 호출하기 위한
 let isRefreshing = false;
 let refreshQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
 
@@ -27,10 +26,15 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // FormData는 브라우저가 multipart boundary를 직접 붙이게 함
+  if (config.data instanceof FormData && config.headers) {
+    delete config.headers["Content-Type"];
+    delete config.headers["content-type"];
+  }
   return config;
 });
 
-const ACCOUNT_STATUS_CODES = new Set(['ACCOUNT_WITHDRAWN', 'ACCOUNT_SUSPENDED', 'ACCOUNT_BANNED']);
+const ACCOUNT_STATUS_CODES = new Set(["ACCOUNT_WITHDRAWN", "ACCOUNT_SUSPENDED", "ACCOUNT_BANNED"]);
 
 // 응답 인터셉터: 403 계정 상태 / 401 토큰 갱신
 api.interceptors.response.use(
@@ -45,8 +49,8 @@ api.interceptors.response.use(
     }
 
     const original = error.config;
-    const url = original?.url ?? '';
-    if (error.response?.status === 401 && !original._retry && url !== '/api/auth/refresh') {
+    const url = original?.url ?? "";
+    if (error.response?.status === 401 && !original._retry && url !== "/api/auth/refresh" && url !== "/api/auth/login") {
       original._retry = true;
 
       if (isRefreshing) {
@@ -64,21 +68,28 @@ api.interceptors.response.use(
         const res = await axios.post("/api/auth/refresh", null, { withCredentials: true });
         const newToken: string = res.data.accessToken;
         const user = res.data.user;
+
         localStorage.setItem("accessToken", newToken);
         if (user) useAuthStore.getState().setAuth(newToken, user);
+
         processQueue(newToken);
         original.headers.Authorization = `Bearer ${newToken}`;
         return api(original);
       } catch (refreshError: unknown) {
         rejectQueue(refreshError);
-        // refresh 실패 시에도 계정 상태 에러코드 확인
+
+        // refresh 실패 시 계정 상태 에러코드 확인
         const refreshErrCode = (refreshError as { response?: { data?: { errorCode?: string } } })?.response?.data?.errorCode;
-        useAuthStore.getState().clearAuth();
+
         if (refreshErrCode && ACCOUNT_STATUS_CODES.has(refreshErrCode)) {
+          useAuthStore.getState().clearAuth();
           window.location.href = `/users/account-status?code=${refreshErrCode}`;
         } else {
-          window.location.href = "/users/login";
+          // 인증 상태만 정리하고, 리다이렉트하지 않음
+          // 각 페이지/컴포넌트가 isLoggedIn 상태 변화에 따라 자체 처리
+          useAuthStore.getState().clearAuth();
         }
+
         return Promise.reject(error);
       } finally {
         isRefreshing = false;

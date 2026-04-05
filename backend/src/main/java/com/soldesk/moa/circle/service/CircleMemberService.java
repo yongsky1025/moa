@@ -90,7 +90,8 @@ public class CircleMemberService {
                         .ifPresent(leader -> notificationService.send(
                                 leader.getUser().getUserId(),
                                 NotificationType.JOIN_REQUEST,
-                                loginUser.getNickname() + "님이 '" + circle.getName() + "' 모임에 가입 신청했습니다."
+                                loginUser.getNickname() + "님이 '" + circle.getName() + "' 모임에 가입 신청했습니다.",
+                                circle.getCircleId()
                         ));
         }
 
@@ -147,7 +148,8 @@ public class CircleMemberService {
                         notificationService.send(
                                 member.getUser().getUserId(),
                                 NotificationType.JOIN_APPROVED,
-                                "'" + member.getCircle().getName() + "' 모임 가입이 승인되었습니다."
+                                "'" + member.getCircle().getName() + "' 모임 가입이 승인되었습니다.",
+                                circleId
                         );
                         return;
                 }
@@ -159,7 +161,8 @@ public class CircleMemberService {
                         notificationService.send(
                                 member.getUser().getUserId(),
                                 NotificationType.JOIN_REJECTED,
-                                "'" + member.getCircle().getName() + "' 모임 가입이 거절되었습니다."
+                                "'" + member.getCircle().getName() + "' 모임 가입이 거절되었습니다.",
+                                circleId
                         );
                         return;
                 }
@@ -258,7 +261,7 @@ public class CircleMemberService {
                 member.changeStatus(CircleMemberStatus.LEFT);
                 circle.decreaseMember();
                 // 탈퇴 시 모임 채팅방 자동 나가기
-                chatRoomService.leaveGroupRoom(circleId, userId);
+                chatRoomService.leaveGroupRoom(circleId, userId, false);
         }
 
         // 멤버 강퇴 (리더만 가능)
@@ -304,12 +307,13 @@ public class CircleMemberService {
                 target.changeStatus(CircleMemberStatus.KICKED);
                 circle.decreaseMember();
                 // 강퇴 시 모임 채팅방 자동 퇴장
-                chatRoomService.leaveGroupRoom(circleId, target.getUser().getUserId());
+                chatRoomService.leaveGroupRoom(circleId, target.getUser().getUserId(), true);
                 // 강퇴된 멤버에게 알림
                 notificationService.send(
                         target.getUser().getUserId(),
                         NotificationType.KICKED,
-                        "'" + circle.getName() + "' 모임에서 강퇴되었습니다."
+                        "'" + circle.getName() + "' 모임에서 강퇴되었습니다.",
+                        circleId
                 );
         }
 

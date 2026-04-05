@@ -10,6 +10,9 @@ export interface ChatRoomSummary {
   unreadCount: number;
   otherUserNickname: string | null;
   name: string | null;
+  noticeMessageId: number | null;
+  noticeContent: string | null;
+  isPinned: boolean;
 }
 
 export interface ChatMessage {
@@ -21,6 +24,7 @@ export interface ChatMessage {
   createdAt: string;
   updatedAt: string | null;
   isDeleted: boolean;
+  isReported?: boolean;
   replyToId?: number | null;
   replyToContent?: string | null;
   replyToNickname?: string | null;

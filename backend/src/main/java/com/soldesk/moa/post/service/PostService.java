@@ -52,6 +52,8 @@ import com.soldesk.moa.reply.repository.ReplyRepository;
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 import com.soldesk.moa.users.entity.Users;
 import com.soldesk.moa.users.repository.UsersRepository;
+import com.soldesk.moa.notification.domain.NotificationType;
+import com.soldesk.moa.notification.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -81,6 +83,7 @@ public class PostService {
         private final PostReactionRepository postReactionRepository;
         private final PostBookmarkRepository postBookmarkRepository;
         private final PostSearchService postSearchService;
+        private final NotificationService notificationService;
 
         // ===== Global =====
 
@@ -559,6 +562,15 @@ public class PostService {
                                         .reactionType(PostReactionType.LIKE)
                                         .build());
                         postRepository.incrementLikeCount(postId);
+                        Long authorId = post.getUserId().getUserId();
+                        if (!authorId.equals(userId)) {
+                                notificationService.sendAsync(
+                                        authorId,
+                                        NotificationType.POST_LIKE,
+                                        user.getNickname() + "님이 회원님의 게시글을 좋아합니다.",
+                                        postId
+                                );
+                        }
                 } else if (existing.getReactionType() == PostReactionType.LIKE) {
                         postReactionRepository.delete(existing);
                         postRepository.decrementLikeCount(postId);

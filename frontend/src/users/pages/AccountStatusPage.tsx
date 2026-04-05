@@ -146,58 +146,43 @@ export default function AccountStatusPage() {
             onClick={handleGoLogin}
             style={{
               ...btnBase,
-              backgroundColor: "#fff",
-              color: "#5F8F7B",
+              backgroundColor: "#5F8F7B",
+              color: "#fff",
               border: "1.5px solid #5F8F7B",
             }}
           >
             로그인 페이지로 돌아가기
           </Link>
-          {code == "ACCOUNT_BANNED" && (
-            <Link
-              to="/users/login"
-              onClick={handleGoLogin}
+          {(code === "ACCOUNT_BANNED" || code === "ACCOUNT_SUSPENDED") && (
+            <button
+              disabled
               style={{
                 ...btnBase,
                 marginTop: 12,
-                backgroundColor: "#5F8F7B",
-                color: "#fff",
-                border: "1.5px solid #5F8F7B",
+                backgroundColor: "#fff",
+                color: "#bbb",
+                border: "1.5px solid #e0e0e0",
+                cursor: "not-allowed",
               }}
             >
-              고객센터로 이동하기 &gt;
-            </Link>
-          )}
-          {code == "ACCOUNT_SUSPENDED" && (
-            <Link
-              to="/users/login"
-              onClick={handleGoLogin}
-              style={{
-                ...btnBase,
-                marginTop: 12,
-                backgroundColor: "#5F8F7B",
-                color: "#fff",
-                border: "1.5px solid #5F8F7B",
-              }}
-            >
-              고객센터로 이동하기 &gt;
-            </Link>
+              고객센터 문의 (준비 중)
+            </button>
           )}
 
           {code === "ACCOUNT_WITHDRAWN" && (
-            <Link
-              to="/users/login"
-              onClick={handleGoLogin}
+            <button
+              disabled
               style={{
                 ...btnBase,
                 marginTop: 12,
-                backgroundColor: "#5F8F7B",
-                color: "#fff",
-                border: "1.5px solid #5F8F7B",
+                backgroundColor: "#fff",
+                color: "#bbb",
+                border: "1.5px solid #e0e0e0",
+                cursor: "not-allowed",
               }}
             >
-              계정 재활성화 안내 &gt;
-            </Link>
+              계정 재활성화 안내 (준비 중)
+            </button>
           )}
         </div>
       </div>

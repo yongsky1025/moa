@@ -12,6 +12,8 @@ import com.soldesk.moa.chat.repository.ChatRoomMemberRepository;
 import com.soldesk.moa.chat.repository.ChatRoomRepository;
 import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
 import com.soldesk.moa.circle.repository.CircleMemberRepository;
+import com.soldesk.moa.circle.repository.CircleRepository;
+import com.soldesk.moa.schedule.repository.ScheduleRepository;
 import com.soldesk.moa.users.repository.UsersRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -19,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,16 +34,21 @@ public class ChatRoomService {
     private final ChatMessageRepository messageRepo;
     private final UsersRepository usersRepo;
     private final CircleMemberRepository circleMemberRepo;
+    private final CircleRepository circleRepo;
+    private final ScheduleRepository scheduleRepo;
     private final SimpMessagingTemplate messagingTemplate;
 
     public ChatRoomService(ChatRoomRepository roomRepo, ChatRoomMemberRepository memberRepo,
             ChatMessageRepository messageRepo, UsersRepository usersRepo,
-            CircleMemberRepository circleMemberRepo, SimpMessagingTemplate messagingTemplate) {
+            CircleMemberRepository circleMemberRepo, CircleRepository circleRepo,
+            ScheduleRepository scheduleRepo, SimpMessagingTemplate messagingTemplate) {
         this.roomRepo = roomRepo;
         this.memberRepo = memberRepo;
         this.messageRepo = messageRepo;
         this.usersRepo = usersRepo;
         this.circleMemberRepo = circleMemberRepo;
+        this.circleRepo = circleRepo;
+        this.scheduleRepo = scheduleRepo;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -87,11 +96,17 @@ public class ChatRoomService {
             // 방이 이미 있으면 멤버로 추가 (없는 경우에만)
             if (!memberRepo.existsByRoomIdAndUserId(room.getId(), myId)) {
                 memberRepo.save(ChatRoomMember.join(room.getId(), myId));
+                String nickname = usersRepo.findById(myId).map(u -> u.getNickname()).orElse("알 수 없음");
+                messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/system",
+                        Map.of("type", "JOIN", "nickname", nickname, "createdAt", LocalDateTime.now().toString()));
             }
             return room;
         }).orElseGet(() -> {
             try {
-                ChatRoom room = roomRepo.save(ChatRoom.group(circleId));
+                String circleName = circleRepo.findById(circleId)
+                        .map(c -> c.getName())
+                        .orElse(null);
+                ChatRoom room = roomRepo.save(ChatRoom.group(circleId, circleName));
                 memberRepo.save(ChatRoomMember.join(room.getId(), myId));
                 return room;
             } catch (DataIntegrityViolationException e) {
@@ -144,8 +159,16 @@ public class ChatRoomService {
      * 내가 참여 중인 채팅방 목록 조회.
      * 각 방의 마지막 메시지와 읽지 않은 메시지 수를 함께 반환.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ChatRoomSummaryResponse> getMyRooms(Long userId) {
+        // ACTIVE 서클 멤버인데 chat_room_member 레코드가 없는 경우 자동 추가
+        circleMemberRepo.findByUser_UserIdAndStatus(userId, CircleMemberStatus.ACTIVE)
+                .forEach(cm -> roomRepo.findByCircleId(cm.getCircle().getCircleId()).ifPresent(room -> {
+                    if (!memberRepo.existsByRoomIdAndUserId(room.getId(), userId)) {
+                        memberRepo.save(ChatRoomMember.joinMigration(room.getId(), userId));
+                    }
+                }));
+
         return memberRepo.findByUserId(userId).stream()
                 .map(member -> {
                     ChatRoom room = roomRepo.findById(member.getRoomId())
@@ -170,8 +193,14 @@ public class ChatRoomService {
                             lastMsg.map(m -> m.getCreatedAt()).orElse(null),
                             unread,
                             otherNickname,
-                            room.getName());
+                            room.getName(),
+                            room.getNoticeMessageId(),
+                            room.getNoticeContent(),
+                            member.isPinned());
                 })
+                .sorted(Comparator.comparing(ChatRoomSummaryResponse::isPinned).reversed()
+                        .thenComparing(Comparator.comparing(ChatRoomSummaryResponse::lastMessageAt,
+                                Comparator.nullsLast(Comparator.reverseOrder()))))
                 .toList();
     }
 
@@ -184,6 +213,9 @@ public class ChatRoomService {
         return roomRepo.findByScheduleId(scheduleId).map(room -> {
             if (!memberRepo.existsByRoomIdAndUserId(room.getId(), userId)) {
                 memberRepo.save(ChatRoomMember.join(room.getId(), userId));
+                String nickname = usersRepo.findById(userId).map(u -> u.getNickname()).orElse("알 수 없음");
+                messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/system",
+                        Map.of("type", "JOIN", "nickname", nickname, "createdAt", LocalDateTime.now().toString()));
             }
             return room;
         }).orElseGet(() -> {
@@ -212,6 +244,10 @@ public class ChatRoomService {
             throw new ChatException(ChatErrorCode.INVALID_REQUEST, "1:1 채팅방은 이름을 변경할 수 없습니다.");
         }
         room.updateName(name);
+        String nickname = usersRepo.findById(userId).map(u -> u.getNickname()).orElse("알 수 없음");
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/name", Map.of("name", name));
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/system",
+                Map.of("type", "RENAME", "nickname", nickname, "newName", name, "createdAt", LocalDateTime.now().toString()));
     }
 
     /**
@@ -255,15 +291,49 @@ public class ChatRoomService {
      * 방이 없거나 멤버가 아니면 무시.
      */
     @Transactional
-    public void leaveGroupRoom(Long circleId, Long userId) {
+    public void leaveGroupRoom(Long circleId, Long userId, boolean isKick) {
         roomRepo.findByCircleId(circleId).ifPresent(room -> {
             memberRepo.findByRoomIdAndUserId(room.getId(), userId).ifPresent(member -> {
+                String nickname = usersRepo.findById(userId).map(u -> u.getNickname()).orElse("알 수 없음");
                 memberRepo.delete(member);
-                if (memberRepo.findByRoomId(room.getId()).isEmpty()) {
+                List<ChatRoomMember> remaining = memberRepo.findByRoomId(room.getId());
+                if (remaining.isEmpty()) {
                     roomRepo.deleteById(room.getId());
+                } else {
+                    String type = isKick ? "KICK" : "LEAVE";
+                    messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/system",
+                            Map.of("type", type, "nickname", nickname, "createdAt", LocalDateTime.now().toString()));
                 }
             });
         });
+    }
+
+    /**
+     * 채팅방 멤버 목록 조회 (일정/모임 채팅방 공통).
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getRoomMembers(Long roomId, Long userId) {
+        assertMember(roomId, userId);
+        ChatRoom room = getRoomOrThrow(roomId);
+        // 일정 채팅방이면 일정 생성자(방장) userId 조회
+        Long creatorUserId = null;
+        if (room.getScheduleId() != null) {
+            creatorUserId = scheduleRepo.findById(room.getScheduleId())
+                    .map(s -> s.getCreator().getUser().getUserId())
+                    .orElse(null);
+        }
+        final Long finalCreatorUserId = creatorUserId;
+        return memberRepo.findByRoomId(roomId).stream()
+                .map(m -> {
+                    String nickname = usersRepo.findById(m.getUserId())
+                            .map(u -> u.getNickname()).orElse("알 수 없음");
+                    Map<String, Object> info = new HashMap<>();
+                    info.put("userId", m.getUserId());
+                    info.put("nickname", nickname);
+                    info.put("isLeader", m.getUserId().equals(finalCreatorUserId));
+                    return info;
+                })
+                .toList();
     }
 
     /**
@@ -277,6 +347,52 @@ public class ChatRoomService {
             memberRepo.deleteByRoomId(room.getId());
             roomRepo.delete(room);
         });
+    }
+
+    /**
+     * 채팅방 즐겨찾기(고정) 토글. 사용자별 개인 설정.
+     */
+    @Transactional
+    public boolean togglePin(Long roomId, Long userId) {
+        ChatRoomMember member = getMemberOrThrow(roomId, userId);
+        member.togglePin();
+        return member.isPinned();
+    }
+
+    /**
+     * 채팅방 공지 설정. 멤버 누구나 가능. 기존 공지는 덮어씀.
+     */
+    @Transactional
+    public void setNotice(Long roomId, Long userId, Long messageId) {
+        assertMember(roomId, userId);
+        ChatRoom room = getRoomOrThrow(roomId);
+        com.soldesk.moa.chat.domain.ChatMessage message = messageRepo.findById(messageId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.INVALID_REQUEST, "메시지를 찾을 수 없습니다."));
+        if (!message.getRoomId().equals(roomId)) {
+            throw new ChatException(ChatErrorCode.INVALID_REQUEST, "해당 채팅방의 메시지가 아닙니다.");
+        }
+        if (message.isDeleted()) {
+            throw new ChatException(ChatErrorCode.INVALID_REQUEST, "삭제된 메시지는 공지로 설정할 수 없습니다.");
+        }
+        room.setNotice(messageId, message.getContent());
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("noticeMessageId", messageId);
+        payload.put("noticeContent", room.getNoticeContent());
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/notice", payload);
+    }
+
+    /**
+     * 채팅방 공지 해제. 멤버 누구나 가능.
+     */
+    @Transactional
+    public void clearNotice(Long roomId, Long userId) {
+        assertMember(roomId, userId);
+        ChatRoom room = getRoomOrThrow(roomId);
+        room.clearNotice();
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("noticeMessageId", null);
+        payload.put("noticeContent", null);
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/notice", payload);
     }
 
     // ─── private ──────────────────────────────────────────────

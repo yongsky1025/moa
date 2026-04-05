@@ -46,7 +46,7 @@ const TARGET_TYPE_LABELS: Record<ReportTargetType, string> = {
   REPLY: "댓글",
   CIRCLE: "모임",
   PLACE_REVIEW: "장소 리뷰",
-  CHAT: "채팅",
+  CHAT: "채팅 메시지",
 };
 
 export default function ReportFormPage() {

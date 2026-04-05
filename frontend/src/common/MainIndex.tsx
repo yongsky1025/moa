@@ -4,9 +4,14 @@ import { ChevronLeft, ChevronRight, Zap, Search, Compass } from "lucide-react";
 import Navbar from "../common/layout/Navbar";
 import Footer from "../common/layout/Footer";
 import CircleCard from "../common/components/CircleCard";
+import type { CircleItem } from "../common/components/CircleCard";
 import PlaceCard from "../common/components/PlaceCard";
 import SectionHeader from "../common/components/SectionHeader";
 import HeroCarousel from "../common/components/HeroCarousel";
+import { circleApi } from "../api/circleApi";
+import { energyProfileApi } from "../api/usersApi";
+import api from "../api/axiosInstance";
+import AdminConfirmModal from "../admin/component/AdminConfirmModal";
 
 if (typeof window !== "undefined") {
   window.history.scrollRestoration = "manual";
@@ -84,114 +89,25 @@ const heroOverlay: React.CSSProperties = {
   ].join(", "),
 };
 
-// ─── 샘플 데이터 ───
+// ─── 기본 이미지 ───
 
-const socialings = [
-  {
-    id: 1,
-    title: "퇴근 후 전시 보고 와인 한 잔",
-    location: "성수",
-    date: "3월 15일(토) · 오후 7:00",
-    price: "18,000원",
-    people: "6/8명",
-    tag: "문화·예술",
-    rating: "4.9",
-    reviews: 47,
-    image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80",
-    liked: false,
-  },
-  {
-    id: 2,
-    title: "한강 러닝크루 입문자 모임",
-    location: "여의도",
-    date: "3월 16일(일) · 오전 10:00",
-    price: "12,000원",
-    people: "10/12명",
-    tag: "운동",
-    rating: "4.8",
-    reviews: 82,
-    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80",
-    liked: false,
-  },
-  {
-    id: 3,
-    title: "초보도 가능한 보드게임 번개",
-    location: "홍대",
-    date: "3월 16일(일) · 오후 3:00",
-    price: "10,000원",
-    people: "4/6명",
-    tag: "취미",
-    rating: "5.0",
-    reviews: 31,
-    image: "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=800&q=80",
-    liked: false,
-  },
-  {
-    id: 4,
-    title: "직장인 독서 대화 모임",
-    location: "강남",
-    date: "3월 18일(화) · 오후 7:30",
-    price: "15,000원",
-    people: "7/10명",
-    tag: "자기계발",
-    rating: "4.7",
-    reviews: 63,
-    image: "https://images.unsplash.com/photo-1506784365847-bbad939e9335?auto=format&fit=crop&w=800&q=80",
-    liked: false,
-  },
-  {
-    id: 5,
-    title: "샐러드 만들고 브런치까지",
-    location: "을지로",
-    date: "3월 20일(목) · 오전 11:00",
-    price: "22,000원",
-    people: "5/8명",
-    tag: "푸드·드링크",
-    rating: "4.9",
-    reviews: 29,
-    image: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80",
-    liked: false,
-  },
-  {
-    id: 6,
-    title: "요즘 관심사로 가볍게 대화해요",
-    location: "합정",
-    date: "3월 21일(금) · 오후 8:00",
-    price: "9,000원",
-    people: "9/10명",
-    tag: "대화",
-    rating: "4.8",
-    reviews: 55,
-    image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80",
-    liked: false,
-  },
-  {
-    id: 7,
-    title: "ETF·주식 초보자 재테크 스터디",
-    location: "강남",
-    date: "3월 22일(토) · 오후 2:00",
-    price: "20,000원",
-    people: "8/10명",
-    tag: "재테크",
-    rating: "4.9",
-    reviews: 41,
-    image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80",
-    liked: false,
-  },
-  {
-    id: 8,
-    title: "필라테스 입문 원데이 클래스",
-    location: "서초",
-    date: "3월 23일(일) · 오전 10:30",
-    price: "35,000원",
-    people: "3/6명",
-    tag: "액티비티",
-    rating: "5.0",
-    reviews: 18,
-    image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
-    liked: false,
-  },
-];
+function toCircleItem(c: {
+  circleId: number;
+  name: string;
+  categoryName: string;
+  currentMember: number;
+  maxMember: number;
+  coverImageUrl?: string;
+}): CircleItem {
+  return {
+    id: c.circleId,
+    title: c.name,
+    location: c.categoryName,
+    tag: `${c.currentMember}/${c.maxMember}명`,
+    data: "",
+    image: c.coverImageUrl || "",
+  };
+}
 
 const places = [
   {
@@ -252,10 +168,62 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
   const navigate = useNavigate();
   const [slideIndex, setSlideIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(true);
-  const [likedItems, setLikedItems] = useState<Set<number>>(new Set());
+  const [likedCircles, setLikedCircles] = useState<Set<number>>(new Set());
+  const [likedPlaces, setLikedPlaces] = useState<Set<number>>(new Set());
   const [hoveredRec, setHoveredRec] = useState<number | null>(null);
-  const [hoveredPop, setHoveredPop] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [recommendedCircles, setRecommendedCircles] = useState<CircleItem[]>([]);
+  const [popularCircles, setPopularCircles] = useState<CircleItem[]>([]);
+  const [needsEnergyTest, setNeedsEnergyTest] = useState(false);
+  const [hoveredPlace, setHoveredPlace] = useState<number | null>(null);
+  const [loginModal, setLoginModal] = useState(false);
+
+  // 모임 데이터 fetch
+  useEffect(() => {
+    const fetchCircles = async () => {
+      // 인기 모임(독립)
+      try {
+        const popularRes = await api.get("/api/admin/circles/popular-circles");
+        setPopularCircles(
+          popularRes.data.map((c: { circleId: number; circleName: string; categoryName: string; currentNumber: number; score: number }) => ({
+            id: c.circleId,
+            title: c.circleName,
+            location: c.categoryName,
+            // tag: c.categoryName,
+            data: `${c.currentNumber}명 참여 중`,
+            image: "",
+          })),
+        );
+      } catch {
+        setPopularCircles([]);
+      }
+
+      try {
+        if (isLoggedIn) {
+          // 에너지 프로필 존재 여부 확인
+          try {
+            await energyProfileApi.check();
+          } catch {
+            // 프로필 없음 → 테스트 유도
+            setNeedsEnergyTest(true);
+            const res = await circleApi.getCircles({ page: 1, size: 5 });
+            setRecommendedCircles(res.data.dtoList.map(toCircleItem));
+            return;
+          }
+          // 프로필 있음 → 추천
+          const res = await circleApi.getRecommendationBundle(5);
+          setRecommendedCircles(res.data.overall.map(toCircleItem));
+        } else {
+          // 게스트: 최근 생성된 모임 5개
+          const res = await circleApi.getCircles({ page: 1, size: 5 });
+          setRecommendedCircles(res.data.dtoList.map(toCircleItem));
+        }
+      } catch {
+        setRecommendedCircles([]);
+      }
+    };
+    fetchCircles();
+  }, [isLoggedIn]);
 
   const goTo = useCallback((idx: number) => {
     setSlideIndex(((idx % heroSlides.length) + heroSlides.length) % heroSlides.length);
@@ -274,8 +242,17 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
     };
   }, [slideIndex, isPaused, goTo]);
 
-  const toggleLike = (id: number) => {
-    setLikedItems((prev) => {
+  const toggleCircleLike = (id: number) => {
+    setLikedCircles((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const togglePlaceLike = (id: number) => {
+    setLikedPlaces((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -458,15 +435,44 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
         </div>
       )}
 
-      {/* ━━━ 히어로 → HOW IT WORKS 전환 그라데이션 ━━━ */}
-      {/* <div style={{ height: 80, background: "linear-gradient(180deg, #1f2937 0%, #FFFFFF 100%)" }} /> */}
-
       {/* ━━━ 에너지 테스트 3-Step 설명 ━━━ */}
       <div style={{ backgroundColor: "#FFFFFF", padding: "40px 0 64px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px", textAlign: "center" }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: COLOR.primary, letterSpacing: "0.06em", marginBottom: 4 }}>HOW IT WORKS</p>
-          <h2 style={{ fontSize: 28, fontWeight: 800, color: COLOR.text, margin: "0 0 8px" }}>나에게 맞는 모임, 이렇게 찾아요</h2>
-          <p style={{ fontSize: 15, color: "#6B7280", margin: "0 0 48px" }}>
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: "0 auto",
+            padding: "0 20px",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: COLOR.primary,
+              letterSpacing: "0.06em",
+              marginBottom: 4,
+            }}
+          >
+            HOW IT WORKS
+          </p>
+          <h2
+            style={{
+              fontSize: 28,
+              fontWeight: 800,
+              color: COLOR.text,
+              margin: "0 0 8px",
+            }}
+          >
+            나에게 맞는 모임, 이렇게 찾아요
+          </h2>
+          <p
+            style={{
+              fontSize: 15,
+              color: "#6B7280",
+              margin: "0 0 48px",
+            }}
+          >
             간단한 테스트 하나로 에너지 유형을 알아보고, 딱 맞는 모임을 추천받으세요.
           </p>
 
@@ -491,9 +497,35 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
                 >
                   <item.icon size={28} color={COLOR.primary} strokeWidth={1.8} />
                 </div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: COLOR.primary, marginBottom: 6 }}>STEP {item.step}</p>
-                <p style={{ fontSize: 17, fontWeight: 700, color: COLOR.text, marginBottom: 6 }}>{item.title}</p>
-                <p style={{ fontSize: 14, color: "#6B7280", margin: 0 }}>{item.desc}</p>
+                <p
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: COLOR.primary,
+                    marginBottom: 6,
+                  }}
+                >
+                  STEP {item.step}
+                </p>
+                <p
+                  style={{
+                    fontSize: 17,
+                    fontWeight: 700,
+                    color: COLOR.text,
+                    marginBottom: 6,
+                  }}
+                >
+                  {item.title}
+                </p>
+                <p
+                  style={{
+                    fontSize: 14,
+                    color: "#6B7280",
+                    margin: 0,
+                  }}
+                >
+                  {item.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -520,9 +552,33 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
 
       {/* ━━━ 에너지 유형 미리보기 ━━━ */}
       <div style={{ backgroundColor: "#F8FAF9", padding: "72px 0 64px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px", textAlign: "center" }}>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: COLOR.text, margin: "0 0 8px" }}>이런 에너지 유형이 있어요</h2>
-          <p style={{ fontSize: 14, color: "#6B7280", margin: "0 0 36px" }}>나는 어떤 유형일까? 테스트하고 확인해보세요.</p>
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: "0 auto",
+            padding: "0 20px",
+            textAlign: "center",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: COLOR.text,
+              margin: "0 0 8px",
+            }}
+          >
+            이런 에너지 유형이 있어요
+          </h2>
+          <p
+            style={{
+              fontSize: 14,
+              color: "#6B7280",
+              margin: "0 0 36px",
+            }}
+          >
+            나는 어떤 유형일까? 테스트하고 확인해보세요.
+          </p>
 
           <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
             {energyTypes.map((type) => (
@@ -549,22 +605,62 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
       {/* ━━━ 추천 모임 ━━━ */}
       <div style={{ backgroundColor: "#FFFFFF", padding: "72px 0 48px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
+          {/* 에너지 테스트 유도 배너 */}
+          {isLoggedIn && needsEnergyTest && (
+            <div
+              style={{
+                backgroundColor: COLOR.light,
+                borderRadius: 16,
+                padding: "28px 32px",
+                marginBottom: 32,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 24,
+              }}
+            >
+              <div>
+                <p style={{ fontSize: 18, fontWeight: 800, color: COLOR.text, margin: "0 0 6px" }}>아직 에너지 테스트를 안 하셨네요!</p>
+                <p style={{ fontSize: 14, color: "#6B7280", margin: 0 }}>간단한 테스트로 나에게 딱 맞는 모임을 추천받아 보세요.</p>
+              </div>
+              <button
+                onClick={() => navigate("/users/energy-test")}
+                style={{
+                  flexShrink: 0,
+                  height: 44,
+                  padding: "0 24px",
+                  backgroundColor: COLOR.accent,
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                테스트 하러 가기
+              </button>
+            </div>
+          )}
+
           <SectionHeader
             title="이런 모임 어떠세요?"
-            subtitle={isLoggedIn ? "당신에게 맞는 모임을 추천해드려요!" : "이번주 인기 있는 모임을 추천해드려요!"}
+            subtitle={isLoggedIn && !needsEnergyTest ? "당신에게 맞는 모임을 추천해드려요!" : "최근 개설된 모임을 소개해드려요!"}
+            moreHref="/circle"
           />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
-            {socialings.slice(0, 5).map((item) => (
+            {recommendedCircles.map((item) => (
               <CircleCard
                 key={item.id}
                 item={item}
-                badge="추천"
-                badgeColor={COLOR.primary}
-                isLiked={likedItems.has(item.id)}
+                badge="인기"
+                badgeColor={COLOR.accent}
+                isLiked={likedCircles.has(item.id)}
                 isHovered={hoveredRec === item.id}
-                onLike={() => toggleLike(item.id)}
+                onLike={() => (isLoggedIn ? toggleCircleLike(item.id) : setLoginModal(true))}
                 onMouseEnter={() => setHoveredRec(item.id)}
                 onMouseLeave={() => setHoveredRec(null)}
+                onClick={() => navigate(`/circle/${item.id}`)}
               />
             ))}
           </div>
@@ -574,19 +670,20 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
       {/* ━━━ 인기 모임 ━━━ */}
       <div style={{ backgroundColor: "#FFFFFF", padding: "72px 0 48px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
-          <SectionHeader title="이런 모임이 뜨고 있어요!" subtitle="지금 가장 인기 있는 모임을 확인해보세요" />
+          <SectionHeader title="이런 모임이 뜨고 있어요!" subtitle={"지금 가장 인기 있는 모임을 확인해 보세요!"} moreHref="/circle" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
-            {socialings.slice(3).map((item) => (
+            {popularCircles.map((item) => (
               <CircleCard
                 key={item.id}
                 item={item}
-                badge="인기"
-                badgeColor={COLOR.accent}
-                isLiked={likedItems.has(item.id)}
-                isHovered={hoveredPop === item.id}
-                onLike={() => toggleLike(item.id)}
-                onMouseEnter={() => setHoveredPop(item.id)}
-                onMouseLeave={() => setHoveredPop(null)}
+                badge={isLoggedIn && !needsEnergyTest ? "추천" : "NEW"}
+                badgeColor={isLoggedIn && !needsEnergyTest ? COLOR.primary : COLOR.accent}
+                isLiked={likedCircles.has(item.id)}
+                isHovered={hoveredRec === item.id}
+                onLike={() => (isLoggedIn ? toggleCircleLike(item.id) : setLoginModal(true))}
+                onMouseEnter={() => setHoveredRec(item.id)}
+                onMouseLeave={() => setHoveredRec(null)}
+                onClick={() => navigate(`/circle/${item.id}`)}
               />
             ))}
           </div>
@@ -599,12 +696,32 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
           <SectionHeader title="이런 장소 어떠세요?" subtitle="모임하기 좋은 공간을 소개해드려요!" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
             {places.map((place) => (
-              <PlaceCard key={place.id} place={place} />
+              <PlaceCard
+                key={place.id}
+                place={place}
+                isLiked={likedPlaces.has(place.id)}
+                isHovered={hoveredPlace === place.id}
+                onLike={() => togglePlaceLike(place.id)}
+                onMouseEnter={() => setHoveredPlace(place.id)}
+                onMouseLeave={() => setHoveredPlace(null)}
+              />
             ))}
           </div>
         </div>
       </div>
 
+      <AdminConfirmModal
+        open={loginModal}
+        title="로그인 필요"
+        message="로그인이 필요한 작업입니다. 로그인 페이지로 이동하시겠습니까?"
+        confirmLabel="로그인하기"
+        confirmColor="green"
+        onConfirm={() => {
+          setLoginModal(false);
+          navigate("/users/login");
+        }}
+        onCancel={() => setLoginModal(false)}
+      />
       <Footer />
     </div>
   );

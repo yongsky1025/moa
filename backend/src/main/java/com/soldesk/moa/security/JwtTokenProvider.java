@@ -26,6 +26,9 @@ public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
     private final SecretKey signingKey;
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
+    private static final String GUEST_ENERGY_PREVIEW_TOKEN_TYPE = "guest-energy-preview";
 
     public JwtTokenProvider(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
@@ -54,7 +57,7 @@ public class JwtTokenProvider {
         var builder = Jwts.builder()
                 .subject(email)
                 .claim("role", role.name())
-                .claim("type", "access");
+                .claim("type", ACCESS_TOKEN_TYPE);
 
         if (userId != null) {
             builder.claim("userId", userId);
@@ -73,7 +76,28 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .subject(email)
-                .claim("type", "refresh")
+                .claim("type", REFRESH_TOKEN_TYPE)
+                .issuedAt(now)
+                .expiration(validity)
+                .signWith(signingKey)
+                .compact();
+    }
+
+    public String createGuestEnergyPreviewToken(String energyTypeCode,
+            int socialLoad, int interactionMode, int structureLevel,
+            int activityIntensity, int commitmentLevel) {
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + jwtProperties.getGuestTokenTtlMs());
+
+        return Jwts.builder()
+                .subject("guest-energy-preview")
+                .claim("type", GUEST_ENERGY_PREVIEW_TOKEN_TYPE)
+                .claim("energyTypeCode", energyTypeCode)
+                .claim("socialLoad", socialLoad)
+                .claim("interactionMode", interactionMode)
+                .claim("structureLevel", structureLevel)
+                .claim("activityIntensity", activityIntensity)
+                .claim("commitmentLevel", commitmentLevel)
                 .issuedAt(now)
                 .expiration(validity)
                 .signWith(signingKey)
@@ -105,7 +129,7 @@ public class JwtTokenProvider {
     public boolean isAccessToken(String token) {
         try {
             String tokenType = parseClaims(token).get("type", String.class);
-            return "access".equals(tokenType);
+            return ACCESS_TOKEN_TYPE.equals(tokenType);
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
@@ -114,10 +138,31 @@ public class JwtTokenProvider {
     public boolean isRefreshToken(String token) {
         try {
             String tokenType = parseClaims(token).get("type", String.class);
-            return "refresh".equals(tokenType);
+            return REFRESH_TOKEN_TYPE.equals(tokenType);
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    public boolean isGuestEnergyPreviewToken(String token) {
+        try {
+            String tokenType = parseClaims(token).get("type", String.class);
+            return GUEST_ENERGY_PREVIEW_TOKEN_TYPE.equals(tokenType);
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public String getGuestEnergyTypeCodeFromToken(String token) {
+        return parseClaims(token).get("energyTypeCode", String.class);
+    }
+
+    public int getGuestScoreFromToken(String token, String scoreName) {
+        Object claim = parseClaims(token).get(scoreName);
+        if (claim instanceof Number number) {
+            return number.intValue();
+        }
+        throw new JwtException("게스트 토큰에 " + scoreName + " 점수가 없습니다.");
     }
 
     public String extractBearerToken(HttpServletRequest request) {

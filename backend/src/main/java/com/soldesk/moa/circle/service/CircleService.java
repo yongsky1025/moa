@@ -150,7 +150,8 @@ public class CircleService {
                                 .forEach(m -> notificationService.send(
                                                 m.getUser().getUserId(),
                                                 NotificationType.CIRCLE_DISBANDED,
-                                                "'" + circle.getName() + "' 모임이 해산되었습니다."));
+                                                "'" + circle.getName() + "' 모임이 해산되었습니다.",
+                                                circleId));
 
                 Circle closed = Circle.builder()
                                 .circleId(circle.getCircleId())
