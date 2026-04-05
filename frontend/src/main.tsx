@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import { RouterProvider } from "react-router-dom";
-import { QueryClientProvider } from "@tanstack/react-query";
 import rootRouter from "./routes/rootRouters.ts";
 import { queryClient } from "./api/queryClient.ts";
 import { clearTransientNavigationStateOnReload } from "./common/utils/transientNavigationState.ts";

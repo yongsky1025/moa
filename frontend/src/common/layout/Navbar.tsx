@@ -13,6 +13,7 @@ import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
 import type { Notification } from "../../types/notification";
 import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
+import { toAssetUrl } from "../utils/assetUrl";
 import { useAlarmSocket } from "../../chat/hooks/useAlarmSocket";
 import DropdownMenu, {
   type DropdownMenuItem,

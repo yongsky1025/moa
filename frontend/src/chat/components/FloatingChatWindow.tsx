@@ -16,6 +16,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { chatApi } from "../../api/chatApi";
 import { circleApi } from "../../api/circleApi";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 import {
   useWebSocket,
   type TypingEvent,

@@ -335,7 +335,7 @@ export default function UserProfilePage() {
             <div style={s.profileTop}>
               {profile.profileImageUrl ? (
                 <img
-                  src={profile.profileImageUrl}
+                  src={toAssetUrl(profile.profileImageUrl)}
                   alt="프로필"
                   style={s.avatarImg}
                 />
