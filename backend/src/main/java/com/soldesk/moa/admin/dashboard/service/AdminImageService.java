@@ -15,10 +15,10 @@ import com.soldesk.moa.common.storage.dto.CreateUploadUrlResponseDTO;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 관리자 이미지 업로드 서비스 (로컬 개발 전용)
+ * 관리자 이미지 업로드 서비스
  */
 @Service
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 @RequiredArgsConstructor
 public class AdminImageService {
 
@@ -52,3 +52,4 @@ public class AdminImageService {
         return idx >= 0 ? fileUrl.substring(idx) : fileUrl;
     }
 }
+

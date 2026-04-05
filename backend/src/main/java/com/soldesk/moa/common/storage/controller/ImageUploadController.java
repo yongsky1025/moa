@@ -18,7 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 @RequestMapping("/api/images")
 @RequiredArgsConstructor
 public class ImageUploadController {
@@ -33,3 +33,4 @@ public class ImageUploadController {
         return ResponseEntity.ok(imageUploadService.createUploadUrl(request, authUser.getUserId()));
     }
 }
+

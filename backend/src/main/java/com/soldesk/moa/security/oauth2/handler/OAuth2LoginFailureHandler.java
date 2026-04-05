@@ -29,7 +29,7 @@ public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
     private static final Set<String> ACCOUNT_STATUS_CODES = Set.of(
             "ACCOUNT_WITHDRAWN", "ACCOUNT_SUSPENDED", "ACCOUNT_BANNED");
 
-    @Value("${app.frontend-url:http://localhost:5173}")
+    @Value("${app.frontend-url}")
     private String frontendUrl;
 
     @Override

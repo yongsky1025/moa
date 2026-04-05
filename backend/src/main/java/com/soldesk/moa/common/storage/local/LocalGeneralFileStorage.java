@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import com.soldesk.moa.common.storage.GeneralFileStorage;
 
 @Component
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 public class LocalGeneralFileStorage extends AbstractLocalFileStorage implements GeneralFileStorage {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
@@ -48,3 +48,4 @@ public class LocalGeneralFileStorage extends AbstractLocalFileStorage implements
         return "files";
     }
 }
+

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 @RequestMapping("/api/local-files")
 public class LocalFileUploadController {
 
@@ -109,8 +109,9 @@ public class LocalFileUploadController {
 
     private String normalizeBaseUrl(String value) {
         if (value == null || value.isBlank()) {
-            return "http://localhost:8080";
+            throw new IllegalStateException("upload.base-url 설정이 필요합니다.");
         }
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 }
+

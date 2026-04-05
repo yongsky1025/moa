@@ -74,7 +74,7 @@ public abstract class AbstractLocalFileStorage {
 
     protected String normalizeBaseUrl(String value) {
         if (value == null || value.isBlank()) {
-            return "http://localhost:8080";
+            throw new IllegalStateException("upload.base-url 설정이 필요합니다.");
         }
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }

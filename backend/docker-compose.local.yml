@@ -1,0 +1,22 @@
+services:
+  db:
+    ports:
+      - "3306:3306"
+
+  api:
+    env_file:
+      - ./.env
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    ports:
+      - "8080:8080"
+
+  meilisearch:
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_ENV: development
+
+  meili-init:
+    env_file:
+      - ./.env

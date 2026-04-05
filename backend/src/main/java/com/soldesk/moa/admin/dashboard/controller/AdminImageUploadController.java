@@ -20,7 +20,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 @RequestMapping("/api/admin/images")
 @Tag(name = "Admin Image Upload", description = "관리자 이미지 업로드")
 @RequiredArgsConstructor
@@ -37,3 +37,4 @@ public class AdminImageUploadController {
         return ResponseEntity.ok(adminImageService.createAdminUploadUrl(request, authUserDTO.getUserId()));
     }
 }
+

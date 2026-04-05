@@ -65,6 +65,8 @@ jobs:
           cp "$JAR_PATH" artifacts/backend/app.jar
           cp backend/Dockerfile artifacts/backend/Dockerfile
           cp backend/docker-compose.yml artifacts/backend/docker-compose.yml
+          cp backend/docker-compose.prod.yml artifacts/backend/docker-compose.prod.yml
+          cp backend/docker-compose.meili.yml artifacts/backend/docker-compose.meili.yml
 
       # ---------- Deploy ----------
       - name: Install ssh + rsync
@@ -112,12 +114,30 @@ jobs:
 
             export KAKAO_CLIENT_ID=\"${{ secrets.KAKAO_CLIENT_ID }}\"
             export KAKAO_CLIENT_SECRET=\"${{ secrets.KAKAO_CLIENT_SECRET }}\"
+            export KAKAO_REDIRECT_URI=\"${{ secrets.KAKAO_REDIRECT_URI }}\"
 
             export NAVER_CLIENT_ID=\"${{ secrets.NAVER_CLIENT_ID }}\"
             export NAVER_CLIENT_SECRET=\"${{ secrets.NAVER_CLIENT_SECRET }}\"
+            export NAVER_REDIRECT_URI=\"${{ secrets.NAVER_REDIRECT_URI }}\"
+
+            export APP_FRONTEND_URL=\"${{ secrets.APP_FRONTEND_URL }}\"
+            export APP_BACKEND_URL=\"${{ secrets.APP_BACKEND_URL }}\"
+            export APP_CORS_ALLOWED_ORIGIN_PATTERN=\"${{ secrets.APP_CORS_ALLOWED_ORIGIN_PATTERN }}\"
+            export FILE_UPLOAD_DIR=\"${{ secrets.FILE_UPLOAD_DIR }}\"
+
+            export OPENAI_API_KEY=\"${{ secrets.OPENAI_API_KEY }}\"
+            export OPENAI_EMBEDDING_MODEL=\"${{ secrets.OPENAI_EMBEDDING_MODEL }}\"
+            export TOSS_CLIENT_KEY=\"${{ secrets.TOSS_CLIENT_KEY }}\"
+            export TOSS_SECRET_KEY=\"${{ secrets.TOSS_SECRET_KEY }}\"
+
+            export MEILISEARCH_HOST=\"${{ secrets.MEILISEARCH_HOST }}\"
+            export MEILISEARCH_MASTER_API_KEY=\"${{ secrets.MEILISEARCH_MASTER_API_KEY }}\"
+            export MEILISEARCH_SEARCH_API_KEY=\"${{ secrets.MEILISEARCH_SEARCH_API_KEY }}\"
+            export MEILI_MASTER_KEY=\"${{ secrets.MEILI_MASTER_KEY }}\"
+            export MEILI_SEARCH_KEY_UID=\"${{ secrets.MEILI_SEARCH_KEY_UID }}\"
             
             # 컨테이너 갱신
-            docker compose up -d --build
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.meili.yml up -d --build
             docker image prune -f
             
             # Nginx 리로드 (정적 파일 및 프록시 설정 반영)

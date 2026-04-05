@@ -15,7 +15,7 @@ import com.soldesk.moa.users.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 @RequiredArgsConstructor
 public class ImageUploadService {
 
@@ -78,3 +78,4 @@ public class ImageUploadService {
         return ImageDomain.from(domain);
     }
 }
+

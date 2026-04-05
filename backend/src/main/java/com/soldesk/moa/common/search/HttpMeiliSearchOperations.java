@@ -32,6 +32,10 @@ public class HttpMeiliSearchOperations implements MeiliSearchOperations {
 
     @Override
     public void ensureIndex(String indexUid, String primaryKey) {
+        if (indexExists(indexUid)) {
+            return;
+        }
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("uid", indexUid);
         body.put("primaryKey", primaryKey);
@@ -47,6 +51,21 @@ public class HttpMeiliSearchOperations implements MeiliSearchOperations {
                 return;
             }
             throw new InvalidRequestException("[#SEARCH] Meilisearch index 생성 실패: " + indexUid);
+        }
+    }
+
+    private boolean indexExists(String indexUid) {
+        try {
+            meiliSearchMasterRestClient.get()
+                    .uri("/indexes/{indexUid}", indexUid)
+                    .retrieve()
+                    .toBodilessEntity();
+            return true;
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode().value() == 404) {
+                return false;
+            }
+            throw new InvalidRequestException("[#SEARCH] Meilisearch index 조회 실패: " + indexUid);
         }
     }
 

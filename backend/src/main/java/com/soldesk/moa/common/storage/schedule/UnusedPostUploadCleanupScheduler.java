@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 @Component
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 @RequiredArgsConstructor
 @Log4j2
 public class UnusedPostUploadCleanupScheduler {
@@ -112,3 +112,4 @@ public class UnusedPostUploadCleanupScheduler {
         return deleted;
     }
 }
+

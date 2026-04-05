@@ -1,9 +1,6 @@
 package com.soldesk.moa.circle.service;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.net.URI;
 import java.util.Locale;
 import java.util.UUID;
@@ -17,7 +14,8 @@ import com.soldesk.moa.common.entity.Image;
 import com.soldesk.moa.common.entity.constant.ImageDomain;
 import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.common.repository.ImageRepository;
-import com.soldesk.moa.common.storage.local.StorageKeyGenerator;
+import com.soldesk.moa.common.storage.FileStorage;
+import com.soldesk.moa.common.storage.dto.CreateUploadUrlResponseDTO;
 import com.soldesk.moa.users.repository.UsersRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -27,12 +25,10 @@ import lombok.RequiredArgsConstructor;
 public class CircleImageService {
     private static final ImageDomain CIRCLE_IMAGE_DOMAIN = ImageDomain.CIRCLE;
 
-    @Value("${upload.root}")
-    private String localUploadDir;
-
-    @Value("${upload.base-url:http://localhost:8080}")
+    @Value("${upload.base-url}")
     private String localBaseUrl;
 
+    private final FileStorage fileStorage;
     private final ImageRepository imageRepository;
     private final UsersRepository usersRepository;
 
@@ -46,21 +42,17 @@ public class CircleImageService {
         if (!usersRepository.existsById(userId)) {
             throw new IllegalArgumentException("사용자가 존재하지 않습니다.");
         }
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("업로드할 파일이 없습니다.");
+        }
 
         String originalName = file.getOriginalFilename();
-        String key = StorageKeyGenerator.generate("images", "circle", originalName);
-
-        // 업로드 디렉토리 생성 후 파일 저장
-        Path uploadDir = Paths.get(localUploadDir, "images");
-        Files.createDirectories(uploadDir);
-        Path target = uploadDir.resolve(key);
-        Path parent = target.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
-        file.transferTo(target.toFile());
-
-        String storedPath = "/uploads/" + key;
+        CreateUploadUrlResponseDTO upload = fileStorage.createUploadUrl(
+                CIRCLE_IMAGE_DOMAIN.name(),
+                originalName,
+                file.getContentType());
+        fileStorage.store(upload.getKey(), file);
+        String storedPath = normalizeToUploadPath(upload.getFileUrl());
         String uuid = UUID.randomUUID().toString();
 
         imageRepository.softDeleteByOwner(CIRCLE_IMAGE_DOMAIN, circleId);
@@ -147,7 +139,7 @@ public class CircleImageService {
 
     private String normalizeBaseUrl(String value) {
         if (value == null || value.isBlank()) {
-            return "http://localhost:8080";
+            throw new IllegalStateException("upload.base-url 설정이 필요합니다.");
         }
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }

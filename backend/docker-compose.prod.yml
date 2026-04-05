@@ -1,0 +1,15 @@
+services:
+  api:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      FILE_UPLOAD_DIR: ${FILE_UPLOAD_DIR:-/home/apps/moa/uploads-prod}
+    volumes:
+      - ${FILE_UPLOAD_DIR:-/home/apps/moa/uploads-prod}:${FILE_UPLOAD_DIR:-/home/apps/moa/uploads-prod}
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  meilisearch:
+    environment:
+      MEILI_ENV: production
+    expose:
+      - "7700"

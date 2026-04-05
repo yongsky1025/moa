@@ -1,5 +1,9 @@
 package com.soldesk.moa.common.storage;
 
+import java.io.IOException;
+
+import org.springframework.web.multipart.MultipartFile;
+
 import com.soldesk.moa.common.storage.dto.CreateUploadUrlResponseDTO;
 
 public interface FileStorage {
@@ -26,4 +30,15 @@ public interface FileStorage {
      * </p>
      */
     void delete(String key);
+
+    /**
+     * key 경로에 파일을 저장한다.
+     *
+     * <p>
+     * 기본 구현은 미지원이며, 로컬 스토리지처럼 서버에서 직접 파일 저장이 필요한 구현체에서 override 한다.
+     * </p>
+     */
+    default void store(String key, MultipartFile file) throws IOException {
+        throw new UnsupportedOperationException("현재 저장소는 서버 직접 업로드를 지원하지 않습니다.");
+    }
 }

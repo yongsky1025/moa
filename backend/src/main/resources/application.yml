@@ -4,7 +4,7 @@ spring:
   config:
     import: optional:file:.env[.properties]
   profiles:
-    include: oauth2, local
+    include: oauth2
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
@@ -29,9 +29,9 @@ jwt:
   refresh-exp-ms: 1209600000
 
 meilisearch:
-  enabled: ${MEILISEARCH_ENABLED:false}
+  enabled: false
   host: ${MEILISEARCH_HOST}
-  master-api-key: ${MEILISEARCH_MASTER_API_KEY:${MEILI_MASTER_KEY:}}
+  master-api-key: ${MEILISEARCH_MASTER_API_KEY}
   search-api-key: ${MEILISEARCH_SEARCH_API_KEY}
 
 toss:

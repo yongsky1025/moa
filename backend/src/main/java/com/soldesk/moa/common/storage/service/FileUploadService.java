@@ -15,7 +15,7 @@ import com.soldesk.moa.users.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 @RequiredArgsConstructor
 public class FileUploadService {
 
@@ -76,3 +76,4 @@ public class FileUploadService {
         return fileUrl;
     }
 }
+

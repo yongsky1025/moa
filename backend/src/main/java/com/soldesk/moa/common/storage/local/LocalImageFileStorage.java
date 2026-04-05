@@ -1,5 +1,8 @@
 package com.soldesk.moa.common.storage.local;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Set;
@@ -7,11 +10,12 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.soldesk.moa.common.storage.FileStorage;
 
 @Component
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 public class LocalImageFileStorage extends AbstractLocalFileStorage implements FileStorage {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp", "bmp", "svg");
@@ -45,4 +49,28 @@ public class LocalImageFileStorage extends AbstractLocalFileStorage implements F
     protected String resourceTypePrefix() {
         return "images";
     }
+
+    @Override
+    public void store(String key, MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("업로드할 파일이 없습니다.");
+        }
+        String safeKey = sanitizeKey(key);
+        if (!safeKey.startsWith("images/")) {
+            throw new IllegalArgumentException("지원하지 않는 key prefix입니다.");
+        }
+
+        Path baseDir = Paths.get(localUploadDir).normalize();
+        Path target = baseDir.resolve(safeKey.substring("images/".length())).normalize();
+        if (!target.startsWith(baseDir)) {
+            throw new IllegalArgumentException("유효하지 않은 key 경로입니다.");
+        }
+
+        Path parent = target.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
+        file.transferTo(target.toFile());
+    }
 }
+

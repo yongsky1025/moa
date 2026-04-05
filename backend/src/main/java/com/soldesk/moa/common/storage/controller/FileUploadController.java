@@ -18,7 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController("commonStorageFileUploadController")
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 @RequestMapping("/api/files")
 @RequiredArgsConstructor
 public class FileUploadController {
@@ -33,3 +33,4 @@ public class FileUploadController {
         return ResponseEntity.ok(fileUploadService.createUploadUrl(request, authUser.getUserId()));
     }
 }
+

@@ -3,8 +3,6 @@ services:
     image: mysql:8.0
     container_name: moa-mysql
     restart: unless-stopped
-    ports:
-      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: moadb
@@ -41,29 +39,38 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "127.0.0.1:8080:8080" # 외부 공개 X, nginx만 접근
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      # OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # app profile은 local/prod override 파일에서 지정
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
 
-      #jwt 토큰
       JWT_SECRET: ${JWT_SECRET}
 
-      #구글 소셜 토큰
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
 
-      #카카오 소셜 토큰
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
 
-      #네이버 소셜 토큰
       NAVER_CLIENT_ID: ${NAVER_CLIENT_ID}
       NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
+      NAVER_REDIRECT_URI: ${NAVER_REDIRECT_URI}
+
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL}
+      APP_BACKEND_URL: ${APP_BACKEND_URL}
+      APP_CORS_ALLOWED_ORIGIN_PATTERN: ${APP_CORS_ALLOWED_ORIGIN_PATTERN}
+
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL}
+      TOSS_CLIENT_KEY: ${TOSS_CLIENT_KEY}
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
+
+      MEILISEARCH_HOST: ${MEILISEARCH_HOST}
+      MEILISEARCH_MASTER_API_KEY: ${MEILISEARCH_MASTER_API_KEY}
+      MEILISEARCH_SEARCH_API_KEY: ${MEILISEARCH_SEARCH_API_KEY}
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
 
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/moadb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
-
       SPRING_DATASOURCE_USERNAME: team_moa
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver

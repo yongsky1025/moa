@@ -23,6 +23,12 @@ app:
     secure: true
     same-site: None
 
+upload:
+  # 운영 스토리지 경로 (서버 파일시스템)
+  root: ${FILE_UPLOAD_DIR:/home/apps/moa/uploads-prod}
+  # 업로드 파일 URL 생성 기준 도메인 (백엔드 도메인)
+  base-url: ${APP_BACKEND_URL}
+
 logging:
   level:
     org:

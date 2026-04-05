@@ -9,7 +9,7 @@ import com.soldesk.moa.common.storage.FileStorage;
 import com.soldesk.moa.common.storage.local.LocalImageFileStorage;
 
 @Configuration
-@Profile({ "local", "dev" })
+@Profile({ "local", "prod" })
 public class StorageConfig {
 
     // TODO(S3): prod profile에서 S3FileStorage Bean을 추가하고 FileStorage로 주입 연결한다.
@@ -19,3 +19,4 @@ public class StorageConfig {
         return localImageFileStorage;
     }
 }
+
