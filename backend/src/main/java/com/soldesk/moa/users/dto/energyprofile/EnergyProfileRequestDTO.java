@@ -3,11 +3,13 @@ package com.soldesk.moa.users.dto.energyprofile;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class EnergyProfileRequestDTO {
 
     @NotNull(message = "socialLoad는 필수입니다.")

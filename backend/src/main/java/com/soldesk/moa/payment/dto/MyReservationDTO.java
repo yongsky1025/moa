@@ -9,5 +9,6 @@ public record MyReservationDTO(
     LocalDateTime startTime,
     LocalDateTime endTime,
     Integer totalPrice,
-    String status
+    String status,
+    String thumbnailUrl
 ) {}

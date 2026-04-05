@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import {
   MapPin,
@@ -23,6 +23,32 @@ import {
 } from "../api/placeRentalApi";
 import type { PlaceDetailDTO, PlaceReviewDTO } from "../types/placeTypes";
 import ReportButton from "../../common/components/ReportButton";
+
+/** description에서 [섹션 제목] 패턴을 파싱해 섹션 배열로 변환 */
+function parseDescriptionSections(
+  text: string
+): Array<{ title: string; content: string }> {
+  const parts = text.split(/(\[[^\]]+\])/);
+  const sections: Array<{ title: string; content: string }> = [];
+  let currentTitle = "";
+  let currentContent = "";
+
+  for (const part of parts) {
+    if (/^\[[^\]]+\]$/.test(part)) {
+      if (currentTitle || currentContent.trim()) {
+        sections.push({ title: currentTitle, content: currentContent.trim() });
+      }
+      currentTitle = part.slice(1, -1); // [ ] 제거
+      currentContent = "";
+    } else {
+      currentContent += part;
+    }
+  }
+  if (currentTitle || currentContent.trim()) {
+    sections.push({ title: currentTitle, content: currentContent.trim() });
+  }
+  return sections;
+}
 
 const DAY_KO: Record<string, string> = {
   MONDAY: "월요일",
@@ -128,7 +154,9 @@ export default function PlaceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const initialDate = searchParams.get("date") ?? undefined;
+  const initialScheduleId = (location.state as { scheduleId?: number } | null)?.scheduleId;
   const { isLoggedIn } = useAuthStore();
   const [place, setPlace] = useState<PlaceDetailDTO | null>(null);
   const [reviews, setReviews] = useState<PlaceReviewDTO[]>([]);
@@ -533,16 +561,78 @@ export default function PlaceDetailPage() {
               >
                 장소 소개
               </h2>
-              <p
-                style={{
-                  fontSize: 14,
-                  color: "#444",
-                  lineHeight: 1.8,
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {place.description}
-              </p>
+              {(() => {
+                const sections = parseDescriptionSections(place.description);
+                if (sections.length === 0) return null;
+                return (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 20,
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {sections.map((section, i) => {
+                      // ` · ` 또는 ` / ` 기준으로 항목 분리
+                      const items = section.content
+                        .split(/ · | \/ /)
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      return (
+                        <div key={i}>
+                          {section.title && (
+                            <p
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: "#5F8F7B",
+                                marginBottom: 6,
+                              }}
+                            >
+                              [{section.title}]
+                            </p>
+                          )}
+                          {items.length > 1 ? (
+                            <ul
+                              style={{
+                                margin: 0,
+                                paddingLeft: 16,
+                                listStyle: "disc",
+                              }}
+                            >
+                              {items.map((item, j) => (
+                                <li
+                                  key={j}
+                                  style={{
+                                    fontSize: 14,
+                                    color: "#444",
+                                    lineHeight: 1.8,
+                                  }}
+                                >
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p
+                              style={{
+                                fontSize: 14,
+                                color: "#444",
+                                lineHeight: 1.8,
+                                margin: 0,
+                              }}
+                            >
+                              {section.content}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
             <div
@@ -848,7 +938,7 @@ export default function PlaceDetailPage() {
           <div
             style={{ width: 340, flexShrink: 0, position: "sticky", top: 84 }}
           >
-            <PlaceReservationPanel place={place} initialDate={initialDate} />
+            <PlaceReservationPanel place={place} initialDate={initialDate} initialScheduleId={initialScheduleId} />
           </div>
         </div>
       </div>

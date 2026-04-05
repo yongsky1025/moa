@@ -1,14 +1,14 @@
-import { create } from 'zustand';
-import { isAxiosError } from 'axios';
-import { authApi } from '../api/authApi';
-import type { AuthUser, LoginRequest, SignUpRequest } from '../users/types/auth';
+import { create } from "zustand";
+import { isAxiosError } from "axios";
+import { authApi } from "../api/authApi";
+import type { AuthUser, LoginRequest, SignUpRequest } from "../users/types/auth";
 
-const ACCOUNT_STATUS_CODES = new Set(['ACCOUNT_WITHDRAWN', 'ACCOUNT_SUSPENDED', 'ACCOUNT_BANNED']);
+const ACCOUNT_STATUS_CODES = new Set(["ACCOUNT_WITHDRAWN", "ACCOUNT_SUSPENDED", "ACCOUNT_BANNED"]);
 
 // JWT payload에서 userId claim 추출
 function decodeUserId(token: string): number | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = JSON.parse(atob(token.split(".")[1]));
     return payload.userId ? Number(payload.userId) : null;
   } catch {
     return null;
@@ -24,6 +24,8 @@ interface AuthState {
   isLoggedIn: boolean;
   loading: boolean;
   error: string | null;
+  // authReady: 초기 인증 상태 판별 여부
+  authReady: boolean;
 
   // 동기 액션
   setAuth: (token: string, user: AuthUser) => void;
@@ -38,7 +40,7 @@ interface AuthState {
   restoreAuth: () => Promise<void>;
 }
 
-const storedToken = localStorage.getItem('accessToken');
+const storedToken = localStorage.getItem("accessToken");
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -48,20 +50,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoggedIn: !!storedToken,
   loading: false,
   error: null,
+  authReady: false,
 
   setAuth: (token, user) => {
-    localStorage.setItem('accessToken', token);
+    localStorage.setItem("accessToken", token);
     set({
       token,
       user,
       userId: decodeUserId(token),
       isAuthenticated: true,
       isLoggedIn: true,
+      authReady: true,
     });
   },
 
   clearAuth: () => {
-    localStorage.removeItem('accessToken');
+    localStorage.removeItem("accessToken");
     set({
       token: null,
       user: null,
@@ -70,13 +74,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isLoggedIn: false,
       loading: false,
       error: null,
+      authReady: true,
     });
   },
 
   clearError: () => set({ error: null }),
 
-  setAuthFromOAuth: (user) =>
-    set({ user, isAuthenticated: true, isLoggedIn: true, loading: false, error: null }),
+  setAuthFromOAuth: (user) => set({ user, isAuthenticated: true, isLoggedIn: true, loading: false, error: null, authReady: true }),
 
   login: async (req) => {
     set({ loading: true, error: null });
@@ -88,7 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loading: false });
       return user;
     } catch (err: unknown) {
-      let message = '로그인 실패';
+      let message = "아이디 또는 비밀번호가 일치하지 않습니다.";
       if (isAxiosError(err)) {
         const errorCode = err.response?.data?.errorCode;
         if (errorCode && ACCOUNT_STATUS_CODES.has(errorCode)) {
@@ -97,7 +101,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return null;
         }
         const msg = err.response?.data?.message;
-        if (typeof msg === 'string' && msg.trim()) message = msg;
+        if (typeof msg === "string" && msg.trim()) message = msg;
       } else if (err instanceof Error) {
         message = err.message;
       }
@@ -111,10 +115,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authApi.signup(req);
       return null; // 성공
     } catch (err: unknown) {
-      let message = '회원가입 실패';
+      let message = "회원가입 실패";
       if (isAxiosError(err)) {
         const msg = err.response?.data?.message;
-        if (typeof msg === 'string' && msg.trim()) message = msg;
+        if (typeof msg === "string" && msg.trim()) message = msg;
       } else if (err instanceof Error) {
         message = err.message;
       }
@@ -128,9 +132,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   restoreAuth: async () => {
-    const token = localStorage.getItem('accessToken');
+    set({ authReady: false });
+
+    const token = localStorage.getItem("accessToken");
     if (!token) {
-      set({ user: null, isAuthenticated: false, isLoggedIn: false });
+      set({ token: null, user: null, userId: null, isAuthenticated: false, isLoggedIn: false, loading: false, error: null, authReady: true });
       return;
     }
     try {
@@ -140,8 +146,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       get().setAuth(token, res.data);
 
       // 소셜 로그인 후 추가정보 미완료 → social-signup 페이지로 리다이렉트
-      if (!res.data.privacyAgreed && !window.location.pathname.startsWith('/users/social-signup')) {
-        window.location.href = '/users/social-signup';
+      if (!res.data.privacyAgreed && !window.location.pathname.startsWith("/users/social-signup")) {
+        window.location.href = "/users/social-signup";
       }
     } catch {
       get().clearAuth();

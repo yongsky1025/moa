@@ -57,6 +57,39 @@ function parseFocusReplyId(value: unknown): number | null {
   return parsed;
 }
 
+function extractImageUrls(html: string | undefined): string[] {
+  if (!html) return [];
+  const urls: string[] = [];
+  const regex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+  let match = regex.exec(html);
+  while (match) {
+    urls.push(match[1]);
+    match = regex.exec(html);
+  }
+  return Array.from(new Set(urls.filter(Boolean)));
+}
+
+function stripImageTags(html: string | undefined): string {
+  if (!html) return "";
+  return html
+    .replace(
+      /<figure\b[^>]*>\s*(?:<img\b[^>]*>\s*)+(<figcaption\b[^>]*>[\s\S]*?<\/figcaption>)?\s*<\/figure>/gi,
+      "$1",
+    )
+    .replace(/<img\b[^>]*>/gi, "");
+}
+
+function extractPlainText(html: string | undefined): string {
+  return (html ?? "")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export default function CirclePostDetailPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -115,6 +148,10 @@ export default function CirclePostDetailPage() {
       .finally(() => setLoading(false));
   }, [bid, boardId, cid, circleId, navigate, pid, postId]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [pid]);
+
   const {
     tree,
     loading: replyLoading,
@@ -140,6 +177,18 @@ export default function CirclePostDetailPage() {
   const boardFromPath = isActivityContext ? `/circle/${cid}/activity` : `/circle/${cid}/board?board=${bid}`;
   const initialFocusReplyId = parseFocusReplyId(locationState?.focusReplyId);
   const resolvedBackPath = typeof stateFrom === "string" && stateFrom.length > 0 ? stateFrom : boardFromPath;
+  const activityAlbumImages = useMemo(
+    () => (isActivityContext ? extractImageUrls(post?.content) : []),
+    [isActivityContext, post?.content],
+  );
+  const postContentHtml = useMemo(
+    () => (isActivityContext ? stripImageTags(post?.content) : post?.content ?? ""),
+    [isActivityContext, post?.content],
+  );
+  const activitySummaryText = useMemo(
+    () => (isActivityContext ? extractPlainText(post?.content) : ""),
+    [isActivityContext, post?.content],
+  );
   const liked = (localPostReaction?.myReaction ?? post?.myReaction) === "LIKE";
   const displayReplyCount = post?.replyCount ?? totalReplyCount;
   const isOwner = !!post && !!user && post.authorPublicId === user.publicId;
@@ -372,6 +421,10 @@ export default function CirclePostDetailPage() {
               <>
                 <PostDetailArticleCard
                   post={post}
+                  contentHtml={postContentHtml}
+                  activitySummaryText={activitySummaryText}
+                  albumImages={activityAlbumImages}
+                  hideTitle={isActivityContext}
                   titleTop={
                     <Link
                       to={resolvedBackPath}

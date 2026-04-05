@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import PlaceRecommendModal from '../../place/components/PlaceRecommendModal';
+import type { ScheduleContextForRecommend } from '../../place/components/PlaceRecommendModal';
 import { Clock, Users, MapPin, Star, Trash2, Building2, ChevronRight, UserCheck, UserX } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import Navbar from '../../common/layout/Navbar';
@@ -36,6 +38,10 @@ export default function ScheduleDetailPage() {
   const cid = Number(circleId);
   const sid = Number(scheduleId);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [recommendOpen, setRecommendOpen] = useState(
+    (location.state as { showRecommend?: boolean } | null)?.showRecommend ?? false
+  );
 
   const [schedule, setSchedule] = useState<ScheduleResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +53,7 @@ export default function ScheduleDetailPage() {
   const [pendingMembers, setPendingMembers] = useState<ScheduleMember[]>([]);
 
   const currentUser = useAuthStore(s => s.user);
+  const userId = useAuthStore(s => s.userId);
   const [reviews, setReviews] = useState<ScheduleReview[]>([]);
   const [reviewContent, setReviewContent] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
@@ -56,6 +63,9 @@ export default function ScheduleDetailPage() {
     open: boolean; title: string; message: string;
     confirmLabel?: string; confirmColor?: 'green' | 'red'; onConfirm: () => void;
   }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
+  const [delegateModal, setDelegateModal] = useState(false);
+  const [selectedDelegateMemberId, setSelectedDelegateMemberId] = useState<number | null>(null);
 
   const openConfirm = (title: string, message: string, onConfirm: () => void, confirmColor: 'green' | 'red' = 'red', confirmLabel = '확인') =>
     setConfirmModal({ open: true, title, message, confirmLabel, confirmColor, onConfirm });
@@ -264,11 +274,12 @@ export default function ScheduleDetailPage() {
   const statusInfo = STATUS_LABEL[schedule.status];
   const isUpcoming = schedule.status === 'UPCOMING';
   const hasLocation = !!(schedule.latitude && schedule.longitude);
+  const isLeader = !!userId && members.some(m => m.userId === userId && m.role === 'LEADER');
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
       <Navbar />
-      <main style={{ maxWidth: hasLocation ? 1100 : 640, margin: '0 auto', padding: '32px 20px 60px' }}>
+      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 20px 60px' }}>
         <button
           onClick={() => navigate(`/circle/${cid}/schedules`)}
           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#888', marginBottom: 20, padding: 0 }}
@@ -289,7 +300,7 @@ export default function ScheduleDetailPage() {
         <div style={{ display: 'flex', gap: 20, alignItems: 'stretch' }}>
 
           {/* 일정 정보 카드 */}
-          <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 28, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', flex: hasLocation ? '0 0 420px' : '1' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 28, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', flex: '0 0 420px' }}>
             <div style={{ marginBottom: 12 }}>
               <span style={{
                 fontSize: 12, fontWeight: 700, padding: '3px 10px',
@@ -373,38 +384,55 @@ export default function ScheduleDetailPage() {
                   {schedule.isPending ? '신청 취소' : '참여 취소'}
                 </button>
               )}
-              <button
-                onClick={() => navigate(`/circle/${cid}/schedules/${sid}/edit`)}
-                style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e5e5e5', backgroundColor: 'white', color: '#333', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
-                수정
-              </button>
-              <button
-                onClick={handleDelete}
-                style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #fca5a5', backgroundColor: 'white', color: '#dc2626', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
-                삭제
-              </button>
+              {schedule.isCreator && (
+                <button
+                  onClick={() => navigate(`/circle/${cid}/schedules/${sid}/edit`)}
+                  style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e5e5e5', backgroundColor: 'white', color: '#333', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  수정
+                </button>
+              )}
+              {schedule.isCreator && isUpcoming && (schedule.currentMember ?? 1) <= 1 && (
+                <button
+                  onClick={handleDelete}
+                  style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #fca5a5', backgroundColor: 'white', color: '#dc2626', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  삭제
+                </button>
+              )}
+              {schedule.isCreator && isUpcoming && (schedule.currentMember ?? 1) > 1 && (
+                <button
+                  onClick={() => { setSelectedDelegateMemberId(null); setDelegateModal(true); }}
+                  style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #fca5a5', backgroundColor: 'white', color: '#dc2626', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  참여 취소 (생성자 위임)
+                </button>
+              )}
             </div>
           </div>
 
-          {/* 카카오 맵 (장소 지정된 경우만) */}
-          {hasLocation && (
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                {schedule.location && (
-                  <div style={{ padding: '14px 18px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                    <MapPin size={15} style={{ color: '#888', flexShrink: 0 }} />
-                    <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{schedule.location}</span>
-                  </div>
-                )}
+          {/* 카카오 맵 */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              {schedule.location && (
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <MapPin size={15} style={{ color: '#888', flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{schedule.location}</span>
+                </div>
+              )}
+              {hasLocation ? (
                 <div
                   ref={mapContainerRef}
                   style={{ width: '100%', flex: 1, minHeight: 300, backgroundColor: '#e8e8e8' }}
                 />
-              </div>
+              ) : (
+                <div style={{ flex: 1, minHeight: 300, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: '#bbb' }}>
+                  <MapPin size={32} style={{ color: '#ddd' }} />
+                  <span style={{ fontSize: 13 }}>장소가 지정되지 않은 일정입니다.</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
         </div>
 
@@ -416,7 +444,7 @@ export default function ScheduleDetailPage() {
               <span style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>예약 장소</span>
             </div>
             <button
-              onClick={() => navigate('/place/my-reservations')}
+              onClick={() => navigate(`/place/${schedule.reservation!.placeId}`)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 width: '100%', padding: '14px 16px', borderRadius: 12,
@@ -456,8 +484,28 @@ export default function ScheduleDetailPage() {
               <ChevronRight size={18} style={{ color: '#aaa', flexShrink: 0 }} />
             </button>
             <p style={{ marginTop: 10, fontSize: 12, color: '#aaa' }}>
-              클릭하면 내 예약 페이지로 이동합니다.
+              클릭하면 장소 상세 페이지로 이동합니다.
             </p>
+          </div>
+        )}
+
+        {/* 장소 추천 받기 버튼 — 서클장 + UPCOMING + 예약 없을 때 */}
+        {isLeader && isUpcoming && !schedule.reservation && (
+          <div style={{ marginTop: 20 }}>
+            <button
+              onClick={() => setRecommendOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                width: '100%', padding: '14px 20px', borderRadius: 16,
+                border: '1.5px dashed #5F8F7B', backgroundColor: '#EAF4F0',
+                cursor: 'pointer', color: '#5F8F7B', fontSize: 14, fontWeight: 600,
+                transition: 'background-color 0.15s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d4ebe3')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#EAF4F0')}
+            >
+              ✦ 일정에 어울리는 장소 AI 추천 받기
+            </button>
           </div>
         )}
 
@@ -701,6 +749,101 @@ export default function ScheduleDetailPage() {
         onConfirm={() => { setConfirmModal(m => ({ ...m, open: false })); confirmModal.onConfirm(); }}
         onCancel={() => setConfirmModal(m => ({ ...m, open: false }))}
       />
+
+      {/* 생성자 위임 모달 */}
+      {delegateModal && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: 'white', borderRadius: 16, padding: 28,
+            width: 420, maxWidth: '90vw', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 8 }}>생성자 위임 후 참여 취소</h3>
+            <p style={{ fontSize: 13, color: '#555', marginBottom: 20, lineHeight: 1.6 }}>
+              생성자를 위임할 참여자를 선택하세요.<br />
+              위임 후 본인의 참여가 취소됩니다.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+              {members
+                .filter(m => m.nickname !== currentUser?.nickname)
+                .map(m => (
+                  <button
+                    key={m.scheduleMemberId}
+                    onClick={() => setSelectedDelegateMemberId(m.scheduleMemberId)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 14px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                      border: selectedDelegateMemberId === m.scheduleMemberId
+                        ? '2px solid #5f8f7b' : '1px solid #e5e7eb',
+                      backgroundColor: selectedDelegateMemberId === m.scheduleMemberId
+                        ? '#eaf4f0' : 'white',
+                    }}
+                  >
+                    <div style={{
+                      width: 32, height: 32, borderRadius: '50%', backgroundColor: '#5f8f7b',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 13, fontWeight: 700, color: 'white', flexShrink: 0,
+                    }}>
+                      {m.nickname.charAt(0)}
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{m.nickname}</span>
+                    {selectedDelegateMemberId === m.scheduleMemberId && (
+                      <span style={{ marginLeft: 'auto', fontSize: 12, color: '#5f8f7b', fontWeight: 700 }}>선택됨</span>
+                    )}
+                  </button>
+                ))}
+            </div>
+            {msg && (
+              <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 12 }}>{msg}</p>
+            )}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setDelegateModal(false)}
+                style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid #e5e5e5', backgroundColor: 'white', color: '#555', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                취소
+              </button>
+              <button
+                disabled={selectedDelegateMemberId === null}
+                onClick={async () => {
+                  if (selectedDelegateMemberId === null) return;
+                  try {
+                    await scheduleApi.delegateScheduleCreator(cid, sid, selectedDelegateMemberId);
+                    setDelegateModal(false);
+                    navigate(`/circle/${cid}/schedules`);
+                  } catch (e) {
+                    setMsg(`오류: ${getErrorMessage(e)}`);
+                  }
+                }}
+                style={{
+                  padding: '9px 18px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  backgroundColor: selectedDelegateMemberId !== null ? '#dc2626' : '#e5e5e5',
+                  color: selectedDelegateMemberId !== null ? 'white' : '#aaa',
+                }}
+              >
+                위임 후 참여 취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {recommendOpen && schedule && (
+        <PlaceRecommendModal
+          open={recommendOpen}
+          onClose={() => setRecommendOpen(false)}
+          schedule={{
+            scheduleId: schedule.scheduleId,
+            circleId: schedule.circleId ?? cid,
+            title: schedule.title,
+            description: schedule.description,
+            tags: schedule.tags ?? [],
+            latitude: schedule.latitude ?? undefined,
+            longitude: schedule.longitude ?? undefined,
+          } satisfies ScheduleContextForRecommend}
+        />
+      )}
     </div>
   );
 }

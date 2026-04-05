@@ -50,7 +50,7 @@ api.interceptors.response.use(
 
     const original = error.config;
     const url = original?.url ?? "";
-    if (error.response?.status === 401 && !original._retry && url !== "/api/auth/refresh") {
+    if (error.response?.status === 401 && !original._retry && url !== "/api/auth/refresh" && url !== "/api/auth/login") {
       original._retry = true;
 
       if (isRefreshing) {
@@ -78,14 +78,16 @@ api.interceptors.response.use(
       } catch (refreshError: unknown) {
         rejectQueue(refreshError);
 
-        // refresh 실패 시에도 계정 상태 에러코드 확인
+        // refresh 실패 시 계정 상태 에러코드 확인
         const refreshErrCode = (refreshError as { response?: { data?: { errorCode?: string } } })?.response?.data?.errorCode;
-        useAuthStore.getState().clearAuth();
 
         if (refreshErrCode && ACCOUNT_STATUS_CODES.has(refreshErrCode)) {
+          useAuthStore.getState().clearAuth();
           window.location.href = `/users/account-status?code=${refreshErrCode}`;
         } else {
-          window.location.href = "/users/login";
+          // 인증 상태만 정리하고, 리다이렉트하지 않음
+          // 각 페이지/컴포넌트가 isLoggedIn 상태 변화에 따라 자체 처리
+          useAuthStore.getState().clearAuth();
         }
 
         return Promise.reject(error);

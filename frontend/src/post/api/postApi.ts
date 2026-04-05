@@ -95,6 +95,11 @@ export const postApi = {
   toggleGlobalBoardPin: (boardId: number, postId: number) =>
     api.post<boolean>(`/api/boards/global/${boardId}/posts/${postId}/pin`),
 
+  reindexPostSearch: (batchSize = 500) =>
+    api.post<{ indexedCount: number; batchSize: number }>("/api/admin/search-indexes/posts/reindex", null, {
+      params: { batchSize },
+    }),
+
   searchPosts: (params: PostSearchRequest) =>
     api.get<SearchPage<PostSearchHit>>("/api/posts/search", { params }),
 

@@ -1,6 +1,6 @@
 export type CircleStatus = "PENDING" | "OPEN" | "FULL" | "REJECTED" | "CLOSED";
 export type CircleMemberStatus = "PENDING" | "ACTIVE" | "REJECTED" | "WITHDRAWN";
-export type CircleRole = "LEADER" | "MEMBER";
+export type CircleRole = "LEADER" | "SUB_LEADER" | "MEMBER";
 
 export interface CircleResponse {
   circleId: number;

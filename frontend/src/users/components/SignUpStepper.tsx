@@ -19,7 +19,7 @@ export default function SignUpStepper({ currentStep }: Props) {
                   width: 28,
                   height: 28,
                   borderRadius: '50%',
-                  backgroundColor: isDone || isActive ? '#111' : '#e5e5e5',
+                  backgroundColor: isDone || isActive ? '#5F8F7B' : '#e5e5e5',
                   color: isDone || isActive ? 'white' : '#aaa',
                   display: 'flex',
                   alignItems: 'center',
@@ -34,7 +34,7 @@ export default function SignUpStepper({ currentStep }: Props) {
               <span
                 style={{
                   fontSize: 11,
-                  color: isActive ? '#111' : isDone ? '#555' : '#aaa',
+                  color: isActive ? '#5F8F7B' : isDone ? '#555' : '#aaa',
                   fontWeight: isActive ? 600 : 400,
                   whiteSpace: 'nowrap',
                 }}
@@ -50,7 +50,7 @@ export default function SignUpStepper({ currentStep }: Props) {
                   marginBottom: 18,
                   marginLeft: 6,
                   marginRight: 6,
-                  backgroundColor: isDone ? '#111' : '#e5e5e5',
+                  backgroundColor: isDone ? '#5F8F7B' : '#e5e5e5',
                 }}
               />
             )}

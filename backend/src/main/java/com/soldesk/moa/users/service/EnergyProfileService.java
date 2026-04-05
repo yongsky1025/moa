@@ -26,8 +26,10 @@ public class EnergyProfileService {
                 Users user = usersRepository.findById(userId)
                                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-                if (energyProfileRepository.existsByUser(user)) {
-                        throw new IllegalStateException("이미 에너지 프로필이 존재합니다.");
+                // idempotent: 이미 프로필이 있으면 기존 프로필 반환
+                var existing = energyProfileRepository.findByUser(user);
+                if (existing.isPresent()) {
+                        return EnergyProfileResponseDTO.from(existing.get());
                 }
 
                 // 3축 기반 타입 분류

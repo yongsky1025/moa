@@ -92,12 +92,8 @@ export const fetchUserSanctionHistory = async (id: number) => {
   return res.data;
 };
 
-export const applySanction = async (id: number, dto: SanctionApplyRequest) => {
-  const res = await api.post(`${API_SERVER_HOST_ADMIN}/sanctions`, dto, {
-    params: {
-      adminId: id,
-    },
-  });
+export const applySanction = async (dto: SanctionApplyRequest) => {
+  const res = await api.post(`${API_SERVER_HOST_ADMIN}/sanctions`, dto);
   console.log("apply sanction", res);
 
   return res.data;
@@ -112,16 +108,13 @@ export const liftSanction = async (id: number) => {
 
 export const cancelSanction = async (
   sanctionId: number,
-  request: SanctionCancelRequest,
+  cancelReason: string,
 ) => {
   const res = await api.post(
     `${API_SERVER_HOST_ADMIN}/sanctions/${sanctionId}/cancel`,
     null,
     {
-      params: {
-        adminId: request.adminId,
-        cancelReason: request.cancelReason,
-      },
+      params: { cancelReason },
     },
   );
   console.log("cancel sanction", res);

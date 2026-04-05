@@ -15,7 +15,9 @@ public record ChatMessageResponse(
         Long replyToId,
         String replyToContent,
         String replyToNickname,
-        List<ReactionSummary> reactions
+        List<ReactionSummary> reactions,
+        boolean isReported // 신고용 필드
 ) {
-    public record ReactionSummary(String emoji, int count, boolean myReaction) {}
+    public record ReactionSummary(String emoji, int count, boolean myReaction) {
+    }
 }

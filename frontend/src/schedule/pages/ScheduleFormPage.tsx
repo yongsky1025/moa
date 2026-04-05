@@ -38,6 +38,7 @@ export default function ScheduleFormPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [timeError, setTimeError] = useState('');
 
   const [placeQuery, setPlaceQuery] = useState('');
   const [placeResults, setPlaceResults] = useState<kakao.maps.services.PlaceItem[]>([]);
@@ -259,7 +260,7 @@ export default function ScheduleFormPage() {
       return;
     }
     if (form.endAt <= form.startAt) {
-      setError('종료 시간은 시작 시간보다 이후여야 합니다.');
+      setTimeError('종료 시간은 시작 시간보다 이후여야 합니다.');
       return;
     }
     const payload = {
@@ -282,7 +283,7 @@ export default function ScheduleFormPage() {
         navigate(`/circle/${cid}/schedules/${sid}`);
       } else {
         const res = await scheduleApi.createSchedule(cid, payload);
-        navigate(`/circle/${cid}/schedules/${res.data.scheduleId}`);
+        navigate(`/circle/${cid}/schedules/${res.data.scheduleId}`, { state: { showRecommend: true } });
       }
     } catch (e) {
       setError(getErrorMessage(e));
@@ -345,8 +346,15 @@ export default function ScheduleFormPage() {
                     <input
                       type="datetime-local"
                       value={form.startAt}
-                      onChange={e => setForm(p => ({ ...p, startAt: e.target.value }))}
-                      style={inputStyle}
+                      onChange={e => {
+                        const next = { ...form, startAt: e.target.value };
+                        setForm(p => ({ ...p, startAt: e.target.value }));
+                        if (next.endAt && e.target.value && next.endAt <= e.target.value)
+                          setTimeError('종료 시간은 시작 시간보다 이후여야 합니다.');
+                        else
+                          setTimeError('');
+                      }}
+                      style={{ ...inputStyle, borderColor: timeError ? '#dc2626' : undefined }}
                       required
                     />
                   </div>
@@ -355,12 +363,21 @@ export default function ScheduleFormPage() {
                     <input
                       type="datetime-local"
                       value={form.endAt}
-                      onChange={e => setForm(p => ({ ...p, endAt: e.target.value }))}
-                      style={inputStyle}
+                      onChange={e => {
+                        setForm(p => ({ ...p, endAt: e.target.value }));
+                        if (form.startAt && e.target.value && e.target.value <= form.startAt)
+                          setTimeError('종료 시간은 시작 시간보다 이후여야 합니다.');
+                        else
+                          setTimeError('');
+                      }}
+                      style={{ ...inputStyle, borderColor: timeError ? '#dc2626' : undefined }}
                       required
                     />
                   </div>
                 </div>
+                {timeError && (
+                  <p style={{ margin: '-4px 0 0', fontSize: 12, color: '#dc2626' }}>{timeError}</p>
+                )}
 
                 {/* 최대 인원 */}
                 <div>

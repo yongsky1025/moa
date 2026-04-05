@@ -66,6 +66,14 @@
   margin-top: 10px;
 }
 
+.post-detail-author-block.no-title {
+  margin-top: 0;
+}
+
+.post-detail-title-top.compact .post-detail-back-link {
+  margin-bottom: 0;
+}
+
 .post-detail-author-avatar-wrap {
   display: inline-flex;
   align-items: flex-start;

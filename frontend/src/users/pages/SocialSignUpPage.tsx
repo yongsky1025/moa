@@ -235,7 +235,7 @@ export default function SocialSignUpPage() {
                 checked={privacyAgreed}
                 disabled={privacySaving || privacyLocked}
                 onChange={(event) => void handlePrivacyChange(event.target.checked)}
-                style={{ width: 16, height: 16, cursor: privacyLocked ? "default" : "pointer", accentColor: "#111" }}
+                style={{ width: 16, height: 16, cursor: privacyLocked ? "default" : "pointer", accentColor: "#5F8F7B" }}
               />
               개인정보 수집 및 이용에 동의합니다. (필수)
             </label>
@@ -257,7 +257,7 @@ export default function SocialSignUpPage() {
                 width: "100%",
                 height: 50,
                 marginTop: 20,
-                backgroundColor: loading || privacySaving ? "#999" : "#111",
+                backgroundColor: loading || privacySaving ? "#A9C8BB" : "#5F8F7B",
                 color: "#fff",
                 border: "none",
                 borderRadius: 12,

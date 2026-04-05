@@ -14,9 +14,9 @@ export default function GenderButton({ selected, onClick, children }: GenderButt
       style={{
         flex: 1,
         height: 44,
-        border: selected ? "1.5px solid #111" : "1.5px solid #e0e0e0",
+        border: selected ? "1.5px solid #5F8F7B" : "1.5px solid #e0e0e0",
         borderRadius: 10,
-        backgroundColor: selected ? "#111" : "#fafafa",
+        backgroundColor: selected ? "#5F8F7B" : "#fafafa",
         color: selected ? "#fff" : "#888",
         fontSize: 14,
         fontWeight: selected ? 700 : 500,

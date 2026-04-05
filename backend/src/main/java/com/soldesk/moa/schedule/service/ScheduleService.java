@@ -206,6 +206,14 @@ public class ScheduleService {
                         throw new AccessDeniedException("일정 생성자 또는 서클 리더만 삭제할 수 있습니다.");
                 }
 
+                // 생성자가 삭제할 경우: 본인만 참여 중이어야 함 (서클 리더는 제한 없음)
+                if (isCreator && !isLeader) {
+                        long joinCount = scheduleMemberRepository.countByScheduleAndStatus(schedule, ScheduleMemberStatus.JOIN);
+                        if (joinCount > 1) {
+                                throw new IllegalStateException("다른 참여자가 있습니다. 생성자를 위임한 후 참여를 취소해 주세요.");
+                        }
+                }
+
                 // 연결된 활성 예약 처리
                 if (cancelReservation) {
                         paymentService.cancelReservationsForSchedule(scheduleId);
@@ -551,6 +559,68 @@ public class ScheduleService {
                                                 .name(tag.getName())
                                                 .build())
                                 .toList();
+        }
+
+        // 일정 생성자 위임 (현재 생성자가 다른 참여자에게 위임하고 본인 참여 취소)
+        @Transactional
+        public void delegateScheduleCreator(
+                        Long circleId,
+                        Long scheduleId,
+                        Long newCreatorScheduleMemberId,
+                        Long userId) {
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                Schedule schedule = scheduleRepository.findById(scheduleId)
+                                .orElseThrow(() -> new IllegalArgumentException("일정이 존재하지 않습니다."));
+
+                if (!schedule.getCircle().getCircleId().equals(circleId)) {
+                        throw new AccessDeniedException("서클이 일치하지 않습니다.");
+                }
+
+                // 현재 생성자인지 확인
+                CircleMember currentCreator = circleMemberRepository
+                                .findByCircleAndUser_UserIdAndStatus(
+                                                schedule.getCircle(),
+                                                loginUser.getUserId(),
+                                                CircleMemberStatus.ACTIVE)
+                                .orElseThrow(() -> new AccessDeniedException("서클 멤버만 가능합니다."));
+
+                if (!schedule.getCreator().getId().equals(currentCreator.getId())) {
+                        throw new AccessDeniedException("일정 생성자만 위임할 수 있습니다.");
+                }
+
+                // 새 생성자의 ScheduleMember 조회
+                ScheduleMember newCreatorSm = scheduleMemberRepository.findById(newCreatorScheduleMemberId)
+                                .orElseThrow(() -> new IllegalArgumentException("해당 참여자를 찾을 수 없습니다."));
+
+                if (!newCreatorSm.getSchedule().getScheduleId().equals(scheduleId)) {
+                        throw new IllegalArgumentException("해당 일정의 참여자가 아닙니다.");
+                }
+
+                if (newCreatorSm.getStatus() != ScheduleMemberStatus.JOIN) {
+                        throw new IllegalStateException("JOIN 상태인 참여자에게만 위임할 수 있습니다.");
+                }
+
+                if (newCreatorSm.getCircleMember().getId().equals(currentCreator.getId())) {
+                        throw new IllegalArgumentException("본인에게는 위임할 수 없습니다.");
+                }
+
+                // 생성자 변경
+                schedule.changeCreator(newCreatorSm.getCircleMember());
+
+                // 기존 생성자 참여 취소
+                ScheduleMember currentCreatorSm = scheduleMemberRepository
+                                .findByScheduleAndCircleMember(schedule, currentCreator)
+                                .orElseThrow(() -> new IllegalStateException("기존 생성자의 참여 정보가 없습니다."));
+
+                if (LocalDateTime.now().isAfter(schedule.getStartAt().minusDays(1))) {
+                        throw new IllegalStateException("일정 시작 24시간 전까지만 위임할 수 있습니다.");
+                }
+
+                currentCreatorSm.cancel();
+                schedule.decreaseCurrentMember();
         }
 
         // 일정 참여 취소 (일정 시작일 하루 전까지만 참여 취소가능)

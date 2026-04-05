@@ -135,4 +135,14 @@ public class CircleMemberController {
                 circleMemberService.revokeSubLeader(circleId, memberId, authUser.getUserId());
                 return ResponseEntity.noContent().build();
         }
+
+        // 부리더 사임 (본인)
+        @DeleteMapping("/me/sub-leader")
+        public ResponseEntity<Void> resignSubLeader(
+                        @PathVariable Long circleId,
+                        @AuthenticationPrincipal AuthUserDTO authUser) {
+
+                circleMemberService.resignSubLeader(circleId, authUser.getUserId());
+                return ResponseEntity.noContent().build();
+        }
 }

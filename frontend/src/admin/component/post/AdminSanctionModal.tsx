@@ -10,7 +10,7 @@ const SANCTION_TYPE_OPTIONS: { value: SanctionType; label: string }[] = [
 ];
 
 interface AdminSanctionModalProps {
-  targetType: "POST" | "REPLY";
+  targetType: "POST" | "REPLY" | "CHAT";
   targetId: number;
   authorName: string;
   onConfirm: (
@@ -37,7 +37,7 @@ export default function AdminSanctionModal({
     useState<SanctionType>("WARNING");
   const [userSanctionReason, setUserSanctionReason] = useState("");
 
-  const label = targetType === "POST" ? "게시글" : "댓글";
+  const label = targetType === "POST" ? "게시글" : targetType === "REPLY" ? "댓글" : "채팅 메세지";
 
   const canSubmit =
     reason.trim() && (!addUserSanction || userSanctionReason.trim());

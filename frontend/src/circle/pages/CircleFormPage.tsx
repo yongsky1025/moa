@@ -133,7 +133,7 @@ export default function CircleFormPage() {
         setCurrentMember(c.currentMember);
         if (c.coverImageUrl) setExistingImageUrl(c.coverImageUrl);
       } catch {
-        setError('서클 정보를 불러올 수 없습니다.');
+        setError('모임 정보를 불러올 수 없습니다.');
       }
     };
     fetchCircle();
@@ -150,7 +150,7 @@ export default function CircleFormPage() {
   // 기본 정보 → 에너지 스텝으로
   const handleBasicNext = () => {
     setError('');
-    if (!form.name.trim()) { setError('서클 이름을 입력해주세요.'); return; }
+    if (!form.name.trim()) { setError('모임 이름을 입력해주세요.'); return; }
     if (form.categoryId === 0) { setError('카테고리를 선택해주세요.'); return; }
     setStep(1);
   };
@@ -293,13 +293,13 @@ export default function CircleFormPage() {
                   cursor: currentValue === 0 || loading ? 'not-allowed' : 'pointer',
                 }}
               >
-                {loading ? '처리 중...' : isLastStep ? '서클 만들기' : '다음'}
+                {loading ? '처리 중...' : isLastStep ? '모임 만들기' : '다음'}
               </button>
             </div>
           </div>
 
           <p style={{ fontSize: 12, color: '#aaa', textAlign: 'center', marginTop: 16 }}>
-            생성된 서클은 관리자 승인 후 활성화됩니다.
+            생성된 모임은 관리자 승인 후 활성화됩니다.
           </p>
         </div>
       </div>
@@ -313,7 +313,7 @@ export default function CircleFormPage() {
       <main style={{ maxWidth: 560, margin: '40px auto', padding: '0 20px 60px' }}>
         <div style={{ backgroundColor: 'white', borderRadius: 16, padding: 32, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24, color: '#111' }}>
-            {isEdit ? '서클 수정' : '서클 만들기'}
+            {isEdit ? '모임 수정' : '모임 만들기'}
           </h1>
 
           <form
@@ -341,16 +341,16 @@ export default function CircleFormPage() {
               </div>
             )}
 
-            {/* 서클 이름 */}
+            {/* 모임 이름 */}
             <div>
-              <label style={labelStyle}>서클 이름 <span style={{ color: '#aaa', fontWeight: 400 }}>(최대 20자)</span></label>
+              <label style={labelStyle}>모임 이름 <span style={{ color: '#aaa', fontWeight: 400 }}>(최대 20자)</span></label>
               <input
                 type="text"
                 value={form.name}
                 maxLength={20}
                 onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
                 style={inputStyle}
-                placeholder="서클 이름을 입력하세요"
+                placeholder="모임 이름을 입력하세요"
                 required
               />
             </div>
@@ -364,7 +364,7 @@ export default function CircleFormPage() {
                 onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
                 rows={4}
                 style={{ ...inputStyle, resize: 'vertical' }}
-                placeholder="서클을 소개해주세요"
+                placeholder="모임을 소개해주세요"
               />
             </div>
 
@@ -432,7 +432,7 @@ export default function CircleFormPage() {
 
             {isEdit && (
               <p style={{ fontSize: 12, color: '#aaa', textAlign: 'center' }}>
-                서클 이름·설명·최대 인원·대표 이미지만 수정할 수 있습니다.
+                모임 이름·설명·최대 인원·대표 이미지만 수정할 수 있습니다.
               </p>
             )}
           </form>

@@ -5,6 +5,7 @@ import AuthPageLayout from "../components/AuthPageLayout";
 import AuthCard from "../components/AuthCard";
 import SocialLoginButtons from "../components/SocialLoginButtons";
 import PrimaryButton from "../components/PrimaryButton";
+import ModalOverlay from "../components/ModalOverlay";
 
 const CSS = `
   .login-input:focus {
@@ -105,9 +106,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* 에러 */}
-            {(oauthError || error) && <p style={s.error}>{oauthError || error}</p>}
-
             <PrimaryButton type="submit" loading={loading} loadingText="로그인 중..." style={{ height: 56, borderRadius: 16 }}>
               로그인
             </PrimaryButton>
@@ -132,6 +130,20 @@ export default function LoginPage() {
           </p>
         </div>
       </AuthCard>
+
+      {(oauthError || error) && (
+        <ModalOverlay onClose={() => { clearError(); setOauthError(""); }} maxWidth={360}>
+          <p style={{ fontSize: 15, color: "#1F2937", textAlign: "center", marginBottom: 20, lineHeight: 1.6 }}>
+            {oauthError || error}
+          </p>
+          <PrimaryButton
+            onClick={() => { clearError(); setOauthError(""); }}
+            style={{ height: 44, borderRadius: 12 }}
+          >
+            확인
+          </PrimaryButton>
+        </ModalOverlay>
+      )}
     </AuthPageLayout>
   );
 }

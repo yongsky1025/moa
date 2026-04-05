@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +27,8 @@ public class AdminLogService {
     }
 
     public PageResultDTO<AdminActionLog> getLogs(PageRequestDTO pageRequestDTO) {
-        Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, pageRequestDTO.getSize());
+        Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, pageRequestDTO.getSize(),
+                Sort.by(Sort.Direction.DESC, "timestamp"));
 
         Page<AdminActionLog> result = adminActionLogRepository.findAll(pageable);
 
@@ -38,7 +40,8 @@ public class AdminLogService {
     }
 
     public PageResultDTO<AdminActionLog> getLogsByActorId(Long adminId, PageRequestDTO pageRequestDTO) {
-        Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, pageRequestDTO.getSize());
+        Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, pageRequestDTO.getSize(),
+                Sort.by(Sort.Direction.DESC, "timestamp"));
 
         Page<AdminActionLog> result = adminActionLogRepository.findByActorId(adminId, pageable);
 

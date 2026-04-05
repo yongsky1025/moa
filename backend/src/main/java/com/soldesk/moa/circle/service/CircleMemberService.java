@@ -384,6 +384,23 @@ public class CircleMemberService {
                 target.changeRole(CircleRole.MEMBER);
         }
 
+        // 부리더 스스로 사임
+        @Transactional
+        public void resignSubLeader(Long circleId, Long userId) {
+
+                Circle circle = circleRepository.findById(circleId)
+                                .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                Users loginUser = usersRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+
+                CircleMember me = circleMemberRepository
+                                .findByCircleAndUserAndRole(circle, loginUser, CircleRole.SUB_LEADER)
+                                .orElseThrow(() -> new AccessDeniedException("부리더만 사임할 수 있습니다."));
+
+                me.changeRole(CircleRole.MEMBER);
+        }
+
         // 리더 권한 위임
         @Transactional
         public void delegateLeader(

@@ -510,7 +510,9 @@
 }
 
 .community-twitter-album {
+  --activity-album-h: clamp(220px, 42vw, 360px);
   width: min(100%, 560px);
+  max-height: var(--activity-album-h);
   border-radius: 12px;
   overflow: hidden;
   display: block;
@@ -536,7 +538,7 @@
 }
 
 .community-twitter-album-2 .community-twitter-album-cell {
-  height: 280px;
+  height: var(--activity-album-h);
 }
 
 .community-twitter-album-side {
@@ -546,7 +548,7 @@
 }
 
 .community-twitter-album-main {
-  min-height: 280px;
+  height: var(--activity-album-h);
 }
 
 .community-twitter-album-stack {
@@ -561,11 +563,11 @@
 }
 
 .community-twitter-album-stack .community-twitter-album-cell {
-  min-height: 139px;
+  height: calc((var(--activity-album-h) - 2px) / 2);
 }
 
 .community-twitter-album-stack.three .community-twitter-album-cell {
-  min-height: 92px;
+  height: calc((var(--activity-album-h) - 4px) / 3);
 }
 
 .community-twitter-album-more {
@@ -709,20 +711,24 @@
     max-height: none;
   }
 
+  .community-twitter-album {
+    --activity-album-h: clamp(180px, 58vw, 250px);
+  }
+
   .community-twitter-album-main {
-    min-height: 220px;
+    height: var(--activity-album-h);
   }
 
   .community-twitter-album-stack .community-twitter-album-cell {
-    min-height: 109px;
+    height: calc((var(--activity-album-h) - 2px) / 2);
   }
 
   .community-twitter-album-stack.three .community-twitter-album-cell {
-    min-height: 72px;
+    height: calc((var(--activity-album-h) - 4px) / 3);
   }
 
   .community-twitter-album-2 .community-twitter-album-cell {
-    height: 220px;
+    height: var(--activity-album-h);
   }
 
 }

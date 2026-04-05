@@ -1,6 +1,6 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Heart, Pin, Settings, Trash2 } from "lucide-react";
+import { Heart, Pin, RefreshCcw, Settings, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
@@ -223,6 +223,7 @@ export default function BoardCommunityPage() {
     FREE: false,
   });
   const [boardStagedCustomCreates, setBoardStagedCustomCreates] = useState<string[]>([]);
+  const [isReindexing, setIsReindexing] = useState(false);
   const pinAnimationResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activityLikeAnimationResetRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const activityReactionCommitDebounceRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
@@ -1277,6 +1278,37 @@ export default function BoardCommunityPage() {
     }
   };
 
+  const handleReindexPostSearch = async () => {
+    if (!isAdmin || isReindexing) {
+      return;
+    }
+
+    const input = window.prompt("재색인 배치 크기(1~2000)", "500");
+    if (input === null) {
+      return;
+    }
+    const batchSize = Number(input);
+    if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 2000) {
+      window.alert("배치 크기는 1~2000 사이 정수여야 합니다.");
+      return;
+    }
+
+    const confirmed = window.confirm(`게시글 검색 인덱스를 재생성할까요? (batchSize=${batchSize})`);
+    if (!confirmed) {
+      return;
+    }
+
+    setIsReindexing(true);
+    try {
+      const { data } = await postApi.reindexPostSearch(batchSize);
+      window.alert(`재색인 완료: ${data.indexedCount}건 (batchSize=${data.batchSize})`);
+    } catch (error) {
+      window.alert(getErrorMessage(error));
+    } finally {
+      setIsReindexing(false);
+    }
+  };
+
   const noticeBoard = useMemo(
     () => globalBoards.find((item) => item.boardType === "NOTICE") ?? null,
     [globalBoards],
@@ -1682,10 +1714,7 @@ export default function BoardCommunityPage() {
         {topTab === "activity" ? (
           <>
             <div className="community-sticky-gap" aria-hidden="true" />
-            <section
-              className="board-community-layout"
-              style={{ gridTemplateColumns: "260px minmax(0, 1fr)" }}
-            >
+            <section className="board-community-layout">
               <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
                 <CommunityProfileCard
                   selectedView={activityView}
@@ -1861,6 +1890,7 @@ export default function BoardCommunityPage() {
                 )}
               </CommunityListState>
               </section>
+              <aside className="community-right-sidebar" aria-hidden="true" />
             </section>
           </>
         ) : (
@@ -1926,6 +1956,20 @@ export default function BoardCommunityPage() {
               keyword={keyword}
               onKeywordChange={setKeyword}
               placeholder={view === "myReplies" ? "댓글/원문 제목 검색" : "게시글 검색"}
+              titleAddon={
+                isAdmin ? (
+                  <button
+                    type="button"
+                    className={`community-edit-mode-button ${isReindexing ? "active" : ""}`}
+                    onClick={() => void handleReindexPostSearch()}
+                    disabled={isReindexing}
+                    title="게시글 검색 인덱스 재색인"
+                  >
+                    <RefreshCcw size={14} strokeWidth={2} style={{ marginRight: 6 }} />
+                    {isReindexing ? "재색인 중" : "검색 재색인"}
+                  </button>
+                ) : undefined
+              }
             />
             {isAdmin && editMode && (
               <CommunityPinnedPreviewList

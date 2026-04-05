@@ -3,6 +3,7 @@ package com.soldesk.moa.schedule.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.soldesk.moa.place.dto.TagResponseDTO;
 import com.soldesk.moa.schedule.entity.Schedule;
 import com.soldesk.moa.schedule.entity.constant.ScheduleStatus;
@@ -29,7 +30,9 @@ public class ScheduleResponseDTO {
     private Double latitude;
     private Double longitude;
     private boolean joined;
+    @JsonProperty("isPending")
     private boolean isPending;
+    @JsonProperty("isCreator")
     private boolean isCreator;
     private int pendingCount;
     private List<TagResponseDTO> tags;
