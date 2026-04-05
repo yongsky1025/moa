@@ -1,5 +1,0 @@
-services:
-  api:
-    environment:
-      # 1회 초기화 전용: prod 기본값 위에 bootstrap 설정만 덮어쓴다.
-      SPRING_PROFILES_ACTIVE: prod,prod-bootstrap

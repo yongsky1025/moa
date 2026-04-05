@@ -5,11 +5,15 @@ spring:
       on-profile: prod
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     defer-datasource-initialization: true
   sql:
     init:
-      mode: never
+      mode: always
+      data-locations:
+        - classpath:seed-data.sql
+        - classpath:dummy-data.sql
+        - classpath:dummy-data-place.sql
 
 app:
   # 운영 프론트 도메인 URL (OAuth 리다이렉트 등에 사용)

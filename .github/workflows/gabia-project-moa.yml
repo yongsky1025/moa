@@ -70,7 +70,6 @@ jobs:
           cp backend/docker-compose.yml artifacts/backend/docker-compose.yml
           cp backend/docker-compose.prod.yml artifacts/backend/docker-compose.prod.yml
           cp backend/docker-compose.meili.yml artifacts/backend/docker-compose.meili.yml
-          cp backend/docker-compose.bootstrap.yml artifacts/backend/docker-compose.bootstrap.yml
 
       # ---------- Deploy ----------
       - name: Install ssh + rsync
