@@ -159,8 +159,16 @@ public class ChatRoomService {
      * 내가 참여 중인 채팅방 목록 조회.
      * 각 방의 마지막 메시지와 읽지 않은 메시지 수를 함께 반환.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ChatRoomSummaryResponse> getMyRooms(Long userId) {
+        // ACTIVE 서클 멤버인데 chat_room_member 레코드가 없는 경우 자동 추가
+        circleMemberRepo.findByUser_UserIdAndStatus(userId, CircleMemberStatus.ACTIVE)
+                .forEach(cm -> roomRepo.findByCircleId(cm.getCircle().getCircleId()).ifPresent(room -> {
+                    if (!memberRepo.existsByRoomIdAndUserId(room.getId(), userId)) {
+                        memberRepo.save(ChatRoomMember.joinMigration(room.getId(), userId));
+                    }
+                }));
+
         return memberRepo.findByUserId(userId).stream()
                 .map(member -> {
                     ChatRoom room = roomRepo.findById(member.getRoomId())
@@ -236,6 +244,10 @@ public class ChatRoomService {
             throw new ChatException(ChatErrorCode.INVALID_REQUEST, "1:1 채팅방은 이름을 변경할 수 없습니다.");
         }
         room.updateName(name);
+        String nickname = usersRepo.findById(userId).map(u -> u.getNickname()).orElse("알 수 없음");
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/name", Map.of("name", name));
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/system",
+                Map.of("type", "RENAME", "nickname", nickname, "newName", name, "createdAt", LocalDateTime.now().toString()));
     }
 
     /**

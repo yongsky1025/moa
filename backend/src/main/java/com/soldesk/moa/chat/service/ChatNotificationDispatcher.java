@@ -4,6 +4,8 @@ import com.soldesk.moa.chat.domain.ChatRoom;
 import com.soldesk.moa.chat.domain.RoomType;
 import com.soldesk.moa.chat.repository.ChatRoomMemberRepository;
 import com.soldesk.moa.chat.repository.ChatRoomRepository;
+import com.soldesk.moa.circle.entity.constant.CircleMemberStatus;
+import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.notification.domain.NotificationType;
 import com.soldesk.moa.notification.dto.NotificationResponse;
 import com.soldesk.moa.notification.service.NotificationService;
@@ -26,15 +28,29 @@ public class ChatNotificationDispatcher {
 
     private final ChatRoomMemberRepository memberRepo;
     private final ChatRoomRepository roomRepo;
+    private final CircleMemberRepository circleMemberRepo;
     private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Async
     public void dispatch(Long roomId, Long senderId, String senderNickname, String content) {
-        List<Long> recipientIds = memberRepo.findByRoomId(roomId).stream()
-                .filter(m -> !m.getUserId().equals(senderId))
-                .map(m -> m.getUserId())
-                .collect(Collectors.toList());
+        ChatRoom room = roomRepo.findById(roomId).orElse(null);
+        if (room == null) return;
+
+        List<Long> recipientIds;
+        if (room.getType() == RoomType.GROUP && room.getCircleId() != null) {
+            // GROUP 방: chat_room_member가 아직 없는 멤버도 포함하기 위해 circle_member 기준으로 조회
+            recipientIds = circleMemberRepo.findByCircle_CircleIdAndStatus(room.getCircleId(), CircleMemberStatus.ACTIVE)
+                    .stream()
+                    .map(m -> m.getUser().getUserId())
+                    .filter(uid -> !uid.equals(senderId))
+                    .collect(Collectors.toList());
+        } else {
+            recipientIds = memberRepo.findByRoomId(roomId).stream()
+                    .filter(m -> !m.getUserId().equals(senderId))
+                    .map(m -> m.getUserId())
+                    .collect(Collectors.toList());
+        }
 
         if (recipientIds.isEmpty()) return;
 

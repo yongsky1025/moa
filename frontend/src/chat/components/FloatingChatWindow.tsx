@@ -143,6 +143,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const roomsRef = useRef(rooms);
   roomsRef.current = rooms;
+  const pendingUnreadRef = useRef<Set<number>>(new Set());
 
   const roomLabel = (r: ChatRoomSummary) => {
     if (r.roomType === 'GROUP') return r.name ?? `모임 #${r.circleId}`;
@@ -157,7 +158,12 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
   const loadRooms = useCallback(async () => {
     try {
-      setRooms(await chatApi.getMyRooms());
+      const fetched = await chatApi.getMyRooms();
+      const pending = pendingUnreadRef.current;
+      setRooms(pending.size > 0
+        ? fetched.map(r => pending.has(r.roomId) ? { ...r, unreadCount: r.unreadCount + 1 } : r)
+        : fetched);
+      pendingUnreadRef.current = new Set();
     } catch {}
   }, []);
 
@@ -396,15 +402,20 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
       return [noti, ...prev];
     });
     if (noti.type === 'CHAT_MESSAGE' && noti.referenceId && noti.referenceId !== activeRoomId && !mutedRoomsRef.current.has(noti.referenceId)) {
+      if (!roomsRef.current.some(r => r.roomId === noti.referenceId)) {
+        pendingUnreadRef.current.add(noti.referenceId);
+        return;
+      }
       setRooms((prev) => prev.map((r) =>
         r.roomId === noti.referenceId ? { ...r, unreadCount: r.unreadCount + 1 } : r
       ));
     }
-  }, [activeRoomId]);
+  }, [activeRoomId, loadRooms]);
 
-  const handleSystemEvent = useCallback((event: { type: string; nickname: string; createdAt: string }) => {
+  const handleSystemEvent = useCallback((event: { type: string; nickname: string; createdAt: string; newName?: string }) => {
     const text = event.type === 'LEAVE' ? `${event.nickname}님이 퇴장했습니다.`
       : event.type === 'KICK' ? `${event.nickname}님이 강퇴되었습니다.`
+      : event.type === 'RENAME' ? `${event.nickname}님이 방 이름을 '${event.newName}'(으)로 변경했습니다.`
       : `${event.nickname}님이 입장했습니다.`;
     const systemMsg: ChatMessage = {
       messageId: -Date.now(),
@@ -465,6 +476,9 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
     onTyping: handleTyping,
     onReaction: handleReaction,
     onNotice: handleNoticeEvent,
+    onRoomNameChange: ({ name }) => {
+      setRooms(prev => prev.map(r => r.roomId === activeRoomId ? { ...r, name } : r));
+    },
   });
 
   const navigate = useNavigate();
@@ -1099,7 +1113,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                                   </div>
                                 )}
                                 <div style={msg.replyToId ? { padding: '8px 12px' } : undefined}>
-                                  {msg.isDeleted ? '삭제된 메시지' : renderMsgContent(msg.content, mine, searchQuery)}
+                                  {msg.isReported ? '신고된 메세지입니다' : msg.isDeleted ? '삭제된 메시지' : renderMsgContent(msg.content, mine, searchQuery)}
                                   {msg.updatedAt && !msg.isDeleted && <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 4 }}>(수정됨)</span>}
                                 </div>
                                 {menuId === msg.messageId && (
@@ -1130,7 +1144,7 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
                                         <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); handleDeleteMsg(msg.messageId); }}>삭제</button>
                                       </>
                                     ) : (
-                                      <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); window.open(`/report-form?targetType=CHAT_MESSAGE&targetId=${msg.messageId}`, '_blank', 'width=420,height=600,resizable=no'); }}>신고</button>
+                                      activeRoom?.roomType !== 'DIRECT' && <button style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 13, color: '#e53935' }} onClick={() => { setMenuId(null); window.open(`/report-form?targetType=CHAT&targetId=${msg.messageId}`, '_blank', 'width=420,height=600,resizable=no'); }}>신고</button>
                                     )}
                                   </div>
                                 )}

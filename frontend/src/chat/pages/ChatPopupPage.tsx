@@ -180,6 +180,9 @@ export default function ChatPopupPage() {
   const { userId, user } = useAuthStore();
 
   const [rooms, setRooms] = useState<ChatRoomSummary[]>([]);
+  const roomsRef = useRef<ChatRoomSummary[]>([]);
+  roomsRef.current = rooms;
+  const pendingUnreadRef = useRef<Set<number>>(new Set());
   const [activeRoom, setActiveRoom] = useState<ChatRoomSummary | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loadingMsg, setLoadingMsg] = useState(false);
@@ -237,7 +240,12 @@ export default function ChatPopupPage() {
 
   const loadRooms = useCallback(async () => {
     try {
-      setRooms(await chatApi.getMyRooms());
+      const fetched = await chatApi.getMyRooms();
+      const pending = pendingUnreadRef.current;
+      setRooms(pending.size > 0
+        ? fetched.map(r => pending.has(r.roomId) ? { ...r, unreadCount: r.unreadCount + 1 } : r)
+        : fetched);
+      pendingUnreadRef.current = new Set();
     } catch {}
   }, []);
 
@@ -501,6 +509,10 @@ export default function ChatPopupPage() {
       return [noti, ...prev];
     });
     if (noti.type === 'CHAT_MESSAGE' && noti.referenceId && !mutedRoomsRef.current.has(noti.referenceId)) {
+      if (!roomsRef.current.some(r => r.roomId === noti.referenceId)) {
+        pendingUnreadRef.current.add(noti.referenceId);
+        return;
+      }
       setRooms((prev) =>
         prev.map((r) =>
           r.roomId === noti.referenceId && r.roomId !== activeRoom?.roomId
@@ -509,7 +521,7 @@ export default function ChatPopupPage() {
         ),
       );
     }
-  }, [activeRoom]);
+  }, [activeRoom, loadRooms]);
 
   const handleReaction = useCallback((msg: ChatMessage) => {
     setMessages(prev => prev.map(m => m.messageId === msg.messageId ? { ...m, reactions: msg.reactions } : m));
@@ -546,9 +558,10 @@ export default function ChatPopupPage() {
     } catch {}
   };
 
-  const handleSystemEvent = useCallback((event: { type: string; nickname: string; createdAt: string }) => {
+  const handleSystemEvent = useCallback((event: { type: string; nickname: string; createdAt: string; newName?: string }) => {
     const text = event.type === 'LEAVE' ? `${event.nickname}님이 퇴장했습니다.`
       : event.type === 'KICK' ? `${event.nickname}님이 강퇴되었습니다.`
+      : event.type === 'RENAME' ? `${event.nickname}님이 방 이름을 '${event.newName}'(으)로 변경했습니다.`
       : `${event.nickname}님이 입장했습니다.`;
     const systemMsg: ChatMessage = {
       messageId: -Date.now(),
@@ -574,6 +587,9 @@ export default function ChatPopupPage() {
     onTyping: handleTyping,
     onReaction: handleReaction,
     onNotice: handleNoticeEvent,
+    onRoomNameChange: ({ name }) => {
+      setRooms(prev => prev.map(r => r.roomId === activeRoom?.roomId ? { ...r, name } : r));
+    },
   });
 
   const handleSend = useCallback((content: string, replyToId?: number | null) => {
@@ -1128,7 +1144,7 @@ export default function ChatPopupPage() {
                                   </div>
                                 )}
                                 <div style={msg.replyToId ? { padding: '8px 12px' } : undefined}>
-                                  {msg.isDeleted ? '삭제된 메시지입니다.' : renderMsgContent(msg.content, mine)}
+                                  {msg.isReported ? '신고된 메세지입니다' : msg.isDeleted ? '삭제된 메시지입니다.' : renderMsgContent(msg.content, mine)}
                                   {!msg.isDeleted && msg.updatedAt && (
                                     <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 6 }}>(수정됨)</span>
                                   )}
@@ -1161,7 +1177,7 @@ export default function ChatPopupPage() {
                                         <button style={{ ...s.menuItem, color: '#e53935' }} onClick={() => handleDeleteMsg(msg.messageId)}>삭제</button>
                                       </>
                                     ) : (
-                                      <button style={{ ...s.menuItem, color: '#e53935' }} onClick={() => { setMenuId(null); window.open(`/report-form?targetType=CHAT_MESSAGE&targetId=${msg.messageId}`, '_blank', 'width=420,height=600,resizable=no'); }}>신고</button>
+                                      activeRoom?.roomType !== 'DIRECT' && <button style={{ ...s.menuItem, color: '#e53935' }} onClick={() => { setMenuId(null); window.open(`/report-form?targetType=CHAT&targetId=${msg.messageId}`, '_blank', 'width=420,height=600,resizable=no'); }}>신고</button>
                                     )}
                                   </div>
                                 )}

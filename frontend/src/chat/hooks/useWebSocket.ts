@@ -11,9 +11,10 @@ interface ReadEvent {
 }
 
 interface SystemEvent {
-  type: 'LEAVE' | 'JOIN' | 'KICK';
+  type: 'LEAVE' | 'JOIN' | 'KICK' | 'RENAME';
   nickname: string;
   createdAt: string;
+  newName?: string;
 }
 
 export interface TypingEvent {
@@ -36,9 +37,10 @@ interface UseWebSocketOptions {
   onTyping?: (event: TypingEvent) => void;
   onReaction?: (msg: ChatMessage) => void;
   onNotice?: (event: NoticeEvent) => void;
+  onRoomNameChange?: (event: { name: string }) => void;
 }
 
-export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotification, onSystemEvent, onTyping, onReaction, onNotice }: UseWebSocketOptions) {
+export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotification, onSystemEvent, onTyping, onReaction, onNotice, onRoomNameChange }: UseWebSocketOptions) {
   const clientRef = useRef<Client | null>(null);
   const subMsgRef = useRef<StompSubscription | null>(null);
   const subReadRef = useRef<StompSubscription | null>(null);
@@ -47,6 +49,7 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
   const subTypingRef = useRef<StompSubscription | null>(null);
   const subReactionRef = useRef<StompSubscription | null>(null);
   const subNoticeRef = useRef<StompSubscription | null>(null);
+  const subNameRef = useRef<StompSubscription | null>(null);
   const roomIdRef = useRef(roomId);
   const userIdRef = useRef(userId);
   const onMessageRef = useRef(onMessage);
@@ -56,6 +59,7 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
   const onTypingRef = useRef(onTyping);
   const onReactionRef = useRef(onReaction);
   const onNoticeRef = useRef(onNotice);
+  const onRoomNameChangeRef = useRef(onRoomNameChange);
 
   onMessageRef.current = onMessage;
   onReadEventRef.current = onReadEvent;
@@ -64,6 +68,7 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
   onTypingRef.current = onTyping;
   onReactionRef.current = onReaction;
   onNoticeRef.current = onNotice;
+  onRoomNameChangeRef.current = onRoomNameChange;
   roomIdRef.current = roomId;
   userIdRef.current = userId;
 
@@ -101,6 +106,12 @@ export function useWebSocket({ roomId, userId, onMessage, onReadEvent, onNotific
       onNoticeRef.current?.(JSON.parse(frame.body));
     });
     prevNotice?.unsubscribe();
+
+    const prevName = subNameRef.current;
+    subNameRef.current = client.subscribe(`/topic/room/${rid}/name`, (frame) => {
+      onRoomNameChangeRef.current?.(JSON.parse(frame.body));
+    });
+    prevName?.unsubscribe();
 
     prevMsg?.unsubscribe();
     prevRead?.unsubscribe();
