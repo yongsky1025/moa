@@ -109,7 +109,8 @@ public class SecurityConfig {
 
                                                 .requestMatchers(HttpMethod.GET, "/api/circles",
                                                                 "/api/circles/categories",
-                                                                "/api/circles/*")
+                                                                "/api/circles/*",
+                                                                "/api/circles/*/members/active")
                                                 .permitAll()
 
                                                 // ----------- 보드 시큐리티 파트 ----------
