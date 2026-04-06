@@ -101,8 +101,8 @@ jobs:
 
           echo ">>> 전송 시작: Backend"
           rsync -avz --delete \
-            --exclude 'uploads-prod/' \
-            --exclude 'uploads-prod/**' \
+            --exclude 'uploads/' \
+            --exclude 'uploads/**' \
             -e "ssh $SSH_OPTS" artifacts/backend/ $USER@$HOST:$BE_DIR/
 
           # 4. 서버 원격 명령 실행 (Docker 및 Nginx)
