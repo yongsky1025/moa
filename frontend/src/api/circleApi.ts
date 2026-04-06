@@ -63,7 +63,7 @@ export const circleApi = {
   // 서클 대표 이미지 업로드/교체 (POST multipart)
   uploadCoverImage: async (circleId: number, imageFile: File) => {
     const metadata = await requestUploadUrl({
-      domain: 'circle',
+      domain: 'CIRCLE',
       fileName: imageFile.name,
       contentType: imageFile.type || 'application/octet-stream',
     });

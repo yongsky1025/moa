@@ -163,7 +163,7 @@ export function createEditorUploadAdapterPlugin(domain: string) {
 }
 
 export const EDITOR_UPLOAD_DOMAINS = {
-  POST: "post",
-  PLACE: "place",
-  SCHEDULE_REVIEW: "schedule_review",
+  POST: "POST",
+  PLACE: "PLACE",
+  SCHEDULE_REVIEW: "SCHEDULE_REVIEW",
 } as const;

@@ -140,7 +140,7 @@ export default function CircleActivityComposer({
       const uploadedUrls: string[] = [];
       for (const file of files) {
         const metadata = await requestUploadUrl({
-          domain: "post",
+          domain: "POST",
           fileName: file.name,
           contentType: file.type || "application/octet-stream",
         });

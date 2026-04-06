@@ -1,12 +1,8 @@
 package com.soldesk.moa.common.storage.local;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 public final class StorageKeyGenerator {
-
-    private static final DateTimeFormatter DATE_PATH_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     private StorageKeyGenerator() {
     }
@@ -15,10 +11,9 @@ public final class StorageKeyGenerator {
         String safeResourceType = sanitizeResourceType(resourceType);
         String safeDomain = sanitizeDomain(domain);
         String extension = extractExtension(fileName);
-        String datePath = LocalDate.now().format(DATE_PATH_FORMATTER);
         String uuid = UUID.randomUUID().toString().replace("-", "");
 
-        return safeResourceType + "/" + safeDomain + "/" + datePath + "/" + uuid
+        return safeResourceType + "/" + safeDomain + "/" + uuid
                 + (extension.isEmpty() ? "" : "." + extension);
     }
 
