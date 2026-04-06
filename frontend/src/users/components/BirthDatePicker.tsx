@@ -206,11 +206,9 @@ function ScrollColumn({
         overflowY: "auto",
         borderRadius: 10,
         backgroundColor: highlight ? "#f0f0f2" : "#f5f5f7",
-        scrollbarWidth: "none",
         transition: "background-color 0.15s",
       }}
     >
-      <style>{`.bdp-scroll-col::-webkit-scrollbar { display: none; }`}</style>
       {items.map((item) => {
         const isSelected = item === selected;
         return (

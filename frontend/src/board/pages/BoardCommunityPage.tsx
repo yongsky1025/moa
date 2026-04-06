@@ -18,6 +18,11 @@ import GlobalPinnedPreviewSection from "../components/GlobalPinnedPreviewSection
 import BoardPendingPanel from "../components/BoardPendingPanel";
 import BoardPostList from "../components/BoardPostList";
 import BoardEditableTitle from "../components/BoardEditableTitle";
+import CommunityPostListSkeleton from "../components/CommunityPostListSkeleton";
+import {
+  ActivityFeedListSkeleton,
+  BoardMenuSkeleton,
+} from "../components/BoardSectionSkeletons";
 import CommunityProfileCard, {
   type CommunityProfileQuickView,
 } from "../components/CommunityProfileCard";
@@ -44,6 +49,7 @@ import { useAuthStore } from "../../store/authStore";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import type { BoardResponse } from "../types/boardTypes";
 import { openReportForm } from "../../common/utils/openReportForm";
+import { useDelayedLoading } from "../../common/hooks/useDelayedLoading";
 
 interface CommunityPostItem {
   postId: number;
@@ -286,10 +292,11 @@ export default function BoardCommunityPage() {
     }
   }, [currentPage, searchParams]);
 
-  const { data: globalBoards = [] } = useQuery<BoardResponse[]>({
+  const { data: globalBoards = [], isPending: globalBoardsPending } = useQuery<BoardResponse[]>({
     queryKey: ["globalBoards"],
     queryFn: async () => (await globalBoardApi.getBoards()).data,
   });
+  const showGlobalBoardMenuSkeleton = useDelayedLoading(globalBoardsPending, 150, 300);
 
   const globalBoardNameById = useMemo(
     () => new Map<number, string>(globalBoards.map((board) => [board.boardId, board.name])),
@@ -313,7 +320,9 @@ export default function BoardCommunityPage() {
     topTab === "board" &&
     !((view === "scrap" || view === "myPosts" || view === "myReplies") && !isLoggedIn);
 
-  const communityQueryKey = ["communityPosts", view, boardFilter, debouncedKeyword, searchType, isLoggedIn] as const;
+  const effectiveKeyword = debouncedKeyword.length === 1 ? "" : debouncedKeyword;
+
+  const communityQueryKey = ["communityPosts", view, boardFilter, effectiveKeyword, searchType, isLoggedIn] as const;
 
   const { data: posts = [], isPending, isFetching, isError } = useQuery<Array<CommunityPostItem | CommunityReplyItem>>({
     queryKey: communityQueryKey,
@@ -355,7 +364,7 @@ export default function BoardCommunityPage() {
         const personalParams = {
           board: boardParam,
           boardId: boardIdParam,
-          q: debouncedKeyword || undefined,
+          q: effectiveKeyword || undefined,
           target: targetMap[searchType],
         };
         if (view === "myReplies") {
@@ -401,7 +410,7 @@ export default function BoardCommunityPage() {
           .sort(compareCommunityPosts);
       }
 
-      if (!debouncedKeyword) {
+      if (!effectiveKeyword) {
         const { data } =
           boardIdParam !== undefined
             ? await postApi.getCommunityPostsByBoardId(boardIdParam)
@@ -429,7 +438,7 @@ export default function BoardCommunityPage() {
           : undefined;
 
       const { data } = await postApi.searchPosts({
-        q: debouncedKeyword,
+        q: effectiveKeyword,
         target: targetMap[searchType],
         boardType,
         boardId: boardIdParam,
@@ -1545,6 +1554,9 @@ export default function BoardCommunityPage() {
   };
 
   const emptyText = useMemo(() => {
+    if (effectiveKeyword) {
+      return "검색 결과가 없습니다.";
+    }
     if ((view === "scrap" || view === "myPosts" || view === "myReplies") && !isLoggedIn) {
       return "로그인 후 목록을 확인할 수 있습니다.";
     }
@@ -1557,8 +1569,36 @@ export default function BoardCommunityPage() {
     if (view === "myReplies") {
       return "작성한 댓글이 없습니다.";
     }
-    return "게시글이 없습니다.";
-  }, [isLoggedIn, view]);
+    return "아직 작성된 게시글이 없습니다.";
+  }, [effectiveKeyword, isLoggedIn, view]);
+
+  const emptyDescription = useMemo(() => {
+    if (effectiveKeyword) {
+      return "다른 검색어로 다시 시도해보세요.";
+    }
+    if (view === "home") {
+      return "첫 게시글을 작성해 커뮤니티를 시작해보세요.";
+    }
+    return undefined;
+  }, [effectiveKeyword, view]);
+
+  const communityWriteHref = useMemo(() => {
+    if (boardFilter === "notice") {
+      return isAdmin
+        ? `${postRoutes.createBase}?board=notice&fromBoard=notice`
+        : `${postRoutes.createBase}?selectBoard=true&fromBoard=notice`;
+    }
+    if (boardFilter !== "all" && boardFilter !== "free") {
+      return `${postRoutes.createBase}?board=free&fromBoard=${boardFilter}`;
+    }
+    return `${postRoutes.createBase}?board=free&fromBoard=${boardFilter}`;
+  }, [boardFilter, isAdmin]);
+
+  const showEmptyWriteAction =
+    view === "home" &&
+    !effectiveKeyword &&
+    isLoggedIn &&
+    !editMode;
 
   const boardFromPath = useMemo(
     () => `/board${boardFilter === "all" ? "" : `?board=${boardFilter}`}`,
@@ -1766,6 +1806,7 @@ export default function BoardCommunityPage() {
               <section className="community-center-column">
               <CommunityListState
                 loading={activityLoading}
+                loadingContent={<ActivityFeedListSkeleton count={3} />}
                 errorMessage={activityErrorMessage}
                 isEmpty={activityView === "myReplies" ? activityReplyItems.length === 0 : activityPostItems.length === 0}
                 emptyText={activityEmptyText}
@@ -1904,43 +1945,54 @@ export default function BoardCommunityPage() {
         <>
         <div className="community-sticky-gap" aria-hidden="true" />
         <section className={`board-community-layout ${isAdmin && editMode ? "is-edit-focus" : ""}`}>
-          <CommunityLeftSidebar
-            selectedView={view}
-            onSelectView={handleSidebarViewSelect}
-            selectedBoard={boardFilter}
-            onSelectBoard={handleSidebarBoardSelect}
-            noticeBoardLabel={noticeBoardLabel}
-            freeBoardLabel={freeBoardLabel}
-            hasNoticeBoard={effectiveHasNoticeBoard}
-            hasFreeBoard={effectiveHasFreeBoard}
-            extraBoards={extraGlobalBoards}
-            noticeChanged={noticeBoardRenamed}
-            freeChanged={freeBoardRenamed}
-            canAddBoard={isAdmin && editMode}
-            onAddBoard={handleAddGlobalBoardDraft}
-            pendingAddedBoardNames={boardStagedCustomCreates}
-            pendingPanel={
-              isAdmin && editMode ? (
-                <BoardPendingPanel
-                  postPinnedCount={formatPendingCount(pendingPinDelta)}
-                  postDeletedCount={formatPendingCount(pendingDeleteCount)}
-                  boardCreateCount={formatPendingCount(boardCreateCount)}
-                  boardRenameCount={formatPendingCount(boardRenameChangeCount)}
-                  boardDeleteCount={formatPendingCount(boardDeleteCount)}
-                  onReset={resetToEditInitialState}
-                  onApply={() => void applyEditChanges()}
-                  resetDisabled={isApplyingEdits || !hasPendingEditChanges}
-                  applyDisabled={isApplyingEdits}
-                  showBasePinnedCount
-                  basePinnedCount={basePinnedCount}
-                  embedded
-                />
-              ) : undefined
-            }
-            showEditModeToggle={isAdmin}
-            editModeActive={editMode}
-            onToggleEditMode={toggleEditMode}
-          />
+          {showGlobalBoardMenuSkeleton ? (
+            <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
+              <CommunityProfileCard
+                selectedView={view}
+                onSelectView={handleSidebarViewSelect}
+                writeHref={communityWriteHref}
+              />
+              <BoardMenuSkeleton count={5} />
+            </aside>
+          ) : (
+            <CommunityLeftSidebar
+              selectedView={view}
+              onSelectView={handleSidebarViewSelect}
+              selectedBoard={boardFilter}
+              onSelectBoard={handleSidebarBoardSelect}
+              noticeBoardLabel={noticeBoardLabel}
+              freeBoardLabel={freeBoardLabel}
+              hasNoticeBoard={effectiveHasNoticeBoard}
+              hasFreeBoard={effectiveHasFreeBoard}
+              extraBoards={extraGlobalBoards}
+              noticeChanged={noticeBoardRenamed}
+              freeChanged={freeBoardRenamed}
+              canAddBoard={isAdmin && editMode}
+              onAddBoard={handleAddGlobalBoardDraft}
+              pendingAddedBoardNames={boardStagedCustomCreates}
+              pendingPanel={
+                isAdmin && editMode ? (
+                  <BoardPendingPanel
+                    postPinnedCount={formatPendingCount(pendingPinDelta)}
+                    postDeletedCount={formatPendingCount(pendingDeleteCount)}
+                    boardCreateCount={formatPendingCount(boardCreateCount)}
+                    boardRenameCount={formatPendingCount(boardRenameChangeCount)}
+                    boardDeleteCount={formatPendingCount(boardDeleteCount)}
+                    onReset={resetToEditInitialState}
+                    onApply={() => void applyEditChanges()}
+                    resetDisabled={isApplyingEdits || !hasPendingEditChanges}
+                    applyDisabled={isApplyingEdits}
+                    showBasePinnedCount
+                    basePinnedCount={basePinnedCount}
+                    embedded
+                  />
+                ) : undefined
+              }
+              showEditModeToggle={isAdmin}
+              editModeActive={editMode}
+              onToggleEditMode={toggleEditMode}
+            />
+          )}
           <section className="community-center-column">
             <CommunityBoardToolbar
               title={boardTitle}
@@ -1990,9 +2042,24 @@ export default function BoardCommunityPage() {
             <section>
               <CommunityListState
                 loading={loading}
+                loadingContent={
+                  <CommunityPostListSkeleton
+                    count={6}
+                    showBoardName={boardFilter === "all"}
+                  />
+                }
                 errorMessage={loadError}
                 isEmpty={view === "myReplies" ? pagedCommunityReplyItems.length === 0 : pagedCommunityPostItems.length === 0}
                 emptyText={emptyText}
+                emptyDescription={emptyDescription}
+                emptyActionLabel={showEmptyWriteAction ? "게시글 작성하기" : undefined}
+                onEmptyAction={
+                  showEmptyWriteAction
+                    ? () => {
+                        navigate(communityWriteHref);
+                      }
+                    : undefined
+                }
               >
                 {view === "myReplies" ? (
                   <ul className="community-post-list">

@@ -4,13 +4,20 @@ import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
 import {
   BoardDetailSkeleton,
-  BoardListSkeleton,
   BoardPreviewSectionSkeleton,
   BoardSelectorSkeleton,
   BoardSideMenuSkeleton,
   CommonEditorSkeleton,
   ReplyListSkeleton,
 } from "../../common/components/BoardLoadingSkeletons";
+import CommunityPostListSkeleton from "../components/CommunityPostListSkeleton";
+import {
+  ActivityFeedListSkeleton,
+  BoardMenuSkeleton,
+  CircleDetailBannerSkeleton,
+  PinnedPreviewSkeleton,
+  SidebarPostListSkeleton,
+} from "../components/BoardSectionSkeletons";
 
 const sectionTitleStyle: CSSProperties = {
   margin: "0 0 10px",
@@ -28,6 +35,7 @@ const sectionCardStyle: CSSProperties = {
 
 export default function BoardSkeletonPreviewPage() {
   const [count, setCount] = useState(5);
+  const [showBoardName, setShowBoardName] = useState(true);
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
@@ -43,8 +51,8 @@ export default function BoardSkeletonPreviewPage() {
         </header>
 
         <section style={{ ...sectionCardStyle, marginBottom: 16 }}>
-          <h2 style={sectionTitleStyle}>리스트 개수 조절</h2>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <h2 style={sectionTitleStyle}>프리뷰 옵션</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <input
               type="range"
               min={1}
@@ -53,43 +61,84 @@ export default function BoardSkeletonPreviewPage() {
               onChange={(e) => setCount(Number(e.target.value))}
             />
             <strong style={{ minWidth: 24 }}>{count}</strong>
+            <label
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 13,
+                color: "#374151",
+                marginLeft: 8,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={showBoardName}
+                onChange={(e) => setShowBoardName(e.target.checked)}
+              />
+              게시판명 표시
+            </label>
           </div>
         </section>
 
         <div style={{ display: "grid", gap: 16 }}>
           <section style={sectionCardStyle}>
-            <h2 style={sectionTitleStyle}>1) 게시글 목록</h2>
-            <BoardListSkeleton count={count} />
+            <h2 style={sectionTitleStyle}>1) 모임 상세 배너</h2>
+            <CircleDetailBannerSkeleton />
           </section>
 
           <section style={sectionCardStyle}>
-            <h2 style={sectionTitleStyle}>2) 게시글 상세</h2>
-            <BoardDetailSkeleton />
+            <h2 style={sectionTitleStyle}>2) 좌측 게시판 메뉴</h2>
+            <BoardMenuSkeleton count={Math.max(4, Math.min(8, count))} />
           </section>
 
           <section style={sectionCardStyle}>
-            <h2 style={sectionTitleStyle}>3) 댓글 목록</h2>
-            <ReplyListSkeleton count={4} />
+            <h2 style={sectionTitleStyle}>3) 상단 고정글 프리뷰</h2>
+            <PinnedPreviewSkeleton count={Math.max(2, Math.min(5, count))} />
           </section>
 
           <section style={sectionCardStyle}>
-            <h2 style={sectionTitleStyle}>4) 게시판 사이드메뉴</h2>
-            <BoardSideMenuSkeleton count={6} />
+            <h2 style={sectionTitleStyle}>4) 게시글 목록 (현재 디자인)</h2>
+            <CommunityPostListSkeleton count={count} showBoardName={showBoardName} />
           </section>
 
           <section style={sectionCardStyle}>
-            <h2 style={sectionTitleStyle}>5) 게시판 프리뷰 섹션</h2>
-            <BoardPreviewSectionSkeleton />
+            <h2 style={sectionTitleStyle}>5) 우측 사이드바</h2>
+            <SidebarPostListSkeleton count={Math.max(6, Math.min(10, count + 2))} />
           </section>
 
           <section style={sectionCardStyle}>
-            <h2 style={sectionTitleStyle}>6) 게시판 선택 셀렉터</h2>
-            <BoardSelectorSkeleton />
+            <h2 style={sectionTitleStyle}>6) 모임 활동 피드</h2>
+            <ActivityFeedListSkeleton count={Math.max(2, Math.min(4, Math.floor(count / 2) || 2))} />
           </section>
 
           <section style={sectionCardStyle}>
-            <h2 style={sectionTitleStyle}>7) 글 작성/수정 에디터</h2>
-            <CommonEditorSkeleton />
+            <h2 style={sectionTitleStyle}>7) 레거시 공용 스켈레톤 (참고)</h2>
+            <div style={{ display: "grid", gap: 14 }}>
+              <div>
+                <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: "#374151" }}>
+                  게시글 상세
+                </p>
+                <BoardDetailSkeleton />
+              </div>
+              <div>
+                <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: "#374151" }}>
+                  댓글 목록
+                </p>
+                <ReplyListSkeleton count={4} />
+              </div>
+              <div>
+                <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: "#374151" }}>
+                  사이드메뉴/프리뷰/셀렉터/에디터
+                </p>
+                <div style={{ display: "grid", gap: 10 }}>
+                  <BoardSideMenuSkeleton count={6} />
+                  <BoardPreviewSectionSkeleton />
+                  <BoardSelectorSkeleton />
+                  <CommonEditorSkeleton />
+                </div>
+              </div>
+            </div>
           </section>
         </div>
       </main>

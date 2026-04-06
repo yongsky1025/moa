@@ -34,9 +34,6 @@ import {
 } from "lucide-react";
 import { toAssetUrl } from "../../common/utils/assetUrl";
 
-const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
-const nickColor = (nick: string) => AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
-
 const CSS = `
   .mp-row { transition: background 0.15s, border-color 0.15s; border-radius: 10px; border: 1px solid transparent; }
   .mp-row-hero:hover { background: rgba(95,143,123,0.09) !important; border-color: #A9C8BB !important; }

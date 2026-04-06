@@ -5,6 +5,8 @@ import { Clock3, Eye, Flame, MessageSquare } from "lucide-react";
 import { postApi } from "../../post/api/postApi";
 import { postRoutes } from "../../post/routes/postRoutes";
 import type { CommunitySidebarPost } from "../../post/types/postTypes";
+import { SidebarPostListSkeleton } from "./BoardSectionSkeletons";
+import { useDelayedLoading } from "../../common/hooks/useDelayedLoading";
 
 type SortMode = "popular" | "recent" | "views" | "replies";
 
@@ -76,6 +78,8 @@ export default function CommunityRightSidebar() {
       })),
     [data],
   );
+  const showLoading = useDelayedLoading(isLoading, 150, 300);
+  const isBusy = isLoading || showLoading;
 
   const toggleButtonStyle = (active: boolean) => ({
     border: active ? "1px solid #2dd4bf" : "1px solid #d1d5db",
@@ -134,19 +138,15 @@ export default function CommunityRightSidebar() {
           </button>
         </div>
 
-        {isLoading && (
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6b7280" }}>
-            불러오는 중...
-          </p>
-        )}
+        {showLoading && <SidebarPostListSkeleton count={8} />}
 
-        {!isLoading && items.length === 0 && (
+        {!isBusy && items.length === 0 && (
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6b7280" }}>
             게시글이 없습니다.
           </p>
         )}
 
-        {!isLoading &&
+        {!isBusy &&
           items.map((item) => (
             <Link
               key={`${item.boardName}-${item.postId}`}

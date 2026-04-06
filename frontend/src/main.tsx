@@ -6,9 +6,11 @@ import { RouterProvider } from "react-router-dom";
 import rootRouter from "./routes/rootRouters.ts";
 import { queryClient } from "./api/queryClient.ts";
 import { clearTransientNavigationStateOnReload } from "./common/utils/transientNavigationState.ts";
+import { installGlobalScrollbarSystem } from "./common/utils/scrollbarSystem.ts";
 import { useAuthStore } from "./store/authStore.ts";
 
 clearTransientNavigationStateOnReload();
+installGlobalScrollbarSystem();
 useAuthStore.getState().restoreAuth();
 
 createRoot(document.getElementById("root")!).render(

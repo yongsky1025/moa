@@ -1,10 +1,65 @@
 @import "tailwindcss";
 
+html {
+  scrollbar-gutter: stable;
+  background-color: #ddd;
+  overflow-y: scroll;
+}
+
 body {
+  margin: 0;
   font-family: Arial, sans-serif;
   background-color: #ddd;
   color: #333;
   line-height: 1.6;
+  overflow-y: auto;
+}
+
+:root {
+  --scrollbar-default: rgba(120, 120, 120, 0.15);
+  --scrollbar-hover: rgba(120, 120, 120, 0.4);
+  --scrollbar-active: rgba(120, 120, 120, 0.6);
+  --scrollbar-size: 6px;
+  --scrollbar-radius: 999px;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-default) transparent;
+}
+
+*:hover {
+  scrollbar-color: var(--scrollbar-hover) transparent;
+}
+
+html.is-scroll-active * {
+  scrollbar-color: var(--scrollbar-active) transparent;
+}
+
+/* Chrome / Safari / Edge */
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-default);
+  border-radius: var(--scrollbar-radius);
+  transition: background-color 0.18s ease;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-hover);
+}
+
+html.is-scroll-active *::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-active);
 }
 
 button {
@@ -67,11 +122,6 @@ button {
   animation-delay: 0.6s;
 }
 
-
-/* 채팅 입력창 - 스크롤바 숨기고 휠 스크롤만 허용 */
-.chat-textarea::-webkit-scrollbar { display: none; }
-.chat-textarea { scrollbar-width: none; -ms-overflow-style: none; }
-
 /* 채팅 hover 효과 */
 .chat-send-btn { transition: background 0.15s; }
 .chat-send-btn:hover:not(:disabled) { background: #4E7C69 !important; }
@@ -95,9 +145,3 @@ button {
 
 .chat-ctx-item { transition: background 0.12s; }
 .chat-ctx-item:hover { background: #EAF4F0 !important; }
-
-/* 이모지 피커 스크롤바 숨기기 */
-.emoji-picker-box::-webkit-scrollbar { display: none; }
-
-/* ChatPopupPage 이모지 피커 스크롤바 숨기기 */
-.chat-emoji-picker::-webkit-scrollbar { display: none; }

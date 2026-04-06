@@ -75,9 +75,8 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 99999,
     boxSizing: 'border-box',
     maxHeight: 180,
-    overflowY: 'scroll',
+    overflowY: 'auto',
     overflowX: 'hidden',
-    scrollbarWidth: 'none' as const,
   },
   btn: {
     background: 'none',

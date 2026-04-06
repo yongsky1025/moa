@@ -4,6 +4,8 @@ import { postApi } from "../../post/api/postApi";
 import { postRoutes } from "../../post/routes/postRoutes";
 import type { PostResponse } from "../../post/types/postTypes";
 import CommunityPinnedPreviewList from "./CommunityPinnedPreviewList";
+import { PinnedPreviewSkeleton } from "./BoardSectionSkeletons";
+import { useDelayedLoading } from "../../common/hooks/useDelayedLoading";
 
 interface GlobalPinnedPreviewSectionProps {
   fromPath: string;
@@ -29,7 +31,7 @@ const comparePinnedPosts = (a: PostResponse, b: PostResponse) => {
 export default function GlobalPinnedPreviewSection({
   fromPath,
 }: GlobalPinnedPreviewSectionProps) {
-  const { data: pinnedGlobalPosts = [] } = useQuery<PostResponse[]>({
+  const { data: pinnedGlobalPosts = [], isLoading } = useQuery<PostResponse[]>({
     queryKey: ["communityPinnedGlobalTopUnified"],
     queryFn: async () => {
       const { data } = await postApi.getCommunityPosts("all");
@@ -62,6 +64,14 @@ export default function GlobalPinnedPreviewSection({
       })),
     [pinnedGlobalPosts],
   );
+  const showLoading = useDelayedLoading(isLoading, 150, 300);
+
+  if (showLoading) {
+    return <PinnedPreviewSkeleton count={3} />;
+  }
+  if (isLoading) {
+    return null;
+  }
 
   if (pinnedPreviewItems.length === 0) {
     return null;

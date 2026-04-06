@@ -4,7 +4,6 @@ import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
 import { circleApi } from "../../api/circleApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
-import { ChevronLeft } from "lucide-react";
 
 interface Category {
   categoryId: number;

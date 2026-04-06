@@ -14,6 +14,11 @@ import CommunityListState from "../components/CommunityListState";
 import BoardPendingPanel from "../components/BoardPendingPanel";
 import BoardPostList from "../components/BoardPostList";
 import BoardEditableTitle from "../components/BoardEditableTitle";
+import CommunityPostListSkeleton from "../components/CommunityPostListSkeleton";
+import {
+  BoardMenuSkeleton,
+  CircleDetailBannerSkeleton,
+} from "../components/BoardSectionSkeletons";
 import MoaPaginate from "../../admin/component/Moapaginate";
 import { circleApi } from "../../api/circleApi";
 import {
@@ -35,6 +40,7 @@ import type {
   PostSearchTarget,
 } from "../../post/types/postTypes";
 import { getErrorMessage } from "../../common/utils/errorMessage";
+import { useDelayedLoading } from "../../common/hooks/useDelayedLoading";
 
 type BoardFilter = "all" | number;
 
@@ -214,13 +220,13 @@ export default function CircleBoardTabPage() {
     }
   }, [currentPage, searchParams]);
 
-  const { data: circle = null } = useQuery<CircleResponse | null>({
+  const { data: circle = null, isPending: circlePending } = useQuery<CircleResponse | null>({
     queryKey: ["circleDetailForBoardTab", cid],
     enabled: hasValidCircleId,
     queryFn: async () => (await circleApi.getCircle(cid)).data,
   });
 
-  const { data: boards = [] } = useQuery<CircleBoardResponse[]>({
+  const { data: boards = [], isPending: boardsPending } = useQuery<CircleBoardResponse[]>({
     queryKey: ["circleBoardsForBoardTab", cid],
     enabled: hasValidCircleId,
     queryFn: async () => (await circleBoardApi.getBoards(cid)).data,
@@ -236,12 +242,14 @@ export default function CircleBoardTabPage() {
     hasValidCircleId &&
     !((view === "myPosts" || view === "myReplies" || view === "scrap") && !isLoggedIn);
 
+  const effectiveKeyword = debouncedKeyword.length === 1 ? "" : debouncedKeyword;
+
   const postQueryKey = [
     "circleBoardPosts",
     cid,
     view,
     boardFilter,
-    debouncedKeyword,
+    effectiveKeyword,
     searchType,
     isLoggedIn,
     user?.nickname,
@@ -264,7 +272,7 @@ export default function CircleBoardTabPage() {
       };
       const personalParams = {
         boardId: view === "scrap" || boardFilter === "all" ? undefined : boardFilter,
-        q: debouncedKeyword || undefined,
+        q: effectiveKeyword || undefined,
         target: targetMap[searchType],
       };
 
@@ -295,7 +303,7 @@ export default function CircleBoardTabPage() {
         return [...data].sort(compareCirclePosts);
       }
 
-      if (!debouncedKeyword) {
+      if (!effectiveKeyword) {
         const response =
           boardFilter === "all"
             ? await circleBoardApi.getAllPosts(cid)
@@ -304,7 +312,7 @@ export default function CircleBoardTabPage() {
       }
 
       const { data } = await postApi.searchPosts({
-        q: debouncedKeyword,
+        q: effectiveKeyword,
         target: targetMap[searchType],
         boardType: "CIRCLE",
         boardId: boardFilter === "all" ? undefined : boardFilter,
@@ -758,6 +766,9 @@ export default function CircleBoardTabPage() {
   };
 
   const emptyText = useMemo(() => {
+    if (effectiveKeyword) {
+      return "검색 결과가 없습니다.";
+    }
     if ((view === "myPosts" || view === "myReplies" || view === "scrap") && !isLoggedIn) {
       return "로그인 후 목록을 확인할 수 있습니다.";
     }
@@ -770,8 +781,25 @@ export default function CircleBoardTabPage() {
     if (view === "myPosts") {
       return "작성한 게시글이 없습니다.";
     }
-    return "게시글이 없습니다.";
-  }, [isLoggedIn, view]);
+    return "아직 작성된 게시글이 없습니다.";
+  }, [effectiveKeyword, isLoggedIn, view]);
+
+  const emptyDescription = useMemo(() => {
+    if (effectiveKeyword) {
+      return "다른 검색어로 다시 시도해보세요.";
+    }
+    if (view === "home") {
+      return "첫 게시글을 작성하면 모임 이야기가 시작됩니다.";
+    }
+    return undefined;
+  }, [effectiveKeyword, view]);
+
+  const showEmptyWriteAction =
+    view === "home" &&
+    !effectiveKeyword &&
+    isLoggedIn &&
+    !editMode &&
+    !!defaultWriteBoardId;
 
   const boardFromPath = useMemo(
     () => `/circle/${cid}/board${boardFilter === "all" ? "" : `?board=${boardFilter}`}`,
@@ -795,13 +823,15 @@ export default function CircleBoardTabPage() {
 
   const listLoading = hasValidCircleId && (postsPending || postsFetching);
   const listError = canFetchCirclePosts && postsError ? getErrorMessage(postsQueryError) : "";
+  const showCircleBannerSkeleton = useDelayedLoading(circlePending, 150, 300);
+  const showCircleBoardMenuSkeleton = useDelayedLoading(boardsPending, 150, 300);
 
   return (
     <div className="board-community-page" style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
 
       <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
-        {circle && <CircleDetailBanner circle={circle} />}
+        {circle ? <CircleDetailBanner circle={circle} /> : showCircleBannerSkeleton ? <CircleDetailBannerSkeleton /> : null}
 
         <CircleDetailTabs circleId={cid} activeTab="board" />
 
@@ -845,20 +875,24 @@ export default function CircleBoardTabPage() {
                   ) : undefined
                 }
               />
-              <CircleBoardSidebarMenu
-                boards={effectiveCircleBoards}
-                selectedBoard={boardFilter}
-                onSelectBoard={handleSidebarBoardSelect}
-                isActive={view === "home"}
-                editable={isCircleLeader && editMode}
-                onCreateBoard={handleCreateCircleBoard}
-                busy={isBoardEditBusy}
-                changedBoardIds={changedBoardIds}
-                pendingAddedBoards={boardStagedCreates.map((board) => ({
-                  name: board.name,
-                  circleBoardKind: board.circleBoardKind,
-                }))}
-              />
+              {showCircleBoardMenuSkeleton ? (
+                <BoardMenuSkeleton count={5} />
+              ) : (
+                <CircleBoardSidebarMenu
+                  boards={effectiveCircleBoards}
+                  selectedBoard={boardFilter}
+                  onSelectBoard={handleSidebarBoardSelect}
+                  isActive={view === "home"}
+                  editable={isCircleLeader && editMode}
+                  onCreateBoard={handleCreateCircleBoard}
+                  busy={isBoardEditBusy}
+                  changedBoardIds={changedBoardIds}
+                  pendingAddedBoards={boardStagedCreates.map((board) => ({
+                    name: board.name,
+                    circleBoardKind: board.circleBoardKind,
+                  }))}
+                />
+              )}
             </aside>
 
             <section className="community-center-column">
@@ -898,9 +932,24 @@ export default function CircleBoardTabPage() {
 
               <CommunityListState
                 loading={listLoading}
+                loadingContent={
+                  <CommunityPostListSkeleton
+                    count={6}
+                    showBoardName={boardFilter === "all"}
+                  />
+                }
                 errorMessage={listError}
                 isEmpty={view === "myReplies" ? pagedReplies.length === 0 : pagedPosts.length === 0}
                 emptyText={emptyText}
+                emptyDescription={emptyDescription}
+                emptyActionLabel={showEmptyWriteAction ? "게시글 작성하기" : undefined}
+                onEmptyAction={
+                  showEmptyWriteAction
+                    ? () => {
+                        navigate(writeHref);
+                      }
+                    : undefined
+                }
               >
                 {view === "myReplies" ? (
                   <ul className="community-post-list">
