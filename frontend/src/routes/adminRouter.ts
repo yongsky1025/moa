@@ -22,37 +22,43 @@ import AdminPlacesPage from "../admin/pages/AdminPlacesPage";
 import AdminPlaceRegisterPage from "../admin/pages/AdminPlaceRegisterPage";
 import AdminPlaceEditPage from "../admin/pages/AdminPlaceEditPage";
 import AdminPlaceDetailPage from "../admin/pages/AdminPlaceDetailPage";
+import AdminRouteGuard from "./AdminRouteGuard";
 
 export const adminRouter = () => {
   return [
     {
-      // AdminLayout이 Navbar + Sidebar + Footer 담당
-      // 자식 라우트들은 <Outlet /> 자리에 렌더링됨
-      Component: AdminLayout,
+      Component: AdminRouteGuard,
       children: [
-        { path: "maindashboard", Component: AdminDashboardPage },
-        { path: "users", Component: AdminUsersPage },
-        { path: "users/profile/:id", Component: AdminUserDetailPage },
-        { path: "posts", Component: AdminPostsPage },
-        { path: "posts/:postId", Component: AdminPostDetailPage },
-        { path: "posts/notices", Component: AdminNoticesPage },
-        { path: "posts/notices/write", Component: AdminNoticeWritePage },
-        { path: "posts/notices/:postId/edit", Component: AdminNoticeEditPage },
-        { path: "reports", Component: AdminReportsPage },
-        { path: "reports/:id", Component: AdminReportDetailPage },
-        { path: "sanctions", Component: AdminSanctionsPage },
-        { path: "sanctions/:id", Component: AdminSanctionDetailPage },
-        { path: "stats", Component: AdminStatsPage },
-        { path: "logs", Component: AdminLogsPage },
-        { path: "logs/user", Component: AdminUserLogsPage },
-        { path: "circles", Component: AdminCirclesPage },
-        { path: "circles/pending", Component: AdminCirclesPendingPage },
-        { path: "circles/category", Component: AdminCircleCategoryPage },
-        { path: "circles/:id", Component: AdminCircleDetailPage },
-        { path: "places", Component: AdminPlacesPage },
-        { path: "places/register", Component: AdminPlaceRegisterPage },
-        { path: "places/:id", Component: AdminPlaceDetailPage },
-        { path: "places/:id/edit", Component: AdminPlaceEditPage },
+        {
+          // AdminLayout이 Navbar + Sidebar + Footer 담당
+          // 자식 라우트들은 <Outlet /> 자리에 렌더링됨
+          Component: AdminLayout,
+          children: [
+            { path: "maindashboard", Component: AdminDashboardPage },
+            { path: "users", Component: AdminUsersPage },
+            { path: "users/profile/:id", Component: AdminUserDetailPage },
+            { path: "posts", Component: AdminPostsPage },
+            { path: "posts/:postId", Component: AdminPostDetailPage },
+            { path: "posts/notices", Component: AdminNoticesPage },
+            { path: "posts/notices/write", Component: AdminNoticeWritePage },
+            { path: "posts/notices/:postId/edit", Component: AdminNoticeEditPage },
+            { path: "reports", Component: AdminReportsPage },
+            { path: "reports/:id", Component: AdminReportDetailPage },
+            { path: "sanctions", Component: AdminSanctionsPage },
+            { path: "sanctions/:id", Component: AdminSanctionDetailPage },
+            { path: "stats", Component: AdminStatsPage },
+            { path: "logs", Component: AdminLogsPage },
+            { path: "logs/user", Component: AdminUserLogsPage },
+            { path: "circles", Component: AdminCirclesPage },
+            { path: "circles/pending", Component: AdminCirclesPendingPage },
+            { path: "circles/category", Component: AdminCircleCategoryPage },
+            { path: "circles/:id", Component: AdminCircleDetailPage },
+            { path: "places", Component: AdminPlacesPage },
+            { path: "places/register", Component: AdminPlaceRegisterPage },
+            { path: "places/:id", Component: AdminPlaceDetailPage },
+            { path: "places/:id/edit", Component: AdminPlaceEditPage },
+          ],
+        },
       ],
     },
   ];

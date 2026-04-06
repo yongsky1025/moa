@@ -91,6 +91,13 @@ function extractPlainText(html: string | undefined): string {
     .trim();
 }
 
+function isDeletedPostFetchError(error: unknown): boolean {
+  const status = (error as { response?: { status?: number } })?.response?.status;
+  const data = (error as { response?: { data?: { message?: string } | string } })?.response?.data;
+  const message = typeof data === "string" ? data : data?.message ?? "";
+  return status === 404 && message.includes("게시글");
+}
+
 export default function CirclePostDetailPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -145,7 +152,13 @@ export default function CirclePostDetailPage() {
         setBoards(boardRes.data);
         setPost(postRes.data);
       })
-      .catch((e) => setErrorMessage(getErrorMessage(e)))
+      .catch((e) => {
+        if (isDeletedPostFetchError(e)) {
+          navigate("/error/post-deleted", { replace: true });
+          return;
+        }
+        setErrorMessage(getErrorMessage(e));
+      })
       .finally(() => setLoading(false));
   }, [bid, boardId, cid, circleId, navigate, pid, postId]);
 

@@ -11,6 +11,11 @@ import { chatRouter } from "./chatRouter";
 import ReportFormPage from "../admin/pages/ReportFormPage";
 import PaymentSuccessPage from "../place/pages/PaymentSuccessPage";
 import PaymentFailPage from "../place/pages/PaymentFailPage";
+import NotFoundPage from "../common/pages/NotFoundPage";
+import ErrorExamplePage from "../common/pages/ErrorExamplePage";
+import UnauthorizedPage from "../common/pages/UnauthorizedPage";
+import ForbiddenPage from "../common/pages/ForbiddenPage";
+import DeletedPostPage from "../common/pages/DeletedPostPage";
 
 const rootRouter = createBrowserRouter([
   {
@@ -32,12 +37,17 @@ const rootRouter = createBrowserRouter([
   { path: "/oauth2/callback", Component: OAuthCallbackPage },
   { path: "/payment/success", Component: PaymentSuccessPage },
   { path: "/payment/fail", Component: PaymentFailPage },
+  { path: "/error-example", Component: ErrorExamplePage },
+  { path: "/error/401", Component: UnauthorizedPage },
+  { path: "/error/403", Component: ForbiddenPage },
+  { path: "/error/post-deleted", Component: DeletedPostPage },
   { path: "/users", children: userRouter() },
   { path: "/circle", children: circleRouter() },
   { path: "/board", children: boardRouter() },
   { path: "/admin", children: adminRouter() },
   { path: "/place", children: placeRouter() },
   { path: "/chat", children: chatRouter() },
+  { path: "*", Component: NotFoundPage },
 ]);
 
 export default rootRouter;

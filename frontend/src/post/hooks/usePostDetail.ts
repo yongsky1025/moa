@@ -31,6 +31,10 @@ export function usePostDetail({ kind, postId, enabled = true }: UsePostDetailPar
     data: query.data ?? null,
     loading: query.isPending,
     error: query.isError ? getErrorMessage(query.error) : "",
+    errorStatus:
+      query.isError
+        ? ((query.error as { response?: { status?: number } })?.response?.status ?? null)
+        : null,
     refetch,
   };
 }

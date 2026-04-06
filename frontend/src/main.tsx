@@ -8,6 +8,7 @@ import { queryClient } from "./api/queryClient.ts";
 import { clearTransientNavigationStateOnReload } from "./common/utils/transientNavigationState.ts";
 import { installGlobalScrollbarSystem } from "./common/utils/scrollbarSystem.ts";
 import { useAuthStore } from "./store/authStore.ts";
+import AppErrorBoundary from "./common/components/AppErrorBoundary.tsx";
 
 clearTransientNavigationStateOnReload();
 installGlobalScrollbarSystem();
@@ -16,7 +17,9 @@ useAuthStore.getState().restoreAuth();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={rootRouter} />
+      <AppErrorBoundary>
+        <RouterProvider router={rootRouter} />
+      </AppErrorBoundary>
     </QueryClientProvider>
   </StrictMode>,
 );

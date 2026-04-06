@@ -36,6 +36,13 @@ api.interceptors.request.use((config) => {
 
 const ACCOUNT_STATUS_CODES = new Set(["ACCOUNT_WITHDRAWN", "ACCOUNT_SUSPENDED", "ACCOUNT_BANNED"]);
 
+function redirectToErrorPage(path: "/error/401" | "/error/403") {
+  const currentPath = window.location.pathname;
+  if (currentPath.startsWith("/error/")) return;
+  if (currentPath === path) return;
+  window.location.href = path;
+}
+
 // 응답 인터셉터: 403 계정 상태 / 401 토큰 갱신
 api.interceptors.response.use(
   (response) => response,
@@ -45,6 +52,11 @@ api.interceptors.response.use(
     if (error.response?.status === 403 && errorCode && ACCOUNT_STATUS_CODES.has(errorCode)) {
       useAuthStore.getState().clearAuth();
       window.location.href = `/users/account-status?code=${errorCode}`;
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 403) {
+      redirectToErrorPage("/error/403");
       return Promise.reject(error);
     }
 
@@ -85,9 +97,9 @@ api.interceptors.response.use(
           useAuthStore.getState().clearAuth();
           window.location.href = `/users/account-status?code=${refreshErrCode}`;
         } else {
-          // 인증 상태만 정리하고, 리다이렉트하지 않음
-          // 각 페이지/컴포넌트가 isLoggedIn 상태 변화에 따라 자체 처리
+          // 일반 세션 만료/토큰 오류는 401 에러 페이지로 이동
           useAuthStore.getState().clearAuth();
+          redirectToErrorPage("/error/401");
         }
 
         return Promise.reject(error);

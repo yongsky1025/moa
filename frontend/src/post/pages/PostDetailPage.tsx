@@ -96,7 +96,7 @@ export default function PostDetailPage() {
   const navigate = useNavigate();
   const kind = resolveKind(location.pathname);
 
-  const { data, loading, error } = usePostDetail({
+  const { data, loading, error, errorStatus } = usePostDetail({
     kind,
     postId: postIdNumber,
   });
@@ -145,6 +145,12 @@ export default function PostDetailPage() {
   });
   const isBookmarked = localBookmarkState?.bookmarked ?? bookmarkQuery.data?.bookmarked ?? false;
   const displayReplyCount = data?.replyCount ?? totalReplyCount;
+
+  useEffect(() => {
+    if (errorStatus !== 404) return;
+    if (!error.includes("게시글")) return;
+    navigate("/error/post-deleted", { replace: true });
+  }, [error, errorStatus, navigate]);
 
   const refreshReplies = async (loadAll: boolean, keepScroll = true) => {
     const currentScrollY = keepScroll ? window.scrollY : 0;
