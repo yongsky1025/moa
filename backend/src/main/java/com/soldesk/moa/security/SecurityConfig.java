@@ -85,6 +85,7 @@ public class SecurityConfig {
                                                                 "/vendor/**",
                                                                 "/fonts/**",
                                                                 "/favicon.ico",
+                                                                "/error",
                                                                 "/swagger-ui.html",
                                                                 "/swagger-ui/**",
                                                                 "/v3/api-docs/**",

@@ -4,12 +4,14 @@ interface PlaceItem {
   id: number;
   name: string;
   location: string;
-  tag: string;
+  tags?: string[];
   image: string;
 }
 
 interface PlaceCardProps {
   place: PlaceItem;
+  badge?: string;
+  badgeColor?: string;
   isLiked?: boolean;
   isHovered?: boolean;
   onLike?: () => void;
@@ -18,7 +20,17 @@ interface PlaceCardProps {
   onMouseLeave?: () => void;
 }
 
-export default function PlaceCard({ place, isLiked = false, isHovered = false, onLike, onClick, onMouseEnter, onMouseLeave }: PlaceCardProps) {
+export default function PlaceCard({
+  place,
+  badge,
+  badgeColor = "#E3886D",
+  isLiked = false,
+  isHovered = false,
+  onLike,
+  onClick,
+  onMouseEnter,
+  onMouseLeave,
+}: PlaceCardProps) {
   return (
     <div
       onClick={onClick}
@@ -40,25 +52,43 @@ export default function PlaceCard({ place, isLiked = false, isHovered = false, o
     >
       {/* 이미지 영역 */}
       <div style={{ position: "relative" }}>
-        <img src={place.image} alt={place.name} style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }} />
+        {place.image ? (
+          <img src={place.image} alt={place.name} style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }} />
+        ) : (
+          <div
+            style={{
+              width: "100%",
+              height: 160,
+              backgroundColor: "#EAF4F0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span style={{ fontSize: 20, fontWeight: 800, color: "#A9C8BB", letterSpacing: 2 }}>MOA</span>
+          </div>
+        )}
 
-        {/* 태그 뱃지 */}
-        <div
-          style={{
-            position: "absolute",
-            top: 10,
-            left: 10,
-            padding: "3px 8px",
-            borderRadius: 999,
-            backgroundColor: "#111",
-            fontSize: 11,
-            fontWeight: 700,
-            color: "white",
-          }}
-        >
-          {place.tag}
-        </div>
+        {/* 뱃지 */}
+        {badge && (
+          <div
+            style={{
+              position: "absolute",
+              top: 10,
+              left: 10,
+              padding: "3px 8px",
+              borderRadius: 999,
+              backgroundColor: badgeColor,
+              fontSize: 11,
+              fontWeight: 700,
+              color: "white",
+            }}
+          >
+            {badge}
+          </div>
+        )}
 
+        {/* 좋아요 버튼 */}
         {onLike && (
           <LikeHeartButton
             liked={isLiked}
@@ -97,10 +127,27 @@ export default function PlaceCard({ place, isLiked = false, isHovered = false, o
             fontWeight: 800,
             color: "#111",
             lineHeight: 1.4,
+            marginBottom: 6,
           }}
         >
           {place.name}
         </div>
+        {place.tags && place.tags.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {place.tags.map((tag) => (
+              <span
+                key={tag}
+                style={{
+                  fontSize: 11,
+                  color: "#5F8F7B",
+                  fontWeight: 500,
+                }}
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

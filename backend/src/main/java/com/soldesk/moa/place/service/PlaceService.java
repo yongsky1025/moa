@@ -1,6 +1,7 @@
 package com.soldesk.moa.place.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.soldesk.moa.payment.dto.OccupiedSlotDTO;
+import com.soldesk.moa.place.dto.PopularPlaceResponseDTO;
 import com.soldesk.moa.place.repository.PlaceReviewRepository;
 import com.soldesk.moa.place.repository.ReservationRepository;
 
@@ -314,6 +316,33 @@ public class PlaceService {
 
                 result.sort(Comparator.comparing(MyUsedPlaceDTO::startTime).reversed());
                 return result;
+        }
+
+        // 인기 장소 top5 (최근 30일 기준, 메인 페이지 노출용)
+        @Transactional(readOnly = true)
+        public List<PopularPlaceResponseDTO> getPopularPlaces() {
+                LocalDateTime since = LocalDateTime.now().minusDays(30);
+                return placeRepository.findTop5PopularPlaces(since).stream()
+                                .map(dto -> {
+                                        List<String> images = placeImageService.getPlaceImages(dto.placeId());
+                                        String imageUrl = images.isEmpty() ? null : images.get(0);
+
+                                        List<String> tags = placeRepository.findById(dto.placeId())
+                                                        .map(place -> place.getTags().stream()
+                                                                        .map(pt -> pt.getTag().getName())
+                                                                        .limit(5)
+                                                                        .toList())
+                                                        .orElse(List.of());
+
+                                        return new PopularPlaceResponseDTO(
+                                                        dto.placeId(),
+                                                        dto.name(),
+                                                        dto.city(),
+                                                        dto.averageRating(),
+                                                        imageUrl,
+                                                        tags);
+                                })
+                                .toList();
         }
 
 }

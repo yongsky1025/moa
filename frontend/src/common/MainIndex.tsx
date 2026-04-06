@@ -10,6 +10,8 @@ import SectionHeader from "../common/components/SectionHeader";
 import HeroCarousel from "../common/components/HeroCarousel";
 import { circleApi } from "../api/circleApi";
 import { energyProfileApi } from "../api/usersApi";
+import { placeApi } from "../api/placeApi";
+import type { PopularPlaceItem } from "../api/placeApi";
 import api from "../api/axiosInstance";
 import AdminConfirmModal from "../admin/component/AdminConfirmModal";
 
@@ -113,43 +115,6 @@ function toCircleItem(c: {
   };
 }
 
-const places = [
-  {
-    id: 1,
-    name: "성수 카페 골목",
-    location: "성수동",
-    tag: "카페",
-    image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: 2,
-    name: "한강 노을 공원",
-    location: "마포구",
-    tag: "야외",
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: 3,
-    name: "홍대 복합문화공간",
-    location: "홍대",
-    tag: "문화",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: 4,
-    name: "강남 루프탑 바",
-    location: "강남",
-    tag: "바",
-    image: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: 5,
-    name: "북촌 한옥 갤러리",
-    location: "종로",
-    tag: "갤러리",
-    image: "https://images.unsplash.com/photo-1583422409516-2895a77efded?auto=format&fit=crop&w=800&q=80",
-  },
-];
 
 // ─── 에너지 타입 미리보기 데이터 ───
 
@@ -179,6 +144,7 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
   const [recommendedCircles, setRecommendedCircles] = useState<CircleItem[]>([]);
   const [popularCircles, setPopularCircles] = useState<CircleItem[]>([]);
   const [needsEnergyTest, setNeedsEnergyTest] = useState(false);
+  const [popularPlaces, setPopularPlaces] = useState<PopularPlaceItem[]>([]);
   const [hoveredPlace, setHoveredPlace] = useState<number | null>(null);
   const [loginModal, setLoginModal] = useState(false);
 
@@ -230,6 +196,12 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
     fetchCircles();
   }, [isLoggedIn]);
 
+  useEffect(() => {
+    placeApi.getPopularPlaces()
+      .then((res) => setPopularPlaces(res.data))
+      .catch(() => setPopularPlaces([]));
+  }, []);
+
   const goTo = useCallback((idx: number) => {
     setSlideIndex(((idx % heroSlides.length) + heroSlides.length) % heroSlides.length);
   }, []);
@@ -256,13 +228,18 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
     });
   };
 
-  const togglePlaceLike = (id: number) => {
-    setLikedPlaces((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const togglePlaceLike = async (id: number) => {
+    try {
+      const res = await placeApi.togglePlaceLike(id);
+      setLikedPlaces((prev) => {
+        const next = new Set(prev);
+        if (res.data.liked) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+    } catch {
+      // 실패 시 무시
+    }
   };
 
   const slide = heroSlides[slideIndex];
@@ -698,17 +675,26 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
       {/* ━━━ 장소 ━━━ */}
       <div style={{ backgroundColor: "#FFFFFF", padding: "72px 0 48px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
-          <SectionHeader title="이런 장소 어떠세요?" subtitle="모임하기 좋은 공간을 소개해드려요!" />
+          <SectionHeader title="이런 장소 어떠세요?" subtitle="모임하기 좋은 공간을 소개해드려요!" moreHref="/place/rental" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
-            {places.map((place) => (
+            {popularPlaces.map((place) => (
               <PlaceCard
-                key={place.id}
-                place={place}
-                isLiked={likedPlaces.has(place.id)}
-                isHovered={hoveredPlace === place.id}
-                onLike={() => togglePlaceLike(place.id)}
-                onMouseEnter={() => setHoveredPlace(place.id)}
+                key={place.placeId}
+                place={{
+                  id: place.placeId,
+                  name: place.name,
+                  location: place.city,
+                  tags: place.tags,
+                  image: place.imageUrl ?? "",
+                }}
+                badge="추천"
+                badgeColor={COLOR.accent}
+                isLiked={likedPlaces.has(place.placeId)}
+                isHovered={hoveredPlace === place.placeId}
+                onLike={() => (isLoggedIn ? togglePlaceLike(place.placeId) : setLoginModal(true))}
+                onMouseEnter={() => setHoveredPlace(place.placeId)}
                 onMouseLeave={() => setHoveredPlace(null)}
+                onClick={() => navigate(`/place/${place.placeId}`)}
               />
             ))}
           </div>
