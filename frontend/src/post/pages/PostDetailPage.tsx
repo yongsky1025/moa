@@ -33,6 +33,7 @@ import CommunityLeftSidebar, {
   type CommunityBoardFilter,
 } from "../../board/components/CommunityLeftSidebar";
 import CommunityRightSidebar from "../../board/components/CommunityRightSidebar";
+import { openReportForm } from "../../common/utils/openReportForm";
 import "../../board/pages/boardCommunity.css";
 import "../styles/postDetail.css";
 
@@ -477,12 +478,12 @@ export default function PostDetailPage() {
                       pinned={!!data.pinned}
                       bookmarked={isBookmarked}
                       onTogglePin={() => pinMutation.mutate()}
-                      onToggleBookmark={toggleBookmark}
-                      onEdit={() => navigate(editPath)}
-                      onDelete={() => void removePost()}
-                      onReport={() => window.alert("신고 기능은 준비 중입니다.")}
-                    />
-                  }
+                        onToggleBookmark={toggleBookmark}
+                        onEdit={() => navigate(editPath)}
+                        onDelete={() => void removePost()}
+                        onReport={() => openReportForm("POST", postIdNumber)}
+                      />
+                    }
                   actionSection={
                     <div className="post-detail-engagement">
                       {kind !== "notice" && (

@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { Heart } from "lucide-react";
+import { Flag, Heart, Trash2 } from "lucide-react";
 import { replyApi } from "../api/replyApi";
 import type {
   ReplyReactionSummary,
@@ -12,6 +12,7 @@ import { hasProfanity } from "../../common/utils/profanityFilter";
 import { validateReplyContent } from "../utils/replyValidators";
 import UserAvatar from "../../common/components/UserAvatar";
 import { getReplyDisplayName } from "../utils/replyUserDisplay";
+import { openReportForm } from "../../common/utils/openReportForm";
 import ReplyComposer from "./ReplyComposer";
 import ReplyForm from "./ReplyForm";
 
@@ -454,7 +455,10 @@ export default function ReplyItem({
                       void submitDelete();
                     }}
                   >
-                    삭제
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <Trash2 size={14} strokeWidth={2} aria-hidden="true" />
+                      삭제
+                    </span>
                   </button>
                 )}
                 {canReport && (
@@ -463,10 +467,13 @@ export default function ReplyItem({
                     className="moa-dropdown-item"
                     onClick={() => {
                       setShowMore(false);
-                      window.alert("신고 기능은 준비 중입니다.");
+                      openReportForm("REPLY", reply.replyId);
                     }}
                   >
-                    신고
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <Flag size={14} strokeWidth={2} aria-hidden="true" />
+                      신고
+                    </span>
                   </button>
                 )}
               </div>
