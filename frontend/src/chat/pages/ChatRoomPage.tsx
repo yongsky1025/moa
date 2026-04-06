@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { UserRound } from "lucide-react";
 import { chatApi } from "../../api/chatApi";
 import { circleApi } from "../../api/circleApi";
 import { useWebSocket, type TypingEvent } from "../hooks/useWebSocket";
@@ -271,11 +272,7 @@ export default function ChatRoomPage() {
 
   const isMyMessage = (msg: ChatMessage) => msg.senderId === userId;
 
-  const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
-  const nickColor = (nick: string) => {
-    const idx = (nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length;
-    return AVATAR_COLORS[idx];
-  };
+  const AVATAR_COLOR = "#5F8F7B";
 
   if (loading) return <div style={styles.center}>불러오는 중...</div>;
   if (error) return <div style={styles.center}>{error}</div>;
@@ -394,7 +391,7 @@ export default function ChatRoomPage() {
               onClick={() => m.userId !== userId && setProfileModal({ nickname: m.nickname, senderId: m.userId })}
               title={m.userId !== userId ? "1:1 채팅" : undefined}
             >
-              <span style={styles.memberAvatar}>{m.nickname.charAt(0)}</span>
+              <span style={{ ...styles.memberAvatar, background: AVATAR_COLOR, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><UserRound size={16} color="#fff" /></span>
               <span style={styles.memberNick}>{m.nickname}</span>
               {m.role === "LEADER" && <span style={styles.leaderBadge}>방장</span>}
             </div>
@@ -406,15 +403,14 @@ export default function ChatRoomPage() {
         {messages.length === 0 && <div style={styles.empty}>첫 메시지를 보내보세요!</div>}
         {messages.map((msg) => {
           const mine = isMyMessage(msg);
-          const avatarColor = nickColor(msg.senderNickname);
           return (
             <div key={msg.messageId} style={{ ...styles.msgRow, justifyContent: mine ? "flex-end" : "flex-start" }}>
               {!mine && (
                 <div
-                  style={{ ...styles.avatar, background: avatarColor, cursor: "pointer" }}
+                  style={{ ...styles.avatar, background: AVATAR_COLOR, cursor: "pointer", display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   onClick={() => setProfileModal({ nickname: msg.senderNickname ?? "?", senderId: msg.senderId })}
                 >
-                  {msg.senderNickname?.charAt(0) ?? "?"}
+                  <UserRound size={18} color="#fff" />
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '75%' }}>
@@ -480,7 +476,7 @@ export default function ChatRoomPage() {
         })}
         {Object.entries(typingUsers).map(([uid, nickname]) => (
           <div key={uid} style={{ ...styles.msgRow, justifyContent: 'flex-start' }}>
-            <div style={{ ...styles.avatar, background: nickColor(nickname) }}>{nickname.charAt(0)}</div>
+            <div style={{ ...styles.avatar, background: AVATAR_COLOR, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><UserRound size={18} color="#fff" /></div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <span style={styles.nick}>{nickname}</span>
               <div style={{ ...styles.bubble, background: '#fff', border: '1px solid #e8e8e8', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', padding: '12px 16px' }}>
@@ -505,7 +501,7 @@ export default function ChatRoomPage() {
             {/* 상단 배경 */}
             <div
               style={{
-                background: nickColor(profileModal.nickname),
+                background: AVATAR_COLOR,
                 height: 100,
                 display: "flex",
                 alignItems: "flex-end",
@@ -518,18 +514,15 @@ export default function ChatRoomPage() {
                   width: 72,
                   height: 72,
                   borderRadius: "50%",
-                  background: nickColor(profileModal.nickname),
+                  background: AVATAR_COLOR,
                   border: "4px solid #fff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 28,
-                  fontWeight: 700,
-                  color: "#fff",
                   marginBottom: -36,
                 }}
               >
-                {profileModal.nickname.charAt(0)}
+                <UserRound size={36} color="#fff" />
               </div>
             </div>
             {/* 닉네임 */}

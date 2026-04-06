@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { UserRound } from 'lucide-react';
 import { profileApi, type UserProfile } from '../../api/usersApi';
-
-const AVATAR_COLORS = ['#F4A261', '#E76F51', '#2A9D8F', '#457B9D', '#6D6875', '#E9C46A', '#264653'];
-const nickColor = (nick: string) => AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -78,8 +76,6 @@ export default function ProfilePage() {
   if (loading) return <div style={styles.center}>불러오는 중...</div>;
   if (!profile) return <div style={styles.center}>프로필을 불러올 수 없습니다.</div>;
 
-  const avatarBg = nickColor(profile.nickname);
-
   return (
     <div style={styles.page}>
       {/* 헤더 */}
@@ -92,8 +88,8 @@ export default function ProfilePage() {
       {/* 프로필 카드 (카카오 스타일) */}
       <div style={styles.card}>
         {/* 아바타 */}
-        <div style={{ ...styles.avatar, background: avatarBg }}>
-          {profile.nickname.charAt(0)}
+        <div style={{ ...styles.avatar, background: '#5F8F7B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <UserRound size={40} color="#fff" />
         </div>
 
         {/* 닉네임 */}

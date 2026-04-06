@@ -1,18 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  profileApi,
-  energyProfileApi,
-  type UserProfile,
-  type EnergyProfileResponse,
-} from "../../api/usersApi";
-import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  ResponsiveContainer,
-} from "recharts";
+import { profileApi, energyProfileApi, type UserProfile, type EnergyProfileResponse } from "../../api/usersApi";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { useAuthStore } from "../../store/authStore";
 import { circleApi } from "../../api/circleApi";
 import { scheduleApi } from "../../api/scheduleApi";
@@ -39,20 +28,9 @@ import {
   Bookmark,
   LogOut,
   CalendarDays,
+  UserRound,
 } from "lucide-react";
 import { toAssetUrl } from "../../common/utils/assetUrl";
-
-const AVATAR_COLORS = [
-  "#F4A261",
-  "#E76F51",
-  "#2A9D8F",
-  "#457B9D",
-  "#6D6875",
-  "#E9C46A",
-  "#264653",
-];
-const nickColor = (nick: string) =>
-  AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
 
 const CSS = `
   .mp-row { transition: background 0.15s, border-color 0.15s; border-radius: 10px; border: 1px solid transparent; }
@@ -92,16 +70,8 @@ export default function UserProfilePage() {
     const pad = (n: number) => String(n).padStart(2, "0");
     const toISO = (d: Date) =>
       `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    const oneYearAgo = new Date(
-      now.getFullYear() - 1,
-      now.getMonth(),
-      now.getDate(),
-    );
-    const oneYearLater = new Date(
-      now.getFullYear() + 1,
-      now.getMonth(),
-      now.getDate(),
-    );
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const oneYearLater = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
 
     Promise.all([
       profileApi.getMyProfile(),
@@ -119,12 +89,7 @@ export default function UserProfilePage() {
         .catch(() => null),
       scheduleApi
         .getMySchedules({ from: toISO(now), to: toISO(oneYearLater) })
-        .then(
-          (r) =>
-            r.data.filter(
-              (s) => s.status === "UPCOMING" || s.status === "IN_PROGRESS",
-            ).length,
-        )
+        .then((r) => r.data.filter((s) => s.status === "UPCOMING" || s.status === "IN_PROGRESS").length)
         .catch(() => 0),
       scheduleApi
         .getMySchedules({ from: toISO(oneYearAgo), to: toISO(now) })
@@ -243,7 +208,6 @@ export default function UserProfilePage() {
     );
   }
 
-  const avatarBg = nickColor(profile.nickname);
 
   return (
     <div style={s.page}>
@@ -272,26 +236,14 @@ export default function UserProfilePage() {
                 autoFocus
               />
             </div>
-            <button
-              style={s.modalCheckBtn}
-              onClick={handleCheckNickname}
-              disabled={nickChecking}
-            >
+            <button style={s.modalCheckBtn} onClick={handleCheckNickname} disabled={nickChecking}>
               {nickChecking ? "확인 중" : "중복 확인"}
             </button>
           </div>
           {nickError && <p style={s.modalFeedback}>{nickError}</p>}
-          {!nickError && nickAvailable === true && (
-            <p style={{ ...s.modalFeedback, color: "#5F8F7B" }}>
-              사용 가능합니다.
-            </p>
-          )}
-          {!nickError && nickAvailable === false && (
-            <p style={s.modalFeedback}>이미 사용 중입니다.</p>
-          )}
-          {!nickError && nickAvailable === null && (
-            <div style={{ height: 18 }} />
-          )}
+          {!nickError && nickAvailable === true && <p style={{ ...s.modalFeedback, color: "#5F8F7B" }}>사용 가능합니다.</p>}
+          {!nickError && nickAvailable === false && <p style={s.modalFeedback}>이미 사용 중입니다.</p>}
+          {!nickError && nickAvailable === null && <div style={{ height: 18 }} />}
 
           {/* 상태 메시지 */}
           <label style={{ ...s.modalLabel, marginTop: 14 }}>상태 메시지</label>
@@ -308,11 +260,7 @@ export default function UserProfilePage() {
             <button style={s.modalCancelBtn} onClick={closeModal}>
               취소
             </button>
-            <button
-              style={s.modalSaveBtn}
-              onClick={handleModalSave}
-              disabled={saving}
-            >
+            <button style={s.modalSaveBtn} onClick={handleModalSave} disabled={saving}>
               {saving ? "저장 중..." : "저장"}
             </button>
           </div>
@@ -324,41 +272,24 @@ export default function UserProfilePage() {
         <div style={s.profileStatsInner}>
           {/* 프로필 카드 */}
           <div style={s.profileCard}>
-            <button
-              className="mp-edit-btn"
-              style={s.profileEditBtn}
-              onClick={openModal}
-            >
+            <button className="mp-edit-btn" style={s.profileEditBtn} onClick={openModal}>
               <PenLine size={13} color="#fff" />
               수정
             </button>
             <div style={s.profileTop}>
               {profile.profileImageUrl ? (
-                <img
-                  src={toAssetUrl(profile.profileImageUrl)}
-                  alt="프로필"
-                  style={s.avatarImg}
-                />
+                <img src={toAssetUrl(profile.profileImageUrl)} alt="프로필" style={s.avatarImg} />
               ) : (
-                <div style={{ ...s.avatar, background: avatarBg }}>
-                  {profile.nickname.charAt(0)}
-                </div>
+                <div style={{ ...s.avatar, background: '#5F8F7B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><UserRound size={36} color="#fff" /></div>
               )}
               <div style={s.nameBlock}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={s.name}>{profile.nickname}</span>
-                  {energy && (
-                    <span style={s.energyTag}>{energy.energyTypeName}</span>
-                  )}
+                  {energy && <span style={s.energyTag}>{energy.energyTypeName}</span>}
                 </div>
                 <div style={s.statusBlock}>
-                  <p
-                    style={
-                      profile.statusMessage ? s.statusText : s.statusPlaceholder
-                    }
-                  >
-                    {profile.statusMessage ||
-                      "아직 설정된 상태 메시지가 없어요"}
+                  <p style={profile.statusMessage ? s.statusText : s.statusPlaceholder}>
+                    {profile.statusMessage || "아직 설정된 상태 메시지가 없어요"}
                   </p>
                 </div>
               </div>
@@ -410,32 +341,13 @@ export default function UserProfilePage() {
                     >
                       <PolarGrid stroke="#D1D5DB" />
                       <PolarAngleAxis dataKey="label" tick={false} />
-                      <Radar
-                        dataKey="value"
-                        stroke="#5F8F7B"
-                        fill="#5F8F7B"
-                        fillOpacity={0.25}
-                        strokeWidth={1.5}
-                      />
+                      <Radar dataKey="value" stroke="#5F8F7B" fill="#5F8F7B" fillOpacity={0.25} strokeWidth={1.5} />
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
-                <div
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                  }}
-                >
-                  <span
-                    style={{ fontSize: 16, fontWeight: 600, color: "#1F2937" }}
-                  >
-                    {energy.energyTypeName}
-                  </span>
-                  <span style={{ fontSize: 13, color: "#6B7280" }}>
-                    에너지 프로필 결과 보기
-                  </span>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={{ fontSize: 16, fontWeight: 600, color: "#1F2937" }}>{energy.energyTypeName}</span>
+                  <span style={{ fontSize: 13, color: "#6B7280" }}>에너지 프로필 결과 보기</span>
                 </div>
               </>
             ) : (
@@ -451,33 +363,21 @@ export default function UserProfilePage() {
         {/* 나의 활동 */}
         <div style={s.sectionTitle}>나의 활동</div>
         <SectionCard>
-          <button
-            className="mp-row mp-row-list"
-            style={s.row}
-            onClick={() => navigate("/circle/my")}
-          >
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/circle/my")}>
             <PlusCircle size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>가입한 모임</span>
             <span style={s.rowCount}>{circleCount ?? 0}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
-          <button
-            className="mp-row mp-row-list"
-            style={s.row}
-            onClick={() => navigate("/users/my-schedules")}
-          >
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/my-schedules")}>
             <Calendar size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>참석한 일정</span>
             <span style={s.rowCount}>{completedCount}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
-          <button
-            className="mp-row mp-row-list"
-            style={s.row}
-            onClick={() => navigate("/circle/liked")}
-          >
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/circle/liked")}>
             <Heart size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>찜한 모임</span>
             <span style={s.rowCount}>{likedCount ?? 0}</span>
@@ -488,61 +388,35 @@ export default function UserProfilePage() {
         {/* 나의 장소 */}
         <div style={s.sectionTitle}>나의 장소</div>
         <SectionCard>
-          <button
-            className="mp-row mp-row-list"
-            style={s.row}
-            onClick={() => navigate("/place/my")}
-          >
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/place/my")}>
             <MapPin size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>이용한 장소</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
-          <button
-            className="mp-row mp-row-list"
-            style={s.row}
-            onClick={() => setReviewOpen((prev) => !prev)}
-          >
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => setReviewOpen((prev) => !prev)}>
             <Star size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>장소 후기</span>
             <span style={s.rowCount}>0</span>
-            {reviewOpen ? (
-              <ChevronUp size={18} color="#999" />
-            ) : (
-              <ChevronDown size={18} color="#c0c0c0" />
-            )}
+            {reviewOpen ? <ChevronUp size={18} color="#999" /> : <ChevronDown size={18} color="#c0c0c0" />}
           </button>
           <div
             ref={reviewRef}
             style={{
               overflow: "hidden",
               transition: "max-height 0.3s ease, opacity 0.3s ease",
-              maxHeight: reviewOpen
-                ? (reviewRef.current?.scrollHeight ?? 200)
-                : 0,
+              maxHeight: reviewOpen ? (reviewRef.current?.scrollHeight ?? 200) : 0,
               opacity: reviewOpen ? 1 : 0,
             }}
           >
-            <button
-              className="mp-row mp-row-list"
-              style={s.subRow}
-              onClick={() => navigate("/place/my-reviews?tab=pending")}
-            >
+            <button className="mp-row mp-row-list" style={s.subRow} onClick={() => navigate("/place/my-reviews?tab=pending")}>
               <PenLine size={16} color="#A9C8BB" />
               <span style={s.subRowLabel}>작성 가능한 후기</span>
-              <span
-                style={{ ...s.rowCount, color: "#5F8F7B", fontWeight: 700 }}
-              >
-                0
-              </span>
+              <span style={{ ...s.rowCount, color: "#5F8F7B", fontWeight: 700 }}>0</span>
               <ChevronRight size={16} color="#c0c0c0" />
             </button>
-            <button
-              className="mp-row mp-row-list"
-              style={s.subRow}
-              onClick={() => navigate("/place/my-reviews?tab=written")}
-            >
+            <button className="mp-row mp-row-list" style={s.subRow} onClick={() => navigate("/place/my-reviews?tab=written")}>
               <MessageSquare size={16} color="#A9C8BB" />
               <span style={s.subRowLabel}>내가 쓴 후기</span>
               <span style={s.rowCount}>0</span>
@@ -550,22 +424,14 @@ export default function UserProfilePage() {
             </button>
           </div>
           <RowDivider />
-          <button
-            className="mp-row mp-row-list"
-            style={s.row}
-            onClick={() => navigate("/place/liked")}
-          >
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/place/liked")}>
             <Bookmark size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>찜한 장소</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
-          <button
-            className="mp-row mp-row-list"
-            style={s.row}
-            onClick={() => navigate("/place/my-reservations")}
-          >
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/place/my-reservations")}>
             <CalendarDays size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>예약 내역</span>
             <span style={s.rowCount}>0</span>
@@ -594,21 +460,13 @@ export default function UserProfilePage() {
         {/* 설정 */}
         <div style={s.sectionTitle}>설정</div>
         <SectionCard>
-          <button
-            className="mp-row mp-row-list"
-            style={s.row}
-            onClick={() => navigate("/users/account")}
-          >
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/account")}>
             <Settings size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>계정 설정</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
-          <button
-            className="mp-row mp-row-list"
-            style={s.row}
-            onClick={handleLogout}
-          >
+          <button className="mp-row mp-row-list" style={s.row} onClick={handleLogout}>
             <LogOut size={18} color="#DC2626" />
             <span style={{ ...s.rowLabel, color: "#DC2626" }}>로그아웃</span>
           </button>
@@ -778,12 +636,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   statusBlock: { marginTop: 4 },
   statusText: { margin: 0, fontSize: 15, color: "#666", lineHeight: 1.6 },
-  statusPlaceholder: {
-    margin: 0,
-    fontSize: 15,
-    color: "#5F8F7B",
-    lineHeight: 1.6,
-  },
+  statusPlaceholder: { margin: 0, fontSize: 15, color: "#5F8F7B", lineHeight: 1.6 },
 
   /* ── 통계 카드 ── */
   statsCard: {
@@ -791,13 +644,7 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: "center",
     padding: "14px 12px 0",
   },
-  statBox: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 2,
-  },
+  statBox: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 },
   statNum: { fontSize: 36, fontWeight: 800, color: "#5F8F7B" },
   statLabel: { fontSize: 12, color: "#888", marginTop: "4px" },
   statDivider: { width: 1, height: 32, background: "#999" },

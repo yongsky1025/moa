@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
-import { Users, Clock, MapPin } from "lucide-react";
+import { Users, Clock, MapPin, UserRound } from "lucide-react";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
 import CircleDetailTabs from "../../common/components/CircleDetailTabs";
@@ -270,17 +270,7 @@ export default function CircleDetailPage() {
   const isSubLeader = myMember?.role === "SUB_LEADER";
   const isMember = !!myMember;
 
-  const AVATAR_COLORS = [
-    "#F4A261",
-    "#E76F51",
-    "#2A9D8F",
-    "#457B9D",
-    "#6D6875",
-    "#E9C46A",
-    "#264653",
-  ];
-  const nickColor = (nick: string) =>
-    AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
+  const AVATAR_COLOR = "#5F8F7B";
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
@@ -302,7 +292,7 @@ export default function CircleDetailPage() {
           >
             <div
               style={{
-                background: nickColor(profileModal.nickname),
+                background: AVATAR_COLOR,
                 height: 100,
                 display: "flex",
                 alignItems: "flex-end",
@@ -314,18 +304,15 @@ export default function CircleDetailPage() {
                   width: 72,
                   height: 72,
                   borderRadius: "50%",
-                  background: nickColor(profileModal.nickname),
+                  background: AVATAR_COLOR,
                   border: "4px solid #fff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 28,
-                  fontWeight: 700,
-                  color: "#fff",
                   marginBottom: -36,
                 }}
               >
-                {profileModal.nickname.charAt(0)}
+                <UserRound size={36} color="#fff" />
               </div>
             </div>
             <div
@@ -1090,7 +1077,7 @@ export default function CircleDetailPage() {
                           borderRadius: "50%",
                           flexShrink: 0,
                           backgroundColor:
-                            m.role === "LEADER" ? "#111" : m.role === "SUB_LEADER" ? "#4E7C69" : "#e5e7eb",
+                            m.role === "LEADER" ? "#D07856" : "#5F8F7B",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1100,19 +1087,7 @@ export default function CircleDetailPage() {
                               : "default",
                         }}
                       >
-                        <svg
-                          width="15"
-                          height="15"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke={m.role === "LEADER" || m.role === "SUB_LEADER" ? "white" : "#6b7280"}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <circle cx="12" cy="8" r="4" />
-                          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                        </svg>
+                        <UserRound size={17} color="#fff" />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <span

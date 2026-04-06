@@ -8,7 +8,8 @@ export type NotificationType =
   | "REPLY"
   | "CHILD_REPLY"
   | "POST_LIKE"
-  | "REPLY_LIKE";
+  | "REPLY_LIKE"
+  | "REPORT_SUBMITTED";
 
 export interface Notification {
   id: number;
