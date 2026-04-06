@@ -82,11 +82,7 @@ export default function CircleListPage() {
 
   // 특정 페이지를 fetch하고 append 여부에 따라 state 업데이트
   const fetchPage = useCallback(
-    async (
-      pg: number,
-      append: boolean,
-      filters: { selectedCategoryIds: number[]; keyword: string; statusType: string },
-    ) => {
+    async (pg: number, append: boolean, filters: { selectedCategoryIds: number[]; keyword: string; statusType: string }) => {
       if (isFetchingRef.current) return;
       isFetchingRef.current = true;
       setLoading(true);
@@ -150,9 +146,7 @@ export default function CircleListPage() {
     if (categoryId === null) {
       setSelectedCategoryIds([]);
     } else {
-      setSelectedCategoryIds((prev) =>
-        prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId],
-      );
+      setSelectedCategoryIds((prev) => (prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]));
     }
   };
 
@@ -171,15 +165,11 @@ export default function CircleListPage() {
   const hasActiveFilter = statusType !== "ALL" || selectedCategoryIds.length > 0 || recommendFilter !== null || !!keyword;
 
   const statusLabel = { ALL: "전체", OPEN: "모집중", FULL: "모집완료" }[statusType];
-  const recLabel = recommendFilter
-    ? { overall: "추천 · 전체", social: "추천 · 사교", activity: "추천 · 활동" }[recommendFilter]
-    : "추천";
+  const recLabel = recommendFilter ? { overall: "추천 · 전체", social: "추천 · 사교", activity: "추천 · 활동" }[recommendFilter] : "추천";
   const recDisabled = !isLoggedIn || !recommendBundle;
 
   const isRecFiltered = recommendFilter !== null && !!recommendBundle;
-  const selectedCategoryNames = new Set(
-    categories.filter((c) => selectedCategoryIds.includes(c.categoryId)).map((c) => c.categoryName),
-  );
+  const selectedCategoryNames = new Set(categories.filter((c) => selectedCategoryIds.includes(c.categoryId)).map((c) => c.categoryName));
   const recItems: RecommendationItem[] = isRecFiltered
     ? (recommendBundle![recommendFilter as "overall" | "social" | "activity"] as RecommendationItem[]).filter(
         (c) => selectedCategoryNames.size === 0 || selectedCategoryNames.has(c.categoryName),
@@ -234,7 +224,9 @@ export default function CircleListPage() {
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSearch();
+              }}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               placeholder="모임명, 카테고리로 검색해보세요"
@@ -242,7 +234,10 @@ export default function CircleListPage() {
             />
             {inputValue && (
               <button
-                onClick={() => { setInputValue(""); setKeyword(""); }}
+                onClick={() => {
+                  setInputValue("");
+                  setKeyword("");
+                }}
                 className="rounded-full p-0.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
               >
                 <X className="h-4 w-4" />
@@ -304,7 +299,10 @@ export default function CircleListPage() {
                         className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
                           statusType === val ? "bg-[#EAF4F0] font-semibold text-[#4E7C69]" : "text-gray-700 hover:bg-gray-50"
                         }`}
-                        onClick={() => { setStatusType(val); setStatusOpen(false); }}
+                        onClick={() => {
+                          setStatusType(val);
+                          setStatusOpen(false);
+                        }}
                       >
                         {{ ALL: "전체", OPEN: "모집중", FULL: "모집완료" }[val]}
                       </button>
@@ -324,8 +322,8 @@ export default function CircleListPage() {
                       recommendFilter !== null
                         ? "border-[#5F8F7B] bg-[#EAF4F0] text-[#4E7C69]"
                         : recDisabled
-                        ? "cursor-not-allowed border-gray-100 bg-white text-gray-300"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                          ? "cursor-not-allowed border-gray-100 bg-white text-gray-300"
+                          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
                     }`}
                   >
                     <Sparkles className="h-3.5 w-3.5 text-amber-400" />
@@ -334,18 +332,23 @@ export default function CircleListPage() {
                   </button>
                   {recOpen && (
                     <div className="absolute left-0 top-[calc(100%+6px)] z-30 min-w-36 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
-                      {([
-                        { key: null, label: "없음" },
-                        { key: "overall", label: "전체" },
-                        { key: "social", label: "사교" },
-                        { key: "activity", label: "활동" },
-                      ] as { key: "overall" | "social" | "activity" | null; label: string }[]).map(({ key, label }) => (
+                      {(
+                        [
+                          { key: null, label: "없음" },
+                          { key: "overall", label: "전체" },
+                          { key: "social", label: "사교" },
+                          { key: "activity", label: "활동" },
+                        ] as { key: "overall" | "social" | "activity" | null; label: string }[]
+                      ).map(({ key, label }) => (
                         <button
                           key={key ?? "none"}
                           className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
                             recommendFilter === key ? "bg-[#EAF4F0] font-semibold text-[#4E7C69]" : "text-gray-700 hover:bg-gray-50"
                           }`}
-                          onClick={() => { setRecommendFilter(key); setRecOpen(false); }}
+                          onClick={() => {
+                            setRecommendFilter(key);
+                            setRecOpen(false);
+                          }}
                         >
                           {label}
                         </button>
@@ -358,7 +361,7 @@ export default function CircleListPage() {
                   <span className="text-xs text-[#4E7C69]">
                     {recommendFilter === "overall" && "사교·활동 5개 축 기반"}
                     {recommendFilter === "social" && "사교 부담도·교류 방식 기반"}
-                    {recommendFilter === "activity" && "활동 강도·헌신도·구조 기반"}
+                    {recommendFilter === "activity" && "활동 강도·참여 빈도·구조 기반"}
                   </span>
                 ) : !recDisabled ? (
                   <span className="text-xs text-gray-400">내 에너지 프로필로 모임을 추천해요</span>
@@ -367,10 +370,7 @@ export default function CircleListPage() {
 
               {/* 초기화 */}
               {hasActiveFilter && (
-                <button
-                  onClick={handleReset}
-                  className="ml-auto flex items-center gap-1 text-sm text-gray-400 transition hover:text-gray-600"
-                >
+                <button onClick={handleReset} className="ml-auto flex items-center gap-1 text-sm text-gray-400 transition hover:text-gray-600">
                   <RotateCcw className="h-3.5 w-3.5" />
                   초기화
                 </button>
@@ -387,17 +387,17 @@ export default function CircleListPage() {
                   overall: {
                     title: "5축 전체 매칭",
                     desc: "나의 에너지 프로필 5가지 항목을 모두 반영해 가장 잘 맞는 모임을 추천합니다.",
-                    tags: ["사교 부담도", "교류 방식", "활동 강도", "참여 헌신도", "구조 선호도"],
+                    tags: ["사교 범위", "몰입도", "움직임", "참여 빈도", "구조감"],
                   },
                   social: {
                     title: "사교 성향 매칭",
-                    desc: "사람과의 교류 방식과 사교 부담도를 기준으로 비슷한 성향의 모임을 추천합니다.",
-                    tags: ["사교 부담도", "교류 방식"],
+                    desc: "사람과의 교류 방식과 교류의 강도 혹은 깊이를 기준으로 비슷한 성향의 모임을 추천합니다.",
+                    tags: ["사교 범위", "몰입도"],
                   },
                   activity: {
                     title: "활동 스타일 매칭",
-                    desc: "활동 강도, 참여 헌신도, 구조 선호도를 기준으로 나의 활동 스타일에 맞는 모임을 추천합니다.",
-                    tags: ["활동 강도", "참여 헌신도", "구조 선호도"],
+                    desc: "활동 강도, 참여 빈도, 구조 선호도를 기준으로 나의 활동 스타일에 맞는 모임을 추천합니다.",
+                    tags: ["움직임", "참여 빈도", "구조감"],
                   },
                 };
                 const criteria = REC_CRITERIA[recommendFilter as "overall" | "social" | "activity"];
@@ -418,9 +418,7 @@ export default function CircleListPage() {
                       <Sparkles style={{ width: 15, height: 15, color: "#5f8f7b", flexShrink: 0 }} />
                       <span style={{ fontSize: 14, fontWeight: 700, color: "#3d5f52" }}>{criteria.title}</span>
                       {recItems.length > 0 && (
-                        <span style={{ marginLeft: "auto", fontSize: 13, color: "#5f8f7b", fontWeight: 600 }}>
-                          {recItems.length}개 모임
-                        </span>
+                        <span style={{ marginLeft: "auto", fontSize: 13, color: "#5f8f7b", fontWeight: 600 }}>{recItems.length}개 모임</span>
                       )}
                     </div>
                     <p style={{ margin: 0, fontSize: 12, color: "#4e7c69", lineHeight: 1.6 }}>{criteria.desc}</p>
@@ -514,15 +512,19 @@ export default function CircleListPage() {
                               position: "absolute",
                               bottom: 8,
                               right: 10,
-                              padding: "2px 7px",
+                              padding: "3px 8px",
                               borderRadius: 999,
-                              backgroundColor: "rgba(95,143,123,0.9)",
+                              backgroundColor: "rgba(255,255,255,0.92)",
                               fontSize: 11,
-                              fontWeight: 700,
-                              color: "white",
+                              fontWeight: 600,
+                              color: "#d97706",
+                              textAlign: "center",
                             }}
                           >
-                            {Math.round(c.similarity * 100)}% 일치
+                            <span style={{ letterSpacing: 1 }}>
+                              {"★".repeat((c as any).starRating ?? 1)}
+                              {"☆".repeat(3 - ((c as any).starRating ?? 1))}
+                            </span>
                           </div>
                         </div>
                         <div style={{ padding: "12px 14px 16px", display: "flex", flexDirection: "column", flex: 1 }}>
@@ -730,9 +732,7 @@ export default function CircleListPage() {
               <div ref={sentinelRef} className="h-10" />
 
               {/* 로딩 인디케이터 */}
-              {loading && (
-                <p style={{ textAlign: "center", color: "#aaa", padding: "20px 0", fontSize: 13 }}>불러오는 중...</p>
-              )}
+              {loading && <p style={{ textAlign: "center", color: "#aaa", padding: "20px 0", fontSize: 13 }}>불러오는 중...</p>}
 
               {/* 더 이상 없을 때 */}
               {!loading && !hasMore && circles.length > 0 && (

@@ -1,13 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
-import {
-  Bell,
-  MessageCircle,
-  LayoutGrid,
-  Users,
-  User,
-  Settings,
-  LogOut,
-} from "lucide-react";
+import { Bell, MessageCircle, LayoutGrid, Users, User, Settings, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
@@ -15,9 +7,7 @@ import type { Notification } from "../../types/notification";
 import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
 import { toAssetUrl } from "../utils/assetUrl";
 import { useAlarmSocket } from "../../chat/hooks/useAlarmSocket";
-import DropdownMenu, {
-  type DropdownMenuItem,
-} from "../components/DropdownMenu";
+import DropdownMenu, { type DropdownMenuItem } from "../components/DropdownMenu";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -47,10 +37,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(e.target as Node)
-      ) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
       }
     };
@@ -125,9 +112,7 @@ export default function Navbar() {
       notificationApi
         .getAll()
         .then((list) => {
-          setUnreadChatCount(
-            list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length,
-          );
+          setUnreadChatCount(list.filter((n) => n.type === "CHAT_MESSAGE" && !n.isRead).length);
           setActivityNoti(list.filter((n) => n.type !== "CHAT_MESSAGE"));
         })
         .catch(() => {});
@@ -139,10 +124,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
-      if (
-        activityNotiRef.current &&
-        !activityNotiRef.current.contains(e.target as Node)
-      ) {
+      if (activityNotiRef.current && !activityNotiRef.current.contains(e.target as Node)) {
         setShowActivityNoti(false);
       }
     };
@@ -153,9 +135,7 @@ export default function Navbar() {
   const handleActivityNotiClick = async (n: Notification) => {
     if (!n.isRead) {
       await notificationApi.readOne(n.id);
-      setActivityNoti((p) =>
-        p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)),
-      );
+      setActivityNoti((p) => p.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
     }
     setShowActivityNoti(false);
     const id = n.referenceId;
@@ -194,9 +174,7 @@ export default function Navbar() {
     REPLY_LIKE: "👍",
   };
 
-  const energyPath = isLoggedIn
-    ? "/users/energy-test/result"
-    : "/users/energy-test";
+  const energyPath = isLoggedIn ? "/users/energy-test/result" : "/users/energy-test";
 
   const navItems = [
     { label: "에너지 테스트", href: energyPath },
@@ -207,8 +185,7 @@ export default function Navbar() {
   ];
 
   const isNavActive = (label: string, href: string) => {
-    if (label === "에너지 테스트")
-      return location.pathname.startsWith("/users/energy-test");
+    if (label === "에너지 테스트") return location.pathname.startsWith("/users/energy-test");
     if (label === "모임") return location.pathname.startsWith("/circle");
     if (label === "플레이스") return location.pathname.startsWith("/place");
     if (label === "커뮤니티") return location.pathname.startsWith("/board");
@@ -297,12 +274,7 @@ export default function Navbar() {
                     <Link
                       to={item.href}
                       onClick={(e) => {
-                        if (dropdownItems[item.label]?.length) {
-                          e.preventDefault();
-                          setOpenDropdown((prev) =>
-                            prev === item.label ? null : item.label,
-                          );
-                        } else if (location.pathname === item.href) {
+                        if (location.pathname === item.href) {
                           e.preventDefault();
                           navigate(0);
                         }
@@ -310,20 +282,14 @@ export default function Navbar() {
                       style={{
                         fontSize: 15,
                         fontWeight: isActive ? 700 : 500,
-                        color: isActive
-                          ? "#5F8F7B"
-                          : isHovered
-                            ? "#1F2937"
-                            : "#666",
+                        color: isActive ? "#5F8F7B" : isHovered ? "#1F2937" : "#666",
                         textDecoration: "none",
                         display: "inline-flex",
                         alignItems: "center",
                         justifyContent: "center",
                         height: 68,
                         padding: "0 14px",
-                        borderBottom: isActive
-                          ? "2.5px solid #5F8F7B"
-                          : "2.5px solid transparent",
+                        borderBottom: isActive ? "2.5px solid #5F8F7B" : "2.5px solid transparent",
                         background: "transparent",
                         whiteSpace: "nowrap",
                         transition: "color 0.15s, border-color 0.15s",
@@ -332,10 +298,9 @@ export default function Navbar() {
                     >
                       {item.label}
                     </Link>
-                    {(isHovered || openDropdown === item.label) &&
-                      dropdownItems[item.label]?.length && (
-                        <DropdownMenu items={dropdownItems[item.label]} />
-                      )}
+                    {(isHovered || openDropdown === item.label) && dropdownItems[item.label]?.length && (
+                      <DropdownMenu items={dropdownItems[item.label]} top="90%" />
+                    )}
                   </div>
                 );
               })}
@@ -355,14 +320,8 @@ export default function Navbar() {
               <div style={{ width: 78 }}>
                 <button
                   onClick={() => {
-                    const current =
-                      window.location.pathname + window.location.search;
-                    const noRedirect = [
-                      "/users/login",
-                      "/users/signup",
-                      "/users/onboarding",
-                      "/",
-                    ];
+                    const current = window.location.pathname + window.location.search;
+                    const noRedirect = ["/users/login", "/users/signup", "/users/onboarding", "/"];
                     if (!noRedirect.some((p) => current.startsWith(p))) {
                       sessionStorage.setItem("postLoginRedirect", current);
                     }
@@ -386,21 +345,15 @@ export default function Navbar() {
             )}
 
             {isLoggedIn && (
-              <div
-                ref={activityNotiRef}
-                style={{ position: "relative", marginRight: 16 }}
-              >
+              <div ref={activityNotiRef} style={{ position: "relative", marginRight: 16 }}>
                 <button
                   onClick={() => {
                     if (!showActivityNoti) {
                       setShowActivityNoti(true);
-                      if (unreadActivityCount > 0)
-                        notificationApi.readAll().catch(() => {});
+                      if (unreadActivityCount > 0) notificationApi.readAll().catch(() => {});
                     } else {
                       setShowActivityNoti(false);
-                      setActivityNoti((p) =>
-                        p.map((n) => ({ ...n, isRead: true })),
-                      );
+                      setActivityNoti((p) => p.map((n) => ({ ...n, isRead: true })));
                     }
                   }}
                   title="활동 알림"
@@ -500,22 +453,12 @@ export default function Navbar() {
                               cursor: "pointer",
                               background: n.isRead ? "#fff" : "#EAF4F0",
                               borderBottom: "1px solid #F3F4F6",
-                              borderLeft: n.isRead
-                                ? "3px solid transparent"
-                                : "3px solid #5F8F7B",
+                              borderLeft: n.isRead ? "3px solid transparent" : "3px solid #5F8F7B",
                             }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.background = "#F9FAFB")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.background = n.isRead
-                                ? "#fff"
-                                : "#EAF4F0")
-                            }
+                            onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = n.isRead ? "#fff" : "#EAF4F0")}
                           >
-                            <span style={{ fontSize: 18, flexShrink: 0 }}>
-                              {ACTIVITY_NOTI_ICONS[n.type] ?? "🔔"}
-                            </span>
+                            <span style={{ fontSize: 18, flexShrink: 0 }}>{ACTIVITY_NOTI_ICONS[n.type] ?? "🔔"}</span>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <p
                                 style={{
@@ -692,13 +635,7 @@ export default function Navbar() {
                       </span>
                     </button>
                   </div>
-                  {profileOpen && (
-                    <DropdownMenu
-                      items={profileDropdownItems}
-                      align="right"
-                      minWidth={150}
-                    />
-                  )}
+                  {profileOpen && <DropdownMenu items={profileDropdownItems} align="right" minWidth={150} />}
                 </div>
               ) : (
                 <button
@@ -722,12 +659,7 @@ export default function Navbar() {
           </div>
         </div>
       </header>
-      {isLoggedIn && (
-        <FloatingChatWindow
-          open={chatOpen}
-          onClose={() => setChatOpen(false)}
-        />
-      )}
+      {isLoggedIn && <FloatingChatWindow open={chatOpen} onClose={() => setChatOpen(false)} />}
     </>
   );
 }
