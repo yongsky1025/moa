@@ -110,34 +110,7 @@ export default function CommunityProfileCard({
               >
                 {user?.nickname}
               </p>
-              <p style={{ margin: "4px 0 0", fontSize: 12.7, color: "#5F8F7B", fontWeight: 700 }}>
-                레벨 1
-              </p>
             </div>
-          </div>
-
-          <div>
-            <div
-              style={{
-                width: "100%",
-                height: 8,
-                borderRadius: 999,
-                backgroundColor: "#eef2f5",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: "22%",
-                  height: "100%",
-                  borderRadius: 999,
-                  backgroundColor: "#5F8F7B",
-                }}
-              />
-            </div>
-            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6b7280", textAlign: "right" }}>
-              다음 레벨까지 11 남음
-            </p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
