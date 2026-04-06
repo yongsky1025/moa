@@ -16,8 +16,9 @@ import ErrorExamplePage from "../common/pages/ErrorExamplePage";
 import UnauthorizedPage from "../common/pages/UnauthorizedPage";
 import ForbiddenPage from "../common/pages/ForbiddenPage";
 import DeletedPostPage from "../common/pages/DeletedPostPage";
+import RouterErrorPage from "../common/pages/RouterErrorPage";
 
-const rootRouter = createBrowserRouter([
+const routes = [
   {
     path: "/",
     Component: LandingPage,
@@ -48,6 +49,13 @@ const rootRouter = createBrowserRouter([
   { path: "/place", children: placeRouter() },
   { path: "/chat", children: chatRouter() },
   { path: "*", Component: NotFoundPage },
-]);
+];
+
+const rootRouter = createBrowserRouter(
+  routes.map((route) => ({
+    ...route,
+    ErrorBoundary: RouterErrorPage,
+  })),
+);
 
 export default rootRouter;
