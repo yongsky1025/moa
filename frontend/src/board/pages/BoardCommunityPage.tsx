@@ -1395,6 +1395,12 @@ export default function BoardCommunityPage() {
   };
 
   const handleTopTabChange = (nextTab: CommunityTopTab) => {
+    if (nextTab === "activity" && topTab === "activity" && activityView !== "home") {
+      setActivityView("home");
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
       if (nextTab === "activity") {

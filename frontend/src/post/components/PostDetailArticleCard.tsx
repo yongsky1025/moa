@@ -159,7 +159,13 @@ export default function PostDetailArticleCard({
             )}
             <div className={`post-detail-author-block${hideTitle ? " no-title" : ""}`}>
               <span className="post-detail-author-avatar-wrap">
-                <UserAvatar name={post.authorName} size={40} ariaHidden initialMode="nickname" />
+                <UserAvatar
+                  name={post.authorName}
+                  size={40}
+                  ariaHidden
+                  variant="icon"
+                  backgroundColor="#5F8F7B"
+                />
               </span>
               <div className="post-detail-author-info">
                 <p className="post-detail-author-name">{post.authorName}</p>

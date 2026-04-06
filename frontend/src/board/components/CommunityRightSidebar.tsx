@@ -1,15 +1,17 @@
-import { useMemo, useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { Clock3, Eye, Flame, MessageSquare } from "lucide-react";
+import { circleBoardApi } from "../../api/circleBoardApi";
 import { postApi } from "../../post/api/postApi";
 import { postRoutes } from "../../post/routes/postRoutes";
-import type { CommunitySidebarPost } from "../../post/types/postTypes";
+import type { CommunitySidebarPost, PostResponse } from "../../post/types/postTypes";
 
-type SortMode = "recent" | "views" | "replies";
+type SortMode = "popular" | "recent" | "views" | "replies";
 
 interface SidebarPostItem {
   postId: number;
-  boardName: "자유" | "공지";
+  boardName: string;
   title: string;
   viewCount: number;
   replyCount: number;
@@ -17,24 +19,112 @@ interface SidebarPostItem {
   href: string;
 }
 
-export default function CommunityRightSidebar() {
-  const [mode, setMode] = useState<SortMode>("recent");
+interface CommunityRightSidebarProps {
+  scope?: "community" | "circle";
+  circleId?: number;
+}
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["communitySidebar", "all", mode, 12],
+const toScore = (post: { viewCount: number; replyCount: number }) =>
+  post.viewCount * 0.7 + post.replyCount * 1.3;
+
+const sortCirclePosts = (posts: PostResponse[], mode: SortMode) => {
+  const sorted = [...posts];
+  if (mode === "popular") {
+    sorted.sort((a, b) => toScore(b) - toScore(a));
+  } else if (mode === "views") {
+    sorted.sort((a, b) => b.viewCount - a.viewCount);
+  } else if (mode === "replies") {
+    sorted.sort((a, b) => b.replyCount - a.replyCount);
+  } else {
+    sorted.sort((a, b) => new Date(b.createDate).getTime() - new Date(a.createDate).getTime());
+  }
+  return sorted;
+};
+
+export default function CommunityRightSidebar({
+  scope = "community",
+  circleId,
+}: CommunityRightSidebarProps) {
+  const [mode, setMode] = useState<SortMode>("popular");
+  const modeLabel: Record<SortMode, string> = {
+    popular: "인기",
+    recent: "최신",
+    views: "조회수",
+    replies: "댓글수",
+  };
+  const modeIcon: Record<SortMode, ReactNode> = {
+    popular: <Flame size={14} color="#ef4444" />,
+    recent: <Clock3 size={14} color="#0ea5e9" />,
+    views: <Eye size={14} color="#6366f1" />,
+    replies: <MessageSquare size={14} color="#10b981" />,
+  };
+
+  const { data: items = [], isLoading } = useQuery<SidebarPostItem[]>({
+    queryKey: ["communitySidebar", scope, circleId ?? "none", mode, 12],
     queryFn: async () => {
+      if (scope === "circle") {
+        if (!circleId || Number.isNaN(circleId)) {
+          return [];
+        }
+        const [postsRes, boardsRes] = await Promise.all([
+          circleBoardApi.getAllPosts(circleId),
+          circleBoardApi.getBoards(circleId),
+        ]);
+        const activityBoardIds = new Set(
+          boardsRes.data
+            .filter((board) => board.circleBoardKind === "ACTIVITY")
+            .map((board) => board.boardId),
+        );
+        const boardNameById = new Map(
+          boardsRes.data.map((board) => [board.boardId, board.name]),
+        );
+        return sortCirclePosts(postsRes.data, mode)
+          .filter((post) => !activityBoardIds.has(post.boardId))
+          .slice(0, 12)
+          .map((post) => ({
+            postId: post.postId,
+            boardName: boardNameById.get(post.boardId) ?? "게시판",
+            title: post.title,
+            viewCount: post.viewCount,
+            replyCount: post.replyCount,
+            createDate: post.createDate,
+            href: `/circle/${circleId}/board/${post.boardId}/posts/${post.postId}`,
+          }));
+      }
+
+      if (mode === "popular") {
+        const response = await postApi.getCommunitySidebarPosts({
+          board: "all",
+          sort: "recent",
+          limit: 100,
+        });
+        return [...response.data]
+          .sort((a, b) => {
+            const aScore = a.viewCount * 0.7 + a.replyCount * 1.3;
+            const bScore = b.viewCount * 0.7 + b.replyCount * 1.3;
+            return bScore - aScore;
+          })
+          .slice(0, 12)
+          .map((post: CommunitySidebarPost) => ({
+            postId: post.postId,
+            boardName: post.boardType === "NOTICE" ? "공지" : "자유",
+            title: post.title,
+            viewCount: post.viewCount,
+            replyCount: post.replyCount,
+            createDate: post.createDate,
+            href:
+              post.boardType === "NOTICE"
+                ? postRoutes.noticeDetail(post.postId)
+                : postRoutes.freeDetail(post.postId),
+          }));
+      }
+
       const response = await postApi.getCommunitySidebarPosts({
         board: "all",
         sort: mode,
         limit: 12,
       });
-      return response.data;
-    },
-  });
-
-  const items = useMemo<SidebarPostItem[]>(
-    () =>
-      (data ?? []).map((post: CommunitySidebarPost) => ({
+      return response.data.map((post: CommunitySidebarPost) => ({
         postId: post.postId,
         boardName: post.boardType === "NOTICE" ? "공지" : "자유",
         title: post.title,
@@ -45,19 +135,22 @@ export default function CommunityRightSidebar() {
           post.boardType === "NOTICE"
             ? postRoutes.noticeDetail(post.postId)
             : postRoutes.freeDetail(post.postId),
-      })),
-    [data],
-  );
+      }));
+    },
+  });
 
   const toggleButtonStyle = (active: boolean) => ({
     border: active ? "1px solid #2dd4bf" : "1px solid #d1d5db",
     backgroundColor: active ? "#e6fffb" : "#fff",
     color: active ? "#0f766e" : "#374151",
-    borderRadius: 999,
-    fontSize: 12,
+    borderRadius: 8,
+    fontSize: 11,
     fontWeight: 700,
-    padding: "6px 10px",
+    padding: "6px 4px",
     cursor: "pointer",
+    whiteSpace: "nowrap" as const,
+    width: "100%",
+    textAlign: "center" as const,
   });
 
   return (
@@ -72,22 +165,34 @@ export default function CommunityRightSidebar() {
           gap: 8,
         }}
       >
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#111827" }}>
-            최근 게시글
-          </p>
-          <span style={{ fontSize: 11, color: "#6b7280" }}>커뮤니티 기준</span>
+        <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <strong
+            style={{
+              fontSize: 13,
+              color: "#111827",
+              fontWeight: 800,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            {modeIcon[mode]}
+            {modeLabel[mode]}
+          </strong>
         </div>
 
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }}>
+          <button type="button" onClick={() => setMode("popular")} style={toggleButtonStyle(mode === "popular")}>
+            인기
+          </button>
           <button type="button" onClick={() => setMode("recent")} style={toggleButtonStyle(mode === "recent")}>
-            최근
+            최신
           </button>
           <button type="button" onClick={() => setMode("views")} style={toggleButtonStyle(mode === "views")}>
-            최다 조회
+            조회수
           </button>
           <button type="button" onClick={() => setMode("replies")} style={toggleButtonStyle(mode === "replies")}>
-            최다 댓글
+            댓글수
           </button>
         </div>
 
@@ -117,9 +222,9 @@ export default function CommunityRightSidebar() {
                 overflow: "hidden",
                 textOverflow: "ellipsis",
               }}
-              title={`${item.boardName} . ${item.title}`}
+              title={`${item.boardName} · ${item.title}`}
             >
-              {item.boardName} . {item.title}
+              {item.boardName} · {item.title}
             </Link>
           ))}
       </section>

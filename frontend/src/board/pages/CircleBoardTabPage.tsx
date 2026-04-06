@@ -1001,7 +1001,7 @@ export default function CircleBoardTabPage() {
               )}
             </section>
 
-            <CommunityRightSidebar />
+            <CommunityRightSidebar scope="circle" circleId={cid} />
           </section>
         </>
       </main>

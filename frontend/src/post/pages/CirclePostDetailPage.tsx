@@ -542,7 +542,7 @@ export default function CirclePostDetailPage() {
             )}
           </section>
 
-          <CommunityRightSidebar />
+          <CommunityRightSidebar scope="circle" circleId={cid} />
         </section>
       </main>
       <Footer />

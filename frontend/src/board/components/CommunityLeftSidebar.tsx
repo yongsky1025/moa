@@ -32,6 +32,11 @@ interface CommunityLeftSidebarProps {
   showEditModeToggle?: boolean;
   editModeActive?: boolean;
   onToggleEditMode?: () => void;
+  profileCounts?: {
+    myPosts: number;
+    myReplies: number;
+    scrap: number;
+  };
 }
 
 export default function CommunityLeftSidebar({
@@ -53,6 +58,7 @@ export default function CommunityLeftSidebar({
   showEditModeToggle = false,
   editModeActive = false,
   onToggleEditMode,
+  profileCounts,
 }: CommunityLeftSidebarProps) {
   const { user } = useAuthStore();
   const isAdmin = user?.userRole === "ADMIN";
@@ -95,6 +101,7 @@ export default function CommunityLeftSidebar({
         selectedView={selectedView}
         onSelectView={selectViewAndScrollTop}
         writeHref={writeHref}
+        counts={profileCounts}
         replaceWithPending={editModeActive && !!pendingPanel}
         pendingContent={pendingPanel}
         bottomAction={

@@ -442,16 +442,23 @@ export default function UserProfilePage() {
         {/* 나의 글 */}
         <div style={s.sectionTitle}>나의 글</div>
         <SectionCard>
-          <button className="mp-row mp-row-list" style={s.row}>
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/board?view=myPosts")}>
             <PenLine size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>내가 쓴 게시글</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
-          <button className="mp-row mp-row-list" style={s.row}>
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/board?view=myReplies")}>
             <MessageSquare size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>내가 쓴 댓글</span>
+            <span style={s.rowCount}>0</span>
+            <ChevronRight size={18} color="#c0c0c0" />
+          </button>
+          <RowDivider />
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/board?view=scrap")}>
+            <Bookmark size={18} color="#5F8F7B" />
+            <span style={s.rowLabel}>찜한 글</span>
             <span style={s.rowCount}>0</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>

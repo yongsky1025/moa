@@ -1,13 +1,13 @@
 import {
   Eye,
   Heart,
-  UserRound,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { RemoveScroll } from "react-remove-scroll";
 import type { PostResponse } from "../types/postTypes";
 import CommentBubbleIcon from "../../common/components/CommentBubbleIcon";
+import UserAvatar from "../../common/components/UserAvatar";
 import { toAssetUrl } from "../../common/utils/assetUrl";
 
 interface CommunityActivityFeedCardProps {
@@ -124,9 +124,14 @@ export default function CommunityActivityFeedCard({
             </div>
             <div className="community-twitter-author-block">
               <span className="community-twitter-author-avatar-wrap">
-                <span className="community-twitter-avatar" style={{ backgroundColor: '#5F8F7B', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <UserRound size={18} color="#fff" />
-                </span>
+                <UserAvatar
+                  name={post.authorName}
+                  size={40}
+                  ariaHidden
+                  className="community-twitter-avatar"
+                  variant="icon"
+                  backgroundColor="#5F8F7B"
+                />
               </span>
               <div className="community-twitter-author-info">
                 <span className="community-twitter-author">{post.authorName}</span>
