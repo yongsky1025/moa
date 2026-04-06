@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { Clock3, Eye, Flame, MessageSquare } from "lucide-react";
 import { postApi } from "../../post/api/postApi";
 import { postRoutes } from "../../post/routes/postRoutes";
 import type { CommunitySidebarPost } from "../../post/types/postTypes";
 
-type SortMode = "recent" | "views" | "replies";
+type SortMode = "popular" | "recent" | "views" | "replies";
 
 interface SidebarPostItem {
   postId: number;
@@ -18,11 +19,38 @@ interface SidebarPostItem {
 }
 
 export default function CommunityRightSidebar() {
-  const [mode, setMode] = useState<SortMode>("recent");
+  const [mode, setMode] = useState<SortMode>("popular");
+  const modeLabel: Record<SortMode, string> = {
+    popular: "인기",
+    recent: "최신",
+    views: "조회수",
+    replies: "댓글수",
+  };
+  const modeIcon: Record<SortMode, React.ReactNode> = {
+    popular: <Flame size={14} color="#ef4444" />,
+    recent: <Clock3 size={14} color="#0ea5e9" />,
+    views: <Eye size={14} color="#6366f1" />,
+    replies: <MessageSquare size={14} color="#10b981" />,
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["communitySidebar", "all", mode, 12],
     queryFn: async () => {
+      if (mode === "popular") {
+        const response = await postApi.getCommunitySidebarPosts({
+          board: "all",
+          sort: "recent",
+          limit: 100,
+        });
+        return [...response.data]
+          .sort((a, b) => {
+            const aScore = a.viewCount * 0.7 + a.replyCount * 1.3;
+            const bScore = b.viewCount * 0.7 + b.replyCount * 1.3;
+            return bScore - aScore;
+          })
+          .slice(0, 12);
+      }
+
       const response = await postApi.getCommunitySidebarPosts({
         board: "all",
         sort: mode,
@@ -53,11 +81,14 @@ export default function CommunityRightSidebar() {
     border: active ? "1px solid #2dd4bf" : "1px solid #d1d5db",
     backgroundColor: active ? "#e6fffb" : "#fff",
     color: active ? "#0f766e" : "#374151",
-    borderRadius: 999,
-    fontSize: 12,
+    borderRadius: 8,
+    fontSize: 11,
     fontWeight: 700,
-    padding: "6px 10px",
+    padding: "6px 4px",
     cursor: "pointer",
+    whiteSpace: "nowrap" as const,
+    width: "100%",
+    textAlign: "center" as const,
   });
 
   return (
@@ -72,22 +103,34 @@ export default function CommunityRightSidebar() {
           gap: 8,
         }}
       >
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#111827" }}>
-            최근 게시글
-          </p>
-          <span style={{ fontSize: 11, color: "#6b7280" }}>커뮤니티 기준</span>
+        <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <strong
+            style={{
+              fontSize: 13,
+              color: "#111827",
+              fontWeight: 800,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            {modeIcon[mode]}
+            {modeLabel[mode]}
+          </strong>
         </div>
 
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }}>
+          <button type="button" onClick={() => setMode("popular")} style={toggleButtonStyle(mode === "popular")}>
+            인기
+          </button>
           <button type="button" onClick={() => setMode("recent")} style={toggleButtonStyle(mode === "recent")}>
-            최근
+            최신
           </button>
           <button type="button" onClick={() => setMode("views")} style={toggleButtonStyle(mode === "views")}>
-            최다 조회
+            조회수
           </button>
           <button type="button" onClick={() => setMode("replies")} style={toggleButtonStyle(mode === "replies")}>
-            최다 댓글
+            댓글수
           </button>
         </div>
 
