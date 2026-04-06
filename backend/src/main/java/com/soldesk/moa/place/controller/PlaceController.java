@@ -9,6 +9,7 @@ import com.soldesk.moa.place.dto.PlaceListResponseDTO;
 import com.soldesk.moa.place.dto.PlaceRecommendResponseDTO;
 import com.soldesk.moa.place.dto.PlaceReviewDetailDTO;
 import com.soldesk.moa.place.dto.PlaceSearchDTO;
+import com.soldesk.moa.place.dto.PopularPlaceResponseDTO;
 import com.soldesk.moa.place.service.PlaceImageService;
 import com.soldesk.moa.place.service.PlaceRecommendService;
 import com.soldesk.moa.place.service.PlaceReviewService;
@@ -46,6 +47,12 @@ public class PlaceController {
     private final PlaceImageService placeImageService;
     private final PlaceRecommendService placeRecommendService;
     private final PlaceReviewService placeReviewService;
+
+    // 메인 페이지 인기 장소 top5 (최근 30일 기준, 비로그인 포함 공개)
+    @GetMapping("/popular")
+    public List<PopularPlaceResponseDTO> getPopularPlaces() {
+        return placeService.getPopularPlaces();
+    }
 
     @GetMapping("/{id}")
     public PlaceDetailResponseDTO getOnePlace(

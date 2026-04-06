@@ -28,6 +28,15 @@ export interface PlaceRecommendResponse {
   representativeImagePath: string | null;
 }
 
+export interface PopularPlaceItem {
+  placeId: number;
+  name: string;
+  city: string;
+  averageRating: number;
+  imageUrl: string | null;
+  tags: string[];
+}
+
 export const placeApi = {
   getTagsGrouped: () =>
     api.get<TagCategoryGroup[]>('/api/tags/grouped'),
@@ -43,4 +52,12 @@ export const placeApi = {
     api.get<PlaceRecommendResponse[]>('/api/places/recommend', {
       params: { title, description, tags, lat, lng, topN },
     }),
+
+  getPopularPlaces: () =>
+    api.get<PopularPlaceItem[]>('/api/places/popular'),
+
+  togglePlaceLike: (placeId: number) =>
+    api.post<{ targetType: string; targetId: number; liked: boolean; likeCount: number }>(
+      `/api/likes/places/PLACE/${placeId}`,
+    ),
 };
