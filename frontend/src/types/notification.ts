@@ -7,7 +7,9 @@ export type NotificationType =
   | "CIRCLE_DISBANDED"
   | "REPLY"
   | "CHILD_REPLY"
-  | "POST_LIKE";
+  | "POST_LIKE"
+  | "REPLY_LIKE"
+  | "REPORT_SUBMITTED";
 
 export interface Notification {
   id: number;

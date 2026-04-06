@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { UserRound } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import Navbar from '../../common/layout/Navbar';
 import Footer from '../../common/layout/Footer';
@@ -35,7 +36,7 @@ export default function CircleMembersPage() {
 
   const { startDirectChat, directChatError, clearDirectChatError } = useDirectChat();
 
-  const nickColor = (nickname: string) => `hsl(${[...nickname].reduce((a, c) => a + c.charCodeAt(0), 0) % 360}, 55%, 55%)`;
+  const AVATAR_COLOR = "#5F8F7B";
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7f7f8' }}>
@@ -48,9 +49,9 @@ export default function CircleMembersPage() {
             style={{ background: '#fff', borderRadius: 20, width: 300, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ background: nickColor(profileModal.nickname), height: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-              <div style={{ width: 72, height: 72, borderRadius: '50%', background: nickColor(profileModal.nickname), border: '4px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: '#fff', marginBottom: -36 }}>
-                {profileModal.nickname.charAt(0)}
+            <div style={{ background: AVATAR_COLOR, height: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              <div style={{ width: 72, height: 72, borderRadius: '50%', background: AVATAR_COLOR, border: '4px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: -36 }}>
+                <UserRound size={36} color="#fff" />
               </div>
             </div>
             <div style={{ paddingTop: 44, paddingBottom: 24, textAlign: 'center' }}>
@@ -116,12 +117,11 @@ export default function CircleMembersPage() {
                       onClick={() => { if (m.nickname !== user?.nickname) setProfileModal(m); }}
                       style={{
                         width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                        background: nickColor(m.nickname),
+                        background: AVATAR_COLOR,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: m.nickname !== user?.nickname ? 'pointer' : 'default',
-                        fontSize: 16, fontWeight: 700, color: '#fff',
                       }}>
-                      {m.nickname.charAt(0)}
+                      <UserRound size={20} color="#fff" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

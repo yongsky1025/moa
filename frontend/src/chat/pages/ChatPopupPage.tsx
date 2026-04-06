@@ -11,9 +11,7 @@ import type { Notification } from "../../types/notification";
 type RoomMember = { userId: number; nickname: string; circleMemberId?: number; role?: string; isLeader?: boolean };
 import EmojiPicker from "../components/EmojiPicker";
 
-const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
-const avatarColor = (id: number) => AVATAR_COLORS[id % AVATAR_COLORS.length];
-const nickColor = (nick: string) => AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
+const AVATAR_COLOR = "#5F8F7B";
 
 
 const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp)$/i;
@@ -929,7 +927,7 @@ export default function ChatPopupPage() {
           >
             <div
               style={{
-                background: nickColor(profileModal.nickname),
+                background: AVATAR_COLOR,
                 height: 90,
                 display: "flex",
                 alignItems: "flex-end",
@@ -941,18 +939,15 @@ export default function ChatPopupPage() {
                   width: 68,
                   height: 68,
                   borderRadius: "50%",
-                  background: nickColor(profileModal.nickname),
+                  background: AVATAR_COLOR,
                   border: "4px solid #fff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 26,
-                  fontWeight: 700,
-                  color: "#fff",
                   marginBottom: -34,
                 }}
               >
-                {profileModal.nickname.charAt(0)}
+                <UserRound size={34} color="#fff" />
               </div>
             </div>
             <div style={{ paddingTop: 42, paddingBottom: 20, textAlign: "center" }}>
@@ -1050,7 +1045,7 @@ export default function ChatPopupPage() {
                       setProfileModal({ nickname: m.nickname, senderId: m.userId });
                     }}
                   >
-                    <div style={{ ...s.memberAvatar, background: avatarColor(m.userId) }}>{m.nickname.charAt(0)}</div>
+                    <div style={{ ...s.memberAvatar, background: AVATAR_COLOR, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><UserRound size={15} color="#fff" /></div>
                     <span style={s.memberNick}>{m.nickname}</span>
                     {(m.role === "LEADER" || m.isLeader) && <span style={s.leaderTag}>방장</span>}
                   </div>
@@ -1101,8 +1096,16 @@ export default function ChatPopupPage() {
                   : (searchQuery.trim() ? messages.filter(m => !m.isDeleted && m.messageType !== 'SYSTEM' && m.content.toLowerCase().includes(searchQuery.toLowerCase())) : messages).map((msg) => {
                     const mine = msg.senderId === userId;
                     return (
-                      <div key={msg.messageId} {...(firstUnreadMsgIdRef.current === msg.messageId ? { 'data-first-unread': 'true' } : {})} style={{ ...s.msgRow, flexDirection: mine ? 'row-reverse' : 'row' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '65%', minWidth: 0 }}>
+                      <div key={msg.messageId} {...(firstUnreadMsgIdRef.current === msg.messageId ? { 'data-first-unread': 'true' } : {})} style={{ ...s.msgRow, flexDirection: mine ? 'row-reverse' : 'row', alignItems: 'flex-start' }}>
+                        {!mine && (
+                          <div
+                            onClick={(e) => { e.stopPropagation(); setProfileModal({ nickname: msg.senderNickname ?? `사용자 #${msg.senderId}`, senderId: msg.senderId }); }}
+                            style={{ width: 32, height: 32, borderRadius: '50%', background: AVATAR_COLOR, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer', alignSelf: 'flex-start' }}
+                          >
+                            <UserRound size={18} color="#fff" />
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', maxWidth: '60%', minWidth: 0 }}>
                           {!mine && <span style={s.senderName}>{msg.senderNickname ?? `사용자 #${msg.senderId}`}</span>}
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, flexDirection: mine ? 'row-reverse' : 'row' }}>
                             {editingMsgId === msg.messageId ? (

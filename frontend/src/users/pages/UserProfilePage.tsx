@@ -28,10 +28,8 @@ import {
   Bookmark,
   LogOut,
   CalendarDays,
+  UserRound,
 } from "lucide-react";
-
-const AVATAR_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#457B9D", "#6D6875", "#E9C46A", "#264653"];
-const nickColor = (nick: string) => AVATAR_COLORS[(nick?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
 
 const CSS = `
   .mp-row { transition: background 0.15s, border-color 0.15s; border-radius: 10px; border: 1px solid transparent; }
@@ -209,7 +207,6 @@ export default function UserProfilePage() {
     );
   }
 
-  const avatarBg = nickColor(profile.nickname);
 
   return (
     <div style={s.page}>
@@ -282,7 +279,7 @@ export default function UserProfilePage() {
               {profile.profileImageUrl ? (
                 <img src={profile.profileImageUrl} alt="프로필" style={s.avatarImg} />
               ) : (
-                <div style={{ ...s.avatar, background: avatarBg }}>{profile.nickname.charAt(0)}</div>
+                <div style={{ ...s.avatar, background: '#5F8F7B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><UserRound size={36} color="#fff" /></div>
               )}
               <div style={s.nameBlock}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

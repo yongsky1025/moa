@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
-import { Bell, MessageCircle, LayoutGrid, Users, User, Settings, LogOut } from "lucide-react";
+import { Bell, MessageCircle, LayoutGrid, Users, User, Settings, LogOut, UserRound } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
@@ -623,7 +623,7 @@ export default function Navbar() {
                             }}
                           />
                         ) : (
-                          (user?.nickname?.[0]?.toUpperCase() ?? "U")
+                          <UserRound size={18} color="#fff" />
                         )}
                       </div>
                       <span
