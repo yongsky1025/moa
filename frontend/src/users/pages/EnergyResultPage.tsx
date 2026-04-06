@@ -69,7 +69,6 @@ export default function EnergyResultPage() {
   const [overallReason, setOverallReason] = useState<string | null>(null);
   const [recLoading, setRecLoading] = useState(false);
 
-
   const guestToken = localStorage.getItem("guestEnergyToken");
   const isGuestPreview = !isLoggedIn && !!guestToken;
 
@@ -186,7 +185,7 @@ export default function EnergyResultPage() {
           }}
         >
           <ChevronLeft size={18} />
-          이전 페이지로 돌아가기
+          이전
         </button>
         {loading && <p style={{ textAlign: "center", color: "#888", fontSize: 14 }}>불러오는 중...</p>}
 
@@ -316,8 +315,7 @@ export default function EnergyResultPage() {
                 <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
                   {radarData.map((d, i) => (
                     <span key={i} style={{ fontSize: 12, color: "#6B7280" }}>
-                      <span style={{ color: "#5F8F7B", fontWeight: 700 }}>{d.label.replace("\n", " ")}</span>
-                      {" "}{d.value}
+                      <span style={{ color: "#5F8F7B", fontWeight: 700 }}>{d.label.replace("\n", " ")}</span> {d.value}
                       {i < radarData.length - 1 && <span style={{ margin: "0 2px", color: "#D1D5DB" }}> · </span>}
                     </span>
                   ))}
@@ -426,7 +424,11 @@ export default function EnergyResultPage() {
                                 }}
                               >
                                 {item.coverImageUrl ? (
-                                  <img src={toAssetUrl(item.coverImageUrl)} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  <img
+                                    src={toAssetUrl(item.coverImageUrl)}
+                                    alt={item.name}
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  />
                                 ) : (
                                   <Users size={24} color="#999" strokeWidth={1.5} />
                                 )}
@@ -436,9 +438,12 @@ export default function EnergyResultPage() {
                               <span style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>
                                 {item.categoryName} · {item.currentMember}~{item.maxMember}명
                               </span>
-                              <div style={{ marginTop: "auto", padding: "4px 8px", backgroundColor: "#E1F5EE", borderRadius: 6, textAlign: "center" }}>
+                              <div
+                                style={{ marginTop: "auto", padding: "4px 8px", backgroundColor: "#E1F5EE", borderRadius: 6, textAlign: "center" }}
+                              >
                                 <span style={{ fontSize: 12, fontWeight: 600, color: "#0F6E56", letterSpacing: 1 }}>
-                                  {"★".repeat(item.starRating)}{"☆".repeat(3 - item.starRating)}
+                                  {"★".repeat(item.starRating)}
+                                  {"☆".repeat(3 - item.starRating)}
                                 </span>
                                 <p style={{ fontSize: 10, fontWeight: 500, color: "#085041", margin: "2px 0 0", lineHeight: 1.3 }}>
                                   {item.matchReason}

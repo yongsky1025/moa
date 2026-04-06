@@ -277,13 +277,12 @@ export default function Navbar() {
                     <Link
                       to={item.href}
                       onClick={(e) => {
-                        if (dropdownItems[item.label]?.length) {
-                          e.preventDefault();
-                          setOpenDropdown((prev) => (prev === item.label ? null : item.label));
-                        } else if (location.pathname === item.href) {
+                        if (location.pathname === item.href) {
                           e.preventDefault();
                           navigate(0);
                         }
+                        setOpenDropdown(null);
+                        setHoveredItem(null);
                       }}
                       style={{
                         fontSize: 15,
