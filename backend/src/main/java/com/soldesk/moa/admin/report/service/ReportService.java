@@ -41,6 +41,10 @@ import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.reply.entity.Reply;
 import com.soldesk.moa.reply.repository.ReplyRepository;
 import com.soldesk.moa.users.entity.Users;
+import com.soldesk.moa.users.entity.constant.UserRole;
+import com.soldesk.moa.users.repository.UsersRepository;
+import com.soldesk.moa.notification.domain.NotificationType;
+import com.soldesk.moa.notification.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -61,6 +65,8 @@ public class ReportService {
         private final ImageRepository imageRepository;
         private final ChatMessageRepository chatMessageRepository;
         private final ChatRoomRepository chatRoomRepository;
+        private final UsersRepository usersRepository;
+        private final NotificationService notificationService;
 
         // 신고접수
         public void submitReport(Long reporterId, ReportRequestDTO dto) {
@@ -98,6 +104,13 @@ public class ReportService {
                         imageRepository.updateStatusAndOwnerByUserAndPaths(reporterId, dto.imagePaths(),
                                         ImageStatus.TEMP, ImageStatus.USED, ImageDomain.REPORT, report.getId());
                 }
+
+                // 관리자 전원에게 실시간 알림 (비동기, 신고 저장 실패 여부와 무관하게 처리)
+                String notiMessage = reporter.getNickname() + "님이 신고를 접수했습니다.";
+                usersRepository.findAllByUserRole(UserRole.ADMIN).forEach(admin ->
+                        notificationService.sendAsync(admin.getUserId(), NotificationType.REPORT_SUBMITTED,
+                                notiMessage, report.getId())
+                );
         }
 
         // 신고리스트

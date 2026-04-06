@@ -15,9 +15,9 @@ type Menu = 'edit' | 'delete' | 'members' | 'schedules';
 
 const MENU_ITEMS: { key: Menu; label: string; icon: React.ReactNode }[] = [
   { key: 'edit',      label: '서클 수정',  icon: <Settings size={16} /> },
-  { key: 'delete',    label: '서클 삭제',  icon: <Trash2 size={16} /> },
   { key: 'members',   label: '멤버 관리',  icon: <Users size={16} /> },
   { key: 'schedules', label: '일정 관리',  icon: <Calendar size={16} /> },
+  { key: 'delete',    label: '서클 삭제',  icon: <Trash2 size={16} /> },
 ];
 
 export default function CircleManagePage() {
@@ -452,7 +452,7 @@ export default function CircleManagePage() {
                   <h2 style={{ ...panelTitleStyle, marginBottom: 0 }}>일정 관리</h2>
                   <button
                     onClick={() => navigate(`/circle/${cid}/schedules/create`)}
-                    style={{ padding: '8px 16px', borderRadius: 8, border: 'none', backgroundColor: '#111', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                    style={{ padding: '8px 16px', borderRadius: 8, border: 'none', backgroundColor: '#5F8F7B', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                   >
                     + 일정 만들기
                   </button>

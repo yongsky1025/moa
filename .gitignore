@@ -277,6 +277,8 @@ src/main/resources/application.properties
 # Uploaded files
 /uploads/**
 /backend/uploads/**
+/uploads-local/**
+/backend/uploads-local/**
 
 # Meilisearch local data
 data.ms/

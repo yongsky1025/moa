@@ -1,11 +1,10 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
-import { Bell, MessageCircle, LayoutGrid, Users, User, Settings, LogOut } from "lucide-react";
+import { Bell, MessageCircle, LayoutGrid, Users, User, Settings, LogOut, UserRound } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { notificationApi } from "../../api/notificationApi";
 import type { Notification } from "../../types/notification";
 import FloatingChatWindow from "../../chat/components/FloatingChatWindow";
-import { toAssetUrl } from "../utils/assetUrl";
 import { useAlarmSocket } from "../../chat/hooks/useAlarmSocket";
 import DropdownMenu, { type DropdownMenuItem } from "../components/DropdownMenu";
 
@@ -157,6 +156,9 @@ export default function Navbar() {
       case "REPLY_LIKE":
         navigate(id ? `/board/free/${id}` : "/board");
         break;
+      case "REPORT_SUBMITTED":
+        navigate(id ? `/admin/reports/${id}` : "/admin/reports");
+        break;
       default:
         navigate("/circle/my");
     }
@@ -172,6 +174,7 @@ export default function Navbar() {
     CHILD_REPLY: "↩️",
     POST_LIKE: "👍",
     REPLY_LIKE: "👍",
+    REPORT_SUBMITTED: "🚨",
   };
 
   const energyPath = isLoggedIn ? "/users/energy-test/result" : "/users/energy-test";
@@ -274,7 +277,10 @@ export default function Navbar() {
                     <Link
                       to={item.href}
                       onClick={(e) => {
-                        if (location.pathname === item.href) {
+                        if (dropdownItems[item.label]?.length) {
+                          e.preventDefault();
+                          setOpenDropdown((prev) => (prev === item.label ? null : item.label));
+                        } else if (location.pathname === item.href) {
                           e.preventDefault();
                           navigate(0);
                         }
@@ -516,9 +522,9 @@ export default function Navbar() {
                     if (next) setUnreadChatCount(0);
                   }}
                   title="채팅"
-                  style={utilityButtonStyle}
+                  style={{ ...utilityButtonStyle, border: "none", background: "transparent" }}
                 >
-                  <MessageCircle size={20} color="#999" strokeWidth={1.8} />
+                  <MessageCircle size={20} color="#374151" strokeWidth={1.8} />
                 </button>
                 {unreadChatCount > 0 && (
                   <span
@@ -605,7 +611,7 @@ export default function Navbar() {
                       >
                         {user?.profileImageUrl ? (
                           <img
-                            src={toAssetUrl(user.profileImageUrl)}
+                            src={user.profileImageUrl}
                             alt="프로필"
                             style={{
                               width: 32,
@@ -614,7 +620,7 @@ export default function Navbar() {
                             }}
                           />
                         ) : (
-                          (user?.nickname?.[0]?.toUpperCase() ?? "U")
+                          <UserRound size={18} color="#fff" />
                         )}
                       </div>
                       <span

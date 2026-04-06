@@ -27,6 +27,7 @@ import CommunityProfileCard, {
 } from "../../board/components/CommunityProfileCard";
 import CommunityRightSidebar from "../../board/components/CommunityRightSidebar";
 import CircleBoardSidebarMenu from "../../board/components/CircleBoardSidebarMenu";
+import { openReportForm } from "../../common/utils/openReportForm";
 import "../../reply/styles/replySection.css";
 import "../../board/pages/boardCommunity.css";
 import "../styles/postDetail.css";
@@ -441,14 +442,14 @@ export default function CirclePostDetailPage() {
                       canReport={isLoggedIn}
                       bookmarked={isBookmarked}
                       onToggleBookmark={toggleBookmark}
-                      onEdit={() =>
-                        navigate(`/circle/${cid}/board/${bid}/posts/${pid}/edit`, {
-                          state: { from: resolvedBackPath },
-                        })
-                      }
-                      onReport={() => window.alert("신고 기능은 준비 중입니다.")}
-                    />
-                  }
+                        onEdit={() =>
+                          navigate(`/circle/${cid}/board/${bid}/posts/${pid}/edit`, {
+                            state: { from: resolvedBackPath },
+                          })
+                        }
+                        onReport={() => openReportForm("POST", pid)}
+                      />
+                    }
                   actionSection={
                     <div className="post-detail-engagement">
                       <button

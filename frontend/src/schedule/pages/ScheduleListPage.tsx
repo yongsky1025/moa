@@ -76,7 +76,7 @@ export default function ScheduleListPage() {
           </div>
           <button
             onClick={() => navigate(`/circle/${cid}/schedules/create`)}
-            style={{ padding: '9px 18px', borderRadius: 8, border: 'none', backgroundColor: '#111', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            style={{ padding: '9px 18px', borderRadius: 8, border: 'none', backgroundColor: '#5F8F7B', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
           >
             + 일정 만들기
           </button>

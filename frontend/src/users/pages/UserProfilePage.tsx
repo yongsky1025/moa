@@ -28,6 +28,7 @@ import {
   Bookmark,
   LogOut,
   CalendarDays,
+  UserRound,
 } from "lucide-react";
 import { toAssetUrl } from "../../common/utils/assetUrl";
 
@@ -210,8 +211,6 @@ export default function UserProfilePage() {
     );
   }
 
-  const avatarBg = nickColor(profile.nickname);
-
   return (
     <div style={s.page}>
       <style>{CSS}</style>
@@ -283,7 +282,9 @@ export default function UserProfilePage() {
               {profile.profileImageUrl ? (
                 <img src={toAssetUrl(profile.profileImageUrl)} alt="프로필" style={s.avatarImg} />
               ) : (
-                <div style={{ ...s.avatar, background: avatarBg }}>{profile.nickname.charAt(0)}</div>
+                <div style={{ ...s.avatar, background: "#5F8F7B", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <UserRound size={36} color="#fff" />
+                </div>
               )}
               <div style={s.nameBlock}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -646,12 +647,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   statusBlock: { marginTop: 4 },
   statusText: { margin: 0, fontSize: 15, color: "#666", lineHeight: 1.6 },
-  statusPlaceholder: {
-    margin: 0,
-    fontSize: 15,
-    color: "#5F8F7B",
-    lineHeight: 1.6,
-  },
+  statusPlaceholder: { margin: 0, fontSize: 15, color: "#5F8F7B", lineHeight: 1.6 },
 
   /* ── 통계 카드 ── */
   statsCard: {
@@ -659,13 +655,7 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: "center",
     padding: "14px 12px 0",
   },
-  statBox: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 2,
-  },
+  statBox: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 },
   statNum: { fontSize: 36, fontWeight: 800, color: "#5F8F7B" },
   statLabel: { fontSize: 12, color: "#888", marginTop: "4px" },
   statDivider: { width: 1, height: 32, background: "#999" },
