@@ -156,6 +156,9 @@ export default function Navbar() {
       case "REPLY_LIKE":
         navigate(id ? `/board/free/${id}` : "/board");
         break;
+      case "REPORT_SUBMITTED":
+        navigate(id ? `/admin/reports/${id}` : "/admin/reports");
+        break;
       default:
         navigate("/circle/my");
     }
@@ -171,6 +174,7 @@ export default function Navbar() {
     CHILD_REPLY: "↩️",
     POST_LIKE: "👍",
     REPLY_LIKE: "👍",
+    REPORT_SUBMITTED: "🚨",
   };
 
   const energyPath = isLoggedIn ? "/users/energy-test/result" : "/users/energy-test";
@@ -521,9 +525,9 @@ export default function Navbar() {
                     if (next) setUnreadChatCount(0);
                   }}
                   title="채팅"
-                  style={utilityButtonStyle}
+                  style={{ ...utilityButtonStyle, border: "none", background: "transparent" }}
                 >
-                  <MessageCircle size={20} color="#999" strokeWidth={1.8} />
+                  <MessageCircle size={20} color="#374151" strokeWidth={1.8} />
                 </button>
                 {unreadChatCount > 0 && (
                   <span

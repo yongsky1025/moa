@@ -367,6 +367,12 @@ export default function FloatingChatWindow({ open, onClose }: Props) {
 
   const handleNewMessage = useCallback(
     (msg: ChatMessage) => {
+      setTypingUsers((prev) => {
+        if (!prev[msg.senderId]) return prev;
+        const next = { ...prev };
+        delete next[msg.senderId];
+        return next;
+      });
       if (msg.roomId === activeRoomId) {
         setMessages((prev) => {
           const tempIdx = prev.findIndex(

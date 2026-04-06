@@ -429,6 +429,12 @@ export default function ChatPopupPage() {
 
   const handleNewMessage = useCallback(
     (msg: ChatMessage) => {
+      setTypingUsers((prev) => {
+        if (!prev[msg.senderId]) return prev;
+        const next = { ...prev };
+        delete next[msg.senderId];
+        return next;
+      });
       if (msg.roomId === activeRoom?.roomId) {
         setMessages((prev) => {
           const tempIdx = prev.findIndex(
