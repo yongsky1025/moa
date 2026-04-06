@@ -4,7 +4,9 @@ import { profileApi, energyProfileApi, type UserProfile, type EnergyProfileRespo
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { useAuthStore } from "../../store/authStore";
 import { circleApi } from "../../api/circleApi";
+import { circleBoardApi } from "../../api/circleBoardApi";
 import { scheduleApi } from "../../api/scheduleApi";
+import { postApi } from "../../post/api/postApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
@@ -50,6 +52,9 @@ export default function UserProfilePage() {
   const [likedCount, setLikedCount] = useState<number | null>(null);
   const [upcomingCount, setUpcomingCount] = useState<number>(0);
   const [completedCount, setCompletedCount] = useState<number>(0);
+  const [myPostCount, setMyPostCount] = useState<number>(0);
+  const [myReplyCount, setMyReplyCount] = useState<number>(0);
+  const [myBookmarkedPostCount, setMyBookmarkedPostCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   // 모달 상태
@@ -95,14 +100,59 @@ export default function UserProfilePage() {
         .getMySchedules({ from: toISO(oneYearAgo), to: toISO(now) })
         .then((r) => r.data.filter((s) => s.status === "COMPLETED").length)
         .catch(() => 0),
+      postApi
+        .getMyCommunityPosts({ board: "all" })
+        .then(async (r) => {
+          const circles = await circleApi.getMyCircles().catch(() => ({ data: [] as { circleId: number }[] }));
+          const postResults = await Promise.allSettled(
+            circles.data.map((circle) => circleBoardApi.getMyPosts(circle.circleId)),
+          );
+          const circlePostCount = postResults.reduce((acc, result) => {
+            if (result.status !== "fulfilled") return acc;
+            return acc + result.value.data.length;
+          }, 0);
+          return r.data.length + circlePostCount;
+        })
+        .catch(() => 0),
+      postApi
+        .getMyCommunityRepliedPosts({ board: "all" })
+        .then(async (r) => {
+          const circles = await circleApi.getMyCircles().catch(() => ({ data: [] as { circleId: number }[] }));
+          const replyResults = await Promise.allSettled(
+            circles.data.map((circle) => circleBoardApi.getMyRepliedPosts(circle.circleId)),
+          );
+          const circleReplyCount = replyResults.reduce((acc, result) => {
+            if (result.status !== "fulfilled") return acc;
+            return acc + result.value.data.length;
+          }, 0);
+          return r.data.length + circleReplyCount;
+        })
+        .catch(() => 0),
+      postApi
+        .getMyCommunityBookmarkedPosts({ board: "all" })
+        .then(async (r) => {
+          const circles = await circleApi.getMyCircles().catch(() => ({ data: [] as { circleId: number }[] }));
+          const bookmarkResults = await Promise.allSettled(
+            circles.data.map((circle) => circleBoardApi.getMyBookmarkedPosts(circle.circleId)),
+          );
+          const circleBookmarkCount = bookmarkResults.reduce((acc, result) => {
+            if (result.status !== "fulfilled") return acc;
+            return acc + result.value.data.length;
+          }, 0);
+          return r.data.length + circleBookmarkCount;
+        })
+        .catch(() => 0),
     ])
-      .then(([p, e, cc, lc, uc, dc]) => {
+      .then(([p, e, cc, lc, uc, dc, pc, rc, bc]) => {
         setProfile(p);
         setEnergy(e);
         setCircleCount(cc);
         setLikedCount(lc);
         setUpcomingCount(uc);
         setCompletedCount(dc);
+        setMyPostCount(pc);
+        setMyReplyCount(rc);
+        setMyBookmarkedPostCount(bc);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -442,17 +492,24 @@ export default function UserProfilePage() {
         {/* 나의 글 */}
         <div style={s.sectionTitle}>나의 글</div>
         <SectionCard>
-          <button className="mp-row mp-row-list" style={s.row}>
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/my-posts")}>
             <PenLine size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>내가 쓴 게시글</span>
-            <span style={s.rowCount}>0</span>
+            <span style={s.rowCount}>{myPostCount}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
-          <button className="mp-row mp-row-list" style={s.row}>
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/my-replies")}>
             <MessageSquare size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>내가 쓴 댓글</span>
-            <span style={s.rowCount}>0</span>
+            <span style={s.rowCount}>{myReplyCount}</span>
+            <ChevronRight size={18} color="#c0c0c0" />
+          </button>
+          <RowDivider />
+          <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/users/my-bookmarked-posts")}>
+            <Bookmark size={18} color="#5F8F7B" />
+            <span style={s.rowLabel}>내가 찜한 글</span>
+            <span style={s.rowCount}>{myBookmarkedPostCount}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
         </SectionCard>
