@@ -22,6 +22,7 @@ import { getErrorMessage } from "../../common/utils/errorMessage";
 import CommunityActivityFeedCard from "../components/CommunityActivityFeedCard";
 import PostActionMenu from "../components/PostActionMenu";
 import { useInfiniteScroll } from "../../admin/hooks/useInfiniteScroll";
+import { openReportForm } from "../../common/utils/openReportForm";
 
 const toDateLabel = (value: string) => {
   const d = new Date(value);
@@ -812,11 +813,11 @@ export default function CircleActivityTabPage() {
                                     onEdit={() =>
                                       navigate(`/circle/${cid}/board/${post.boardId}/posts/${post.postId}/edit`, {
                                         state: { from: boardFromPath },
-                                    })
-                                  }
-                                  onReport={() => window.alert("신고 기능은 준비 중입니다.")}
-                                />
-                              }
+                                      })
+                                    }
+                                    onReport={() => openReportForm("POST", post.postId)}
+                                  />
+                                }
                               metaAction={
                                 canManageActivityEdit && editMode ? (
                                   <button
