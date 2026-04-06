@@ -2,15 +2,15 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Clock3, Eye, Flame, MessageSquare } from "lucide-react";
-import { postApi } from "../../post/api/postApi";
-import { postRoutes } from "../../post/routes/postRoutes";
-import type { CommunitySidebarPost } from "../../post/types/postTypes";
+import { circleBoardApi, type CircleBoardResponse } from "../../api/circleBoardApi";
+import type { PostResponse } from "../../post/types/postTypes";
 
 type SortMode = "popular" | "recent" | "views" | "replies";
 
 interface SidebarPostItem {
   postId: number;
-  boardName: "자유" | "공지";
+  boardId: number;
+  boardName: string;
   title: string;
   viewCount: number;
   replyCount: number;
@@ -18,8 +18,17 @@ interface SidebarPostItem {
   href: string;
 }
 
-export default function CommunityRightSidebar() {
+interface CircleBoardRightSidebarProps {
+  circleId: number;
+  boards?: CircleBoardResponse[];
+}
+
+export default function CircleBoardRightSidebar({
+  circleId,
+  boards = [],
+}: CircleBoardRightSidebarProps) {
   const [mode, setMode] = useState<SortMode>("popular");
+
   const modeLabel: Record<SortMode, string> = {
     popular: "인기",
     recent: "최신",
@@ -33,48 +42,53 @@ export default function CommunityRightSidebar() {
     replies: <MessageSquare size={14} color="#10b981" />,
   };
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["communitySidebar", "all", mode, 12],
-    queryFn: async () => {
-      if (mode === "popular") {
-        const response = await postApi.getCommunitySidebarPosts({
-          board: "all",
-          sort: "recent",
-          limit: 100,
-        });
-        return [...response.data]
-          .sort((a, b) => {
-            const aScore = a.viewCount * 0.7 + a.replyCount * 1.3;
-            const bScore = b.viewCount * 0.7 + b.replyCount * 1.3;
-            return bScore - aScore;
-          })
-          .slice(0, 12);
-      }
+  const boardNameById = useMemo(
+    () => new Map<number, string>(boards.map((board) => [board.boardId, board.name])),
+    [boards],
+  );
 
-      const response = await postApi.getCommunitySidebarPosts({
-        board: "all",
-        sort: mode,
-        limit: 12,
-      });
-      return response.data;
-    },
+  const { data: posts = [], isLoading } = useQuery<PostResponse[]>({
+    queryKey: ["circleBoardSidebar", circleId],
+    enabled: Number.isFinite(circleId) && circleId > 0,
+    staleTime: 60_000,
+    queryFn: async () => (await circleBoardApi.getAllPosts(circleId)).data,
   });
+
+  const sortedPosts = useMemo(() => {
+    const source = [...posts];
+    if (mode === "popular") {
+      return source
+        .sort((a, b) => {
+          const aScore = a.viewCount * 0.7 + a.replyCount * 1.3;
+          const bScore = b.viewCount * 0.7 + b.replyCount * 1.3;
+          return bScore - aScore;
+        })
+        .slice(0, 12);
+    }
+    if (mode === "views") {
+      return source.sort((a, b) => b.viewCount - a.viewCount).slice(0, 12);
+    }
+    if (mode === "replies") {
+      return source.sort((a, b) => b.replyCount - a.replyCount).slice(0, 12);
+    }
+    return source
+      .sort((a, b) => new Date(b.createDate).getTime() - new Date(a.createDate).getTime())
+      .slice(0, 12);
+  }, [mode, posts]);
 
   const items = useMemo<SidebarPostItem[]>(
     () =>
-      (data ?? []).map((post: CommunitySidebarPost) => ({
+      sortedPosts.map((post) => ({
         postId: post.postId,
-        boardName: post.boardType === "NOTICE" ? "공지" : "자유",
+        boardId: post.boardId,
+        boardName: boardNameById.get(post.boardId) ?? "게시판",
         title: post.title,
         viewCount: post.viewCount,
         replyCount: post.replyCount,
         createDate: post.createDate,
-        href:
-          post.boardType === "NOTICE"
-            ? postRoutes.noticeDetail(post.postId)
-            : postRoutes.freeDetail(post.postId),
+        href: `/circle/${circleId}/board/${post.boardId}/posts/${post.postId}`,
       })),
-    [data],
+    [boardNameById, circleId, sortedPosts],
   );
 
   const toggleButtonStyle = (active: boolean) => ({
@@ -149,7 +163,7 @@ export default function CommunityRightSidebar() {
         {!isLoading &&
           items.map((item) => (
             <Link
-              key={`${item.boardName}-${item.postId}`}
+              key={`${item.boardId}-${item.postId}`}
               to={item.href}
               style={{
                 textDecoration: "none",

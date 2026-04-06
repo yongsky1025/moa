@@ -25,7 +25,7 @@ import ReplyList from "../../reply/components/ReplyList";
 import CommunityProfileCard, {
   type CommunityProfileQuickView,
 } from "../../board/components/CommunityProfileCard";
-import CommunityRightSidebar from "../../board/components/CommunityRightSidebar";
+import CircleBoardRightSidebar from "../../board/components/CircleBoardRightSidebar";
 import CircleBoardSidebarMenu from "../../board/components/CircleBoardSidebarMenu";
 import { openReportForm } from "../../common/utils/openReportForm";
 import "../../reply/styles/replySection.css";
@@ -542,7 +542,7 @@ export default function CirclePostDetailPage() {
             )}
           </section>
 
-          <CommunityRightSidebar />
+          <CircleBoardRightSidebar circleId={cid} boards={boards} />
         </section>
       </main>
       <Footer />
