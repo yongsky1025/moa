@@ -364,7 +364,6 @@ public class PostService {
 
         // 써클보드 게시글 리스트(댓글 포함)
         public List<PostResponseDTO> listCircle(Long circleId, Long boardId, Long userId) {
-                circlePermissionService.requireActiveMember(circleId, userId);
                 return postRepository.findCirclePostsWithReplyCount(circleId, boardId).stream()
                                 .map(this::toPostResponseWithCount)
                                 .toList();
@@ -379,7 +378,6 @@ public class PostService {
 
         // 써클보드 전체 게시글 리스트(댓글 포함)
         public List<PostResponseDTO> listCircleAllBoardsPosts(Long circleId, Long userId, CircleBoardKind circleBoardKind) {
-                circlePermissionService.requireActiveMember(circleId, userId);
                 return postRepository.findCirclePostsAllBoardsWithReplyCount(circleId).stream()
                                 .filter(row -> includeInCircleBoardLists(isActivityCirclePost(row[0]), circleBoardKind))
                                 .map(this::toPostResponseWithCount)
@@ -431,7 +429,6 @@ public class PostService {
         }
 
         public PostResponseDTO readCircle(Long circleId, Long boardId, Long postId, Long userId) {
-                circlePermissionService.requireActiveMember(circleId, userId);
                 Post post = postRepository.findCirclePost(circleId, boardId, postId)
                                 .orElseThrow(() -> new PostNotFoundException("[#POST] 게시글을 찾을 수 없습니다."));
                 return toPostResponse(post, userId);

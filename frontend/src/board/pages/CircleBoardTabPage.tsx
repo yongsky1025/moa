@@ -142,6 +142,7 @@ export default function CircleBoardTabPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editMode, setEditMode] = useState(false);
   const [isBoardEditBusy, setIsBoardEditBusy] = useState(false);
+  const [joinLoading, setJoinLoading] = useState(false);
   const [isInlineBoardTitleEditing, setIsInlineBoardTitleEditing] = useState(false);
   const [inlineBoardTitleDraft, setInlineBoardTitleDraft] = useState("");
   const [boardNameDrafts, setBoardNameDrafts] = useState<Record<number, string>>({});
@@ -406,6 +407,7 @@ export default function CircleBoardTabPage() {
     () => activeMembers.find((member) => member.nickname === user?.nickname) ?? null,
     [activeMembers, user?.nickname],
   );
+  const isCircleMember = !!circle?.myRole;
   const isCircleLeader = circle?.myRole === "LEADER" || myActiveMember?.role === "LEADER";
 
   useEffect(() => {
@@ -497,7 +499,7 @@ export default function CircleBoardTabPage() {
   }, [currentPage, totalPages]);
 
   const boardTitle = useMemo(() => {
-    if (view === "scrap") return "스크랩";
+    if (view === "scrap") return "내가 찜한 글";
     if (view === "myPosts") return "내가 쓴 글";
     if (view === "myReplies") return "내가 쓴 댓글";
     if (boardFilter === "all") return "전체 게시판";
@@ -559,6 +561,31 @@ export default function CircleBoardTabPage() {
     }
     navigate(`/circle/${cid}/board?${params.toString()}`);
     scrollToPageTop();
+  };
+
+  const handleJoinCircle = async () => {
+    if (!Number.isFinite(cid) || joinLoading) {
+      return;
+    }
+    if (!isLoggedIn) {
+      sessionStorage.setItem("postLoginRedirect", `/circle/${cid}/board`);
+      navigate("/users/login");
+      return;
+    }
+
+    setJoinLoading(true);
+    try {
+      await circleApi.joinCircle(cid);
+      window.alert("가입 신청이 완료됐습니다. 리더의 승인을 기다려주세요.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["circleDetailForBoardTab", cid] }),
+        queryClient.invalidateQueries({ queryKey: ["circleBoardsForBoardTab", cid] }),
+      ]);
+    } catch (error) {
+      window.alert(getErrorMessage(error));
+    } finally {
+      setJoinLoading(false);
+    }
   };
 
   const resetBoardEditState = () => {
@@ -784,6 +811,33 @@ export default function CircleBoardTabPage() {
     return "아직 작성된 게시글이 없습니다.";
   }, [effectiveKeyword, isLoggedIn, view]);
 
+  const joinCtaLabel = useMemo(() => {
+    if (!isLoggedIn) {
+      return "로그인 후 가입 신청";
+    }
+    if (!circle) {
+      return "가입 신청";
+    }
+    if (circle.status === "OPEN") {
+      return "가입 신청";
+    }
+    if (circle.status === "PENDING") {
+      return "승인 대기";
+    }
+    if (circle.status === "FULL") {
+      return "정원 마감";
+    }
+    if (circle.status === "REJECTED") {
+      return "가입 거절됨";
+    }
+    return "가입 불가";
+  }, [circle, isLoggedIn]);
+
+  const canJoinAction = useMemo(
+    () => !isCircleMember && ((!isLoggedIn && !!circle) || (isLoggedIn && circle?.status === "OPEN")),
+    [circle, isCircleMember, isLoggedIn],
+  );
+
   const emptyDescription = useMemo(() => {
     if (effectiveKeyword) {
       return "다른 검색어로 다시 시도해보세요.";
@@ -823,15 +877,38 @@ export default function CircleBoardTabPage() {
 
   const listLoading = hasValidCircleId && (postsPending || postsFetching);
   const listError = canFetchCirclePosts && postsError ? getErrorMessage(postsQueryError) : "";
-  const showCircleBannerSkeleton = useDelayedLoading(circlePending, 150, 300);
-  const showCircleBoardMenuSkeleton = useDelayedLoading(boardsPending, 150, 300);
+  const [forceInitialSkeleton, setForceInitialSkeleton] = useState(true);
+  const delayedCircleBannerSkeleton = useDelayedLoading(circlePending, 0, 300);
+  const delayedCircleBoardMenuSkeleton = useDelayedLoading(boardsPending, 0, 300);
+  const delayedCircleLeftSidebarSkeleton = useDelayedLoading(circlePending, 0, 300);
+  const delayedCircleBoardCenterSkeleton = useDelayedLoading(circlePending || boardsPending, 0, 300);
+  const delayedCircleBoardListSkeleton = useDelayedLoading(listLoading, 0, 300);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setForceInitialSkeleton(false);
+    }, 300);
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, []);
+
+  const showCircleBannerSkeleton = forceInitialSkeleton || delayedCircleBannerSkeleton;
+  const showCircleBoardMenuSkeleton = forceInitialSkeleton || delayedCircleBoardMenuSkeleton;
+  const showCircleLeftSidebarSkeleton = forceInitialSkeleton || delayedCircleLeftSidebarSkeleton;
+  const showCircleBoardCenterSkeleton = forceInitialSkeleton || delayedCircleBoardCenterSkeleton;
+  const showCircleBoardListSkeleton = forceInitialSkeleton || delayedCircleBoardListSkeleton;
 
   return (
     <div className="board-community-page" style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
 
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
-        {circle ? <CircleDetailBanner circle={circle} /> : showCircleBannerSkeleton ? <CircleDetailBannerSkeleton /> : null}
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px", minHeight: "calc(100vh - 180px)" }}>
+        {showCircleBannerSkeleton ? (
+          <CircleDetailBannerSkeleton />
+        ) : circle ? (
+          <CircleDetailBanner circle={circle} />
+        ) : null}
 
         <CircleDetailTabs circleId={cid} activeTab="board" />
 
@@ -839,42 +916,99 @@ export default function CircleBoardTabPage() {
           <div className="community-sticky-gap" aria-hidden="true" />
           <section className="board-community-layout">
             <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
-              <CommunityProfileCard
-                selectedView={view}
-                onSelectView={handleSidebarViewSelect}
-                writeHref={writeHref}
-                replaceWithPending={isCircleLeader && editMode}
-                pendingContent={
-                  isCircleLeader && editMode ? (
-                    <BoardPendingPanel
-                      postPinnedCount={0}
-                      postDeletedCount={pendingPostDeleteCount}
-                      boardCreateCount={boardCreateCount}
-                      boardRenameCount={boardRenameChangeCount}
-                      boardDeleteCount={boardDeleteCount}
-                      onReset={resetBoardEditState}
-                      onApply={() => void applyBoardEditChanges()}
-                      resetDisabled={isBoardEditBusy || !hasPendingBoardChanges}
-                      applyDisabled={isBoardEditBusy}
-                      embedded
-                    />
-                  ) : undefined
-                }
-                bottomAction={
-                  isCircleLeader ? (
-                    <button
-                      type="button"
-                      onClick={toggleEditMode}
-                      className={`community-side-edit-toggle ${editMode ? "active" : ""}`}
-                      aria-label="게시판 편집모드 전환"
-                      title="게시판 편집"
-                    >
-                      <Settings size={16} strokeWidth={2} aria-hidden="true" />
-                      <span>편집모드</span>
-                    </button>
-                  ) : undefined
-                }
-              />
+              {showCircleLeftSidebarSkeleton ? (
+                <section
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 14,
+                    backgroundColor: "#fff",
+                    padding: 16,
+                    display: "grid",
+                    gap: 12,
+                  }}
+                  aria-hidden="true"
+                >
+                  <span className="community-skeleton-block community-activity-skeleton-headline" />
+                  <div className="community-sidebar-skeleton-list">
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                  </div>
+                  <span
+                    className="community-skeleton-block"
+                    style={{ width: "100%", height: 42, borderRadius: 10 }}
+                  />
+                </section>
+              ) : isCircleMember ? (
+                <CommunityProfileCard
+                  selectedView={view}
+                  onSelectView={handleSidebarViewSelect}
+                  writeHref={writeHref}
+                  replaceWithPending={isCircleLeader && editMode}
+                  pendingContent={
+                    isCircleLeader && editMode ? (
+                      <BoardPendingPanel
+                        postPinnedCount={0}
+                        postDeletedCount={pendingPostDeleteCount}
+                        boardCreateCount={boardCreateCount}
+                        boardRenameCount={boardRenameChangeCount}
+                        boardDeleteCount={boardDeleteCount}
+                        onReset={resetBoardEditState}
+                        onApply={() => void applyBoardEditChanges()}
+                        resetDisabled={isBoardEditBusy || !hasPendingBoardChanges}
+                        applyDisabled={isBoardEditBusy}
+                        embedded
+                      />
+                    ) : undefined
+                  }
+                  bottomAction={
+                    isCircleLeader ? (
+                      <button
+                        type="button"
+                        onClick={toggleEditMode}
+                        className={`community-side-edit-toggle ${editMode ? "active" : ""}`}
+                        aria-label="게시판 편집모드 전환"
+                        title="게시판 편집"
+                      >
+                        <Settings size={16} strokeWidth={2} aria-hidden="true" />
+                        <span>편집모드</span>
+                      </button>
+                    ) : undefined
+                  }
+                />
+              ) : (
+                <section
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 14,
+                    backgroundColor: "#fff",
+                    padding: 16,
+                    display: "grid",
+                    gap: 10,
+                  }}
+                >
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: "#1f2937" }}>모임 가입이 필요해요</p>
+                  <button
+                    type="button"
+                    onClick={() => void handleJoinCircle()}
+                    disabled={!canJoinAction || joinLoading}
+                    style={{
+                      width: "100%",
+                      height: 42,
+                      border: "none",
+                      borderRadius: 10,
+                      backgroundColor: canJoinAction ? "#5F8F7B" : "#d1d5db",
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: canJoinAction && !joinLoading ? "pointer" : "default",
+                    }}
+                  >
+                    {joinLoading ? "처리 중..." : joinCtaLabel}
+                  </button>
+                </section>
+              )}
               {showCircleBoardMenuSkeleton ? (
                 <BoardMenuSkeleton count={5} />
               ) : (
@@ -896,157 +1030,193 @@ export default function CircleBoardTabPage() {
             </aside>
 
             <section className="community-center-column">
-              <CommunityBoardToolbar
-                  title={boardTitle}
-                  titleContent={
-                    <BoardEditableTitle
-                      title={boardTitle}
-                      editable={canEditBoardTitleInline}
-                      editing={isInlineBoardTitleEditing}
-                      draft={inlineBoardTitleDraft}
-                      busy={isBoardEditBusy}
-                      onDraftChange={setInlineBoardTitleDraft}
-                      onStartEdit={openInlineRenameCircleBoard}
-                      onSave={() => void handleRenameCircleBoard()}
-                      onCancel={() => setIsInlineBoardTitleEditing(false)}
-                      onDelete={() => void handleDeleteCurrentCircleBoard()}
-                    />
-                  }
-                  searchType={searchType}
-                  onSearchTypeChange={(type) => setSearchType(type)}
-                  keyword={keyword}
-                  onKeywordChange={setKeyword}
-                  placeholder={view === "myReplies" ? "댓글/원문 제목 검색" : "게시글 검색"}
-                />
-
-              {isCircleLeader && editMode ? (
-                <CommunityPinnedPreviewList
-                  items={deletedPreviewItems}
-                  editable
-                  fromPath={boardFromPath}
-                  onCancelDelete={handleCancelStagedDelete}
-                />
+              {showCircleBoardCenterSkeleton ? (
+                <>
+                  <section
+                    style={{
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 12,
+                      backgroundColor: "#fff",
+                      padding: 14,
+                      display: "grid",
+                      gap: 10,
+                    }}
+                    aria-hidden="true"
+                  >
+                    <span className="community-skeleton-block community-activity-skeleton-headline" />
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                  </section>
+                  <section
+                    style={{
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 12,
+                      backgroundColor: "#fff",
+                      padding: 14,
+                      display: "grid",
+                      gap: 10,
+                    }}
+                    aria-hidden="true"
+                  >
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                  </section>
+                  <CommunityPostListSkeleton count={6} showBoardName={boardFilter === "all"} />
+                </>
               ) : (
-                <GlobalPinnedPreviewSection fromPath={boardFromPath} />
-              )}
-
-              <CommunityListState
-                loading={listLoading}
-                loadingContent={
-                  <CommunityPostListSkeleton
-                    count={6}
-                    showBoardName={boardFilter === "all"}
+                <>
+                  <CommunityBoardToolbar
+                    title={boardTitle}
+                    titleContent={
+                      <BoardEditableTitle
+                        title={boardTitle}
+                        editable={canEditBoardTitleInline}
+                        editing={isInlineBoardTitleEditing}
+                        draft={inlineBoardTitleDraft}
+                        busy={isBoardEditBusy}
+                        onDraftChange={setInlineBoardTitleDraft}
+                        onStartEdit={openInlineRenameCircleBoard}
+                        onSave={() => void handleRenameCircleBoard()}
+                        onCancel={() => setIsInlineBoardTitleEditing(false)}
+                        onDelete={() => void handleDeleteCurrentCircleBoard()}
+                      />
+                    }
+                    searchType={searchType}
+                    onSearchTypeChange={(type) => setSearchType(type)}
+                    keyword={keyword}
+                    onKeywordChange={setKeyword}
+                    placeholder={view === "myReplies" ? "댓글/원문 제목 검색" : "게시글 검색"}
                   />
-                }
-                errorMessage={listError}
-                isEmpty={view === "myReplies" ? pagedReplies.length === 0 : pagedPosts.length === 0}
-                emptyText={emptyText}
-                emptyDescription={emptyDescription}
-                emptyActionLabel={showEmptyWriteAction ? "게시글 작성하기" : undefined}
-                onEmptyAction={
-                  showEmptyWriteAction
-                    ? () => {
-                        navigate(writeHref);
-                      }
-                    : undefined
-                }
-              >
-                {view === "myReplies" ? (
-                  <ul className="community-post-list">
-                    {pagedReplies.map((item) => (
-                      <li key={`reply-${item.replyId}`}>
-                        <Link
-                          to={item.href}
-                          state={{ from: boardFromPath, focusReplyId: item.replyId }}
-                          className="community-post-item-link"
-                        >
-                          <div className="community-post-item-body">
-                            <p className="community-post-item-title">
-                              <span className="community-post-item-title-text">{item.content}</span>
-                              {boardFilter === "all" && (
-                                <span className="community-post-item-board">
-                                  · {boardMap.get(item.boardId)?.name ?? "게시판"}
-                                </span>
-                              )}
-                            </p>
-                            <p className="community-post-item-meta">
-                              <span>원문: {truncateByCharCount(item.postTitle, CIRCLE_POST_TITLE_MAX_CHARS)}</span>
-                              <span className="community-post-item-stat">
-                                <Heart size={14} />
-                                {item.likeCount}
-                              </span>
-                              <span>{toDateLabel(item.createDate)}</span>
-                            </p>
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <BoardPostList
-                      items={pagedPosts.map((post) => ({
-                        postId: post.postId,
-                        href: `/circle/${cid}/board/${post.boardId}/posts/${post.postId}`,
-                        linkState: { from: boardFromPath },
-                        title: post.title,
-                        boardName: boardMap.get(post.boardId)?.name ?? "게시판",
-                        authorName: post.authorName,
-                        viewCount: post.viewCount,
-                        replyCount: post.replyCount,
-                        likeCount: post.likeCount,
-                        createDate: post.createDate,
-                      }))}
-                      disabledLinks={editMode}
-                      isDeleted={(postId) => !!stagedPostDeletes[postId]}
-                      dateLabel={toDateLabel}
-                      renderLeading={(item) =>
-                        pagedPosts.find((post) => post.postId === item.postId)?.pinned ? (
-                          <span className="community-post-pin-indicator" aria-label="상단 고정">
-                            <Pin size={14} strokeWidth={2} className="pin-icon pinned" />
-                          </span>
-                        ) : null
-                      }
-                      showBoardName={boardFilter === "all"}
-                      renderAdminActions={(item) => {
-                        if (!isCircleLeader || !editMode) return null;
-                        const source = pagedPosts.find((post) => post.postId === item.postId);
-                        if (!source) return null;
-                        return (
-                          <div className="community-post-admin-actions">
-                            <button
-                              type="button"
-                              aria-label="게시글 삭제"
-                              className={`community-post-admin-action-button danger ${
-                                stagedPostDeletes[source.postId] ? "active" : ""
-                              }`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleStageDeletePost(source);
-                              }}
+
+                  {isCircleLeader && editMode ? (
+                    <CommunityPinnedPreviewList
+                      items={deletedPreviewItems}
+                      editable
+                      fromPath={boardFromPath}
+                      onCancelDelete={handleCancelStagedDelete}
+                    />
+                  ) : (
+                    <GlobalPinnedPreviewSection fromPath={boardFromPath} />
+                  )}
+
+                  <CommunityListState
+                    loading={showCircleBoardListSkeleton}
+                    loadingContent={
+                      <CommunityPostListSkeleton
+                        count={6}
+                        showBoardName={boardFilter === "all"}
+                      />
+                    }
+                    errorMessage={listError}
+                    isEmpty={view === "myReplies" ? pagedReplies.length === 0 : pagedPosts.length === 0}
+                    emptyText={emptyText}
+                    emptyDescription={emptyDescription}
+                    emptyActionLabel={showEmptyWriteAction ? "게시글 작성하기" : undefined}
+                    onEmptyAction={
+                      showEmptyWriteAction
+                        ? () => {
+                            navigate(writeHref);
+                          }
+                        : undefined
+                    }
+                  >
+                    {view === "myReplies" ? (
+                      <ul className="community-post-list">
+                        {pagedReplies.map((item) => (
+                          <li key={`reply-${item.replyId}`}>
+                            <Link
+                              to={item.href}
+                              state={{ from: boardFromPath, focusReplyId: item.replyId }}
+                              className="community-post-item-link"
                             >
-                              <Trash2 size={14} strokeWidth={2} />
-                              <span>삭제</span>
-                            </button>
-                          </div>
-                        );
-                      }}
-                  />
-                )}
-              </CommunityListState>
+                              <div className="community-post-item-body">
+                                <p className="community-post-item-title">
+                                  <span className="community-post-item-title-text">{item.content}</span>
+                                  {boardFilter === "all" && (
+                                    <span className="community-post-item-board">
+                                      · {boardMap.get(item.boardId)?.name ?? "게시판"}
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="community-post-item-meta">
+                                  <span>원문: {truncateByCharCount(item.postTitle, CIRCLE_POST_TITLE_MAX_CHARS)}</span>
+                                  <span className="community-post-item-stat">
+                                    <Heart size={14} />
+                                    {item.likeCount}
+                                  </span>
+                                  <span>{toDateLabel(item.createDate)}</span>
+                                </p>
+                              </div>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <BoardPostList
+                        items={pagedPosts.map((post) => ({
+                          postId: post.postId,
+                          href: `/circle/${cid}/board/${post.boardId}/posts/${post.postId}`,
+                          linkState: { from: boardFromPath },
+                          title: post.title,
+                          boardName: boardMap.get(post.boardId)?.name ?? "게시판",
+                          authorName: post.authorName,
+                          viewCount: post.viewCount,
+                          replyCount: post.replyCount,
+                          likeCount: post.likeCount,
+                          createDate: post.createDate,
+                        }))}
+                        disabledLinks={editMode}
+                        isDeleted={(postId) => !!stagedPostDeletes[postId]}
+                        dateLabel={toDateLabel}
+                        renderLeading={(item) =>
+                          pagedPosts.find((post) => post.postId === item.postId)?.pinned ? (
+                            <span className="community-post-pin-indicator" aria-label="상단 고정">
+                              <Pin size={14} strokeWidth={2} className="pin-icon pinned" />
+                            </span>
+                          ) : null
+                        }
+                        showBoardName={boardFilter === "all"}
+                        renderAdminActions={(item) => {
+                          if (!isCircleLeader || !editMode) return null;
+                          const source = pagedPosts.find((post) => post.postId === item.postId);
+                          if (!source) return null;
+                          return (
+                            <div className="community-post-admin-actions">
+                              <button
+                                type="button"
+                                aria-label="게시글 삭제"
+                                className={`community-post-admin-action-button danger ${
+                                  stagedPostDeletes[source.postId] ? "active" : ""
+                                }`}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleStageDeletePost(source);
+                                }}
+                              >
+                                <Trash2 size={14} strokeWidth={2} />
+                                <span>삭제</span>
+                              </button>
+                            </div>
+                          );
+                        }}
+                      />
+                    )}
+                  </CommunityListState>
 
-              {totalItemCount > 0 && totalPages > 1 && (
-                <div className="border-moa-border mt-2 flex flex-col items-center gap-3 border-t px-6 py-5">
-                  <MoaPaginate
-                    pageCount={totalPages}
-                    currentPage={currentPage}
-                    onPageChange={({ selected }) => goToPage(selected + 1)}
-                  />
-                  <p className="text-moa-subtle text-xs">
-                    <span className="text-moa-secondary font-semibold">{currentPage}</span> / {totalPages} 페이지
-                    &nbsp;·&nbsp;총 <span className="text-moa-primary font-semibold">{totalItemCount.toLocaleString()}</span>건
-                  </p>
-                </div>
+                  {totalItemCount > 0 && totalPages > 1 && (
+                    <div className="border-moa-border mt-2 flex flex-col items-center gap-3 border-t px-6 py-5">
+                      <MoaPaginate
+                        pageCount={totalPages}
+                        currentPage={currentPage}
+                        onPageChange={({ selected }) => goToPage(selected + 1)}
+                      />
+                      <p className="text-moa-subtle text-xs">
+                        <span className="text-moa-secondary font-semibold">{currentPage}</span> / {totalPages} 페이지
+                        &nbsp;·&nbsp;총 <span className="text-moa-primary font-semibold">{totalItemCount.toLocaleString()}</span>건
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </section>
 

@@ -125,6 +125,12 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/posts/community").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/posts/community/sidebar").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/community/activities/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/api/circle/*/boards",
+                                                                "/api/circle/*/posts",
+                                                                "/api/circle/*/boards/*/posts",
+                                                                "/api/circle/*/boards/*/posts/*")
+                                                .permitAll()
                                                 .requestMatchers("/api/posts/search", "/api/posts/search/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/posts/search").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/posts/*/replies").permitAll()

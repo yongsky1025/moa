@@ -145,7 +145,7 @@ export default function CommunityProfileCard({
                 cursor: "pointer",
               }}
             >
-              스크랩
+              내가 찜한 글
             </button>
             {onWriteClick ? (
               <button

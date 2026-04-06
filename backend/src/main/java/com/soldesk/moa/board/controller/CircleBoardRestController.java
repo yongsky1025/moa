@@ -47,12 +47,11 @@ public class CircleBoardRestController {
     private final BoardService boardService;
 
     // 써클 내 게시판 목록
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Circle/Board 리스트 조회", description = "해당 써클의 게시판 리스트 조회 API")
     @GetMapping
     public List<BoardResponseDTO> list(@PathVariable("circleId") Long circleId,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        return boardService.listCircleBoards(circleId, auth.getUserId());
+        return boardService.listCircleBoards(circleId, auth == null ? null : auth.getUserId());
     }
 
     // 게시판 생성 (써클 리더 전용)

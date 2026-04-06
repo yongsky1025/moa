@@ -322,7 +322,8 @@ export default function ReplyItem({
 
   const submitReaction = () => {
     if (!canWrite) {
-      setReactionError("로그인 후 좋아요를 누를 수 있습니다.");
+      window.alert("로그인 후 좋아요를 누를 수 있습니다.");
+      setReactionError("");
       onRequireLogin?.();
       return;
     }

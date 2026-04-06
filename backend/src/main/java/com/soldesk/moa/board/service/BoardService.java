@@ -128,7 +128,6 @@ public class BoardService {
     // ===== Circle boards =====
 
     public List<BoardResponseDTO> listCircleBoards(Long circleId, Long userId) {
-        circlePermissionService.requireActiveMember(circleId, userId);
         return boardRepository
                 .findByBoardTypeAndCircleId_CircleIdAndDeletedFalse(BoardType.CIRCLE, circleId)
                 .stream()

@@ -36,14 +36,14 @@ api.interceptors.request.use((config) => {
 
 const ACCOUNT_STATUS_CODES = new Set(["ACCOUNT_WITHDRAWN", "ACCOUNT_SUSPENDED", "ACCOUNT_BANNED"]);
 
-function redirectToErrorPage(path: "/error/401" | "/error/403") {
+function redirectToErrorPage(path: "/error/401") {
   const currentPath = window.location.pathname;
   if (currentPath.startsWith("/error/")) return;
   if (currentPath === path) return;
   window.location.href = path;
 }
 
-// 응답 인터셉터: 403 계정 상태 / 401 토큰 갱신
+// 응답 인터셉터: 계정 상태(403) / 401 토큰 갱신
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -52,11 +52,6 @@ api.interceptors.response.use(
     if (error.response?.status === 403 && errorCode && ACCOUNT_STATUS_CODES.has(errorCode)) {
       useAuthStore.getState().clearAuth();
       window.location.href = `/users/account-status?code=${errorCode}`;
-      return Promise.reject(error);
-    }
-
-    if (error.response?.status === 403) {
-      redirectToErrorPage("/error/403");
       return Promise.reject(error);
     }
 

@@ -47,21 +47,19 @@ public class CirclePostRestController {
     private final PostService postService;
 
     // 써클 전체 게시물
-    @PreAuthorize("isAuthenticated()")
     @GetMapping("/posts")
     public List<PostResponseDTO> listAllBoards(@PathVariable("circleId") Long circleId,
             @RequestParam(value = "circleBoardKind", required = false) CircleBoardKind circleBoardKind,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        return postService.listCircleAllBoardsPosts(circleId, auth.getUserId(), circleBoardKind);
+        return postService.listCircleAllBoardsPosts(circleId, auth == null ? null : auth.getUserId(), circleBoardKind);
     }
 
     // 써클 Board, Post 리스트
-    @PreAuthorize("isAuthenticated()")
     @GetMapping("/boards/{boardId}/posts")
     public List<PostResponseDTO> list(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
             @AuthenticationPrincipal AuthUserDTO auth) {
-        return postService.listCircle(circleId, boardId, auth.getUserId());
+        return postService.listCircle(circleId, boardId, auth == null ? null : auth.getUserId());
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -118,14 +116,13 @@ public class CirclePostRestController {
                 circleBoardKind);
     }
 
-    @PreAuthorize("isAuthenticated()")
     @GetMapping("/boards/{boardId}/posts/{postId}")
     public PostResponseDTO read(@PathVariable("circleId") Long circleId,
             @PathVariable("boardId") Long boardId,
             @PathVariable("postId") Long postId,
             @AuthenticationPrincipal AuthUserDTO auth,
             HttpServletRequest request) {
-        PostResponseDTO response = postService.readCircle(circleId, boardId, postId, auth.getUserId());
+        PostResponseDTO response = postService.readCircle(circleId, boardId, postId, auth == null ? null : auth.getUserId());
         postService.increaseViewCountOnce(postId, PostClientIpResolver.resolve(request));
         return response;
     }

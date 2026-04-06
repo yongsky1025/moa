@@ -11,7 +11,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.client.RestClientException;
 
 import com.soldesk.moa.board.entity.constant.BoardType;
-import com.soldesk.moa.board.service.CirclePermissionService;
 import com.soldesk.moa.common.exception.InvalidRequestException;
 import com.soldesk.moa.common.search.dto.SearchPage;
 import com.soldesk.moa.post.dto.PostSearchDocument;
@@ -43,7 +42,6 @@ public class PostSearchService {
     private final PostRepository postRepository;
     private final PostSearchRepository postSearchRepository;
     private final ReplyRepository replyRepository;
-    private final CirclePermissionService circlePermissionService;
     private final MeiliPostSearchExecutor meiliPostSearchExecutor;
     private final DbPostSearchExecutor dbPostSearchExecutor;
 
@@ -191,10 +189,6 @@ public class PostSearchService {
             if (circleId == null) {
                 throw new InvalidRequestException("[#POST] CIRCLE 검색에는 circleId가 필요합니다.");
             }
-            if (userId == null) {
-                throw new InvalidRequestException("[#POST] CIRCLE 검색은 로그인이 필요합니다.");
-            }
-            circlePermissionService.requireActiveMember(circleId, userId);
             if (boardId != null) {
                 return "boardType = 'CIRCLE' AND circleId = " + circleId + " AND boardId = " + boardId;
             }

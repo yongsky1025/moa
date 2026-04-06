@@ -140,6 +140,13 @@ const applyLocalBookmarkState = (current: { bookmarked: boolean }) => ({
   bookmarked: !current.bookmarked,
 });
 
+const isCircleMemberOnlyError = (error: unknown) => {
+  const status = (error as { response?: { status?: number } })?.response?.status;
+  const data = (error as { response?: { data?: { message?: string } | string } })?.response?.data;
+  const message = typeof data === "string" ? data : data?.message ?? "";
+  return status === 403 && (message.includes("[CIRCLE]") || message.includes("멤버만"));
+};
+
 const compareCommunityPosts = (a: CommunityPostItem, b: CommunityPostItem) => {
   const pinnedDiff = Number(!!b.pinned) - Number(!!a.pinned);
   if (pinnedDiff !== 0) {
@@ -190,6 +197,7 @@ export default function BoardCommunityPage() {
   const [activityStagedDeletes, setActivityStagedDeletes] = useState<Record<number, PostResponse>>({});
   const [isApplyingActivityEdits, setIsApplyingActivityEdits] = useState(false);
   const [topTab, setTopTab] = useState<CommunityTopTab>("board");
+  const [forceTopTabSkeleton, setForceTopTabSkeleton] = useState(true);
   const [boardFilter, setBoardFilter] = useState<CommunityBoardFilter>("all");
   const [searchParams, setSearchParams] = useSearchParams();
   const [keyword, setKeyword] = useState("");
@@ -296,7 +304,7 @@ export default function BoardCommunityPage() {
     queryKey: ["globalBoards"],
     queryFn: async () => (await globalBoardApi.getBoards()).data,
   });
-  const showGlobalBoardMenuSkeleton = useDelayedLoading(globalBoardsPending, 150, 300);
+  const delayedGlobalBoardMenuSkeleton = useDelayedLoading(globalBoardsPending, 0, 300);
 
   const globalBoardNameById = useMemo(
     () => new Map<number, string>(globalBoards.map((board) => [board.boardId, board.name])),
@@ -750,9 +758,16 @@ export default function BoardCommunityPage() {
       .catch((e) => {
         const current = activityReactionSyncedRef.current[postId] ?? synced;
         activityReactionDesiredRef.current[postId] = current.liked;
+        if (isCircleMemberOnlyError(e)) {
+          handleActivityMemberOnlyAccess(postId);
+        }
         setActivityReactionByPostId((prev) => ({
           ...prev,
-          [postId]: { liked: current.liked, likeCount: current.likeCount, error: getErrorMessage(e) },
+          [postId]: {
+            liked: current.liked,
+            likeCount: current.likeCount,
+            error: isCircleMemberOnlyError(e) ? undefined : getErrorMessage(e),
+          },
         }));
       })
       .finally(() => {
@@ -780,9 +795,12 @@ export default function BoardCommunityPage() {
           [postId]: { bookmarked: next },
         }));
       })
-      .catch(() => {
+      .catch((e) => {
         const current = activityBookmarkSyncedRef.current[postId] ?? synced;
         activityBookmarkDesiredRef.current[postId] = current;
+        if (isCircleMemberOnlyError(e)) {
+          handleActivityMemberOnlyAccess(postId);
+        }
         setActivityBookmarkByPostId((prev) => ({
           ...prev,
           [postId]: { bookmarked: current },
@@ -797,6 +815,7 @@ export default function BoardCommunityPage() {
   const handleToggleActivityReaction = (post: PostResponse) => {
     if (!isLoggedIn) {
       window.alert("로그인 후 좋아요를 누를 수 있습니다.");
+      sessionStorage.setItem("postLoginRedirect", "/board?tab=activity");
       navigate("/users/login");
       return;
     }
@@ -832,6 +851,7 @@ export default function BoardCommunityPage() {
   const handleToggleActivityBookmark = (post: PostResponse) => {
     if (!isLoggedIn) {
       window.alert("로그인 후 북마크를 사용할 수 있습니다.");
+      sessionStorage.setItem("postLoginRedirect", "/board?tab=activity");
       navigate("/users/login");
       return;
     }
@@ -851,6 +871,42 @@ export default function BoardCommunityPage() {
 
   const loading = canFetchCommunityPosts && (isPending || isFetching);
   const loadError = canFetchCommunityPosts && isError ? "게시글을 불러오지 못했습니다." : "";
+  const delayedGlobalBoardListSkeleton = useDelayedLoading(loading, 0, 300);
+  const delayedActivityListSkeleton = useDelayedLoading(activityLoading, 0, 300);
+  const showBoardLayoutSkeleton =
+    topTab === "board" && (forceTopTabSkeleton || delayedGlobalBoardMenuSkeleton);
+  const showActivityLayoutSkeleton =
+    topTab === "activity" && (forceTopTabSkeleton || delayedActivityListSkeleton);
+  const showGlobalBoardMenuSkeleton = topTab === "board" && (showBoardLayoutSkeleton || delayedGlobalBoardMenuSkeleton);
+  const showGlobalBoardListSkeleton = topTab === "board" && (showBoardLayoutSkeleton || delayedGlobalBoardListSkeleton);
+  const activityCircleIdByPostId = useMemo(() => {
+    const map: Record<number, number> = {};
+    activityPostItems.forEach((post) => {
+      if (typeof post.circleId === "number" && post.circleId > 0) {
+        map[post.postId] = post.circleId;
+      }
+    });
+    return map;
+  }, [activityPostItems]);
+
+  const handleActivityMemberOnlyAccess = (postId: number) => {
+    const circleId = activityCircleIdByPostId[postId];
+    window.alert("모임 가입 후 이용할 수 있습니다.");
+    if (circleId) {
+      navigate(`/circle/${circleId}`);
+    }
+  };
+
+  useEffect(() => {
+    setForceTopTabSkeleton(true);
+    const timerId = window.setTimeout(() => {
+      setForceTopTabSkeleton(false);
+    }, 300);
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [topTab]);
+
   const serverPinByPostId = useMemo(() => {
     const map: Record<number, { pinned: boolean; pinnedAt: string | null }> = {};
     posts.forEach((item) => {
@@ -1404,11 +1460,8 @@ export default function BoardCommunityPage() {
   };
 
   const handleTopTabChange = (nextTab: CommunityTopTab) => {
-    if (nextTab === "activity" && topTab === "activity" && activityView !== "home") {
+    if (nextTab === "activity" && activityView !== "home") {
       setActivityView("home");
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
     }
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
@@ -1423,6 +1476,9 @@ export default function BoardCommunityPage() {
         params.delete("tab");
       }
       return params;
+    });
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
   };
 
@@ -1718,10 +1774,9 @@ export default function BoardCommunityPage() {
       <Navbar />
       <BoardSectionHeader
         title="커뮤니티"
-        subtitle="자유게시판과 공지게시판에서 다양한 소식을 확인해보세요"
       />
 
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px", minHeight: "calc(100vh - 220px)" }}>
         <section
           aria-label="커뮤니티 상단 탭"
           style={{
@@ -1762,55 +1817,86 @@ export default function BoardCommunityPage() {
           <>
             <div className="community-sticky-gap" aria-hidden="true" />
             <section className="board-community-layout">
-              <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
-                <CommunityProfileCard
-                  selectedView={activityView}
-                  onSelectView={handleActivityViewSelect}
-                  writeHref="/circle/my"
-                  writeLabel="전체 활동"
-                  onWriteClick={() => handleActivityViewSelect("home")}
-                  replaceWithPending={isAdmin && activityEditMode}
-                  pendingContent={
-                    isAdmin && activityEditMode ? (
-                      <BoardPendingPanel
-                        postPinnedCount={0}
-                        postDeletedCount={activityPendingDeleteCount}
-                        boardCreateCount={0}
-                        boardRenameCount={0}
-                        boardDeleteCount={0}
-                        onReset={resetActivityEditState}
-                        onApply={() => void applyActivityEditChanges()}
-                        resetDisabled={isApplyingActivityEdits || activityPendingDeleteCount === 0}
-                        applyDisabled={isApplyingActivityEdits}
-                        embedded
-                      />
-                    ) : undefined
-                  }
-                  bottomAction={
-                    isAdmin && activityView !== "myReplies" ? (
-                      <button
-                        type="button"
-                        onClick={toggleActivityEditMode}
-                        className={`community-side-edit-toggle ${activityEditMode ? "active" : ""}`}
-                        aria-label="모임 활동 편집모드 전환"
-                        title="모임 활동 편집"
-                      >
-                        <Settings size={16} strokeWidth={2} aria-hidden="true" />
-                        <span>편집모드</span>
-                      </button>
-                    ) : undefined
-                  }
-                />
-              </aside>
+              {showActivityLayoutSkeleton ? (
+                <>
+                  <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
+                    <section
+                      style={{
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 14,
+                        backgroundColor: "#fff",
+                        padding: 16,
+                        display: "grid",
+                        gap: 12,
+                      }}
+                      aria-hidden="true"
+                    >
+                      <span className="community-skeleton-block community-activity-skeleton-headline" />
+                      <div className="community-sidebar-skeleton-list">
+                        <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                        <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                        <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                        <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                      </div>
+                      <span className="community-skeleton-block" style={{ width: "100%", height: 42, borderRadius: 10 }} />
+                    </section>
+                  </aside>
+                  <section className="community-center-column">
+                    <ActivityFeedListSkeleton count={3} />
+                  </section>
+                  <aside className="community-right-sidebar" aria-hidden="true" />
+                </>
+              ) : (
+                <>
+                  <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
+                    <CommunityProfileCard
+                      selectedView={activityView}
+                      onSelectView={handleActivityViewSelect}
+                      writeHref="/circle/my"
+                      writeLabel="전체 활동"
+                      onWriteClick={() => handleActivityViewSelect("home")}
+                      replaceWithPending={isAdmin && activityEditMode}
+                      pendingContent={
+                        isAdmin && activityEditMode ? (
+                          <BoardPendingPanel
+                            postPinnedCount={0}
+                            postDeletedCount={activityPendingDeleteCount}
+                            boardCreateCount={0}
+                            boardRenameCount={0}
+                            boardDeleteCount={0}
+                            onReset={resetActivityEditState}
+                            onApply={() => void applyActivityEditChanges()}
+                            resetDisabled={isApplyingActivityEdits || activityPendingDeleteCount === 0}
+                            applyDisabled={isApplyingActivityEdits}
+                            embedded
+                          />
+                        ) : undefined
+                      }
+                      bottomAction={
+                        isAdmin && activityView !== "myReplies" ? (
+                          <button
+                            type="button"
+                            onClick={toggleActivityEditMode}
+                            className={`community-side-edit-toggle ${activityEditMode ? "active" : ""}`}
+                            aria-label="모임 활동 편집모드 전환"
+                            title="모임 활동 편집"
+                          >
+                            <Settings size={16} strokeWidth={2} aria-hidden="true" />
+                            <span>편집모드</span>
+                          </button>
+                        ) : undefined
+                      }
+                    />
+                  </aside>
 
-              <section className="community-center-column">
-              <CommunityListState
-                loading={activityLoading}
-                loadingContent={<ActivityFeedListSkeleton count={3} />}
-                errorMessage={activityErrorMessage}
-                isEmpty={activityView === "myReplies" ? activityReplyItems.length === 0 : activityPostItems.length === 0}
-                emptyText={activityEmptyText}
-              >
+                  <section className="community-center-column">
+                    <CommunityListState
+                      loading={delayedActivityListSkeleton}
+                      loadingContent={<ActivityFeedListSkeleton count={3} />}
+                      errorMessage={activityErrorMessage}
+                      isEmpty={activityView === "myReplies" ? activityReplyItems.length === 0 : activityPostItems.length === 0}
+                      emptyText={activityEmptyText}
+                    >
                 {activityView === "myReplies" ? (
                   <ul className="community-post-list">
                     {activityReplyItems.map((item) => (
@@ -1936,64 +2022,125 @@ export default function BoardCommunityPage() {
                     })}
                   </ul>
                 )}
-              </CommunityListState>
-              </section>
-              <aside className="community-right-sidebar" aria-hidden="true" />
+                    </CommunityListState>
+                  </section>
+                  <aside className="community-right-sidebar" aria-hidden="true" />
+                </>
+              )}
             </section>
           </>
         ) : (
-        <>
+        <div>
         <div className="community-sticky-gap" aria-hidden="true" />
         <section className={`board-community-layout ${isAdmin && editMode ? "is-edit-focus" : ""}`}>
-          {showGlobalBoardMenuSkeleton ? (
-            <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
-              <CommunityProfileCard
-                selectedView={view}
-                onSelectView={handleSidebarViewSelect}
-                writeHref={communityWriteHref}
-              />
-              <BoardMenuSkeleton count={5} />
-            </aside>
+          {showBoardLayoutSkeleton ? (
+            <>
+              <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
+                <section
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 14,
+                    backgroundColor: "#fff",
+                    padding: 16,
+                    display: "grid",
+                    gap: 12,
+                  }}
+                  aria-hidden="true"
+                >
+                  <span className="community-skeleton-block community-activity-skeleton-headline" />
+                  <div className="community-sidebar-skeleton-list">
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                    <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                  </div>
+                </section>
+                <BoardMenuSkeleton count={5} />
+              </aside>
+              <section className="community-center-column">
+                <section
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 12,
+                    backgroundColor: "#fff",
+                    padding: 14,
+                    display: "grid",
+                    gap: 10,
+                  }}
+                  aria-hidden="true"
+                >
+                  <span className="community-skeleton-block community-activity-skeleton-headline" />
+                  <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                </section>
+                <CommunityPostListSkeleton count={6} showBoardName={boardFilter === "all"} />
+              </section>
+              <aside className="community-right-sidebar" aria-hidden="true">
+                <section
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 14,
+                    backgroundColor: "#fff",
+                    padding: 14,
+                    display: "grid",
+                    gap: 10,
+                  }}
+                >
+                  <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                  <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                </section>
+              </aside>
+            </>
           ) : (
-            <CommunityLeftSidebar
-              selectedView={view}
-              onSelectView={handleSidebarViewSelect}
-              selectedBoard={boardFilter}
-              onSelectBoard={handleSidebarBoardSelect}
-              noticeBoardLabel={noticeBoardLabel}
-              freeBoardLabel={freeBoardLabel}
-              hasNoticeBoard={effectiveHasNoticeBoard}
-              hasFreeBoard={effectiveHasFreeBoard}
-              extraBoards={extraGlobalBoards}
-              noticeChanged={noticeBoardRenamed}
-              freeChanged={freeBoardRenamed}
-              canAddBoard={isAdmin && editMode}
-              onAddBoard={handleAddGlobalBoardDraft}
-              pendingAddedBoardNames={boardStagedCustomCreates}
-              pendingPanel={
-                isAdmin && editMode ? (
-                  <BoardPendingPanel
-                    postPinnedCount={formatPendingCount(pendingPinDelta)}
-                    postDeletedCount={formatPendingCount(pendingDeleteCount)}
-                    boardCreateCount={formatPendingCount(boardCreateCount)}
-                    boardRenameCount={formatPendingCount(boardRenameChangeCount)}
-                    boardDeleteCount={formatPendingCount(boardDeleteCount)}
-                    onReset={resetToEditInitialState}
-                    onApply={() => void applyEditChanges()}
-                    resetDisabled={isApplyingEdits || !hasPendingEditChanges}
-                    applyDisabled={isApplyingEdits}
-                    showBasePinnedCount
-                    basePinnedCount={basePinnedCount}
-                    embedded
+            <>
+              {showGlobalBoardMenuSkeleton ? (
+                <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
+                  <CommunityProfileCard
+                    selectedView={view}
+                    onSelectView={handleSidebarViewSelect}
+                    writeHref={communityWriteHref}
                   />
-                ) : undefined
-              }
-              showEditModeToggle={isAdmin}
-              editModeActive={editMode}
-              onToggleEditMode={toggleEditMode}
-            />
-          )}
-          <section className="community-center-column">
+                  <BoardMenuSkeleton count={5} />
+                </aside>
+              ) : (
+                <CommunityLeftSidebar
+                  selectedView={view}
+                  onSelectView={handleSidebarViewSelect}
+                  selectedBoard={boardFilter}
+                  onSelectBoard={handleSidebarBoardSelect}
+                  noticeBoardLabel={noticeBoardLabel}
+                  freeBoardLabel={freeBoardLabel}
+                  hasNoticeBoard={effectiveHasNoticeBoard}
+                  hasFreeBoard={effectiveHasFreeBoard}
+                  extraBoards={extraGlobalBoards}
+                  noticeChanged={noticeBoardRenamed}
+                  freeChanged={freeBoardRenamed}
+                  canAddBoard={isAdmin && editMode}
+                  onAddBoard={handleAddGlobalBoardDraft}
+                  pendingAddedBoardNames={boardStagedCustomCreates}
+                  pendingPanel={
+                    isAdmin && editMode ? (
+                      <BoardPendingPanel
+                        postPinnedCount={formatPendingCount(pendingPinDelta)}
+                        postDeletedCount={formatPendingCount(pendingDeleteCount)}
+                        boardCreateCount={formatPendingCount(boardCreateCount)}
+                        boardRenameCount={formatPendingCount(boardRenameChangeCount)}
+                        boardDeleteCount={formatPendingCount(boardDeleteCount)}
+                        onReset={resetToEditInitialState}
+                        onApply={() => void applyEditChanges()}
+                        resetDisabled={isApplyingEdits || !hasPendingEditChanges}
+                        applyDisabled={isApplyingEdits}
+                        showBasePinnedCount
+                        basePinnedCount={basePinnedCount}
+                        embedded
+                      />
+                    ) : undefined
+                  }
+                  showEditModeToggle={isAdmin}
+                  editModeActive={editMode}
+                  onToggleEditMode={toggleEditMode}
+                />
+              )}
+              <section className="community-center-column">
             <CommunityBoardToolbar
               title={boardTitle}
               titleContent={
@@ -2041,7 +2188,7 @@ export default function BoardCommunityPage() {
             {!editMode && <GlobalPinnedPreviewSection fromPath={boardFromPath} />}
             <section>
               <CommunityListState
-                loading={loading}
+                loading={showGlobalBoardListSkeleton}
                 loadingContent={
                   <CommunityPostListSkeleton
                     count={6}
@@ -2222,11 +2369,13 @@ export default function BoardCommunityPage() {
                   </p>
                 </div>
               )}
-            </section>
-          </section>
-          <CommunityRightSidebar />
+              </section>
+              </section>
+              <CommunityRightSidebar />
+            </>
+          )}
         </section>
-        </>
+        </div>
         )}
       </main>
 

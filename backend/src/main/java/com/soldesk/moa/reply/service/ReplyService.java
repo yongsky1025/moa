@@ -178,8 +178,10 @@ public class ReplyService {
         if (!owner) {
             Long circleId = getCircleIdIfCirclePost(post);
             if (circleId != null) {
-                // circle은 리더가 댓글 삭제 가능
-                circlePermissionService.requireLeader(circleId, userId);
+                // circle은 리더 또는 관리자만 타인 댓글 삭제 가능
+                if (!isAdmin(userId)) {
+                    circlePermissionService.requireLeader(circleId, userId);
+                }
             } else if (!isAdmin(userId)) {
                 throw new ReplyForbiddenException("[#REPLY] 작성자만 삭제할 수 있습니다.");
             }
@@ -277,7 +279,7 @@ public class ReplyService {
             return;
         }
         requireAuthenticated(userId, "[#REPLY] 로그인 후 접근할 수 있습니다.");
-        circlePermissionService.requireActiveMember(circleId, userId);
+        requireCircleMemberOrAdmin(circleId, userId);
     }
 
     private void requireWritePermission(Post post, Long userId) {
@@ -285,12 +287,19 @@ public class ReplyService {
         if (circleId == null) {
             return;
         }
-        circlePermissionService.requireActiveMember(circleId, userId);
+        requireCircleMemberOrAdmin(circleId, userId);
     }
 
     private void requireReactionPermission(Post post, Long userId) {
         Long circleId = getCircleIdIfCirclePost(post);
         if (circleId == null) {
+            return;
+        }
+        requireCircleMemberOrAdmin(circleId, userId);
+    }
+
+    private void requireCircleMemberOrAdmin(Long circleId, Long userId) {
+        if (isAdmin(userId)) {
             return;
         }
         circlePermissionService.requireActiveMember(circleId, userId);

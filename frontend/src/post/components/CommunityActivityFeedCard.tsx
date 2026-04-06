@@ -263,7 +263,6 @@ export default function CommunityActivityFeedCard({
                   e.stopPropagation();
                   onToggleReaction();
                 }}
-                disabled={!isLoggedIn}
                 aria-pressed={liked}
                 aria-label={liked ? "좋아요 취소" : "좋아요"}
               >

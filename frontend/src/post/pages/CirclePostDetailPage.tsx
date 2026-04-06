@@ -133,10 +133,22 @@ export default function CirclePostDetailPage() {
   const pendingPostLikeParityRef = useRef(0);
   const pendingBookmarkParityRef = useRef(0);
   const hasAppliedInitialFocusRef = useRef(false);
+  const memberAccessHandledRef = useRef(false);
+  const loginAccessHandledRef = useRef(false);
 
   useEffect(() => {
     if (!circleId || !boardId || !postId || Number.isNaN(cid) || Number.isNaN(bid) || Number.isNaN(pid)) {
       navigate("/circle", { replace: true });
+      return;
+    }
+
+    if (!isLoggedIn) {
+      if (!loginAccessHandledRef.current) {
+        loginAccessHandledRef.current = true;
+        window.alert("로그인 후 게시글을 확인할 수 있습니다.");
+      }
+      sessionStorage.setItem("postLoginRedirect", location.pathname + location.search);
+      navigate("/users/login", { replace: true });
       return;
     }
 
@@ -148,6 +160,15 @@ export default function CirclePostDetailPage() {
       circleBoardApi.getBoardPost(cid, bid, pid),
     ])
       .then(([circleRes, boardRes, postRes]) => {
+        if (!isAdmin && !circleRes.data.myRole) {
+          if (memberAccessHandledRef.current) {
+            return;
+          }
+          memberAccessHandledRef.current = true;
+          window.alert("해당 모임 멤버만 게시글을 확인할 수 있습니다. 가입 후 이용해주세요.");
+          navigate(`/circle/${cid}`, { replace: true });
+          return;
+        }
         setCircle(circleRes.data);
         setBoards(boardRes.data);
         setPost(postRes.data);
@@ -160,7 +181,7 @@ export default function CirclePostDetailPage() {
         setErrorMessage(getErrorMessage(e));
       })
       .finally(() => setLoading(false));
-  }, [bid, boardId, cid, circleId, navigate, pid, postId]);
+  }, [bid, boardId, cid, circleId, isAdmin, isLoggedIn, location.pathname, location.search, navigate, pid, postId]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -206,6 +227,7 @@ export default function CirclePostDetailPage() {
   const liked = (localPostReaction?.myReaction ?? post?.myReaction) === "LIKE";
   const displayReplyCount = post?.replyCount ?? totalReplyCount;
   const isOwner = !!post && !!user && post.authorPublicId === user.publicId;
+  const canUseCircleReport = isAdmin || !!circle?.myRole;
 
   const bookmarkQuery = useQuery<PostBookmarkSummary>({
     queryKey: ["postBookmark", pid],
@@ -354,6 +376,21 @@ export default function CirclePostDetailPage() {
     scheduleBookmarkCommit();
   };
 
+  const handleOpenPostReport = () => {
+    if (!isLoggedIn) {
+      sessionStorage.setItem("postLoginRedirect", location.pathname + location.search);
+      window.alert("로그인 후 신고할 수 있습니다.");
+      navigate("/users/login");
+      return;
+    }
+    if (!canUseCircleReport) {
+      window.alert("모임 가입 후 신고할 수 있습니다.");
+      navigate(`/circle/${cid}`);
+      return;
+    }
+    openReportForm("POST", pid);
+  };
+
   const handleSidebarBoardSelect = (board: "all" | number) => {
     if (isActivityContext) {
       navigate(`/circle/${cid}/activity`);
@@ -452,7 +489,7 @@ export default function CirclePostDetailPage() {
                     <PostActionMenu
                       canEdit={isOwner}
                       canDelete={false}
-                      canReport={isLoggedIn}
+                      canReport={!isOwner}
                       bookmarked={isBookmarked}
                       onToggleBookmark={toggleBookmark}
                         onEdit={() =>
@@ -460,7 +497,7 @@ export default function CirclePostDetailPage() {
                             state: { from: resolvedBackPath },
                           })
                         }
-                        onReport={() => openReportForm("POST", pid)}
+                        onReport={handleOpenPostReport}
                       />
                     }
                   actionSection={

@@ -12,6 +12,7 @@ import Navbar from "../../common/layout/Navbar";
 import "../../board/pages/boardCommunity.css";
 import "../styles/postDetail.css";
 import BoardPendingPanel from "../../board/components/BoardPendingPanel";
+import { ActivityFeedListSkeleton, CircleDetailBannerSkeleton } from "../../board/components/BoardSectionSkeletons";
 import CommunityProfileCard, {
   type CommunityProfileQuickView,
 } from "../../board/components/CommunityProfileCard";
@@ -19,6 +20,7 @@ import CircleActivityComposer from "../../common/components/CircleActivityCompos
 import type { CommunityMyReply, PostResponse } from "../types/postTypes";
 import { useAuthStore } from "../../store/authStore";
 import { getErrorMessage } from "../../common/utils/errorMessage";
+import { useDelayedLoading } from "../../common/hooks/useDelayedLoading";
 import CommunityActivityFeedCard from "../components/CommunityActivityFeedCard";
 import PostActionMenu from "../components/PostActionMenu";
 import { useInfiniteScroll } from "../../admin/hooks/useInfiniteScroll";
@@ -131,6 +133,7 @@ export default function CircleActivityTabPage() {
   const [loading, setLoading] = useState(true);
   const [listLoading, setListLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [joinLoading, setJoinLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [isApplyingDeletes, setIsApplyingDeletes] = useState(false);
   const [stagedPostDeletes, setStagedPostDeletes] = useState<Record<number, PostResponse>>({});
@@ -185,7 +188,11 @@ export default function CircleActivityTabPage() {
     [boards],
   );
   const isCircleLeader = circle?.myRole === "LEADER";
+  const isCircleMember = !!circle?.myRole;
   const canManageActivityEdit = isCircleLeader || isAdmin;
+  const canUseCircleReport = isAdmin || isCircleMember;
+  const showInitialLoadingSkeleton = useDelayedLoading(loading, 0, 300);
+  const showListLoadingSkeleton = useDelayedLoading(listLoading, 0, 300);
 
   useEffect(() => {
     void loadActivityPage();
@@ -492,6 +499,55 @@ export default function CircleActivityTabPage() {
     });
   };
 
+  const handleJoinCircle = async () => {
+    if (!Number.isFinite(cid) || joinLoading) {
+      return;
+    }
+    if (!isLoggedIn) {
+      sessionStorage.setItem("postLoginRedirect", `/circle/${cid}/activity`);
+      navigate("/users/login");
+      return;
+    }
+
+    setJoinLoading(true);
+    try {
+      await circleApi.joinCircle(cid);
+      window.alert("가입 신청이 완료됐습니다. 리더의 승인을 기다려주세요.");
+      await loadActivityPage();
+    } catch (e) {
+      window.alert(getErrorMessage(e));
+    } finally {
+      setJoinLoading(false);
+    }
+  };
+
+  const joinCtaLabel = useMemo(() => {
+    if (!isLoggedIn) {
+      return "로그인 후 가입 신청";
+    }
+    if (!circle) {
+      return "가입 신청";
+    }
+    if (circle.status === "OPEN") {
+      return "가입 신청";
+    }
+    if (circle.status === "PENDING") {
+      return "승인 대기";
+    }
+    if (circle.status === "FULL") {
+      return "정원 마감";
+    }
+    if (circle.status === "REJECTED") {
+      return "가입 거절됨";
+    }
+    return "가입 불가";
+  }, [circle, isLoggedIn]);
+
+  const canJoinAction = useMemo(
+    () => !isCircleMember && ((!isLoggedIn && !!circle) || (isLoggedIn && circle?.status === "OPEN")),
+    [circle, isCircleMember, isLoggedIn],
+  );
+
   const scheduleReactionCommit = (postId: number) => {
     const prevTimer = reactionCommitDebounceRef.current[postId];
     if (prevTimer) {
@@ -533,12 +589,13 @@ export default function CircleActivityTabPage() {
           [postId]: { liked: nextLiked, likeCount: nextLikeCount, error: undefined },
         }));
       })
-      .catch((e) => {
+      .catch(() => {
         const current = reactionSyncedRef.current[postId] ?? synced;
         reactionDesiredRef.current[postId] = current.liked;
+        window.alert("모임 가입 후 이용할 수 있습니다.");
         setReactionByPostId((prev) => ({
           ...prev,
-          [postId]: { liked: current.liked, likeCount: current.likeCount, error: getErrorMessage(e) },
+          [postId]: { liked: current.liked, likeCount: current.likeCount, error: undefined },
         }));
       })
       .finally(() => {
@@ -569,6 +626,7 @@ export default function CircleActivityTabPage() {
       .catch(() => {
         const current = bookmarkSyncedRef.current[postId] ?? synced;
         bookmarkDesiredRef.current[postId] = current;
+        window.alert("모임 가입 후 이용할 수 있습니다.");
         setBookmarkByPostId((prev) => ({
           ...prev,
           [postId]: { bookmarked: current },
@@ -635,63 +693,140 @@ export default function CircleActivityTabPage() {
     scheduleBookmarkCommit(post.postId);
   };
 
+  const handleOpenPostReport = (postId: number) => {
+    if (!isLoggedIn) {
+      sessionStorage.setItem("postLoginRedirect", `/circle/${cid}/activity`);
+      window.alert("로그인 후 신고할 수 있습니다.");
+      navigate("/users/login");
+      return;
+    }
+    if (!canUseCircleReport) {
+      window.alert("모임 가입 후 신고할 수 있습니다.");
+      navigate(`/circle/${cid}`);
+      return;
+    }
+    openReportForm("POST", postId);
+  };
+
   return (
     <div className="board-community-page" style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px 60px" }}>
-        {!loading && circle && <CircleDetailBanner circle={circle} />}
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px 60px", minHeight: "calc(100vh - 180px)" }}>
+        {showInitialLoadingSkeleton ? (
+          <CircleDetailBannerSkeleton />
+        ) : circle ? (
+          <CircleDetailBanner circle={circle} />
+        ) : null}
         <CircleDetailTabs circleId={cid} activeTab="activity" />
 
-        {loading && <p style={{ margin: 0, color: "#6b7280" }}>모임 활동을 불러오는 중...</p>}
-        {!loading && errorMessage && <p style={{ margin: 0, color: "#dc2626" }}>{errorMessage}</p>}
-
-        {!loading && !errorMessage && (
-          <>
-            <div className="community-sticky-gap" aria-hidden="true" />
-            <section className="board-community-layout">
-              <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
-                <CommunityProfileCard
-                  selectedView={selectedView}
-                  onSelectView={handleSelectView}
-                  writeHref={writeHref}
-                  writeLabel="전체 활동"
-                  onWriteClick={() => handleSelectView("home")}
-                  replaceWithPending={canManageActivityEdit && editMode}
-                  pendingContent={
-                    canManageActivityEdit && editMode ? (
-                      <BoardPendingPanel
-                        postPinnedCount={0}
-                        postDeletedCount={pendingPostDeleteCount}
-                        boardCreateCount={0}
-                        boardRenameCount={0}
-                        boardDeleteCount={0}
-                        onReset={resetDeleteDraft}
-                        onApply={() => void applyDeletes()}
-                        resetDisabled={isApplyingDeletes || !hasPendingDeletes}
-                        applyDisabled={isApplyingDeletes}
-                        embedded
-                      />
-                    ) : undefined
-                  }
-                  bottomAction={
-                    canManageActivityEdit && selectedView !== "myReplies" ? (
-                      <button
-                        type="button"
-                        onClick={toggleEditMode}
-                        className={`community-side-edit-toggle ${editMode ? "active" : ""}`}
-                        aria-label="모임 활동 편집모드 전환"
-                        title="모임 활동 편집"
-                      >
-                        <Settings size={16} strokeWidth={2} aria-hidden="true" />
-                        <span>편집모드</span>
-                      </button>
-                    ) : undefined
-                  }
+        <div className="community-sticky-gap" aria-hidden="true" />
+        <section className="board-community-layout">
+          <aside className="community-left-sidebar" style={{ display: "grid", gap: 12 }}>
+            {showInitialLoadingSkeleton ? (
+              <section
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 14,
+                  backgroundColor: "#fff",
+                  padding: 16,
+                  display: "grid",
+                  gap: 12,
+                }}
+                aria-hidden="true"
+              >
+                <span className="community-skeleton-block community-activity-skeleton-headline" />
+                <div className="community-sidebar-skeleton-list">
+                  <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                  <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                  <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                  <span className="community-skeleton-block community-sidebar-skeleton-line" />
+                </div>
+                <span
+                  className="community-skeleton-block"
+                  style={{ width: "100%", height: 42, borderRadius: 10 }}
                 />
-              </aside>
+              </section>
+            ) : isCircleMember ? (
+              <CommunityProfileCard
+                selectedView={selectedView}
+                onSelectView={handleSelectView}
+                writeHref={writeHref}
+                writeLabel="전체 활동"
+                onWriteClick={() => handleSelectView("home")}
+                replaceWithPending={canManageActivityEdit && editMode}
+                pendingContent={
+                  canManageActivityEdit && editMode ? (
+                    <BoardPendingPanel
+                      postPinnedCount={0}
+                      postDeletedCount={pendingPostDeleteCount}
+                      boardCreateCount={0}
+                      boardRenameCount={0}
+                      boardDeleteCount={0}
+                      onReset={resetDeleteDraft}
+                      onApply={() => void applyDeletes()}
+                      resetDisabled={isApplyingDeletes || !hasPendingDeletes}
+                      applyDisabled={isApplyingDeletes}
+                      embedded
+                    />
+                  ) : undefined
+                }
+                bottomAction={
+                  canManageActivityEdit && selectedView !== "myReplies" ? (
+                    <button
+                      type="button"
+                      onClick={toggleEditMode}
+                      className={`community-side-edit-toggle ${editMode ? "active" : ""}`}
+                      aria-label="모임 활동 편집모드 전환"
+                      title="모임 활동 편집"
+                    >
+                      <Settings size={16} strokeWidth={2} aria-hidden="true" />
+                      <span>편집모드</span>
+                    </button>
+                  ) : undefined
+                }
+              />
+            ) : (
+              <section
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 14,
+                  backgroundColor: "#fff",
+                  padding: 16,
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: "#1f2937" }}>모임 가입이 필요해요</p>
+                <button
+                  type="button"
+                  onClick={() => void handleJoinCircle()}
+                  disabled={!canJoinAction || joinLoading}
+                  style={{
+                    width: "100%",
+                    height: 42,
+                    border: "none",
+                    borderRadius: 10,
+                    backgroundColor: canJoinAction ? "#5F8F7B" : "#d1d5db",
+                    color: "#fff",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: canJoinAction && !joinLoading ? "pointer" : "default",
+                  }}
+                >
+                  {joinLoading ? "처리 중..." : joinCtaLabel}
+                </button>
+              </section>
+            )}
+          </aside>
 
-              <section className="community-center-column">
-                {activityBoardId && (
+          <section className="community-center-column">
+            {showInitialLoadingSkeleton ? (
+              <ActivityFeedListSkeleton count={4} />
+            ) : errorMessage ? (
+              <p style={{ margin: 0, color: "#dc2626" }}>{errorMessage}</p>
+            ) : (
+              <>
+                {isCircleMember && activityBoardId && (
                   <CircleActivityComposer
                     circleId={cid}
                     circleName={circle?.name}
@@ -712,8 +847,8 @@ export default function CircleActivityTabPage() {
                     }}
                   />
                 )}
-                {listLoading ? (
-                  <p style={{ margin: 0, color: "#6b7280" }}>목록을 불러오는 중...</p>
+                {showListLoadingSkeleton ? (
+                  <ActivityFeedListSkeleton count={3} />
                 ) : selectedView === "myReplies" ? (
                   replyItems.length === 0 ? (
                     <p style={{ margin: 0, color: "#6b7280" }}>{emptyText}</p>
@@ -815,7 +950,7 @@ export default function CircleActivityTabPage() {
                                         state: { from: boardFromPath },
                                       })
                                     }
-                                    onReport={() => openReportForm("POST", post.postId)}
+                                    onReport={() => handleOpenPostReport(post.postId)}
                                   />
                                 }
                               metaAction={
@@ -850,13 +985,12 @@ export default function CircleActivityTabPage() {
                     )}
                   </>
                 )}
-              </section>
+              </>
+            )}
+          </section>
 
-              <aside className="community-right-sidebar" aria-hidden="true" />
-
-            </section>
-          </>
-        )}
+          <aside className="community-right-sidebar" aria-hidden="true" />
+        </section>
       </main>
       <Footer />
     </div>
