@@ -1074,6 +1074,52 @@ INSERT INTO likes (id, target_type, target_id, user_id, create_date, update_date
 (9, 'CIRCLE', 13, 50, '2026-02-20 09:30:00', '2026-02-20 09:30:00');
 
 -- ============================================================
+-- 서클 커버 이미지
+-- ============================================================
+INSERT INTO image (image_id, name, uuid, path, domain, owner_id, uploaded_by_user_id, ord, deleted, status, create_date, update_date) VALUES
+(82,  '책벌레모임.jpg',      'circle-img-0001', '/uploads/images/circle/dummy_image/책벌레모임.jpg',      'CIRCLE',  1,  3,  1, false, 'USED', '2025-04-10 10:00:00', '2025-04-10 10:00:00'),
+(83,  '새벽러닝크루.jpg',    'circle-img-0002', '/uploads/images/circle/dummy_image/새벽러닝크루.jpg',    'CIRCLE',  2,  6,  1, false, 'USED', '2025-04-15 06:00:00', '2025-04-15 06:00:00'),
+(84,  '기타동호회.webp',     'circle-img-0003', '/uploads/images/circle/dummy_image/기타동호회.webp',     'CIRCLE',  3,  38, 1, false, 'USED', '2025-04-20 14:00:00', '2025-04-20 14:00:00'),
+(85,  '맛집탐방단.jpg',      'circle-img-0004', '/uploads/images/circle/dummy_image/맛집탐방단.jpg',      'CIRCLE',  4,  10, 1, false, 'USED', '2025-05-01 12:00:00', '2025-05-01 12:00:00'),
+(86,  '주말등산회.jpg',      'circle-img-0005', '/uploads/images/circle/dummy_image/주말등산회.jpg',      'CIRCLE',  5,  6,  1, false, 'USED', '2025-05-10 08:00:00', '2025-05-10 08:00:00'),
+(87,  '코딩스터디.webp',     'circle-img-0006', '/uploads/images/circle/dummy_image/코딩스터디.webp',     'CIRCLE',  6,  8,  1, false, 'USED', '2025-05-20 19:00:00', '2025-05-20 19:00:00'),
+(88,  '보드게임카페.jpg',    'circle-img-0007', '/uploads/images/circle/dummy_image/보드게임카페.jpg',    'CIRCLE',  7,  18, 1, false, 'USED', '2025-06-01 18:00:00', '2025-06-01 18:00:00'),
+(89,  '수채화클래스.webp',   'circle-img-0008', '/uploads/images/circle/dummy_image/수채화클래스.webp',   'CIRCLE',  8,  1,  1, false, 'USED', '2025-06-10 11:00:00', '2025-06-10 11:00:00'),
+(90,  '영화동호회.jpg',      'circle-img-0009', '/uploads/images/circle/dummy_image/영화동호회.jpg',      'CIRCLE',  9,  17, 1, false, 'USED', '2025-06-20 20:00:00', '2025-06-20 20:00:00'),
+(91,  '축구동호회.avif',     'circle-img-0010', '/uploads/images/circle/dummy_image/축구동호회.avif',     'CIRCLE', 10,  12, 1, false, 'USED', '2025-07-01 07:00:00', '2025-07-01 07:00:00'),
+(92,  '우쿨렐레모임.jpg',    'circle-img-0011', '/uploads/images/circle/dummy_image/우쿨렐레모임.jpg',    'CIRCLE', 11,  1,  1, false, 'USED', '2025-07-15 15:00:00', '2025-07-15 15:00:00'),
+(93,  '베이킹클럽.webp',     'circle-img-0012', '/uploads/images/circle/dummy_image/베이킹클럽.webp',     'CIRCLE', 12,  1,  1, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
+(94,  '캠핑동호회.jpg',      'circle-img-0013', '/uploads/images/circle/dummy_image/캠핑동호회.jpg',      'CIRCLE', 13,  24, 1, false, 'USED', '2025-08-15 09:00:00', '2025-08-15 09:00:00'),
+(95,  '영어회화모임.jpg',    'circle-img-0014', '/uploads/images/circle/dummy_image/영어회화모임.jpg',    'CIRCLE', 14,  1,  1, false, 'USED', '2025-09-01 19:30:00', '2025-09-01 19:30:00'),
+(96,  '사진출사모임.png',    'circle-img-0015', '/uploads/images/circle/dummy_image/사진출사모임.png',    'CIRCLE', 15,  21, 1, false, 'USED', '2025-09-10 14:00:00', '2025-09-10 14:00:00'),
+(97,  '테니스동호회.webp',   'circle-img-0016', '/uploads/images/circle/dummy_image/테니스동호회.webp',   'CIRCLE', 16,  1,  1, false, 'USED', '2025-10-01 08:00:00', '2025-10-01 08:00:00'),
+(98,  '독립영화감상.webp',   'circle-img-0017', '/uploads/images/circle/dummy_image/독립영화감상.webp',   'CIRCLE', 17,  1,  1, false, 'USED', '2026-01-20 16:00:00', '2026-01-20 16:00:00'),
+(99,  '요가동호회.jpg',      'circle-img-0018', '/uploads/images/circle/dummy_image/요가동호회.jpg',      'CIRCLE', 18,  1,  1, false, 'USED', '2026-02-01 18:00:00', '2026-02-01 18:00:00'),
+(100, '뜨개질모음.png',      'circle-img-0019', '/uploads/images/circle/dummy_image/뜨개질모음.png',      'CIRCLE', 19,  1,  1, false, 'USED', '2026-02-10 11:00:00', '2026-02-10 11:00:00'),
+(101, '프리다이빙모임.webp', 'circle-img-0020', '/uploads/images/circle/dummy_image/프리다이빙모임.webp', 'CIRCLE', 20,  50, 1, false, 'USED', '2026-03-01 10:00:00', '2026-03-01 10:00:00');
+
+UPDATE circle SET cover_image_id = 82  WHERE circle_id = 1;
+UPDATE circle SET cover_image_id = 83  WHERE circle_id = 2;
+UPDATE circle SET cover_image_id = 84  WHERE circle_id = 3;
+UPDATE circle SET cover_image_id = 85  WHERE circle_id = 4;
+UPDATE circle SET cover_image_id = 86  WHERE circle_id = 5;
+UPDATE circle SET cover_image_id = 87  WHERE circle_id = 6;
+UPDATE circle SET cover_image_id = 88  WHERE circle_id = 7;
+UPDATE circle SET cover_image_id = 89  WHERE circle_id = 8;
+UPDATE circle SET cover_image_id = 90  WHERE circle_id = 9;
+UPDATE circle SET cover_image_id = 91  WHERE circle_id = 10;
+UPDATE circle SET cover_image_id = 92  WHERE circle_id = 11;
+UPDATE circle SET cover_image_id = 93  WHERE circle_id = 12;
+UPDATE circle SET cover_image_id = 94  WHERE circle_id = 13;
+UPDATE circle SET cover_image_id = 95  WHERE circle_id = 14;
+UPDATE circle SET cover_image_id = 96  WHERE circle_id = 15;
+UPDATE circle SET cover_image_id = 97  WHERE circle_id = 16;
+UPDATE circle SET cover_image_id = 98  WHERE circle_id = 17;
+UPDATE circle SET cover_image_id = 99  WHERE circle_id = 18;
+UPDATE circle SET cover_image_id = 100 WHERE circle_id = 19;
+UPDATE circle SET cover_image_id = 101 WHERE circle_id = 20;
+
+-- ============================================================
 -- DONE
 -- ============================================================
 SET FOREIGN_KEY_CHECKS = 1;
