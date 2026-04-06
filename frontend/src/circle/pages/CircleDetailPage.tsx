@@ -1088,7 +1088,7 @@ export default function CircleDetailPage() {
                           borderRadius: "50%",
                           flexShrink: 0,
                           backgroundColor:
-                            m.role === "LEADER" ? "#111" : m.role === "SUB_LEADER" ? "#4E7C69" : "#e5e7eb",
+                            m.role === "LEADER" ? "#D07856" : "#5F8F7B",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1098,19 +1098,7 @@ export default function CircleDetailPage() {
                               : "default",
                         }}
                       >
-                        <svg
-                          width="15"
-                          height="15"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke={m.role === "LEADER" || m.role === "SUB_LEADER" ? "white" : "#6b7280"}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <circle cx="12" cy="8" r="4" />
-                          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                        </svg>
+                        <UserRound size={17} color="#fff" />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <span
