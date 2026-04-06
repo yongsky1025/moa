@@ -277,7 +277,10 @@ export default function Navbar() {
                     <Link
                       to={item.href}
                       onClick={(e) => {
-                        if (location.pathname === item.href) {
+                        if (dropdownItems[item.label]?.length) {
+                          setHoveredItem(null);
+                          setOpenDropdown(null);
+                        } else if (location.pathname === item.href) {
                           e.preventDefault();
                           navigate(0);
                         }
