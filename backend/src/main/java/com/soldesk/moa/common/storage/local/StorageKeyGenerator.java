@@ -1,6 +1,7 @@
 package com.soldesk.moa.common.storage.local;
 
 import java.util.UUID;
+import java.util.Locale;
 
 public final class StorageKeyGenerator {
 
@@ -38,7 +39,7 @@ public final class StorageKeyGenerator {
             if (builder.length() > 0) {
                 builder.append("/");
             }
-            builder.append(part.replaceAll("[^a-zA-Z0-9_-]", "_"));
+            builder.append(part.replaceAll("[^a-zA-Z0-9_-]", "_").toLowerCase(Locale.ROOT));
         }
         return builder.length() == 0 ? "common" : builder.toString();
     }
