@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import LikeHeartButton from "./LikeHeartButton";
 
 export interface CircleItem {
@@ -5,8 +6,10 @@ export interface CircleItem {
   title: string;
   location: string;
   tag: string;
+  description: string;
   data: string;
   image: string;
+  starRating?: number;
 }
 
 interface CircleCardProps {
@@ -99,51 +102,91 @@ export default function CircleCard({ item, badge, badgeColor, isLiked, isHovered
 
       {/* 정보 영역 */}
       <div style={{ padding: "12px 14px 16px" }}>
-        {/* 위치 | 태그 */}
+        {/* 제목 + 카테고리 */}
         <div
           style={{
-            fontSize: 11,
-            color: "#6B7280",
-            marginBottom: 3,
-            fontWeight: 500,
-            letterSpacing: 0.1,
             display: "flex",
-            alignItems: "center",
+            alignItems: "baseline",
             gap: 6,
+            marginBottom: 4,
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
           }}
         >
-          <span>{item.location}</span>
           <span
             style={{
-              width: 1,
-              height: 10,
-              backgroundColor: "#E5E7EB",
-              flexShrink: 0,
-              alignSelf: "center",
+              fontSize: 14,
+              fontWeight: 800,
+              color: "#1F2937",
+              lineHeight: 1.4,
             }}
-          />
-          <span>{item.tag}</span>
+          >
+            {item.title}
+          </span>
+          {item.location && (
+            <>
+              <span
+                style={{
+                  width: 1,
+                  height: 12,
+                  backgroundColor: "#E5E7EB",
+                  flexShrink: 0,
+                  alignSelf: "center",
+                  position: "relative",
+                  top: 1,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#5F8F7B",
+                  flexShrink: 0,
+                }}
+              >
+                {item.location}
+              </span>
+            </>
+          )}
         </div>
 
-        {/* 제목 */}
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 800,
-            color: "#1F2937",
-            lineHeight: 1.4,
-            overflow: "hidden",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            marginBottom: 3,
-          }}
-        >
-          {item.title}
-        </div>
+        {/* 설명 */}
+        {item.description && (
+          <div
+            style={{
+              fontSize: 12,
+              color: "#6B7280",
+              lineHeight: 1.4,
+              overflow: "hidden",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              marginBottom: 4,
+            }}
+          >
+            {item.description}
+          </div>
+        )}
 
-        {/* 날짜 */}
-        <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 400 }}>{item.data}</div>
+        {/* 인원 수 */}
+        {item.tag && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#6B7280" }}>
+            <Users style={{ width: 12, height: 12 }} />
+            {item.tag}
+          </div>
+        )}
+
+        {/* 적합도 별 */}
+        {item.starRating != null && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, color: "#6B7280" }}>
+            <span style={{ fontWeight: 600 }}>적합도</span>
+            <span style={{ color: "#d97706", letterSpacing: 1 }}>
+              {"★".repeat(item.starRating)}
+              {"☆".repeat(3 - item.starRating)}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

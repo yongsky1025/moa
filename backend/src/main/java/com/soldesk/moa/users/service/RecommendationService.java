@@ -80,9 +80,13 @@ public class RecommendationService {
 
                 // 3. 각 기준별 유사도 계산 + 정렬 + limit
                 List<RecommendationResponseDTO> overall = profiles.stream()
-                                .map(ep -> new RecommendationResponseDTO(ep.getCircle(),
-                                                weightedEuclideanSimilarity(userOverall, toOverallVector(ep),
-                                                                WEIGHTS_OVERALL)))
+                                .map(ep -> {
+                                        double[] circleVec = toOverallVector(ep);
+                                        return new RecommendationResponseDTO(ep.getCircle(),
+                                                        weightedEuclideanSimilarity(userOverall, circleVec,
+                                                                        WEIGHTS_OVERALL),
+                                                        userOverall, circleVec);
+                                })
                                 .sorted((a, b) -> Double.compare(b.getSimilarity(), a.getSimilarity()))
                                 .limit(limit)
                                 .collect(Collectors.toList());
@@ -98,17 +102,25 @@ public class RecommendationService {
                 }
 
                 List<RecommendationResponseDTO> social = profiles.stream()
-                                .map(ep -> new RecommendationResponseDTO(ep.getCircle(),
-                                                weightedEuclideanSimilarity(userSocial, toSocialVector(ep),
-                                                                WEIGHTS_SOCIAL)))
+                                .map(ep -> {
+                                        double[] circleVec = toOverallVector(ep);
+                                        return new RecommendationResponseDTO(ep.getCircle(),
+                                                        weightedEuclideanSimilarity(userSocial, toSocialVector(ep),
+                                                                        WEIGHTS_SOCIAL),
+                                                        userOverall, circleVec);
+                                })
                                 .sorted((a, b) -> Double.compare(b.getSimilarity(), a.getSimilarity()))
                                 .limit(limit)
                                 .collect(Collectors.toList());
 
                 List<RecommendationResponseDTO> activity = profiles.stream()
-                                .map(ep -> new RecommendationResponseDTO(ep.getCircle(),
-                                                weightedEuclideanSimilarity(userActivity, toActivityVector(ep),
-                                                                WEIGHTS_ACTIVITY)))
+                                .map(ep -> {
+                                        double[] circleVec = toOverallVector(ep);
+                                        return new RecommendationResponseDTO(ep.getCircle(),
+                                                        weightedEuclideanSimilarity(userActivity, toActivityVector(ep),
+                                                                        WEIGHTS_ACTIVITY),
+                                                        userOverall, circleVec);
+                                })
                                 .sorted((a, b) -> Double.compare(b.getSimilarity(), a.getSimilarity()))
                                 .limit(limit)
                                 .collect(Collectors.toList());

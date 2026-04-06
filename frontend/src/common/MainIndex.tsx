@@ -94,18 +94,22 @@ const heroOverlay: React.CSSProperties = {
 function toCircleItem(c: {
   circleId: number;
   name: string;
+  description?: string;
   categoryName: string;
   currentMember: number;
   maxMember: number;
   coverImageUrl?: string;
+  starRating?: number;
 }): CircleItem {
   return {
     id: c.circleId,
     title: c.name,
     location: c.categoryName,
     tag: `${c.currentMember}/${c.maxMember}명`,
+    description: c.description || "",
     data: "",
     image: c.coverImageUrl || "",
+    starRating: c.starRating,
   };
 }
 
@@ -185,12 +189,13 @@ export default function MainPage({ isLoggedIn }: MainPageProps) {
       try {
         const popularRes = await api.get("/api/admin/circles/popular-circles");
         setPopularCircles(
-          popularRes.data.map((c: { circleId: number; circleName: string; categoryName: string; currentNumber: number; score: number }) => ({
+          popularRes.data.map((c: { circleId: number; circleName: string; categoryName: string; currentMember: number; score: number }) => ({
             id: c.circleId,
             title: c.circleName,
             location: c.categoryName,
-            // tag: c.categoryName,
-            data: `${c.currentNumber}명 참여 중`,
+            tag: `${c.currentMember}명 참여 중`,
+            description: "",
+            data: "",
             image: "",
           })),
         );

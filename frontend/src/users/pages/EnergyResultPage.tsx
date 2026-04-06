@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
-import { BookOpen, Trees, Coffee, Mountain, Eye, Footprints, Presentation, Flame, Users } from "lucide-react";
+import { BookOpen, Trees, Coffee, Mountain, Eye, Footprints, Presentation, Flame, Users, ChevronLeft } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { EnergyProfileResponse, GuestEnergyPreviewResponse } from "../../api/usersApi";
 import { energyProfileApi, guestEnergyApi } from "../../api/usersApi";
 import { useAuthStore } from "../../store/authStore";
 import { circleApi } from "../../api/circleApi";
-import type { RecommendationItem } from "../../circle/types/circle";
+import type { EnergyRecommendationItem } from "../types/energy";
 import Footer from "../../common/layout/Footer";
 import Navbar from "../../common/layout/Navbar";
 import { clearGuestEnergyImportIntent, setGuestEnergyImportIntent } from "../../common/utils/transientNavigationState";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 
 const MOA_PRIMARY = "#0F6E56";
 
@@ -64,10 +65,10 @@ export default function EnergyResultPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<"" | "NO_RESULT" | "LOAD_FAILED">("");
-  const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
+  const [recommendations, setRecommendations] = useState<EnergyRecommendationItem[]>([]);
   const [overallReason, setOverallReason] = useState<string | null>(null);
   const [recLoading, setRecLoading] = useState(false);
-  const [selectedIdx, setSelectedIdx] = useState(0);
+
 
   const guestToken = localStorage.getItem("guestEnergyToken");
   const isGuestPreview = !isLoggedIn && !!guestToken;
@@ -134,7 +135,7 @@ export default function EnergyResultPage() {
     circleApi
       .getRecommendationBundle(3)
       .then((res) => {
-        setRecommendations(res.data.overall);
+        setRecommendations(res.data.overall as EnergyRecommendationItem[]);
         setOverallReason(res.data.overallReason ?? null);
       })
       .catch(() => {})
@@ -142,7 +143,7 @@ export default function EnergyResultPage() {
   }, [isGuestPreview, isLoggedIn]);
 
   const podiumOrder = [recommendations[1], recommendations[0], recommendations[2]];
-  const podiumDataIdx = [1, 0, 2];
+
   const displayProfile = isGuestPreview ? guestPreview : result;
 
   const radarData =
@@ -168,6 +169,25 @@ export default function EnergyResultPage() {
     <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8" }}>
       <Navbar />
       <main style={{ maxWidth: 480, margin: "0 auto", padding: "40px 20px 80px" }}>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "#6B7280",
+            fontSize: 13,
+            fontWeight: 500,
+            padding: 0,
+            marginBottom: 16,
+          }}
+        >
+          <ChevronLeft size={18} />
+          이전 페이지로 돌아가기
+        </button>
         {loading && <p style={{ textAlign: "center", color: "#888", fontSize: 14 }}>불러오는 중...</p>}
 
         {error === "NO_RESULT" && (
@@ -349,22 +369,20 @@ export default function EnergyResultPage() {
                         {podiumOrder.map((item, posIdx) => {
                           if (!item) return null;
 
-                          const dataIdx = podiumDataIdx[posIdx];
                           const isBest = posIdx === 1;
-                          const isSelected = selectedIdx === dataIdx;
-                          const cardWidth = isBest ? 172 : 148;
-                          const imgHeight = isBest ? 96 : 80;
+                          const cardWidth = 148;
+                          const imgHeight = 68;
 
                           return (
                             <div
                               key={item.circleId}
-                              onClick={() => setSelectedIdx(dataIdx)}
+                              onClick={() => navigate(`/circle/${item.circleId}`)}
                               style={{
                                 width: cardWidth,
                                 backgroundColor: "#ffffff",
-                                border: isBest ? `2px solid ${MOA_PRIMARY}` : isSelected ? "1.5px solid #5F8F7B" : "0.5px solid #e8e8e8",
+                                border: isBest ? `2px solid ${MOA_PRIMARY}` : "0.5px solid #e8e8e8",
                                 borderRadius: 12,
-                                padding: isBest ? "16px 14px" : "14px 12px",
+                                padding: "14px 12px",
                                 display: "flex",
                                 flexDirection: "column",
                                 alignItems: "center",
@@ -383,10 +401,10 @@ export default function EnergyResultPage() {
                                     transform: "translateX(-50%)",
                                     backgroundColor: "#0F6E56",
                                     color: "#fff",
-                                    fontSize: 11,
-                                    fontWeight: 500,
-                                    padding: "2px 12px",
-                                    borderRadius: 6,
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                    padding: "2px 10px",
+                                    borderRadius: 4,
                                     whiteSpace: "nowrap",
                                   }}
                                 >
@@ -403,26 +421,28 @@ export default function EnergyResultPage() {
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
-                                  marginBottom: 10,
-                                  marginTop: isBest ? 4 : 0,
+                                  marginBottom: 8,
                                   overflow: "hidden",
                                 }}
                               >
                                 {item.coverImageUrl ? (
-                                  <img src={item.coverImageUrl} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  <img src={toAssetUrl(item.coverImageUrl)} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 ) : (
-                                  <Users size={isBest ? 28 : 24} color="#999" strokeWidth={1.5} />
+                                  <Users size={24} color="#999" strokeWidth={1.5} />
                                 )}
                               </div>
 
-                              <span style={{ fontSize: isBest ? 14 : 13, fontWeight: 500, color: "#1a1a1a", marginBottom: 4 }}>{item.name}</span>
-                              <span style={{ fontSize: isBest ? 12 : 11, color: "#888" }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", marginBottom: 2 }}>{item.name}</span>
+                              <span style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>
                                 {item.categoryName} · {item.currentMember}~{item.maxMember}명
                               </span>
-                              <div style={{ marginTop: 8, padding: isBest ? "4px 10px" : "3px 8px", backgroundColor: "#E1F5EE", borderRadius: 6 }}>
-                                <span style={{ fontSize: isBest ? 12 : 11, fontWeight: isBest ? 500 : 400, color: "#085041" }}>
-                                  적합도 {Math.round(item.similarity * 100)}%
+                              <div style={{ marginTop: "auto", padding: "4px 8px", backgroundColor: "#E1F5EE", borderRadius: 6, textAlign: "center" }}>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "#0F6E56", letterSpacing: 1 }}>
+                                  {"★".repeat(item.starRating)}{"☆".repeat(3 - item.starRating)}
                                 </span>
+                                <p style={{ fontSize: 10, fontWeight: 500, color: "#085041", margin: "2px 0 0", lineHeight: 1.3 }}>
+                                  {item.matchReason}
+                                </p>
                               </div>
                             </div>
                           );

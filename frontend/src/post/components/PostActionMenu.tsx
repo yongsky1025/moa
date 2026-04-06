@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bookmark } from "lucide-react";
+import { Bookmark, Flag, Trash2 } from "lucide-react";
 
 interface PostActionMenuProps {
   canEdit: boolean;
@@ -138,7 +138,10 @@ export default function PostActionMenu({
               }}
               className="moa-dropdown-item moa-dropdown-item-danger"
             >
-              삭제
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Trash2 size={14} strokeWidth={2} aria-hidden="true" />
+                삭제
+              </span>
             </button>
           )}
           {canReport && (
@@ -150,7 +153,10 @@ export default function PostActionMenu({
               }}
               className="moa-dropdown-item"
             >
-              신고
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Flag size={14} strokeWidth={2} aria-hidden="true" />
+                신고
+              </span>
             </button>
           )}
         </div>

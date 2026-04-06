@@ -43,6 +43,7 @@ import PostActionMenu from "../../post/components/PostActionMenu";
 import { useAuthStore } from "../../store/authStore";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import type { BoardResponse } from "../types/boardTypes";
+import { openReportForm } from "../../common/utils/openReportForm";
 
 interface CommunityPostItem {
   postId: number;
@@ -1860,7 +1861,7 @@ export default function BoardCommunityPage() {
                                     state: { from: "/board?tab=activity" },
                                   });
                                 }}
-                                onReport={() => window.alert("신고 기능은 준비 중입니다.")}
+                                onReport={() => openReportForm("POST", post.postId)}
                               />
                             }
                             metaAction={

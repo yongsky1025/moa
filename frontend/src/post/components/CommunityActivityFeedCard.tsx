@@ -1,6 +1,7 @@
 import {
   Eye,
   Heart,
+  UserRound,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
@@ -45,7 +46,7 @@ export default function CommunityActivityFeedCard({
   isLikeAnimating = false,
   reactionError,
   isLoggedIn,
-  avatarColor,
+  // avatarColor는 더 이상 사용하지 않음 (아이콘으로 통일)
   onToggleReaction,
   headerAction,
   metaAction,
@@ -123,8 +124,8 @@ export default function CommunityActivityFeedCard({
             </div>
             <div className="community-twitter-author-block">
               <span className="community-twitter-author-avatar-wrap">
-                <span className="community-twitter-avatar" style={{ backgroundColor: avatarColor }}>
-                  {post.authorName.charAt(0)}
+                <span className="community-twitter-avatar" style={{ backgroundColor: '#5F8F7B', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <UserRound size={18} color="#fff" />
                 </span>
               </span>
               <div className="community-twitter-author-info">
