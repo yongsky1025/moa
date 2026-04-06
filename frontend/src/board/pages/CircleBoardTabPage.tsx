@@ -26,7 +26,7 @@ import { postApi } from "../../post/api/postApi";
 import CommunityProfileCard, {
   type CommunityProfileQuickView,
 } from "../components/CommunityProfileCard";
-import CommunityRightSidebar from "../components/CommunityRightSidebar";
+import CircleBoardRightSidebar from "../components/CircleBoardRightSidebar";
 import "./boardCommunity.css";
 import { useAuthStore } from "../../store/authStore";
 import type {
@@ -1001,7 +1001,7 @@ export default function CircleBoardTabPage() {
               )}
             </section>
 
-            <CommunityRightSidebar />
+            <CircleBoardRightSidebar circleId={cid} boards={boards} />
           </section>
         </>
       </main>
