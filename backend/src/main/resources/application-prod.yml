@@ -5,11 +5,13 @@ spring:
       on-profile: prod
   jpa:
     hibernate:
-      ddl-auto: validate
+      # validate, update
+      ddl-auto: update
     defer-datasource-initialization: true
   sql:
     init:
-      mode: never
+      # never, always
+      mode: always
       data-locations:
         - classpath:seed-data.sql
         - classpath:dummy-data.sql
