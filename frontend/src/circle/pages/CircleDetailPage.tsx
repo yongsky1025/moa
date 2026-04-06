@@ -764,7 +764,7 @@ export default function CircleDetailPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                       <Link
                         to={`/circle/${cid}/schedules/create`}
-                        style={{ fontSize: 13, color: "#111", fontWeight: 600, textDecoration: "none" }}
+                        style={{ fontSize: 13, color: "#5F8F7B", fontWeight: 600, textDecoration: "none" }}
                       >
                         + 일정 만들기
                       </Link>
