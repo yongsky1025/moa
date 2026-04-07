@@ -215,7 +215,9 @@ CREATE TEMPORARY TABLE tmp_activity_seed (
     circle_id BIGINT NOT NULL,
     seq_no INT NOT NULL,
     author_user_id BIGINT NOT NULL,
+    seed_owner_key BIGINT NOT NULL,
     image_base_name VARCHAR(255) NOT NULL,
+    image_file_name VARCHAR(255) NOT NULL,
     image_path VARCHAR(500) NOT NULL,
     title VARCHAR(255) NOT NULL,
     content LONGTEXT NOT NULL,
@@ -224,51 +226,126 @@ CREATE TEMPORARY TABLE tmp_activity_seed (
 );
 
 INSERT INTO tmp_activity_seed (
-    circle_id, seq_no, author_user_id, image_base_name, image_path, title, content, activity_public
+    circle_id, seq_no, author_user_id, seed_owner_key, image_base_name, image_file_name, image_path, title, content, activity_public
 )
 WITH RECURSIVE seq(n) AS (
     SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 30
+),
+image_pool AS (
+    SELECT 1 AS idx, 'afterparty-chat' AS base_name, 'afterparty-chat.jpg' AS file_name
+    UNION ALL SELECT 2, 'boardgame-night', 'boardgame-night.jpg'
+    UNION ALL SELECT 3, 'book-club', 'book-club.jpg'
+    UNION ALL SELECT 4, 'brunch-meetup', 'brunch-meetup.jpg'
+    UNION ALL SELECT 5, 'cafe-gathering', 'cafe-gathering.jpg'
+    UNION ALL SELECT 6, 'coding-study', 'coding-study.jpg'
+    UNION ALL SELECT 7, 'community-cleanup', 'community-cleanup.jpg'
+    UNION ALL SELECT 8, 'cycling-ride', 'cycling-ride.jpg'
+    UNION ALL SELECT 9, 'group-photo', 'group-photo.jpg'
+    UNION ALL SELECT 10, 'hiking-trail', 'hiking-trail.jpg'
+    UNION ALL SELECT 11, 'hobby-workshop', 'hobby-workshop.jpg'
+    UNION ALL SELECT 12, 'indoor-activity', 'indoor-activity.jpg'
+    UNION ALL SELECT 13, 'language-exchange', 'language-exchange.jpg'
+    UNION ALL SELECT 14, 'meeting-snapshot', 'meeting-snapshot.png'
+    UNION ALL SELECT 15, 'member-moment', 'member-moment.jpg'
+    UNION ALL SELECT 16, 'movie-meetup', 'movie-meetup.webp'
+    UNION ALL SELECT 17, 'music-jam', 'music-jam.jpg'
+    UNION ALL SELECT 18, 'new-member-welcome', 'new-member-welcome.jpg'
+    UNION ALL SELECT 19, 'night-walk', 'night-walk.png'
+    UNION ALL SELECT 20, 'outdoor-activity', 'outdoor-activity.png'
+    UNION ALL SELECT 21, 'photo-walk', 'photo-walk.jpg'
+    UNION ALL SELECT 22, 'picnic-day', 'picnic-day.jpg'
+    UNION ALL SELECT 23, 'running-club', 'running-club.webp'
+    UNION ALL SELECT 24, 'sports-session', 'sports-session.png'
+    UNION ALL SELECT 25, 'study-session', 'study-session.webp'
+    UNION ALL SELECT 26, 'team-building', 'team-building.png'
+    UNION ALL SELECT 27, 'volunteer-day', 'volunteer-day.png'
+    UNION ALL SELECT 28, 'weekend-event', 'weekend-event.jpg'
+    UNION ALL SELECT 29, 'workshop-craft', 'workshop-craft.jpg'
+    UNION ALL SELECT 30, 'yoga-class', 'yoga-class.jpg'
 )
 SELECT
     c.circle_id,
     seq.n,
     (SELECT cm.user_id FROM circle_member cm WHERE cm.circle_id = c.circle_id AND cm.status = 'ACTIVE' ORDER BY RAND() LIMIT 1),
-    CONCAT('circle-', c.circle_id, '-',
-           CASE MOD(seq.n, 10)
-             WHEN 0 THEN 'group-photo' WHEN 1 THEN 'meeting-snapshot' WHEN 2 THEN 'outdoor-activity'
-             WHEN 3 THEN 'cafe-gathering' WHEN 4 THEN 'sports-session' WHEN 5 THEN 'study-session'
-             WHEN 6 THEN 'hobby-workshop' WHEN 7 THEN 'night-walk' WHEN 8 THEN 'weekend-event'
-             ELSE 'member-moment' END,
-           '-', LPAD(seq.n, 2, '0')),
+    -1 * (c.circle_id * 1000 + seq.n),
+    ip.base_name,
+    ip.file_name,
     CONCAT('/uploads/images/post/thumbnails/',
-           CONCAT('circle-', c.circle_id, '-',
-             CASE MOD(seq.n, 10)
-               WHEN 0 THEN 'group-photo' WHEN 1 THEN 'meeting-snapshot' WHEN 2 THEN 'outdoor-activity'
-               WHEN 3 THEN 'cafe-gathering' WHEN 4 THEN 'sports-session' WHEN 5 THEN 'study-session'
-               WHEN 6 THEN 'hobby-workshop' WHEN 7 THEN 'night-walk' WHEN 8 THEN 'weekend-event'
-               ELSE 'member-moment' END,
-             '-', LPAD(seq.n, 2, '0')),
+           ip.base_name,
            '_thm.webp'),
-    CASE MOD(seq.n, 12)
-      WHEN 0 THEN '정기 모임 스냅' WHEN 1 THEN '오늘 활동 인증샷' WHEN 2 THEN '모임 현장 분위기 공유'
-      WHEN 3 THEN '함께한 활동 기록' WHEN 4 THEN '이번 주 활동 하이라이트' WHEN 5 THEN '모임 사진 피드'
-      WHEN 6 THEN '활동 후기 + 사진' WHEN 7 THEN '다음 일정 기대되는 기록' WHEN 8 THEN '팀워크가 좋았던 순간'
-      WHEN 9 THEN '오늘의 베스트 장면' WHEN 10 THEN '모임 리캡 포토' ELSE '멤버들과 함께한 기록' END,
-    CONCAT('<p>오늘의 현장 분위기와 간단한 후기를 남겨요.</p>',
-           '<p>#모임활동 #커뮤니티 #함께하는취미</p><p><img src="',
-           CONCAT('/uploads/images/post/thumbnails/',
-                  CONCAT('circle-', c.circle_id, '-',
-                    CASE MOD(seq.n, 10)
-                      WHEN 0 THEN 'group-photo' WHEN 1 THEN 'meeting-snapshot' WHEN 2 THEN 'outdoor-activity'
-                      WHEN 3 THEN 'cafe-gathering' WHEN 4 THEN 'sports-session' WHEN 5 THEN 'study-session'
-                      WHEN 6 THEN 'hobby-workshop' WHEN 7 THEN 'night-walk' WHEN 8 THEN 'weekend-event'
-                      ELSE 'member-moment' END,
-                    '-', LPAD(seq.n, 2, '0')),
-                  '_thm.webp'),
-           '" alt="activity"></p>'),
+    CASE ip.idx
+      WHEN 1 THEN '뒤풀이 대화 스냅'
+      WHEN 2 THEN '보드게임 모임 기록'
+      WHEN 3 THEN '북클럽 오늘의 장면'
+      WHEN 4 THEN '브런치 모임 후기'
+      WHEN 5 THEN '카페 모임 스케치'
+      WHEN 6 THEN '코딩 스터디 현장'
+      WHEN 7 THEN '커뮤니티 정화 활동'
+      WHEN 8 THEN '자전거 라이딩 기록'
+      WHEN 9 THEN '단체사진 공유'
+      WHEN 10 THEN '등산 코스 스냅'
+      WHEN 11 THEN '취미 워크샵 모임'
+      WHEN 12 THEN '실내 활동 후기'
+      WHEN 13 THEN '언어교환 모임 인증'
+      WHEN 14 THEN '모임 스냅샷 아카이브'
+      WHEN 15 THEN '멤버 모먼트 공유'
+      WHEN 16 THEN '영화 모임 한 컷'
+      WHEN 17 THEN '음악 잼 모임 기록'
+      WHEN 18 THEN '신규 멤버 환영 모임'
+      WHEN 19 THEN '야간 산책 기록'
+      WHEN 20 THEN '야외 활동 하이라이트'
+      WHEN 21 THEN '사진 산책 피드'
+      WHEN 22 THEN '피크닉 데이 기록'
+      WHEN 23 THEN '러닝 크루 모임'
+      WHEN 24 THEN '스포츠 세션 후기'
+      WHEN 25 THEN '스터디 세션 요약'
+      WHEN 26 THEN '팀빌딩 활동 기록'
+      WHEN 27 THEN '봉사활동 스냅'
+      WHEN 28 THEN '주말 이벤트 공유'
+      WHEN 29 THEN '공예 워크샵 아카이브'
+      ELSE '요가 클래스 활동 기록'
+    END,
+    CONCAT(
+        CASE ip.idx
+            WHEN 1 THEN '<p>활동 후 자연스럽게 대화가 이어져서 서로 더 편해지는 시간이었습니다.</p><p>다음에도 짧게라도 뒤풀이 시간을 확보하면 좋겠습니다.</p>'
+            WHEN 2 THEN '<p>룰 설명을 먼저 맞추고 시작하니 처음 참여한 멤버도 금방 적응했습니다.</p><p>중간중간 팀을 섞어 진행한 점도 반응이 좋았습니다.</p>'
+            WHEN 3 THEN '<p>오늘 선정 도서 주제로 이야기가 깊게 이어져서 몰입감이 높았습니다.</p><p>다음 모임엔 추천 도서 리스트도 같이 정리해보겠습니다.</p>'
+            WHEN 4 THEN '<p>브런치 장소가 조용해서 대화 중심 모임에 잘 맞았습니다.</p><p>시간대도 좋아서 참석률이 높게 유지됐습니다.</p>'
+            WHEN 5 THEN '<p>카페 좌석 동선이 좋아서 소그룹 대화 전환이 수월했습니다.</p><p>다음에는 사진 포인트도 미리 안내해보겠습니다.</p>'
+            WHEN 6 THEN '<p>실습 주제를 짧게 나눠 진행하니 집중이 끊기지 않았습니다.</p><p>질문 정리 시간을 따로 둔 게 특히 도움이 됐습니다.</p>'
+            WHEN 7 THEN '<p>역할을 나눠 진행하니 작업 속도와 완성도가 모두 좋아졌습니다.</p><p>마무리 회고에서 다음 액션도 명확히 정리했습니다.</p>'
+            WHEN 8 THEN '<p>코스 난이도가 적당해서 초보와 숙련자 모두 무리 없이 참여했습니다.</p><p>휴식 지점을 미리 잡아둔 덕분에 흐름이 안정적이었습니다.</p>'
+            WHEN 9 THEN '<p>오늘 단체 컷이 잘 나와서 활동 분위기가 그대로 담겼습니다.</p><p>촬영 순서를 미리 정한 덕분에 진행도 빠르게 끝났어요.</p>'
+            WHEN 10 THEN '<p>등산 구간별 페이스를 맞춰 이동하니 전체 리듬이 고르게 유지됐습니다.</p><p>정상 도착 후 짧은 회고까지 깔끔하게 마무리했습니다.</p>'
+            WHEN 11 THEN '<p>워크샵 재료 준비가 충분해서 대기 없이 바로 시작할 수 있었습니다.</p><p>완성작 공유 시간도 분위기를 살리는 데 효과적이었습니다.</p>'
+            WHEN 12 THEN '<p>실내 공간 컨디션이 좋아서 집중도가 기대보다 높았습니다.</p><p>좌석 배치를 바꿔가며 진행하니 소통도 자연스러웠습니다.</p>'
+            WHEN 13 THEN '<p>짝을 바꿔가며 대화한 방식이 참여감을 높이는 데 큰 도움이 됐습니다.</p><p>초반 아이스브레이킹 질문도 효과가 좋았습니다.</p>'
+            WHEN 14 THEN '<p>짧은 스냅 중심으로 기록하니 현장감이 잘 살아났습니다.</p><p>다음엔 촬영 담당을 교대로 운영해볼 계획입니다.</p>'
+            WHEN 15 THEN '<p>각자 좋았던 순간을 공유하니 분위기가 한층 따뜻해졌습니다.</p><p>신규 멤버도 자연스럽게 의견을 내줘서 인상적이었습니다.</p>'
+            WHEN 16 THEN '<p>상영 후 감상 나눔 시간을 충분히 둔 덕분에 대화 밀도가 높았습니다.</p><p>다음 회차 후보작도 현장에서 빠르게 정리했습니다.</p>'
+            WHEN 17 THEN '<p>세션 순서를 단순하게 잡아 흐름이 끊기지 않았습니다.</p><p>합주 파트 교체 타이밍도 좋아서 완성도가 올라갔습니다.</p>'
+            WHEN 18 THEN '<p>신규 멤버 중심으로 소개 시간을 넉넉히 가져가니 긴장이 많이 풀렸습니다.</p><p>기존 멤버의 안내도 자연스러워 정착에 도움이 됐습니다.</p>'
+            WHEN 19 THEN '<p>야간 코스 안전 안내를 먼저 공유해 안정적으로 진행했습니다.</p><p>속도 조절이 잘 되어 마지막까지 컨디션이 좋았습니다.</p>'
+            WHEN 20 THEN '<p>야외 활동 동선이 효율적이라 대기 시간이 거의 없었습니다.</p><p>날씨 변수 대응도 준비돼 있어 매끄럽게 운영됐습니다.</p>'
+            WHEN 21 THEN '<p>사진 산책 구간을 테마별로 나눠 촬영하니 결과물이 다양하게 나왔습니다.</p><p>마지막에 베스트 컷을 함께 고른 것도 좋았습니다.</p>'
+            WHEN 22 THEN '<p>피크닉 준비물을 분담해 가져오니 진행 부담이 크게 줄었습니다.</p><p>휴식과 활동 비율도 적절해서 만족도가 높았습니다.</p>'
+            WHEN 23 THEN '<p>러닝 페이스 그룹을 나눠 운영하니 모두 무리 없이 완주했습니다.</p><p>종료 후 스트레칭까지 함께해서 컨디션 관리도 좋았습니다.</p>'
+            WHEN 24 THEN '<p>기초와 응용을 분리해 진행하니 참여자별 만족도가 올라갔습니다.</p><p>다음 회차에 반영할 피드백도 충분히 모았습니다.</p>'
+            WHEN 25 THEN '<p>스터디 주제를 작게 쪼개 발표하니 이해도가 높아졌습니다.</p><p>질의응답 시간을 늘린 점도 좋은 반응을 얻었습니다.</p>'
+            WHEN 26 THEN '<p>팀별 역할을 명확히 나누니 의사결정 속도가 빨라졌습니다.</p><p>협업 과정이 자연스럽게 정리돼 회고도 수월했습니다.</p>'
+            WHEN 27 THEN '<p>봉사 활동 구간을 사전에 브리핑해서 현장 혼선이 거의 없었습니다.</p><p>참여자 모두 적극적이어서 계획보다 빠르게 완료했습니다.</p>'
+            WHEN 28 THEN '<p>주말 이벤트 동선과 시간표를 단순화해 운영 효율이 좋아졌습니다.</p><p>참여자 피드백도 전반적으로 긍정적이었습니다.</p>'
+            WHEN 29 THEN '<p>공예 과정 설명을 단계별로 나누니 초보자도 쉽게 따라왔습니다.</p><p>완성품 공유 시간이 분위기를 더 살려줬습니다.</p>'
+            ELSE '<p>호흡과 자세를 천천히 맞추며 진행해 전체 몰입감이 좋았습니다.</p><p>마무리 스트레칭까지 포함해 안정적으로 끝냈습니다.</p>'
+        END,
+        '<p>#모임활동 #커뮤니티 #함께하는취미</p><p><img src="',
+        CONCAT('/uploads/images/post/', ip.file_name),
+        '" alt="activity"></p>'
+    ),
     IF(MOD(seq.n, 4) = 0, false, true)
 FROM circle c
 JOIN seq ON seq.n <= 15 + MOD(c.circle_id * 5, 16)
+JOIN image_pool ip ON ip.idx = 1 + MOD(c.circle_id * 37 + seq.n, 30)
 WHERE c.current_member > 0
   AND EXISTS (SELECT 1 FROM circle_member cm WHERE cm.circle_id = c.circle_id AND cm.status = 'ACTIVE');
 
@@ -276,7 +353,7 @@ INSERT INTO common_file (
     name, uuid, path, content_type, domain, owner_id,
     uploaded_by_user_id, deleted, status, create_date, update_date
 )
-SELECT CONCAT(t.image_base_name, '.jpg'), UUID(), t.image_path, 'image/webp', 'POST', NULL,
+SELECT t.image_file_name, UUID(), t.image_path, 'image/webp', 'POST', t.seed_owner_key,
        t.author_user_id, false, 'USED', NOW(), NOW()
 FROM tmp_activity_seed t;
 
@@ -284,7 +361,7 @@ INSERT INTO image (
     name, uuid, path, domain, owner_id, uploaded_by_user_id, ord,
     deleted, status, create_date, update_date
 )
-SELECT CONCAT(t.image_base_name, '.jpg'), UUID(), t.image_path, 'POST', NULL,
+SELECT t.image_file_name, UUID(), t.image_path, 'POST', t.seed_owner_key,
        t.author_user_id, 1, false, 'USED', NOW(), NOW()
 FROM tmp_activity_seed t;
 
@@ -299,23 +376,25 @@ SELECT
       WHERE b.circle_id = t.circle_id AND b.board_type = 'CIRCLE' AND b.circle_board_kind = 'ACTIVITY' AND b.deleted = false
       LIMIT 1),
     (SELECT i.image_id FROM image i
-      WHERE i.domain = 'POST' AND i.name = CONCAT(t.image_base_name, '.jpg') AND i.path = t.image_path AND i.uploaded_by_user_id = t.author_user_id
+      WHERE i.domain = 'POST' AND i.owner_id = t.seed_owner_key
       ORDER BY i.image_id DESC LIMIT 1),
     false, NULL, false, NULL, t.activity_public,
     NOW() - INTERVAL FLOOR(RAND() * 180) DAY,
     NOW() - INTERVAL FLOOR(RAND() * 90) DAY
 FROM tmp_activity_seed t;
 
+UPDATE common_file cf
+JOIN image i ON i.domain = 'POST' AND i.owner_id = cf.owner_id
+JOIN post p ON p.image_id = i.image_id
+SET cf.owner_id = p.post_id
+WHERE cf.domain = 'POST'
+  AND cf.owner_id < 0;
+
 UPDATE image i
 JOIN post p ON p.image_id = i.image_id
 SET i.owner_id = p.post_id
-WHERE i.domain = 'POST';
-
-UPDATE common_file cf
-JOIN image i ON i.domain = 'POST' AND i.name = cf.name AND i.path = cf.path AND i.uploaded_by_user_id = cf.uploaded_by_user_id
-JOIN post p ON p.image_id = i.image_id
-SET cf.owner_id = p.post_id
-WHERE cf.domain = 'POST';
+WHERE i.domain = 'POST'
+  AND i.owner_id < 0;
 DROP TEMPORARY TABLE IF EXISTS tmp_post_reply_target;
 CREATE TEMPORARY TABLE tmp_post_reply_target AS
 SELECT p.post_id, b.circle_id, (2 + MOD(p.post_id, 14)) AS target_count
