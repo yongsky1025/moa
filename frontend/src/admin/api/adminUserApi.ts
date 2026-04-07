@@ -15,14 +15,14 @@ export const fetchAdminUserList = async (dto: AdminUserSearchDTO) => {
       sort: dto.sort,
     },
   });
-  console.log("user list data", res);
+  // console.log("user list data", res);
 
   return res.data;
 };
 
 export const fetchAdminUserProfile = async (id: number) => {
   const res = await api.get(`${API_SERVER_HOST_ADMIN}/users/profile/${id}`);
-  console.log("user profile data", res);
+  // console.log("user profile data", res);
 
   return res.data;
 };
@@ -36,7 +36,7 @@ export const fetchAdminUserPosts = async (id: number, dto: PageRequestDTO) => {
     },
   );
 
-  console.log("users posts", res);
+  // console.log("users posts", res);
 
   return res.data;
 };
@@ -53,7 +53,7 @@ export const fetchAdminUserReplies = async (
     },
   );
 
-  console.log("users replies", res);
+  // console.log("users replies", res);
 
   return res.data;
 };
@@ -70,7 +70,7 @@ export const fetchAdminUserCircles = async (
     },
   );
 
-  console.log("users replies", res);
+  // console.log("users replies", res);
 
   return res.data;
 };

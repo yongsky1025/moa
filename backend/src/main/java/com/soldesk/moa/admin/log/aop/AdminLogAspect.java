@@ -1,6 +1,7 @@
 package com.soldesk.moa.admin.log.aop;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -45,8 +46,17 @@ public class AdminLogAspect {
         }
     }
 
+    // 로깅에서 제외할 URI 패턴 — 조회 목적의 POST (AOP 오분류 방지)
+    private static final Set<String> LOG_EXCLUDE_URI_CONTAINS = Set.of(
+            "/energy-profile/recommend");
+
     private void doLog(JoinPoint joinPoint, boolean success) {
         if (request.getMethod().equals("GET")) {
+            return;
+        }
+
+        String uri = request.getRequestURI();
+        if (LOG_EXCLUDE_URI_CONTAINS.stream().anyMatch(uri::contains)) {
             return;
         }
 
@@ -112,7 +122,8 @@ public class AdminLogAspect {
 
     private Long resolveUserIdFromRefreshTokenCookie() {
         Cookie[] cookies = request.getCookies();
-        if (cookies == null) return null;
+        if (cookies == null)
+            return null;
         for (Cookie cookie : cookies) {
             if ("refreshToken".equals(cookie.getName())) {
                 try {
