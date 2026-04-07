@@ -438,32 +438,32 @@ INSERT INTO board (board_id, board_type, circle_board_kind, name, deleted, circl
 
 -- 활동 게시글용 파일/이미지 더미
 INSERT INTO common_file (file_id, name, uuid, path, content_type, domain, owner_id, uploaded_by_user_id, deleted, status, create_date, update_date) VALUES
-(1,  'book-walk-1.jpg',   'cf-post-0001', '/uploads/images/post/book-walk-1.jpg',   'image/jpeg', 'POST', 81,  3,  false, 'USED', '2025-05-02 09:00:00', '2025-05-02 09:00:00'),
-(2,  'book-walk-2.jpg',   'cf-post-0002', '/uploads/images/post/book-walk-2.jpg',   'image/jpeg', 'POST', 82, 15, false, 'USED', '2025-05-18 10:00:00', '2025-05-18 10:00:00'),
-(3,  'run-shot-1.jpg',    'cf-post-0003', '/uploads/images/post/run-shot-1.jpg',    'image/jpeg', 'POST', 83,  6,  false, 'USED', '2025-06-01 06:50:00', '2025-06-01 06:50:00'),
-(4,  'run-shot-2.jpg',    'cf-post-0004', '/uploads/images/post/run-shot-2.jpg',    'image/jpeg', 'POST', 84, 26, false, 'USED', '2025-06-22 07:10:00', '2025-06-22 07:10:00'),
-(5,  'food-tour-1.jpg',   'cf-post-0005', '/uploads/images/post/food-tour-1.jpg',   'image/jpeg', 'POST', 85, 10, false, 'USED', '2025-07-12 20:00:00', '2025-07-12 20:00:00'),
-(6,  'food-tour-2.jpg',   'cf-post-0006', '/uploads/images/post/food-tour-2.jpg',   'image/jpeg', 'POST', 86, 23, false, 'USED', '2025-08-03 13:00:00', '2025-08-03 13:00:00'),
-(7,  'futsal-1.jpg',      'cf-post-0007', '/uploads/images/post/futsal-1.jpg',      'image/jpeg', 'POST', 87, 12, false, 'USED', '2025-08-10 15:00:00', '2025-08-10 15:00:00'),
-(8,  'futsal-2.jpg',      'cf-post-0008', '/uploads/images/post/futsal-2.jpg',      'image/jpeg', 'POST', 88, 34, false, 'USED', '2025-09-28 09:00:00', '2025-09-28 09:00:00'),
-(9,  'camp-1.jpg',        'cf-post-0009', '/uploads/images/post/camp-1.jpg',        'image/jpeg', 'POST', 89, 24, false, 'USED', '2025-10-04 17:00:00', '2025-10-04 17:00:00'),
-(10, 'camp-2.jpg',        'cf-post-0010', '/uploads/images/post/camp-2.jpg',        'image/jpeg', 'POST', 90, 32, false, 'USED', '2025-11-01 18:00:00', '2025-11-01 18:00:00'),
-(11, 'camp-fire-1.jpg',   'cf-post-0011', '/uploads/images/post/camp-fire-1.jpg',   'image/jpeg', 'POST', 91, 40, false, 'USED', '2025-11-23 22:00:00', '2025-11-23 22:00:00'),
-(12, 'winter-camping.jpg','cf-post-0012', '/uploads/images/post/winter-camping.jpg','image/jpeg', 'POST', 92, 48, false, 'USED', '2025-12-21 09:30:00', '2025-12-21 09:30:00');
+(1,  'book-walk-1.jpg',   'cf-post-0001', '/uploads/images/post/thumbnails/book-walk-1_thm.webp',   'image/webp', 'POST', 81,  3,  false, 'USED', '2025-05-02 09:00:00', '2025-05-02 09:00:00'),
+(2,  'book-walk-2.jpg',   'cf-post-0002', '/uploads/images/post/thumbnails/book-walk-2_thm.webp',   'image/webp', 'POST', 82, 15, false, 'USED', '2025-05-18 10:00:00', '2025-05-18 10:00:00'),
+(3,  'run-shot-1.jpg',    'cf-post-0003', '/uploads/images/post/thumbnails/run-shot-1_thm.webp',    'image/webp', 'POST', 83,  6,  false, 'USED', '2025-06-01 06:50:00', '2025-06-01 06:50:00'),
+(4,  'run-shot-2.jpg',    'cf-post-0004', '/uploads/images/post/thumbnails/run-shot-2_thm.webp',    'image/webp', 'POST', 84, 26, false, 'USED', '2025-06-22 07:10:00', '2025-06-22 07:10:00'),
+(5,  'food-tour-1.jpg',   'cf-post-0005', '/uploads/images/post/thumbnails/food-tour-1_thm.webp',   'image/webp', 'POST', 85, 10, false, 'USED', '2025-07-12 20:00:00', '2025-07-12 20:00:00'),
+(6,  'food-tour-2.jpg',   'cf-post-0006', '/uploads/images/post/thumbnails/food-tour-2_thm.webp',   'image/webp', 'POST', 86, 23, false, 'USED', '2025-08-03 13:00:00', '2025-08-03 13:00:00'),
+(7,  'futsal-1.jpg',      'cf-post-0007', '/uploads/images/post/thumbnails/futsal-1_thm.webp',      'image/webp', 'POST', 87, 12, false, 'USED', '2025-08-10 15:00:00', '2025-08-10 15:00:00'),
+(8,  'futsal-2.jpg',      'cf-post-0008', '/uploads/images/post/thumbnails/futsal-2_thm.webp',      'image/webp', 'POST', 88, 34, false, 'USED', '2025-09-28 09:00:00', '2025-09-28 09:00:00'),
+(9,  'camp-1.jpg',        'cf-post-0009', '/uploads/images/post/thumbnails/camp-1_thm.webp',        'image/webp', 'POST', 89, 24, false, 'USED', '2025-10-04 17:00:00', '2025-10-04 17:00:00'),
+(10, 'camp-2.jpg',        'cf-post-0010', '/uploads/images/post/thumbnails/camp-2_thm.webp',        'image/webp', 'POST', 90, 32, false, 'USED', '2025-11-01 18:00:00', '2025-11-01 18:00:00'),
+(11, 'camp-fire-1.jpg',   'cf-post-0011', '/uploads/images/post/thumbnails/camp-fire-1_thm.webp',   'image/webp', 'POST', 91, 40, false, 'USED', '2025-11-23 22:00:00', '2025-11-23 22:00:00'),
+(12, 'winter-camping.jpg','cf-post-0012', '/uploads/images/post/thumbnails/winter-camping_thm.webp','image/webp', 'POST', 92, 48, false, 'USED', '2025-12-21 09:30:00', '2025-12-21 09:30:00');
 
 INSERT INTO image (image_id, name, uuid, path, domain, owner_id, uploaded_by_user_id, ord, deleted, status, create_date, update_date) VALUES
-(1,  'book-walk-1.jpg',    'img-post-0001', '/uploads/images/post/book-walk-1.jpg',    'POST', 81,  3,  1, false, 'USED', '2025-05-02 09:00:00', '2025-05-02 09:00:00'),
-(2,  'book-walk-2.jpg',    'img-post-0002', '/uploads/images/post/book-walk-2.jpg',    'POST', 82, 15, 1, false, 'USED', '2025-05-18 10:00:00', '2025-05-18 10:00:00'),
-(3,  'run-shot-1.jpg',     'img-post-0003', '/uploads/images/post/run-shot-1.jpg',     'POST', 83,  6,  1, false, 'USED', '2025-06-01 06:50:00', '2025-06-01 06:50:00'),
-(4,  'run-shot-2.jpg',     'img-post-0004', '/uploads/images/post/run-shot-2.jpg',     'POST', 84, 26, 1, false, 'USED', '2025-06-22 07:10:00', '2025-06-22 07:10:00'),
-(5,  'food-tour-1.jpg',    'img-post-0005', '/uploads/images/post/food-tour-1.jpg',    'POST', 85, 10, 1, false, 'USED', '2025-07-12 20:00:00', '2025-07-12 20:00:00'),
-(6,  'food-tour-2.jpg',    'img-post-0006', '/uploads/images/post/food-tour-2.jpg',    'POST', 86, 23, 1, false, 'USED', '2025-08-03 13:00:00', '2025-08-03 13:00:00'),
-(7,  'futsal-1.jpg',       'img-post-0007', '/uploads/images/post/futsal-1.jpg',       'POST', 87, 12, 1, false, 'USED', '2025-08-10 15:00:00', '2025-08-10 15:00:00'),
-(8,  'futsal-2.jpg',       'img-post-0008', '/uploads/images/post/futsal-2.jpg',       'POST', 88, 34, 1, false, 'USED', '2025-09-28 09:00:00', '2025-09-28 09:00:00'),
-(9,  'camp-1.jpg',         'img-post-0009', '/uploads/images/post/camp-1.jpg',         'POST', 89, 24, 1, false, 'USED', '2025-10-04 17:00:00', '2025-10-04 17:00:00'),
-(10, 'camp-2.jpg',         'img-post-0010', '/uploads/images/post/camp-2.jpg',         'POST', 90, 32, 1, false, 'USED', '2025-11-01 18:00:00', '2025-11-01 18:00:00'),
-(11, 'camp-fire-1.jpg',    'img-post-0011', '/uploads/images/post/camp-fire-1.jpg',    'POST', 91, 40, 1, false, 'USED', '2025-11-23 22:00:00', '2025-11-23 22:00:00'),
-(12, 'winter-camping.jpg', 'img-post-0012', '/uploads/images/post/winter-camping.jpg', 'POST', 92, 48, 1, false, 'USED', '2025-12-21 09:30:00', '2025-12-21 09:30:00');
+(1,  'book-walk-1.jpg',    'img-post-0001', '/uploads/images/post/thumbnails/book-walk-1_thm.webp',    'POST', 81,  3,  1, false, 'USED', '2025-05-02 09:00:00', '2025-05-02 09:00:00'),
+(2,  'book-walk-2.jpg',    'img-post-0002', '/uploads/images/post/thumbnails/book-walk-2_thm.webp',    'POST', 82, 15, 1, false, 'USED', '2025-05-18 10:00:00', '2025-05-18 10:00:00'),
+(3,  'run-shot-1.jpg',     'img-post-0003', '/uploads/images/post/thumbnails/run-shot-1_thm.webp',     'POST', 83,  6,  1, false, 'USED', '2025-06-01 06:50:00', '2025-06-01 06:50:00'),
+(4,  'run-shot-2.jpg',     'img-post-0004', '/uploads/images/post/thumbnails/run-shot-2_thm.webp',     'POST', 84, 26, 1, false, 'USED', '2025-06-22 07:10:00', '2025-06-22 07:10:00'),
+(5,  'food-tour-1.jpg',    'img-post-0005', '/uploads/images/post/thumbnails/food-tour-1_thm.webp',    'POST', 85, 10, 1, false, 'USED', '2025-07-12 20:00:00', '2025-07-12 20:00:00'),
+(6,  'food-tour-2.jpg',    'img-post-0006', '/uploads/images/post/thumbnails/food-tour-2_thm.webp',    'POST', 86, 23, 1, false, 'USED', '2025-08-03 13:00:00', '2025-08-03 13:00:00'),
+(7,  'futsal-1.jpg',       'img-post-0007', '/uploads/images/post/thumbnails/futsal-1_thm.webp',       'POST', 87, 12, 1, false, 'USED', '2025-08-10 15:00:00', '2025-08-10 15:00:00'),
+(8,  'futsal-2.jpg',       'img-post-0008', '/uploads/images/post/thumbnails/futsal-2_thm.webp',       'POST', 88, 34, 1, false, 'USED', '2025-09-28 09:00:00', '2025-09-28 09:00:00'),
+(9,  'camp-1.jpg',         'img-post-0009', '/uploads/images/post/thumbnails/camp-1_thm.webp',         'POST', 89, 24, 1, false, 'USED', '2025-10-04 17:00:00', '2025-10-04 17:00:00'),
+(10, 'camp-2.jpg',         'img-post-0010', '/uploads/images/post/thumbnails/camp-2_thm.webp',         'POST', 90, 32, 1, false, 'USED', '2025-11-01 18:00:00', '2025-11-01 18:00:00'),
+(11, 'camp-fire-1.jpg',    'img-post-0011', '/uploads/images/post/thumbnails/camp-fire-1_thm.webp',    'POST', 91, 40, 1, false, 'USED', '2025-11-23 22:00:00', '2025-11-23 22:00:00'),
+(12, 'winter-camping.jpg', 'img-post-0012', '/uploads/images/post/thumbnails/winter-camping_thm.webp', 'POST', 92, 48, 1, false, 'USED', '2025-12-21 09:30:00', '2025-12-21 09:30:00');
 
 -- ============================================================
 -- 8. Posts (80건 - 공지, 자유, 모임)
@@ -570,18 +570,18 @@ INSERT INTO post (post_id, title, content, view_count, like_count, user_id, boar
 
 -- 모임 활동 피드용 게시글 (ACTIVITY + 공개)
 INSERT INTO post (post_id, title, content, view_count, like_count, user_id, board_id, image_id, activity_public, deleted, create_date, update_date) VALUES
-(81, '아침 산책 독서 모임 스냅',        '<p>오늘 아침 산책 후 같이 독서모임 진행했어요.</p><p><img src="/uploads/images/post/book-walk-1.jpg" alt="book walk"></p>', 63, 11, 3,  18, 1,  true, false, '2025-05-02 09:10:00', '2025-05-02 09:10:00'),
-(82, '5월 독서모임 베스트 컷',          '<p>다 같이 가져온 책 소개 시간! 분위기 정말 좋았습니다.</p><p><img src="/uploads/images/post/book-walk-2.jpg" alt="book club"></p>', 52, 8, 15, 18, 2,  true, false, '2025-05-18 10:10:00', '2025-05-18 10:10:00'),
-(83, '한강 새벽 러닝 기록',             '<p>오늘 6.2km 완주! 페이스도 안정적으로 잘 나왔어요.</p><p><img src="/uploads/images/post/run-shot-1.jpg" alt="running"></p>', 71, 14, 6,  19, 3,  true, false, '2025-06-01 07:00:00', '2025-06-01 07:00:00'),
-(84, '러닝 후 스트레칭 루틴 공유',      '<p>부상 방지용 스트레칭 루틴 공유합니다. 함께 해봐요!</p><p><img src="/uploads/images/post/run-shot-2.jpg" alt="stretching"></p>', 45, 6, 26, 19, 4,  true, false, '2025-06-22 07:20:00', '2025-06-22 07:20:00'),
-(85, '을지로 맛집 탐방 활동 사진',      '<p>오늘 모임에서 다녀온 을지로 파스타집 후기입니다.</p><p><img src="/uploads/images/post/food-tour-1.jpg" alt="food"></p>', 88, 17, 10, 20, 5,  true, false, '2025-07-12 20:10:00', '2025-07-12 20:10:00'),
-(86, '주말 브런치 투어 후기',           '<p>연남동 브런치 투어 성공! 다음 후보도 추천 받아요.</p><p><img src="/uploads/images/post/food-tour-2.jpg" alt="brunch"></p>', 57, 9, 23, 20, 6,  true, false, '2025-08-03 13:10:00', '2025-08-03 13:10:00'),
-(87, '잠실 풋살 친선전 기록',           '<p>오늘 친선전 4:3 승리! 모두 수고 많으셨습니다.</p><p><img src="/uploads/images/post/futsal-1.jpg" alt="futsal"></p>', 95, 21, 12, 21, 7,  true, false, '2025-08-10 15:10:00', '2025-08-10 15:10:00'),
-(88, '가을 풋살 리그 준비',             '<p>9월 리그 대비 포지션별 훈련 시작합니다.</p><p><img src="/uploads/images/post/futsal-2.jpg" alt="futsal team"></p>', 61, 10, 34, 21, 8,  true, false, '2025-09-28 09:10:00', '2025-09-28 09:10:00'),
-(89, '가평 캠핑 첫날 기록',             '<p>텐트 세팅 완료! 저녁 바베큐까지 완벽했어요.</p><p><img src="/uploads/images/post/camp-1.jpg" alt="camp"></p>', 77, 15, 24, 22, 9,  true, false, '2025-10-04 17:10:00', '2025-10-04 17:10:00'),
-(90, '캠핑 장비 세팅 팁',               '<p>초보용 체크리스트 공유합니다. 댓글로 팁도 남겨주세요.</p><p><img src="/uploads/images/post/camp-2.jpg" alt="camp gear"></p>', 49, 7, 32, 22, 10, true, false, '2025-11-01 18:10:00', '2025-11-01 18:10:00'),
-(91, '모닥불 토크 시간',                '<p>캠핑의 하이라이트는 역시 모닥불이죠.</p><p><img src="/uploads/images/post/camp-fire-1.jpg" alt="camp fire"></p>', 68, 12, 40, 22, 11, true, false, '2025-11-23 22:10:00', '2025-11-23 22:10:00'),
-(92, '겨울 캠핑 테스트',                '<p>겨울 장비 테스트 완료! 생각보다 따뜻하게 잘 보냈습니다.</p><p><img src="/uploads/images/post/winter-camping.jpg" alt="winter camp"></p>', 54, 9, 48, 22, 12, true, false, '2025-12-21 09:40:00', '2025-12-21 09:40:00');
+(81, '아침 산책 독서 모임 스냅',        '<p>오늘 아침 산책 후 같이 독서모임 진행했어요.</p><p><img src="/uploads/images/post/thumbnails/book-walk-1_thm.webp" alt="book walk"></p>', 63, 11, 3,  18, 1,  true, false, '2025-05-02 09:10:00', '2025-05-02 09:10:00'),
+(82, '5월 독서모임 베스트 컷',          '<p>다 같이 가져온 책 소개 시간! 분위기 정말 좋았습니다.</p><p><img src="/uploads/images/post/thumbnails/book-walk-2_thm.webp" alt="book club"></p>', 52, 8, 15, 18, 2,  true, false, '2025-05-18 10:10:00', '2025-05-18 10:10:00'),
+(83, '한강 새벽 러닝 기록',             '<p>오늘 6.2km 완주! 페이스도 안정적으로 잘 나왔어요.</p><p><img src="/uploads/images/post/thumbnails/run-shot-1_thm.webp" alt="running"></p>', 71, 14, 6,  19, 3,  true, false, '2025-06-01 07:00:00', '2025-06-01 07:00:00'),
+(84, '러닝 후 스트레칭 루틴 공유',      '<p>부상 방지용 스트레칭 루틴 공유합니다. 함께 해봐요!</p><p><img src="/uploads/images/post/thumbnails/run-shot-2_thm.webp" alt="stretching"></p>', 45, 6, 26, 19, 4,  true, false, '2025-06-22 07:20:00', '2025-06-22 07:20:00'),
+(85, '을지로 맛집 탐방 활동 사진',      '<p>오늘 모임에서 다녀온 을지로 파스타집 후기입니다.</p><p><img src="/uploads/images/post/thumbnails/food-tour-1_thm.webp" alt="food"></p>', 88, 17, 10, 20, 5,  true, false, '2025-07-12 20:10:00', '2025-07-12 20:10:00'),
+(86, '주말 브런치 투어 후기',           '<p>연남동 브런치 투어 성공! 다음 후보도 추천 받아요.</p><p><img src="/uploads/images/post/thumbnails/food-tour-2_thm.webp" alt="brunch"></p>', 57, 9, 23, 20, 6,  true, false, '2025-08-03 13:10:00', '2025-08-03 13:10:00'),
+(87, '잠실 풋살 친선전 기록',           '<p>오늘 친선전 4:3 승리! 모두 수고 많으셨습니다.</p><p><img src="/uploads/images/post/thumbnails/futsal-1_thm.webp" alt="futsal"></p>', 95, 21, 12, 21, 7,  true, false, '2025-08-10 15:10:00', '2025-08-10 15:10:00'),
+(88, '가을 풋살 리그 준비',             '<p>9월 리그 대비 포지션별 훈련 시작합니다.</p><p><img src="/uploads/images/post/thumbnails/futsal-2_thm.webp" alt="futsal team"></p>', 61, 10, 34, 21, 8,  true, false, '2025-09-28 09:10:00', '2025-09-28 09:10:00'),
+(89, '가평 캠핑 첫날 기록',             '<p>텐트 세팅 완료! 저녁 바베큐까지 완벽했어요.</p><p><img src="/uploads/images/post/thumbnails/camp-1_thm.webp" alt="camp"></p>', 77, 15, 24, 22, 9,  true, false, '2025-10-04 17:10:00', '2025-10-04 17:10:00'),
+(90, '캠핑 장비 세팅 팁',               '<p>초보용 체크리스트 공유합니다. 댓글로 팁도 남겨주세요.</p><p><img src="/uploads/images/post/thumbnails/camp-2_thm.webp" alt="camp gear"></p>', 49, 7, 32, 22, 10, true, false, '2025-11-01 18:10:00', '2025-11-01 18:10:00'),
+(91, '모닥불 토크 시간',                '<p>캠핑의 하이라이트는 역시 모닥불이죠.</p><p><img src="/uploads/images/post/thumbnails/camp-fire-1_thm.webp" alt="camp fire"></p>', 68, 12, 40, 22, 11, true, false, '2025-11-23 22:10:00', '2025-11-23 22:10:00'),
+(92, '겨울 캠핑 테스트',                '<p>겨울 장비 테스트 완료! 생각보다 따뜻하게 잘 보냈습니다.</p><p><img src="/uploads/images/post/thumbnails/winter-camping_thm.webp" alt="winter camp"></p>', 54, 9, 48, 22, 12, true, false, '2025-12-21 09:40:00', '2025-12-21 09:40:00');
 
 -- ============================================================
 -- 9. Replies (120건)
@@ -1077,26 +1077,26 @@ INSERT INTO likes (id, target_type, target_id, user_id, create_date, update_date
 -- 서클 커버 이미지
 -- ============================================================
 INSERT INTO image (image_id, name, uuid, path, domain, owner_id, uploaded_by_user_id, ord, deleted, status, create_date, update_date) VALUES
-(82,  '책벌레모임.jpg',      'circle-img-0001', '/uploads/images/circle/책벌레모임.jpg',      'CIRCLE',  1,  3,  1, false, 'USED', '2025-04-10 10:00:00', '2025-04-10 10:00:00'),
-(83,  '새벽러닝크루.jpg',    'circle-img-0002', '/uploads/images/circle/새벽러닝크루.jpg',    'CIRCLE',  2,  6,  1, false, 'USED', '2025-04-15 06:00:00', '2025-04-15 06:00:00'),
-(84,  '기타동호회.webp',     'circle-img-0003', '/uploads/images/circle/기타동호회.webp',     'CIRCLE',  3,  38, 1, false, 'USED', '2025-04-20 14:00:00', '2025-04-20 14:00:00'),
-(85,  '맛집탐방단.jpg',      'circle-img-0004', '/uploads/images/circle/맛집탐방단.jpg',      'CIRCLE',  4,  10, 1, false, 'USED', '2025-05-01 12:00:00', '2025-05-01 12:00:00'),
-(86,  '주말등산회.jpg',      'circle-img-0005', '/uploads/images/circle/주말등산회.jpg',      'CIRCLE',  5,  6,  1, false, 'USED', '2025-05-10 08:00:00', '2025-05-10 08:00:00'),
-(87,  '코딩스터디.webp',     'circle-img-0006', '/uploads/images/circle/코딩스터디.webp',     'CIRCLE',  6,  8,  1, false, 'USED', '2025-05-20 19:00:00', '2025-05-20 19:00:00'),
-(88,  '보드게임카페.jpg',    'circle-img-0007', '/uploads/images/circle/보드게임카페.jpg',    'CIRCLE',  7,  18, 1, false, 'USED', '2025-06-01 18:00:00', '2025-06-01 18:00:00'),
-(89,  '수채화클래스.webp',   'circle-img-0008', '/uploads/images/circle/수채화클래스.webp',   'CIRCLE',  8,  1,  1, false, 'USED', '2025-06-10 11:00:00', '2025-06-10 11:00:00'),
-(90,  '영화동호회.jpg',      'circle-img-0009', '/uploads/images/circle/영화동호회.jpg',      'CIRCLE',  9,  17, 1, false, 'USED', '2025-06-20 20:00:00', '2025-06-20 20:00:00'),
-(91,  '축구동호회.avif',     'circle-img-0010', '/uploads/images/circle/축구동호회.avif',     'CIRCLE', 10,  12, 1, false, 'USED', '2025-07-01 07:00:00', '2025-07-01 07:00:00'),
-(92,  '우쿨렐레모임.jpg',    'circle-img-0011', '/uploads/images/circle/우쿨렐레모임.jpg',    'CIRCLE', 11,  1,  1, false, 'USED', '2025-07-15 15:00:00', '2025-07-15 15:00:00'),
-(93,  '베이킹클럽.webp',     'circle-img-0012', '/uploads/images/circle/베이킹클럽.webp',     'CIRCLE', 12,  1,  1, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
-(94,  '캠핑동호회.jpg',      'circle-img-0013', '/uploads/images/circle/캠핑동호회.jpg',      'CIRCLE', 13,  24, 1, false, 'USED', '2025-08-15 09:00:00', '2025-08-15 09:00:00'),
-(95,  '영어회화모임.jpg',    'circle-img-0014', '/uploads/images/circle/영어회화모임.jpg',    'CIRCLE', 14,  1,  1, false, 'USED', '2025-09-01 19:30:00', '2025-09-01 19:30:00'),
-(96,  '사진출사모임.png',    'circle-img-0015', '/uploads/images/circle/사진출사모임.png',    'CIRCLE', 15,  21, 1, false, 'USED', '2025-09-10 14:00:00', '2025-09-10 14:00:00'),
-(97,  '테니스동호회.webp',   'circle-img-0016', '/uploads/images/circle/테니스동호회.webp',   'CIRCLE', 16,  1,  1, false, 'USED', '2025-10-01 08:00:00', '2025-10-01 08:00:00'),
-(98,  '독립영화감상.webp',   'circle-img-0017', '/uploads/images/circle/독립영화감상.webp',   'CIRCLE', 17,  1,  1, false, 'USED', '2026-01-20 16:00:00', '2026-01-20 16:00:00'),
-(99,  '요가동호회.jpg',      'circle-img-0018', '/uploads/images/circle/요가동호회.jpg',      'CIRCLE', 18,  1,  1, false, 'USED', '2026-02-01 18:00:00', '2026-02-01 18:00:00'),
-(100, '뜨개질모음.png',      'circle-img-0019', '/uploads/images/circle/뜨개질모음.png',      'CIRCLE', 19,  1,  1, false, 'USED', '2026-02-10 11:00:00', '2026-02-10 11:00:00'),
-(101, '프리다이빙모임.webp', 'circle-img-0020', '/uploads/images/circle/프리다이빙모임.webp', 'CIRCLE', 20,  50, 1, false, 'USED', '2026-03-01 10:00:00', '2026-03-01 10:00:00');
+(82,  '책벌레모임.jpg',      'circle-img-0001', '/uploads/images/circle/thumbnails/책벌레모임_thm.webp',      'CIRCLE',  1,  3,  1, false, 'USED', '2025-04-10 10:00:00', '2025-04-10 10:00:00'),
+(83,  '새벽러닝크루.jpg',    'circle-img-0002', '/uploads/images/circle/thumbnails/새벽러닝크루_thm.webp',    'CIRCLE',  2,  6,  1, false, 'USED', '2025-04-15 06:00:00', '2025-04-15 06:00:00'),
+(84,  '기타동호회.webp',     'circle-img-0003', '/uploads/images/circle/thumbnails/기타동호회_thm.webp',     'CIRCLE',  3,  38, 1, false, 'USED', '2025-04-20 14:00:00', '2025-04-20 14:00:00'),
+(85,  '맛집탐방단.jpg',      'circle-img-0004', '/uploads/images/circle/thumbnails/맛집탐방단_thm.webp',      'CIRCLE',  4,  10, 1, false, 'USED', '2025-05-01 12:00:00', '2025-05-01 12:00:00'),
+(86,  '주말등산회.jpg',      'circle-img-0005', '/uploads/images/circle/thumbnails/주말등산회_thm.webp',      'CIRCLE',  5,  6,  1, false, 'USED', '2025-05-10 08:00:00', '2025-05-10 08:00:00'),
+(87,  '코딩스터디.webp',     'circle-img-0006', '/uploads/images/circle/thumbnails/코딩스터디_thm.webp',     'CIRCLE',  6,  8,  1, false, 'USED', '2025-05-20 19:00:00', '2025-05-20 19:00:00'),
+(88,  '보드게임카페.jpg',    'circle-img-0007', '/uploads/images/circle/thumbnails/보드게임카페_thm.webp',    'CIRCLE',  7,  18, 1, false, 'USED', '2025-06-01 18:00:00', '2025-06-01 18:00:00'),
+(89,  '수채화클래스.webp',   'circle-img-0008', '/uploads/images/circle/thumbnails/수채화클래스_thm.webp',   'CIRCLE',  8,  1,  1, false, 'USED', '2025-06-10 11:00:00', '2025-06-10 11:00:00'),
+(90,  '영화동호회.jpg',      'circle-img-0009', '/uploads/images/circle/thumbnails/영화동호회_thm.webp',      'CIRCLE',  9,  17, 1, false, 'USED', '2025-06-20 20:00:00', '2025-06-20 20:00:00'),
+(91,  '축구동호회.avif',     'circle-img-0010', '/uploads/images/circle/thumbnails/축구동호회_thm.webp',     'CIRCLE', 10,  12, 1, false, 'USED', '2025-07-01 07:00:00', '2025-07-01 07:00:00'),
+(92,  '우쿨렐레모임.jpg',    'circle-img-0011', '/uploads/images/circle/thumbnails/우쿨렐레모임_thm.webp',    'CIRCLE', 11,  1,  1, false, 'USED', '2025-07-15 15:00:00', '2025-07-15 15:00:00'),
+(93,  '베이킹클럽.webp',     'circle-img-0012', '/uploads/images/circle/thumbnails/베이킹클럽_thm.webp',     'CIRCLE', 12,  1,  1, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
+(94,  '캠핑동호회.jpg',      'circle-img-0013', '/uploads/images/circle/thumbnails/캠핑동호회_thm.webp',      'CIRCLE', 13,  24, 1, false, 'USED', '2025-08-15 09:00:00', '2025-08-15 09:00:00'),
+(95,  '영어회화모임.jpg',    'circle-img-0014', '/uploads/images/circle/thumbnails/영어회화모임_thm.webp',    'CIRCLE', 14,  1,  1, false, 'USED', '2025-09-01 19:30:00', '2025-09-01 19:30:00'),
+(96,  '사진출사모임.png',    'circle-img-0015', '/uploads/images/circle/thumbnails/사진출사모임_thm.webp',    'CIRCLE', 15,  21, 1, false, 'USED', '2025-09-10 14:00:00', '2025-09-10 14:00:00'),
+(97,  '테니스동호회.webp',   'circle-img-0016', '/uploads/images/circle/thumbnails/테니스동호회_thm.webp',   'CIRCLE', 16,  1,  1, false, 'USED', '2025-10-01 08:00:00', '2025-10-01 08:00:00'),
+(98,  '독립영화감상.webp',   'circle-img-0017', '/uploads/images/circle/thumbnails/독립영화감상_thm.webp',   'CIRCLE', 17,  1,  1, false, 'USED', '2026-01-20 16:00:00', '2026-01-20 16:00:00'),
+(99,  '요가동호회.jpg',      'circle-img-0018', '/uploads/images/circle/thumbnails/요가동호회_thm.webp',      'CIRCLE', 18,  1,  1, false, 'USED', '2026-02-01 18:00:00', '2026-02-01 18:00:00'),
+(100, '뜨개질모음.png',      'circle-img-0019', '/uploads/images/circle/thumbnails/뜨개질모음_thm.webp',      'CIRCLE', 19,  1,  1, false, 'USED', '2026-02-10 11:00:00', '2026-02-10 11:00:00'),
+(101, '프리다이빙모임.webp', 'circle-img-0020', '/uploads/images/circle/thumbnails/프리다이빙모임_thm.webp', 'CIRCLE', 20,  50, 1, false, 'USED', '2026-03-01 10:00:00', '2026-03-01 10:00:00');
 
 UPDATE circle SET cover_image_id = 82  WHERE circle_id = 1;
 UPDATE circle SET cover_image_id = 83  WHERE circle_id = 2;
@@ -1124,5 +1124,6 @@ UPDATE circle SET cover_image_id = 101 WHERE circle_id = 20;
 -- ============================================================
 SET FOREIGN_KEY_CHECKS = 1;
 SET SQL_MODE = @OLD_SQL_MODE;
+
 
 

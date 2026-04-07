@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { circleApi } from "../../api/circleApi";
 import { circleBoardApi, type CircleBoardResponse } from "../../api/circleBoardApi";
 import { postApi } from "../api/postApi";
-import type { CircleResponse } from "../../circle/types/circle";
+import type { CircleResponse, CircleRole } from "../../circle/types/circle";
 import CircleDetailBanner from "../../common/components/CircleDetailBanner";
 import CircleDetailTabs from "../../common/components/CircleDetailTabs";
 import Footer from "../../common/layout/Footer";
@@ -129,6 +129,7 @@ export default function CircleActivityTabPage() {
   const [boards, setBoards] = useState<CircleBoardResponse[]>([]);
   const [postItems, setPostItems] = useState<Array<{ post: PostResponse; imageUrls: string[] }>>([]);
   const [replyItems, setReplyItems] = useState<CommunityMyReply[]>([]);
+  const [myMembershipRole, setMyMembershipRole] = useState<CircleRole | null>(null);
   const [selectedView, setSelectedView] = useState<CommunityProfileQuickView>("home");
   const [loading, setLoading] = useState(true);
   const [listLoading, setListLoading] = useState(false);
@@ -165,18 +166,25 @@ export default function CircleActivityTabPage() {
     setLoading(true);
     setErrorMessage("");
     try {
-      const [circleRes, boardRes] = await Promise.all([
+      const [circleRes, boardRes, activeMembersRes] = await Promise.all([
         circleApi.getCircle(cid),
         circleBoardApi.getBoards(cid),
+        isLoggedIn ? circleApi.getActiveMembers(cid, { page: 1, size: 200 }) : Promise.resolve(null),
       ]);
       setCircle(circleRes.data);
       setBoards(boardRes.data);
+      if (activeMembersRes && user?.nickname) {
+        const me = activeMembersRes.data.dtoList.find((member) => member.nickname === user.nickname);
+        setMyMembershipRole(me?.role ?? null);
+      } else {
+        setMyMembershipRole(null);
+      }
     } catch (e) {
       setErrorMessage(getErrorMessage(e));
     } finally {
       setLoading(false);
     }
-  }, [cid, circleId, navigate]);
+  }, [cid, circleId, isLoggedIn, navigate, user?.nickname]);
 
   const activityBoard = useMemo(
     () => boards.find((board) => board.circleBoardKind === "ACTIVITY") ?? null,
@@ -187,8 +195,8 @@ export default function CircleActivityTabPage() {
     () => boards.find((board) => board.circleBoardKind !== "ACTIVITY")?.boardId ?? null,
     [boards],
   );
-  const isCircleLeader = circle?.myRole === "LEADER";
-  const isCircleMember = !!circle?.myRole;
+  const isCircleLeader = circle?.myRole === "LEADER" || myMembershipRole === "LEADER";
+  const isCircleMember = isAdmin || !!circle?.myRole || !!myMembershipRole;
   const canManageActivityEdit = isCircleLeader || isAdmin;
   const canUseCircleReport = isAdmin || isCircleMember;
   const showInitialLoadingSkeleton = useDelayedLoading(loading, 0, 300);
@@ -544,8 +552,8 @@ export default function CircleActivityTabPage() {
   }, [circle, isLoggedIn]);
 
   const canJoinAction = useMemo(
-    () => !isCircleMember && ((!isLoggedIn && !!circle) || (isLoggedIn && circle?.status === "OPEN")),
-    [circle, isCircleMember, isLoggedIn],
+    () => !isAdmin && !isCircleMember && ((!isLoggedIn && !!circle) || (isLoggedIn && circle?.status === "OPEN")),
+    [circle, isAdmin, isCircleMember, isLoggedIn],
   );
 
   const scheduleReactionCommit = (postId: number) => {
@@ -898,10 +906,10 @@ export default function CircleActivityTabPage() {
                       {visiblePosts.map(({ post, imageUrls }) => {
                         const stagedDeleted = !!stagedPostDeletes[post.postId];
                         const summary = extractPlainText(post.content);
-                        const previewImages = imageUrls.length > 0
-                          ? Array.from(new Set(imageUrls.filter((url): url is string => !!url)))
-                          : post.thumbnailUrl
-                            ? [post.thumbnailUrl]
+                        const previewImages = post.thumbnailUrl
+                          ? [post.thumbnailUrl]
+                          : imageUrls.length > 0
+                            ? Array.from(new Set(imageUrls.filter((url): url is string => !!url)))
                             : [];
                         const reactionState = reactionByPostId[post.postId] ?? {
                           liked: post.myReaction === "LIKE",

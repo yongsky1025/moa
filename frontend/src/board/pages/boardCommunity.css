@@ -938,6 +938,20 @@
   color: #dc2626;
 }
 
+.activity-composer--edit .community-twitter-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+}
+
+.activity-composer--edit .community-twitter-media img,
+.activity-composer--edit .community-twitter-album img {
+  object-fit: contain;
+  object-position: center;
+  background: #f3f4f6;
+}
+
 .community-center-toolbar {
   position: sticky;
   top: 72px;

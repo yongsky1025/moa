@@ -121,6 +121,20 @@
   background-color: #f3f4f6;
 }
 
+.post-detail-article-card .community-twitter-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+}
+
+.post-detail-article-card .community-twitter-media img,
+.post-detail-article-card .community-twitter-album img {
+  object-fit: contain;
+  object-position: center;
+  background: #f3f4f6;
+}
+
 .post-detail-bookmark-button,
 .post-detail-more-button {
   width: 26px;

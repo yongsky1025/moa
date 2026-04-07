@@ -12,6 +12,7 @@ export interface CircleResponse {
   categoryId: number;
   categoryName: string;
   coverImageUrl?: string;
+  coverThumbnailUrl?: string;
   myRole?: CircleRole;
   likeCount?: number;
 }
@@ -53,6 +54,7 @@ export interface RecommendationItem {
   maxMember: number;
   currentMember: number;
   coverImageUrl?: string;
+  coverThumbnailUrl?: string;
 }
 
 export interface RecommendationBundle {

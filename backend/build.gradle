@@ -52,6 +52,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	// 썸네일
 	implementation 'net.coobird:thumbnailator:0.4.21'
+	// thumbnailator가 webp 썸네일을 쓰기 위해 필요한 ImageIO WebP 플러그인
+	implementation 'org.sejda.imageio:webp-imageio:0.1.6'
 	// querydsl JPA Support
 	implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
     // QueryDSL APT (Q클래스 생성용)

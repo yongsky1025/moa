@@ -75,9 +75,11 @@ public class CircleController {
     // 서클 상세 조회
     @GetMapping("/{circleId}")
     public ResponseEntity<CircleResponseDTO> getCircle(
-            @PathVariable Long circleId) {
+            @PathVariable Long circleId,
+            @AuthenticationPrincipal AuthUserDTO authUserDTO) {
 
-        return ResponseEntity.ok(circleService.getCircle(circleId));
+        Long userId = authUserDTO != null ? authUserDTO.getUserId() : null;
+        return ResponseEntity.ok(circleService.getCircle(circleId, userId));
     }
 
     // 서클 목록 조회

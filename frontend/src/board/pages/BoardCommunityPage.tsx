@@ -1939,10 +1939,10 @@ export default function BoardCommunityPage() {
                           ? `/circle/${post.circleId}/board/${post.boardId}/posts/${post.postId}`
                           : "/circle";
                       const contentImages = extractImageUrls(post.content);
-                      const previewImages = contentImages.length > 0
-                        ? Array.from(new Set(contentImages.filter((url): url is string => !!url)))
-                        : post.thumbnailUrl
-                          ? [post.thumbnailUrl]
+                      const previewImages = post.thumbnailUrl
+                        ? [post.thumbnailUrl]
+                        : contentImages.length > 0
+                          ? Array.from(new Set(contentImages.filter((url): url is string => !!url)))
                           : [];
                       const summary = extractPlainText(post.content);
                       const reactionState = activityReactionByPostId[post.postId] ?? {

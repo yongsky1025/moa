@@ -474,8 +474,8 @@ export default function CircleListPage() {
                         }}
                       >
                         <div style={{ position: "relative", height: 160, background: c.coverImageUrl ? "none" : bgGradient, flexShrink: 0 }}>
-                          {c.coverImageUrl && (
-                            <img src={c.coverImageUrl} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          {(c.coverThumbnailUrl || c.coverImageUrl) && (
+                            <img src={c.coverThumbnailUrl || c.coverImageUrl} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                           )}
                           <div
                             style={{
@@ -614,9 +614,9 @@ export default function CircleListPage() {
                       >
                         {/* 이미지 영역 */}
                         <div style={{ position: "relative", height: 160, background: circle.coverImageUrl ? "none" : bgGradient, flexShrink: 0 }}>
-                          {circle.coverImageUrl ? (
+                          {circle.coverThumbnailUrl || circle.coverImageUrl ? (
                             <img
-                              src={circle.coverImageUrl}
+                              src={circle.coverThumbnailUrl || circle.coverImageUrl}
                               alt={circle.name}
                               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                             />

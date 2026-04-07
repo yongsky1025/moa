@@ -179,7 +179,10 @@ export default function CircleActivityComposer({
   };
 
   return (
-    <section style={composerCardStyle}>
+    <section
+      className={mode === "edit" ? "activity-composer activity-composer--edit" : "activity-composer"}
+      style={composerCardStyle}
+    >
       <div
         style={{
           display: "flex",

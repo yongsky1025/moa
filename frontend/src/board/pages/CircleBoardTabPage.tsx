@@ -125,6 +125,7 @@ export default function CircleBoardTabPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLoggedIn, user } = useAuthStore();
+  const isAdmin = user?.userRole === "ADMIN";
 
   const { circleId } = useParams<{ circleId: string }>();
   const cid = Number(circleId);
@@ -407,7 +408,7 @@ export default function CircleBoardTabPage() {
     () => activeMembers.find((member) => member.nickname === user?.nickname) ?? null,
     [activeMembers, user?.nickname],
   );
-  const isCircleMember = !!circle?.myRole;
+  const isCircleMember = isAdmin || !!circle?.myRole || !!myActiveMember?.role;
   const isCircleLeader = circle?.myRole === "LEADER" || myActiveMember?.role === "LEADER";
 
   useEffect(() => {
@@ -834,8 +835,8 @@ export default function CircleBoardTabPage() {
   }, [circle, isLoggedIn]);
 
   const canJoinAction = useMemo(
-    () => !isCircleMember && ((!isLoggedIn && !!circle) || (isLoggedIn && circle?.status === "OPEN")),
-    [circle, isCircleMember, isLoggedIn],
+    () => !isAdmin && !isCircleMember && ((!isLoggedIn && !!circle) || (isLoggedIn && circle?.status === "OPEN")),
+    [circle, isAdmin, isCircleMember, isLoggedIn],
   );
 
   const emptyDescription = useMemo(() => {

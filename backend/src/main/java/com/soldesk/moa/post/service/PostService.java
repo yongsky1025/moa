@@ -925,6 +925,41 @@ public class PostService {
                 return path.substring(slashIndex + 1);
         }
 
+        private String toThumbnailPath(String path, String originalName) {
+                if (path == null || path.isBlank()) {
+                        return path;
+                }
+
+                String normalized = path;
+                int slashIdx = normalized.lastIndexOf('/');
+                if (slashIdx < 0) {
+                        return normalized;
+                }
+
+                String directory = normalized.substring(0, slashIdx);
+                String filename = normalized.substring(slashIdx + 1);
+                String baseName = extractThumbnailBaseName(filename);
+
+                if (!directory.endsWith("/thumbnails")) {
+                        directory = directory + "/thumbnails";
+                }
+                return directory + "/" + baseName + "_thm.webp";
+        }
+
+        private String extractThumbnailBaseName(String fileName) {
+                if (fileName == null || fileName.isBlank()) {
+                        return "image";
+                }
+
+                String target = fileName;
+                if (target.endsWith("_thm.webp")) {
+                        return target.substring(0, target.length() - "_thm.webp".length());
+                }
+
+                int dotIdx = target.lastIndexOf('.');
+                return dotIdx > 0 ? target.substring(0, dotIdx) : target;
+        }
+
         private void validatePostText(PostRequestDTO req) {
                 String normalizedTitle = req.getTitle() == null ? "" : req.getTitle().trim();
                 if (normalizedTitle.length() < 2 || normalizedTitle.length() > 80) {
@@ -981,7 +1016,9 @@ public class PostService {
                                 .content(p.getContent())
                                 .imagePaths(extractPostImagePaths(p.getContent()))
                                 .thumbnailImageId(p.getImage() != null ? p.getImage().getImageId() : null)
-                                .thumbnailUrl(p.getImage() != null ? p.getImage().getPath() : null)
+                                .thumbnailUrl(p.getImage() != null
+                                                ? toThumbnailPath(p.getImage().getPath(), p.getImage().getName())
+                                                : null)
                                 .authorName(p.getUserId().getNickname())
                                 .authorPublicId(p.getUserId().getPublicId())
                                 .circleId(p.getBoardId().getCircleId() != null ? p.getBoardId().getCircleId().getCircleId() : null)
@@ -1011,7 +1048,9 @@ public class PostService {
                                 .content(p.getContent())
                                 .imagePaths(extractPostImagePaths(p.getContent()))
                                 .thumbnailImageId(p.getImage() != null ? p.getImage().getImageId() : null)
-                                .thumbnailUrl(p.getImage() != null ? p.getImage().getPath() : null)
+                                .thumbnailUrl(p.getImage() != null
+                                                ? toThumbnailPath(p.getImage().getPath(), p.getImage().getName())
+                                                : null)
                                 .authorName(p.getUserId().getNickname())
                                 .authorPublicId(p.getUserId().getPublicId())
                                 .circleId(p.getBoardId().getCircleId() != null ? p.getBoardId().getCircleId().getCircleId() : null)

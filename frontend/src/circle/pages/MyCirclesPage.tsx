@@ -159,8 +159,8 @@ export default function MyCirclesPage() {
                 >
                   {/* 이미지 영역 */}
                   <div style={{ position: 'relative', height: 160, background: circle.coverImageUrl ? 'none' : bgGradient, flexShrink: 0 }}>
-                    {circle.coverImageUrl && (
-                      <img src={circle.coverImageUrl} alt={circle.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    {(circle.coverThumbnailUrl || circle.coverImageUrl) && (
+                      <img src={circle.coverThumbnailUrl || circle.coverImageUrl} alt={circle.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                     )}
 
                     {/* 카테고리 (좌상단) */}

@@ -15,11 +15,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.soldesk.moa.common.storage.FileStorage;
 
+import lombok.extern.log4j.Log4j2;
 import net.coobird.thumbnailator.Thumbnails;
-import net.coobird.thumbnailator.geometry.Positions;
 
 @Component
 @Profile({ "local", "prod" })
+@Log4j2
 public class LocalImageFileStorage extends AbstractLocalFileStorage implements FileStorage {
 
     private static final int THUMBNAIL_MAX_WIDTH = 720;
@@ -81,7 +82,7 @@ public class LocalImageFileStorage extends AbstractLocalFileStorage implements F
 
         String thumbnailKey = toThumbnailKeyOrNull(safeKey);
         if (thumbnailKey != null && !"image/svg+xml".equalsIgnoreCase(file.getContentType())) {
-            Path thumbnailTarget = baseDir.resolve(thumbnailKey).normalize();
+            Path thumbnailTarget = baseDir.resolve(thumbnailKey.substring("images/".length())).normalize();
             if (thumbnailTarget.startsWith(baseDir)) {
                 Path thumbnailParent = thumbnailTarget.getParent();
                 if (thumbnailParent != null) {
@@ -89,12 +90,12 @@ public class LocalImageFileStorage extends AbstractLocalFileStorage implements F
                 }
                 try (InputStream input = Files.newInputStream(target)) {
                     Thumbnails.of(input)
-                            .crop(Positions.CENTER)
                             .size(THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT)
                             .outputFormat("webp")
                             .toFile(thumbnailTarget.toFile());
-                } catch (Exception ignored) {
-                    // 썸네일 실패는 원본 업로드 성공을 우선한다.
+                } catch (Exception e) {
+                    log.warn("[UPLOAD] post thumbnail generation failed. key={}, thumbnailKey={}, reason={}",
+                            safeKey, thumbnailKey, e.getMessage());
                 }
             }
         }

@@ -19,12 +19,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import lombok.extern.log4j.Log4j2;
 import net.coobird.thumbnailator.Thumbnails;
-import net.coobird.thumbnailator.geometry.Positions;
 
 @RestController
 @Profile({ "local", "prod" })
 @RequestMapping("/api/local-files")
+@Log4j2
 public class LocalFileUploadController {
 
     private static final int THUMBNAIL_MAX_WIDTH = 720;
@@ -133,9 +134,17 @@ public class LocalFileUploadController {
         if (key == null || key.isBlank() || !key.startsWith("images/")) {
             return null;
         }
-        int dotIdx = key.lastIndexOf('.');
-        String base = dotIdx > 0 ? key.substring(0, dotIdx) : key;
-        return base + "_thm.webp";
+        int lastSlashIdx = key.lastIndexOf('/');
+        if (lastSlashIdx < 0 || lastSlashIdx == key.length() - 1) {
+            return null;
+        }
+
+        String directory = key.substring(0, lastSlashIdx);
+        String fileName = key.substring(lastSlashIdx + 1);
+        int dotIdx = fileName.lastIndexOf('.');
+        String baseName = dotIdx > 0 ? fileName.substring(0, dotIdx) : fileName;
+
+        return directory + "/thumbnails/" + baseName + "_thm.webp";
     }
 
     private boolean createThumbnail(Path baseDir, Path sourcePath, String thumbnailKey, MultipartFile file) {
@@ -156,13 +165,14 @@ public class LocalFileUploadController {
             }
             try (InputStream input = Files.newInputStream(sourcePath)) {
                 Thumbnails.of(input)
-                        .crop(Positions.CENTER)
                         .size(THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT)
                         .outputFormat("webp")
                         .toFile(thumbnailPath.toFile());
             }
             return true;
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            log.warn("[UPLOAD] thumbnail generation failed. source={}, thumbnailKey={}, reason={}",
+                    sourcePath, thumbnailKey, e.getMessage());
             return false;
         }
     }

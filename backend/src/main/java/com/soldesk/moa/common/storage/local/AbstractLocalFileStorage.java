@@ -41,7 +41,7 @@ public abstract class AbstractLocalFileStorage {
         try {
             String safeKey = sanitizeKey(key);
             Path baseDir = Paths.get(localUploadDir).normalize();
-            Path target = baseDir.resolve(safeKey).normalize();
+            Path target = resolvePathForBaseDir(baseDir, safeKey);
             if (!target.startsWith(baseDir)) {
                 return;
             }
@@ -49,7 +49,7 @@ public abstract class AbstractLocalFileStorage {
 
             String thumbnailKey = toThumbnailKeyOrNull(safeKey);
             if (thumbnailKey != null) {
-                Path thumbnailTarget = baseDir.resolve(thumbnailKey).normalize();
+                Path thumbnailTarget = resolvePathForBaseDir(baseDir, thumbnailKey);
                 if (thumbnailTarget.startsWith(baseDir)) {
                     Files.deleteIfExists(thumbnailTarget);
                 }
@@ -95,8 +95,34 @@ public abstract class AbstractLocalFileStorage {
         if (key == null || key.isBlank() || !key.startsWith("images/")) {
             return null;
         }
-        int dotIdx = key.lastIndexOf('.');
-        String base = dotIdx > 0 ? key.substring(0, dotIdx) : key;
-        return base + "_thm.webp";
+        int lastSlashIdx = key.lastIndexOf('/');
+        if (lastSlashIdx < 0 || lastSlashIdx == key.length() - 1) {
+            return null;
+        }
+
+        String directory = key.substring(0, lastSlashIdx);
+        String fileName = key.substring(lastSlashIdx + 1);
+        int dotIdx = fileName.lastIndexOf('.');
+        String baseName = dotIdx > 0 ? fileName.substring(0, dotIdx) : fileName;
+
+        return directory + "/thumbnails/" + baseName + "_thm.webp";
+    }
+
+    private Path resolvePathForBaseDir(Path baseDir, String key) {
+        if (key == null || key.isBlank()) {
+            return baseDir.resolve("").normalize();
+        }
+
+        String resolvedKey = key;
+        Path baseName = baseDir.getFileName();
+        if (baseName != null) {
+            String lowerBase = baseName.toString().toLowerCase();
+            String prefix = lowerBase + "/";
+            if ((lowerBase.equals("images") || lowerBase.equals("files")) && resolvedKey.startsWith(prefix)) {
+                resolvedKey = resolvedKey.substring(prefix.length());
+            }
+        }
+
+        return baseDir.resolve(resolvedKey).normalize();
     }
 }
