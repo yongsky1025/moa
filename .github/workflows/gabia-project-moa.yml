@@ -117,6 +117,7 @@ jobs:
 
             export GOOGLE_CLIENT_ID=\"${{ secrets.GOOGLE_CLIENT_ID }}\"
             export GOOGLE_CLIENT_SECRET=\"${{ secrets.GOOGLE_CLIENT_SECRET }}\"
+            export GOOGLE_REDIRECT_URI=\"${{ secrets.GOOGLE_REDIRECT_URI }}\"
 
             export KAKAO_CLIENT_ID=\"${{ secrets.KAKAO_CLIENT_ID }}\"
             export KAKAO_CLIENT_SECRET=\"${{ secrets.KAKAO_CLIENT_SECRET }}\"
@@ -149,6 +150,7 @@ jobs:
               echo "JWT_SECRET=\$JWT_SECRET"
               echo "GOOGLE_CLIENT_ID=\$GOOGLE_CLIENT_ID"
               echo "GOOGLE_CLIENT_SECRET=\$GOOGLE_CLIENT_SECRET"
+              echo "GOOGLE_REDIRECT_URI=\$GOOGLE_REDIRECT_URI"
               echo "KAKAO_CLIENT_ID=\$KAKAO_CLIENT_ID"
               echo "KAKAO_CLIENT_SECRET=\$KAKAO_CLIENT_SECRET"
               echo "KAKAO_REDIRECT_URI=\$KAKAO_REDIRECT_URI"
