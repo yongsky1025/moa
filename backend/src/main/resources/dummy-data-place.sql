@@ -6,7 +6,8 @@
 -- dummy-data.sql의 DELETE 구문이 이 파일 전에 실행되므로
 -- 이 파일에서는 INSERT 만 수행합니다.
 --
--- [이미지 안내] uploads/images/place/ 디렉터리에 아래 파일명으로
+-- [이미지 안내] 원본은 uploads/images/place/ 에 저장하고,
+--               썸네일은 uploads/images/place/thumbnails/{baseName}_thm.webp 형태로 사용합니다.
 -- 이미지를 저장하세요. Unsplash/Pexels/Pixabay 에서 무료 다운로드:
 --   검색어 예: "meeting room" "yoga studio" "photo studio" "glamping"
 --              "climbing wall" "party room" "rooftop bar" "pottery class"
@@ -362,7 +363,7 @@ INSERT INTO place_closed_day (id, place_id, date, day_of_week, reason, closed_ty
 -- ============================================================
 -- 4. 장소 이미지 (image 테이블, id: 13~)
 --    domain = PLACE, owner_id = place_id, uploaded_by_user_id = 1(admin)
---    ※ 파일은 uploads/images/place/ 에 직접 저장 필요
+--    ※ path는 썸네일 경로(/uploads/images/place/thumbnails/*_thm.webp) 기준
 -- ============================================================
 INSERT INTO image (image_id, name, uuid, path, domain, owner_id, uploaded_by_user_id, ord, deleted, status, create_date, update_date) VALUES
 -- 기존 15개 장소 대표 이미지

@@ -16,6 +16,7 @@ spring:
         - classpath:seed-data.sql
         - classpath:dummy-data.sql
         - classpath:dummy-data-place.sql
+        - classpath:reset-board-post-reply-dummy.sql
 
 app:
   # 운영 프론트 도메인 URL (OAuth 리다이렉트 등에 사용)
