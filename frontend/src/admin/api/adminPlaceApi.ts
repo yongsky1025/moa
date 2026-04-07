@@ -16,6 +16,8 @@ interface UploadUrlResponse {
   uploadUrl: string;
   fileUrl: string;
   key: string;
+  thumbnailUrl?: string;
+  thumbnailKey?: string;
   method: string;
 }
 
@@ -41,7 +43,7 @@ export const uploadImageFile = async (
 ): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await api.post<{ fileUrl: string }>(uploadUrl, formData, {
+  const res = await api.post<{ fileUrl: string; thumbnailUrl?: string; thumbnailKey?: string }>(uploadUrl, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   // fileUrl은 절대 URL(http://localhost:8080/uploads/...) → 경로만 추출

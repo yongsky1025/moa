@@ -1,6 +1,7 @@
 package com.soldesk.moa.common.storage.local;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,9 +15,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.soldesk.moa.common.storage.FileStorage;
 
+import net.coobird.thumbnailator.Thumbnails;
+import net.coobird.thumbnailator.geometry.Positions;
+
 @Component
 @Profile({ "local", "prod" })
 public class LocalImageFileStorage extends AbstractLocalFileStorage implements FileStorage {
+
+    private static final int THUMBNAIL_MAX_WIDTH = 720;
+    private static final int THUMBNAIL_MAX_HEIGHT = 480;
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp", "bmp", "svg");
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
@@ -71,6 +78,26 @@ public class LocalImageFileStorage extends AbstractLocalFileStorage implements F
             Files.createDirectories(parent);
         }
         file.transferTo(target.toFile());
+
+        String thumbnailKey = toThumbnailKeyOrNull(safeKey);
+        if (thumbnailKey != null && !"image/svg+xml".equalsIgnoreCase(file.getContentType())) {
+            Path thumbnailTarget = baseDir.resolve(thumbnailKey).normalize();
+            if (thumbnailTarget.startsWith(baseDir)) {
+                Path thumbnailParent = thumbnailTarget.getParent();
+                if (thumbnailParent != null) {
+                    Files.createDirectories(thumbnailParent);
+                }
+                try (InputStream input = Files.newInputStream(target)) {
+                    Thumbnails.of(input)
+                            .crop(Positions.CENTER)
+                            .size(THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT)
+                            .outputFormat("webp")
+                            .toFile(thumbnailTarget.toFile());
+                } catch (Exception ignored) {
+                    // 썸네일 실패는 원본 업로드 성공을 우선한다.
+                }
+            }
+        }
     }
 }
 

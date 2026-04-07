@@ -24,11 +24,15 @@ public abstract class AbstractLocalFileStorage {
 
         String uploadUrl = "/api/local-files/upload?key=" + key;
         String fileUrl = normalizeBaseUrl(localBaseUrl) + "/uploads/" + key;
+        String thumbnailKey = toThumbnailKeyOrNull(key);
+        String thumbnailUrl = thumbnailKey == null ? null : normalizeBaseUrl(localBaseUrl) + "/uploads/" + thumbnailKey;
 
         return CreateUploadUrlResponseDTO.builder()
                 .uploadUrl(uploadUrl)
                 .fileUrl(fileUrl)
                 .key(key)
+                .thumbnailUrl(thumbnailUrl)
+                .thumbnailKey(thumbnailKey)
                 .method(HTTP_METHOD)
                 .build();
     }
@@ -42,6 +46,14 @@ public abstract class AbstractLocalFileStorage {
                 return;
             }
             Files.deleteIfExists(target);
+
+            String thumbnailKey = toThumbnailKeyOrNull(safeKey);
+            if (thumbnailKey != null) {
+                Path thumbnailTarget = baseDir.resolve(thumbnailKey).normalize();
+                if (thumbnailTarget.startsWith(baseDir)) {
+                    Files.deleteIfExists(thumbnailTarget);
+                }
+            }
         } catch (Exception ignored) {
             // delete는 best-effort로 처리
         }
@@ -77,5 +89,14 @@ public abstract class AbstractLocalFileStorage {
             throw new IllegalStateException("upload.base-url 설정이 필요합니다.");
         }
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+    }
+
+    protected String toThumbnailKeyOrNull(String key) {
+        if (key == null || key.isBlank() || !key.startsWith("images/")) {
+            return null;
+        }
+        int dotIdx = key.lastIndexOf('.');
+        String base = dotIdx > 0 ? key.substring(0, dotIdx) : key;
+        return base + "_thm.webp";
     }
 }

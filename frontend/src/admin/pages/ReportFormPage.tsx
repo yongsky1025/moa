@@ -9,8 +9,8 @@ import { toAssetUrl } from "../../common/utils/assetUrl";
 async function requestUploadUrl(
   fileName: string,
   contentType: string,
-): Promise<{ uploadUrl: string }> {
-  const res = await api.post<{ uploadUrl: string }>("/api/images/upload-url", {
+): Promise<{ uploadUrl: string; thumbnailUrl?: string; thumbnailKey?: string }> {
+  const res = await api.post<{ uploadUrl: string; thumbnailUrl?: string; thumbnailKey?: string }>("/api/images/upload-url", {
     domain: "REPORT",
     fileName,
     contentType,

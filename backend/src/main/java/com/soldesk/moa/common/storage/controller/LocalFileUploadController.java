@@ -1,10 +1,12 @@
 package com.soldesk.moa.common.storage.controller;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -17,10 +19,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import net.coobird.thumbnailator.Thumbnails;
+import net.coobird.thumbnailator.geometry.Positions;
+
 @RestController
 @Profile({ "local", "prod" })
 @RequestMapping("/api/local-files")
 public class LocalFileUploadController {
+
+    private static final int THUMBNAIL_MAX_WIDTH = 720;
+    private static final int THUMBNAIL_MAX_HEIGHT = 480;
 
     private final String localUploadDir;
     private final String localBaseUrl;
@@ -59,10 +67,17 @@ public class LocalFileUploadController {
         Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
         String fileUrl = normalizeBaseUrl(localBaseUrl) + "/uploads/" + safeKey;
-        return ResponseEntity.ok(Map.of(
-                "status", "success",
-                "key", safeKey,
-                "fileUrl", fileUrl));
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("key", safeKey);
+        response.put("fileUrl", fileUrl);
+
+        String thumbnailKey = toThumbnailKeyOrNull(safeKey);
+        if (thumbnailKey != null && createThumbnail(baseDir, targetPath, thumbnailKey, file)) {
+            response.put("thumbnailKey", thumbnailKey);
+            response.put("thumbnailUrl", normalizeBaseUrl(localBaseUrl) + "/uploads/" + thumbnailKey);
+        }
+        return ResponseEntity.ok(response);
     }
 
     private void validateSupportedPrefix(String safeKey) {
@@ -112,6 +127,44 @@ public class LocalFileUploadController {
             throw new IllegalStateException("upload.base-url 설정이 필요합니다.");
         }
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+    }
+
+    private String toThumbnailKeyOrNull(String key) {
+        if (key == null || key.isBlank() || !key.startsWith("images/")) {
+            return null;
+        }
+        int dotIdx = key.lastIndexOf('.');
+        String base = dotIdx > 0 ? key.substring(0, dotIdx) : key;
+        return base + "_thm.webp";
+    }
+
+    private boolean createThumbnail(Path baseDir, Path sourcePath, String thumbnailKey, MultipartFile file) {
+        String contentType = file.getContentType();
+        if (contentType != null && contentType.equalsIgnoreCase("image/svg+xml")) {
+            return false;
+        }
+
+        Path thumbnailPath = baseDir.resolve(thumbnailKey).normalize();
+        if (!thumbnailPath.startsWith(baseDir)) {
+            throw new IllegalArgumentException("유효하지 않은 thumbnail key 경로입니다.");
+        }
+
+        try {
+            Path parent = thumbnailPath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            try (InputStream input = Files.newInputStream(sourcePath)) {
+                Thumbnails.of(input)
+                        .crop(Positions.CENTER)
+                        .size(THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT)
+                        .outputFormat("webp")
+                        .toFile(thumbnailPath.toFile());
+            }
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 }
 

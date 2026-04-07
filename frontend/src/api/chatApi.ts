@@ -82,7 +82,14 @@ export const chatApi = {
     const urlEndpoint = isImage ? "/api/images/upload-url" : "/api/files/upload-url";
 
     // 1단계: 업로드 URL + key 발급
-    const { data } = await api.post<{ uploadUrl: string; fileUrl: string; key: string }>(
+    const { data } = await api.post<{
+      uploadUrl: string;
+      fileUrl: string;
+      key: string;
+      method: string;
+      thumbnailUrl?: string;
+      thumbnailKey?: string;
+    }>(
       urlEndpoint,
       { domain: "CHAT", fileName: file.name, contentType: file.type }
     );

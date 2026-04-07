@@ -14,5 +14,7 @@ public class CreateUploadUrlResponseDTO {
     private String uploadUrl;
     private String fileUrl;
     private String key;
+    private String thumbnailUrl;
+    private String thumbnailKey;
     private String method;
 }

@@ -11,6 +11,8 @@ export interface UploadUrlResponse {
   uploadUrl: string;
   fileUrl: string;
   key: string;
+  thumbnailUrl?: string;
+  thumbnailKey?: string;
   method: string;
 }
 
