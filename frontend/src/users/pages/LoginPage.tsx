@@ -6,6 +6,7 @@ import AuthCard from "../components/AuthCard";
 import SocialLoginButtons from "../components/SocialLoginButtons";
 import PrimaryButton from "../components/PrimaryButton";
 import ModalOverlay from "../components/ModalOverlay";
+import { toBackendUrl } from "../../common/utils/backendUrl";
 
 const CSS = `
   .login-input:focus {
@@ -64,7 +65,7 @@ export default function LoginPage() {
   };
 
   const handleSocialLogin = (provider: "google" | "kakao" | "naver") => {
-    window.location.href = `/oauth2/authorization/${provider}`;
+    window.location.href = toBackendUrl(`/oauth2/authorization/${provider}`);
   };
 
   return (

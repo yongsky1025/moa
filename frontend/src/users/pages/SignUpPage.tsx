@@ -2,10 +2,11 @@ import { Link } from "react-router-dom";
 import AuthPageLayout from "../components/AuthPageLayout";
 import AuthCard from "../components/AuthCard";
 import SocialLoginButtons from "../components/SocialLoginButtons";
+import { toBackendUrl } from "../../common/utils/backendUrl";
 
 export default function SignUpPage() {
   const handleSocial = (provider: "google" | "kakao" | "naver") => {
-    window.location.href = `/oauth2/authorization/${provider}`;
+    window.location.href = toBackendUrl(`/oauth2/authorization/${provider}`);
   };
 
   return (
