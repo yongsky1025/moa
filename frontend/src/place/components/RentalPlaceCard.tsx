@@ -16,11 +16,13 @@ function formatMinutes(m: number) {
 interface Props {
   place: PlaceCardDTO;
   minReservationMinutes?: number;
+  index?: number;
 }
 
 export default function RentalPlaceCard({
   place,
   minReservationMinutes,
+  index = 0,
 }: Props) {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuthStore();
@@ -60,7 +62,7 @@ export default function RentalPlaceCard({
             src={imageSrc}
             alt={place.name}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            loading="lazy"
+            loading={index < 8 ? "eager" : "lazy"}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">

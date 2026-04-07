@@ -107,6 +107,6 @@ export const createCircleCategory = async (
   dto: AdminCircleCategoryRequestDTO,
 ) => {
   const res = await api.post(`${API_SERVER_HOST_ADMIN}/circles/category`, dto);
-  console.log("circle category name", dto);
+  // console.log("circle category name", dto);
   return res.data;
 };
