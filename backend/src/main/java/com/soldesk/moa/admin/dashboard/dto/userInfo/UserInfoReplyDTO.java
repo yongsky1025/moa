@@ -12,6 +12,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UserInfoReplyDTO {
+    private Long postId;
+    private String boardType;
+    private Long boardId;
+    private Long circleId;
     private String title;
     private String content;
     private LocalDateTime createDate;

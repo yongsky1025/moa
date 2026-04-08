@@ -10,7 +10,7 @@ const SANCTION_TYPE_OPTIONS: { value: SanctionType; label: string }[] = [
 ];
 
 interface AdminSanctionModalProps {
-  targetType: "POST" | "REPLY" | "CHAT";
+  targetType: "POST" | "REPLY" | "CHAT" | "CIRCLE" | "PLACE_REVIEW" | "USER";
   targetId: number;
   authorName: string;
   onConfirm: (
@@ -37,19 +37,30 @@ export default function AdminSanctionModal({
     useState<SanctionType>("WARNING");
   const [userSanctionReason, setUserSanctionReason] = useState("");
 
-  const label = targetType === "POST" ? "게시글" : targetType === "REPLY" ? "댓글" : "채팅 메세지";
+  const labelMap: Record<string, string> = {
+    POST: "게시글", REPLY: "댓글", CHAT: "채팅 메세지",
+    CIRCLE: "모임", PLACE_REVIEW: "장소 후기", USER: "유저",
+  };
+  const label = labelMap[targetType] ?? targetType;
+  const isUserType = targetType === "USER";
 
-  const canSubmit =
-    reason.trim() && (!addUserSanction || userSanctionReason.trim());
+  const canSubmit = isUserType
+    ? userSanctionReason.trim() !== ""
+    : reason.trim() !== "" && (!addUserSanction || userSanctionReason.trim() !== "");
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    onConfirm(
-      reason.trim(),
-      addUserSanction,
-      addUserSanction ? userSanctionType : undefined,
-      addUserSanction ? userSanctionReason.trim() : undefined,
-    );
+    if (isUserType) {
+      // USER 타입: userSanctionType + userSanctionReason를 주 제재로 전달
+      onConfirm(userSanctionReason.trim(), true, userSanctionType, userSanctionReason.trim());
+    } else {
+      onConfirm(
+        reason.trim(),
+        addUserSanction,
+        addUserSanction ? userSanctionType : undefined,
+        addUserSanction ? userSanctionReason.trim() : undefined,
+      );
+    }
   };
 
   return (
@@ -62,7 +73,7 @@ export default function AdminSanctionModal({
               <span className="text-sm">🛡</span>
             </div>
             <h2 className="text-moa-text text-base font-bold">
-              직권 {label} 삭제
+              {isUserType ? `유저 제재 (${authorName})` : `직권 ${label} 삭제`}
             </h2>
           </div>
           <button
@@ -85,80 +96,113 @@ export default function AdminSanctionModal({
                 </span>
               </div>
               <div>
-                <span className="text-moa-subtle">작성자:</span>{" "}
+                <span className="text-moa-subtle">{isUserType ? "대상 유저:" : "작성자:"}</span>{" "}
                 <span className="text-moa-text font-semibold">
                   {authorName}
                 </span>
               </div>
             </div>
             <p className="text-moa-subtle mt-2 text-xs">
-              제재 타입: CONTENT_DELETE (콘텐츠 삭제)
+              {isUserType ? "유저에게 직접 제재를 적용합니다." : "제재 타입: CONTENT_DELETE (콘텐츠 삭제)"}
             </p>
           </div>
 
-          {/* 콘텐츠 삭제 사유 (필수) */}
-          <div>
-            <label className="text-moa-text mb-1.5 block text-sm font-semibold">
-              {label} 삭제 사유 <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder={`${label} 삭제 사유를 입력하세요 (필수)`}
-              rows={3}
-              className="border-moa-border focus:border-moa-primary text-moa-text w-full resize-none rounded-xl border p-3 text-sm outline-none transition-colors"
-            />
-          </div>
-
-          {/* 추가 유저 제재 */}
-          <div className="border-moa-border rounded-xl border p-4">
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                checked={addUserSanction}
-                onChange={(e) => setAddUserSanction(e.target.checked)}
-                className="accent-moa-primary h-4 w-4"
-              />
-              <span className="text-moa-text text-sm font-medium">
-                추가 유저 제재
-              </span>
-            </label>
-
-            {addUserSanction && (
-              <div className="mt-3 flex flex-col gap-3">
-                <div>
-                  <label className="text-moa-subtle mb-1 block text-xs font-medium">
-                    제재 종류
-                  </label>
-                  <select
-                    value={userSanctionType}
-                    onChange={(e) =>
-                      setUserSanctionType(e.target.value as SanctionType)
-                    }
-                    className="border-moa-border focus:border-moa-primary text-moa-text h-9 w-full cursor-pointer rounded-lg border px-3 text-sm outline-none transition-colors"
-                  >
-                    {SANCTION_TYPE_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-moa-text mb-1.5 block text-sm font-semibold">
-                    유저 제재 사유 <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    value={userSanctionReason}
-                    onChange={(e) => setUserSanctionReason(e.target.value)}
-                    placeholder="유저 제재 사유를 입력하세요 (필수)"
-                    rows={2}
-                    className="border-moa-border focus:border-moa-primary text-moa-text w-full resize-none rounded-xl border p-3 text-sm outline-none transition-colors"
-                  />
-                </div>
+          {isUserType ? (
+            /* USER 타입: 제재 종류 + 사유 직접 선택 */
+            <>
+              <div>
+                <label className="text-moa-subtle mb-1 block text-xs font-medium">
+                  제재 종류 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={userSanctionType}
+                  onChange={(e) => setUserSanctionType(e.target.value as SanctionType)}
+                  className="border-moa-border focus:border-moa-primary text-moa-text h-9 w-full cursor-pointer rounded-lg border px-3 text-sm outline-none transition-colors"
+                >
+                  {SANCTION_TYPE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
               </div>
-            )}
-          </div>
+              <div>
+                <label className="text-moa-text mb-1.5 block text-sm font-semibold">
+                  제재 사유 <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={userSanctionReason}
+                  onChange={(e) => setUserSanctionReason(e.target.value)}
+                  placeholder="제재 사유를 입력하세요 (필수)"
+                  rows={3}
+                  className="border-moa-border focus:border-moa-primary text-moa-text w-full resize-none rounded-xl border p-3 text-sm outline-none transition-colors"
+                />
+              </div>
+            </>
+          ) : (
+            /* 콘텐츠 타입: 삭제 사유 + 추가 유저 제재 */
+            <>
+              <div>
+                <label className="text-moa-text mb-1.5 block text-sm font-semibold">
+                  {label} 삭제 사유 <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder={`${label} 삭제 사유를 입력하세요 (필수)`}
+                  rows={3}
+                  className="border-moa-border focus:border-moa-primary text-moa-text w-full resize-none rounded-xl border p-3 text-sm outline-none transition-colors"
+                />
+              </div>
+
+              <div className="border-moa-border rounded-xl border p-4">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={addUserSanction}
+                    onChange={(e) => setAddUserSanction(e.target.checked)}
+                    className="accent-moa-primary h-4 w-4"
+                  />
+                  <span className="text-moa-text text-sm font-medium">
+                    추가 유저 제재
+                  </span>
+                </label>
+
+                {addUserSanction && (
+                  <div className="mt-3 flex flex-col gap-3">
+                    <div>
+                      <label className="text-moa-subtle mb-1 block text-xs font-medium">
+                        제재 종류
+                      </label>
+                      <select
+                        value={userSanctionType}
+                        onChange={(e) =>
+                          setUserSanctionType(e.target.value as SanctionType)
+                        }
+                        className="border-moa-border focus:border-moa-primary text-moa-text h-9 w-full cursor-pointer rounded-lg border px-3 text-sm outline-none transition-colors"
+                      >
+                        {SANCTION_TYPE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-moa-text mb-1.5 block text-sm font-semibold">
+                        유저 제재 사유 <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        value={userSanctionReason}
+                        onChange={(e) => setUserSanctionReason(e.target.value)}
+                        placeholder="유저 제재 사유를 입력하세요 (필수)"
+                        rows={2}
+                        className="border-moa-border focus:border-moa-primary text-moa-text w-full resize-none rounded-xl border p-3 text-sm outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* 푸터 */}

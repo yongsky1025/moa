@@ -290,6 +290,7 @@ export default function AdminReportDetailPage() {
   const [saving, setSaving] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ReportStatus | null>(null);
   const [chatSanctionOpen, setChatSanctionOpen] = useState(false);
+  const [sanctionOpen, setSanctionOpen] = useState(false);
 
   useEffect(() => {
     if (!Number.isFinite(reportId)) return;
@@ -357,6 +358,72 @@ export default function AdminReportDetailPage() {
       setData({ ...data, status: "RESOLVED", adminNote: adminNote.trim() });
       setChatSanctionOpen(false);
       showToast("채팅 메세지 제재가 완료되었습니다.", { navigateTo: "/admin/reports" });
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? e?.message ?? "제재 처리에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // POST / REPLY / CIRCLE / PLACE_REVIEW / USER 타입 승인 핸들러
+  const handleSanctionConfirm = async (
+    reason: string,
+    addUserSanction: boolean,
+    userSanctionType?: SanctionType,
+    userSanctionReason?: string,
+  ) => {
+    if (!data) return;
+    setSaving(true);
+    try {
+      const targetType = data.targetType;
+
+      // 타겟 유저 ID 결정
+      let targetUserId: number | null | undefined = null;
+      if (targetType === "POST") targetUserId = data.targetContent?.postAuthorId;
+      else if (targetType === "REPLY") targetUserId = data.targetContent?.replyAuthorId;
+      else if (targetType === "CIRCLE") targetUserId = data.targetContent?.circleLeaderId;
+      else if (targetType === "PLACE_REVIEW") targetUserId = data.targetContent?.placeReviewAuthorId;
+      else if (targetType === "USER") targetUserId = data.targetId;
+
+      if (!targetUserId) throw new Error("대상 유저 정보를 찾을 수 없습니다.");
+
+      if (targetType === "USER") {
+        // USER: 주 제재만 적용 (userSanctionType이 주 제재)
+        await applySanction({
+          reportId: data.reportId,
+          targetUserId,
+          targetType: "USER",
+          targetId: data.targetId,
+          sanctionType: userSanctionType ?? "WARNING",
+          reason,
+        });
+      } else {
+        // 콘텐츠 타입: CONTENT_DELETE
+        await applySanction({
+          reportId: data.reportId,
+          targetUserId,
+          targetType,
+          targetId: data.targetId,
+          sanctionType: "CONTENT_DELETE",
+          reason,
+        });
+        // 추가 유저 제재 (선택)
+        if (addUserSanction && userSanctionType && userSanctionReason) {
+          await applySanction({
+            reportId: data.reportId,
+            targetUserId,
+            targetType: "USER",
+            targetId: targetUserId,
+            sanctionType: userSanctionType,
+            reason: userSanctionReason,
+          });
+        }
+      }
+
+      await patchReportStatus(data.reportId, { status: "RESOLVED", adminNote: adminNote.trim() });
+      setData({ ...data, status: "RESOLVED", adminNote: adminNote.trim() });
+      setSanctionOpen(false);
+      showToast("제재가 처리되었습니다.", { navigateTo: "/admin/reports" });
     } catch (e: any) {
       setError(e?.response?.data?.message ?? e?.message ?? "제재 처리에 실패했습니다.");
     } finally {
@@ -543,6 +610,14 @@ export default function AdminReportDetailPage() {
                   setError(null);
                   if (data?.targetType === "CHAT") {
                     setChatSanctionOpen(true);
+                  } else if (
+                    data?.targetType === "POST" ||
+                    data?.targetType === "REPLY" ||
+                    data?.targetType === "CIRCLE" ||
+                    data?.targetType === "PLACE_REVIEW" ||
+                    data?.targetType === "USER"
+                  ) {
+                    setSanctionOpen(true);
                   } else {
                     setConfirmAction("RESOLVED");
                   }
@@ -582,6 +657,24 @@ export default function AdminReportDetailPage() {
           loading={saving}
           onConfirm={handleChatSanctionConfirm}
           onClose={() => setChatSanctionOpen(false)}
+        />
+      )}
+
+      {sanctionOpen && data && (
+        <AdminSanctionModal
+          targetType={data.targetType as "POST" | "REPLY" | "CIRCLE" | "PLACE_REVIEW" | "USER"}
+          targetId={data.targetId}
+          authorName={
+            data.targetType === "POST" ? (data.targetContent?.postAuthorName ?? "") :
+            data.targetType === "REPLY" ? (data.targetContent?.replyAuthorName ?? "") :
+            data.targetType === "CIRCLE" ? (data.targetContent?.circleName ?? "") :
+            data.targetType === "PLACE_REVIEW" ? (data.targetContent?.placeReviewAuthorName ?? "") :
+            data.targetType === "USER" ? (data.targetContent?.userNickname ?? "") :
+            ""
+          }
+          loading={saving}
+          onConfirm={handleSanctionConfirm}
+          onClose={() => setSanctionOpen(false)}
         />
       )}
 

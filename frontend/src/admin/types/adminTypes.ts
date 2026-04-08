@@ -170,7 +170,11 @@ export interface UserInfoDTO {
 }
 
 export interface UserInfoPostDTO {
+  postId: number;
   boardName: string;
+  boardType: string; // FREE | NOTICE | CIRCLE
+  boardId: number;
+  circleId?: number | null;
   title: string;
   content: string;
   viewCount: number;
@@ -179,6 +183,10 @@ export interface UserInfoPostDTO {
 }
 
 export interface UserInfoReplyDTO {
+  postId?: number | null;
+  boardType?: string | null; // FREE | NOTICE | CIRCLE
+  boardId?: number | null;
+  circleId?: number | null;
   title: string; // 댓글이 달린 게시글 제목
   content: string;
   createDate: string;
@@ -367,11 +375,13 @@ export interface ReportTargetContentDTO {
   postTitle?: string | null;
   postContent?: string | null;
   postAuthorName?: string | null;
+  postAuthorId?: number | null;
   postBoardId?: number | null;
   postCreatedAt?: string | null;
   // REPLY
   replyContent?: string | null;
   replyAuthorName?: string | null;
+  replyAuthorId?: number | null;
   replyPostId?: number | null;
   replyPostTitle?: string | null;
   replyCreatedAt?: string | null;
@@ -381,6 +391,7 @@ export interface ReportTargetContentDTO {
   circleStatus?: string | null;
   circleMaxMember?: number | null;
   circleCurrentMember?: number | null;
+  circleLeaderId?: number | null;
   circleCreatedAt?: string | null;
   // USER
   userNickname?: string | null;
@@ -392,6 +403,7 @@ export interface ReportTargetContentDTO {
   placeReviewContent?: string | null;
   placeReviewRating?: number | null;
   placeReviewAuthorName?: string | null;
+  placeReviewAuthorId?: number | null;
   placeReviewPlaceName?: string | null;
   placeReviewPlaceId?: number | null;
   placeReviewCreatedAt?: string | null;

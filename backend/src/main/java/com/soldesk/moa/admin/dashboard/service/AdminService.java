@@ -1142,8 +1142,16 @@ public class AdminService {
 
         // UserInfoPostDTO
         private UserInfoPostDTO entityToUserInfoPostDTO(String boardName, Post post, Long countReply) {
+                com.soldesk.moa.board.entity.Board board = post.getBoardId();
+                Long circleId = (board != null && board.getCircleId() != null)
+                                ? board.getCircleId().getCircleId()
+                                : null;
                 UserInfoPostDTO dto = UserInfoPostDTO.builder()
+                                .postId(post.getPostId())
                                 .boardName(boardName)
+                                .boardType(board != null ? board.getBoardType().name() : null)
+                                .boardId(board != null ? board.getBoardId() : null)
+                                .circleId(circleId)
                                 .title(post.getTitle())
                                 .content(post.getContent())
                                 .createDate(post.getCreateDate())
@@ -1154,7 +1162,16 @@ public class AdminService {
 
         // UserInfoReplyDTO
         private UserInfoReplyDTO entityToUserInfoReplyDTO(String title, Reply reply) {
+                Post parentPost = reply.getPostId();
+                com.soldesk.moa.board.entity.Board board = (parentPost != null) ? parentPost.getBoardId() : null;
+                Long circleId = (board != null && board.getCircleId() != null)
+                                ? board.getCircleId().getCircleId()
+                                : null;
                 UserInfoReplyDTO dto = UserInfoReplyDTO.builder()
+                                .postId(parentPost != null ? parentPost.getPostId() : null)
+                                .boardType(board != null ? board.getBoardType().name() : null)
+                                .boardId(board != null ? board.getBoardId() : null)
+                                .circleId(circleId)
                                 .title(title)
                                 .content(reply.getContent())
                                 .createDate(reply.getCreateDate())

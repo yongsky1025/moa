@@ -11,12 +11,12 @@ import com.soldesk.moa.place.entity.PlaceReview;
 
 public interface PlaceReviewRepository extends JpaRepository<PlaceReview, Long> {
 
-    List<PlaceReview> findByPlaceIdOrderByCreateDateDesc(Long placeId);
+    List<PlaceReview> findByPlaceIdAndDeletedFalseOrderByCreateDateDesc(Long placeId);
 
-    List<PlaceReview> findByReviewerUserIdOrderByCreateDateDesc(Long userId);
+    List<PlaceReview> findByReviewerUserIdAndDeletedFalseOrderByCreateDateDesc(Long userId);
 
-    boolean existsByReservationIdAndReviewerUserId(Long reservationId, Long userId);
+    boolean existsByReservationIdAndReviewerUserIdAndDeletedFalse(Long reservationId, Long userId);
 
-    @Query("SELECT pr.reservation.id FROM PlaceReview pr WHERE pr.reviewer.userId = :userId AND pr.reservation.id IN :reservationIds")
+    @Query("SELECT pr.reservation.id FROM PlaceReview pr WHERE pr.reviewer.userId = :userId AND pr.reservation.id IN :reservationIds AND pr.deleted = false")
     Set<Long> findReviewedReservationIds(@Param("userId") Long userId, @Param("reservationIds") List<Long> reservationIds);
 }

@@ -82,10 +82,10 @@ export default function PlaceReservationPanel({ place, initialDate, initialSched
   const { isLoggedIn, userId } = useAuthStore();
 
   const [selectedDate, setSelectedDate] = useState(initialDate ?? today);
-  const [calOpen, setCalOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<"cal" | "time" | "schedule" | null>(null);
+  const calOpen = openSection === "cal";
+  const timeOpen = openSection === "time";
   const calRef = useRef<HTMLDivElement>(null);
-
-  const [timeOpen, setTimeOpen] = useState(false);
 
   const [occupiedSlots, setOccupiedSlots] = useState<OccupiedSlotDTO[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -100,6 +100,7 @@ export default function PlaceReservationPanel({ place, initialDate, initialSched
 
   const handleScheduleChange = (id: number | null) => {
     setSelectedScheduleId(id);
+    setOpenSection(null); // 선택 즉시 닫기
     if (id !== null) {
       const schedule = mySchedules.find((s) => s.scheduleId === id);
       if (schedule) {
@@ -125,7 +126,7 @@ export default function PlaceReservationPanel({ place, initialDate, initialSched
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (calRef.current && !calRef.current.contains(e.target as Node))
-        setCalOpen(false);
+        setOpenSection((v) => (v === "cal" ? null : v));
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -133,7 +134,7 @@ export default function PlaceReservationPanel({ place, initialDate, initialSched
 
   // 시작+종료 모두 선택되면 시간 드롭다운 자동 닫기
   useEffect(() => {
-    if (startTime && endTime) setTimeOpen(false);
+    if (startTime && endTime) setOpenSection((v) => (v === "time" ? null : v));
   }, [startTime, endTime]);
 
   // 날짜 변경 시 슬롯 재조회
@@ -185,7 +186,7 @@ export default function PlaceReservationPanel({ place, initialDate, initialSched
     const dd = String(day.getDate()).padStart(2, "0");
     setError(null);
     setSelectedDate(`${yyyy}-${mm}-${dd}`);
-    setCalOpen(false);
+    setOpenSection(null);
   };
 
   const handleSlotClick = (slot: string) => {
@@ -314,7 +315,7 @@ export default function PlaceReservationPanel({ place, initialDate, initialSched
         <div ref={calRef} className="relative">
           <button
             type="button"
-            onClick={() => setCalOpen((v) => !v)}
+            onClick={() => setOpenSection((prev) => (prev === "cal" ? null : "cal"))}
             className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
               selectedDate
                 ? "border-moa-primary bg-moa-light text-moa-secondary"
@@ -361,7 +362,7 @@ export default function PlaceReservationPanel({ place, initialDate, initialSched
 
       {/* 시간 선택 */}
       {selectedDate && !closedToday && (
-        <div className="mb-4">
+        <div className="relative mb-4">
           <label className="mb-1.5 block text-xs font-semibold text-gray-700">
             시간 선택
           </label>
@@ -374,7 +375,7 @@ export default function PlaceReservationPanel({ place, initialDate, initialSched
               {/* 드롭다운 토글 버튼 */}
               <button
                 type="button"
-                onClick={() => setTimeOpen((v) => !v)}
+                onClick={() => setOpenSection((prev) => (prev === "time" ? null : "time"))}
                 className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
                   startTime
                     ? "border-moa-primary bg-moa-light text-moa-secondary"
@@ -393,9 +394,9 @@ export default function PlaceReservationPanel({ place, initialDate, initialSched
                 />
               </button>
 
-              {/* 슬롯 그리드 (드롭다운) */}
+              {/* 슬롯 그리드 (absolute 드롭다운) */}
               {timeOpen && (
-                <div className="mt-2 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+                <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 rounded-xl border border-gray-200 bg-white p-3 shadow-md">
                   <ReservationTimeGrid
                     openTime={place.openTime}
                     closeTime={place.closeTime}
@@ -439,6 +440,8 @@ export default function PlaceReservationPanel({ place, initialDate, initialSched
           <ScheduleConnectSection
             schedules={mySchedules}
             selectedId={selectedScheduleId}
+            open={openSection === "schedule"}
+            onToggle={() => setOpenSection((prev) => (prev === "schedule" ? null : "schedule"))}
             onChange={handleScheduleChange}
           />
         </div>

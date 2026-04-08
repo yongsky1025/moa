@@ -1,10 +1,11 @@
-import { useState } from 'react'
 import { ChevronDown, ChevronUp, CalendarDays } from 'lucide-react'
 import type { MyUpcomingScheduleDTO } from '../types/placeTypes'
 
 interface Props {
   schedules: MyUpcomingScheduleDTO[]
   selectedId: number | null
+  open: boolean
+  onToggle: () => void
   onChange: (id: number | null) => void
 }
 
@@ -13,9 +14,7 @@ function formatScheduleDate(iso: string): string {
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export default function ScheduleConnectSection({ schedules, selectedId, onChange }: Props) {
-  const [open, setOpen] = useState(false)
-
+export default function ScheduleConnectSection({ schedules, selectedId, open, onToggle, onChange }: Props) {
   if (schedules.length === 0) return null
 
   const selected = schedules.find((s) => s.scheduleId === selectedId)
@@ -24,7 +23,7 @@ export default function ScheduleConnectSection({ schedules, selectedId, onChange
     <div className="rounded-xl border border-moa-border bg-moa-light/50">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
         className="flex w-full items-center justify-between px-4 py-3"
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-moa-secondary">

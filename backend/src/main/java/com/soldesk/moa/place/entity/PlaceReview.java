@@ -54,8 +54,20 @@ public class PlaceReview extends BaseEntity {
     @JoinColumn(name = "reservation_id")
     private Reservation reservation;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
+
     public void update(int rating, String comment) {
         this.rating = rating;
         this.comment = comment;
+    }
+
+    public void markDeleted() {
+        this.deleted = true;
+    }
+
+    public void restore() {
+        this.deleted = false;
     }
 }

@@ -61,12 +61,29 @@ export default function AdminUserHistoryModal() {
 
   const goDetail = (payload: any) => {
     if (history.kind === 'post') {
-      const boardKey = String(payload?.boardName ?? '');
-      navigate(`/board/${boardKey}`);
+      const boardType: string = payload?.boardType ?? '';
+      const postId: number = payload?.postId;
+      if (!postId) return;
+      if (boardType === 'FREE') {
+        window.open(`/board/free/${postId}`, '_blank');
+      } else if (boardType === 'NOTICE') {
+        window.open(`/board/notice/${postId}`, '_blank');
+      } else if (boardType === 'CIRCLE' && payload?.circleId && payload?.boardId) {
+        window.open(`/circle/${payload.circleId}/board/${payload.boardId}/posts/${postId}`, '_blank');
+      }
       return;
     }
     if (history.kind === 'reply') {
-      navigate(`/board`);
+      const boardType: string = payload?.boardType ?? '';
+      const postId: number = payload?.postId;
+      if (!postId) return;
+      if (boardType === 'FREE') {
+        window.open(`/board/free/${postId}`, '_blank');
+      } else if (boardType === 'NOTICE') {
+        window.open(`/board/notice/${postId}`, '_blank');
+      } else if (boardType === 'CIRCLE' && payload?.circleId && payload?.boardId) {
+        window.open(`/circle/${payload.circleId}/board/${payload.boardId}/posts/${postId}`, '_blank');
+      }
       return;
     }
     if (history.kind === 'circle') {

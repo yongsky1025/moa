@@ -124,7 +124,7 @@ export default function GenderDonutCard({ data, loading }: Props) {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 mt-10">
           <DonutSVG segs={buildSegments(data)} total={data.countTotalUser} />
           <div className="flex flex-wrap justify-center gap-3">
             {buildSegments(data).map((s) => (

@@ -48,7 +48,7 @@ public class PlaceReviewService {
     // 장소 후기 목록 조회 (상세 페이지)
     @Transactional(readOnly = true)
     public List<PlaceReviewDetailDTO> getPlaceReviews(Long placeId) {
-        return placeReviewRepository.findByPlaceIdOrderByCreateDateDesc(placeId).stream()
+        return placeReviewRepository.findByPlaceIdAndDeletedFalseOrderByCreateDateDesc(placeId).stream()
                 .map(r -> PlaceReviewDetailDTO.builder()
                         .id(r.getId())
                         .rating(r.getRating())
@@ -76,7 +76,7 @@ public class PlaceReviewService {
         if (!isEligible(reservation, userId)) {
             throw new IllegalStateException("이 예약에 대한 후기 작성 권한이 없습니다.");
         }
-        if (placeReviewRepository.existsByReservationIdAndReviewerUserId(reservationId, userId)) {
+        if (placeReviewRepository.existsByReservationIdAndReviewerUserIdAndDeletedFalse(reservationId, userId)) {
             throw new IllegalStateException("이미 작성한 후기가 있습니다.");
         }
 
@@ -140,7 +140,7 @@ public class PlaceReviewService {
     // 마이페이지 - 내가 쓴 후기 목록
     @Transactional(readOnly = true)
     public List<MyPlaceReviewDTO> getMyReviews(Long userId) {
-        return placeReviewRepository.findByReviewerUserIdOrderByCreateDateDesc(userId).stream()
+        return placeReviewRepository.findByReviewerUserIdAndDeletedFalseOrderByCreateDateDesc(userId).stream()
                 .map(r -> MyPlaceReviewDTO.builder()
                         .reviewId(r.getId())
                         .placeId(r.getPlace().getId())

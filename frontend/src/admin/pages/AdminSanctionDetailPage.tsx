@@ -73,7 +73,10 @@ export default function AdminSanctionDetailPage() {
 
   // 버튼 활성화 조건
   const canLift = useMemo(
-    () => data?.sanctionState === 'ACTIVE' && data?.sanctionType !== 'WARNING',
+    () =>
+      data?.sanctionState === 'ACTIVE' &&
+      data?.sanctionType !== 'WARNING' &&
+      data?.sanctionType !== 'CONTENT_DELETE',
     [data?.sanctionState, data?.sanctionType],
   );
   const canCancel = useMemo(
@@ -295,7 +298,9 @@ export default function AdminSanctionDetailPage() {
                     ? '이미 해제된 제재입니다.'
                     : data?.sanctionType === 'WARNING'
                       ? '경고는 해제 대상이 아닙니다.'
-                      : '활성 상태의 제재만 해제할 수 있습니다.'}
+                      : data?.sanctionType === 'CONTENT_DELETE'
+                        ? '콘텐츠 삭제 제재는 취소 기능을 이용해주세요.'
+                        : '활성 상태의 제재만 해제할 수 있습니다.'}
                 </div>
               )}
             </div>

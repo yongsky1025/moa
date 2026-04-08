@@ -309,25 +309,26 @@ public class AdminPlaceSearchRepositoryImpl implements AdminPlaceSearchRepositor
     }
 
     /**
-     * 구/군 레벨 드릴다운 + 전월대비 증감률
+     * 구/군 레벨 드릴다운 + 전기간 대비 증감률
      * percentage: 해당 시/도 내 구/군 비율
-     * monthOverMonthChange: (이번달 - 지난달) / 지난달 × 100
+     * monthOverMonthChange: (최근 30일 - 이전 30일) / 이전 30일 × 100
      */
     @Override
     public List<DistrictDistDTO> getDistrictDistribution(String city) {
         QPlace place = QPlace.place;
         QReservation reservation = QReservation.reservation;
 
-        LocalDateTime thisMonthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        LocalDateTime lastMonthStart = thisMonthStart.minusMonths(1);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime since30 = now.minusDays(30);  // 최근 30일 시작
+        LocalDateTime since60 = now.minusDays(60);  // 이전 30일 시작
 
-        // 이번달 구/군별 예약수
+        // 최근 30일 구/군별 예약수
         Map<String, Long> thisMonth = queryFactory
                 .select(place.district, reservation.count())
                 .from(reservation)
                 .join(reservation.place, place)
                 .where(place.city.eq(city),
-                        reservation.createDate.goe(thisMonthStart),
+                        reservation.createDate.goe(since30),
                         reservation.reservationStatus.in(
                                 ReservationStatus.RESERVED, ReservationStatus.COMPLETED))
                 .groupBy(place.district)
@@ -337,14 +338,14 @@ public class AdminPlaceSearchRepositoryImpl implements AdminPlaceSearchRepositor
                         t -> t.get(0, String.class),
                         t -> Optional.ofNullable(t.get(1, Long.class)).orElse(0L)));
 
-        // 지난달 구/군별 예약수
+        // 이전 30일(30~60일 전) 구/군별 예약수
         Map<String, Long> lastMonth = queryFactory
                 .select(place.district, reservation.count())
                 .from(reservation)
                 .join(reservation.place, place)
                 .where(place.city.eq(city),
-                        reservation.createDate.goe(lastMonthStart),
-                        reservation.createDate.lt(thisMonthStart),
+                        reservation.createDate.goe(since60),
+                        reservation.createDate.lt(since30),
                         reservation.reservationStatus.in(
                                 ReservationStatus.RESERVED, ReservationStatus.COMPLETED))
                 .groupBy(place.district)

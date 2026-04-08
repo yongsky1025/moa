@@ -222,7 +222,7 @@ export default function PlaceDetailPage() {
 
   // JS sticky — subnav (navbar 실제 높이 68px), 예약 패널 (84px)
   const subnavSticky = useJsSticky(0, !!place);
-  const panelSticky = useJsSticky(84, !!place);
+  const panelSticky = useJsSticky(60, !!place);
 
   // 섹션 refs
   const introRef = useRef<HTMLDivElement>(null);
@@ -1038,7 +1038,7 @@ export default function PlaceDetailPage() {
                 panelSticky.fixed
                   ? {
                       position: "fixed",
-                      top: 84,
+                      top: 50,
                       left: panelSticky.dimsRef.current.left,
                       width: panelSticky.dimsRef.current.width,
                     }

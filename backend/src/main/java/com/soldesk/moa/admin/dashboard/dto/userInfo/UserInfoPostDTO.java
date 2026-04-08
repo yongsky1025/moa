@@ -12,7 +12,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UserInfoPostDTO {
+    private Long postId;
     private String boardName;
+    private String boardType;
+    private Long boardId;
+    private Long circleId;
     private String title;
     private String content;
     private Long viewCount;

@@ -59,8 +59,8 @@ export default function AdminStatsPage() {
         <AgeDistributionCard data={ageDistribution} loading={loading} />
       </div>
 
-      {/* Row 2: 연령대별모임참여자(막대, 넓게) + 카테고리×장소사용률(파이) — 3:2 */}
-      <div className="mb-4 grid grid-cols-[3fr_2fr] gap-3.5">
+      {/* Row 2: 연령대별모임참여자(막대, 넓게) + 카테고리×장소사용률(파이) — 2:3 */}
+      <div className="mb-4 grid grid-cols-[3fr_3fr] gap-3.5">
         <AgeCircleParticipationCard
           data={ageCircleParticipation}
           loading={loading}

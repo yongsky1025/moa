@@ -15,6 +15,8 @@ import com.soldesk.moa.admin.dashboard.repository.AdminReplyRepository;
 import com.soldesk.moa.admin.dashboard.repository.AdminUsersRepository;
 import com.soldesk.moa.chat.domain.ChatMessage;
 import com.soldesk.moa.chat.repository.ChatMessageRepository;
+import com.soldesk.moa.place.entity.PlaceReview;
+import com.soldesk.moa.place.repository.PlaceReviewRepository;
 import com.soldesk.moa.admin.report.dto.SanctionFilterDTO;
 import com.soldesk.moa.admin.report.dto.SanctionRequestDTO;
 import com.soldesk.moa.admin.report.dto.SanctionResponseDTO;
@@ -56,6 +58,7 @@ public class SanctionService {
     private final CircleMemberRepository circleMemberRepository;
     private final NotificationService notificationService;
     private final ChatMessageRepository chatMessageRepository;
+    private final PlaceReviewRepository placeReviewRepository;
 
     // 제재 목록 조회
     public PageResultDTO<SanctionResponseDTO> getSanctions(SanctionFilterDTO filter) {
@@ -145,6 +148,13 @@ public class SanctionService {
             case CHAT -> chatMessageRepository.findById(dto.targetId())
                     .orElseThrow(() -> new IllegalArgumentException("채팅 메세지를 찾을 수 없습니다."))
                     .markReported();
+
+            case PLACE_REVIEW -> {
+                PlaceReview placeReview = placeReviewRepository.findById(dto.targetId())
+                        .orElseThrow(() -> new IllegalArgumentException("장소 리뷰를 찾을 수 없습니다."));
+                placeReview.getPlace().updateRatingOnDelete(placeReview.getRating());
+                placeReview.markDeleted();
+            }
 
         }
     };
@@ -284,6 +294,12 @@ public class SanctionService {
                 ChatMessage chatMessage = chatMessageRepository.findById(sanction.getTargetId())
                         .orElseThrow(() -> new IllegalArgumentException("채팅 메세지를 찾을 수 없습니다."));
                 chatMessage.restore();
+                break;
+            case PLACE_REVIEW:
+                PlaceReview review = placeReviewRepository.findById(sanction.getTargetId())
+                        .orElseThrow(() -> new IllegalArgumentException("장소 리뷰를 찾을 수 없습니다."));
+                review.restore();
+                review.getPlace().updateRatingOnAdd(review.getRating());
                 break;
         }
     }

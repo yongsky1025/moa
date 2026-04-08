@@ -27,6 +27,8 @@ import com.soldesk.moa.common.entity.constant.ImageStatus;
 import com.soldesk.moa.common.repository.ImageRepository;
 import com.soldesk.moa.board.entity.Board;
 import com.soldesk.moa.circle.entity.Circle;
+import com.soldesk.moa.circle.entity.constant.CircleRole;
+import com.soldesk.moa.circle.repository.CircleMemberRepository;
 import com.soldesk.moa.circle.repository.CircleRepository;
 import com.soldesk.moa.common.dto.PageResultDTO;
 import com.soldesk.moa.chat.domain.ChatMessage;
@@ -67,6 +69,7 @@ public class ReportService {
         private final ChatRoomRepository chatRoomRepository;
         private final UsersRepository usersRepository;
         private final NotificationService notificationService;
+        private final CircleMemberRepository circleMemberRepository;
 
         // 신고접수
         public void submitReport(Long reporterId, ReportRequestDTO dto) {
@@ -207,8 +210,8 @@ public class ReportService {
                 return switch (board.getBoardType()) {
                         case FREE -> "/board/free/" + post.getPostId();
                         case NOTICE -> "/board/notice/" + post.getPostId();
-                        case CIRCLE -> "/board/circle/" + board.getCircleId().getCircleId()
-                                        + "/boards/" + board.getBoardId()
+                        case CIRCLE -> "/circle/" + board.getCircleId().getCircleId()
+                                        + "/board/" + board.getBoardId()
                                         + "/posts/" + post.getPostId();
                 };
         }
@@ -226,6 +229,7 @@ public class ReportService {
                                                 ? post.getContent().substring(0, 300) + "..."
                                                 : post.getContent())
                                 .postAuthorName(post.getUserId().getName())
+                                .postAuthorId(post.getUserId().getUserId())
                                 .postBoardId(post.getBoardId().getBoardId())
                                 .postCreatedAt(post.getCreateDate())
                                 .build();
@@ -242,6 +246,7 @@ public class ReportService {
                                 .linkUrl(buildPostLinkUrl(parentPost))
                                 .replyContent(reply.getContent())
                                 .replyAuthorName(reply.getUserId().getName())
+                                .replyAuthorId(reply.getUserId().getUserId())
                                 .replyPostId(parentPost.getPostId())
                                 .replyPostTitle(parentPost.getTitle())
                                 .replyCreatedAt(reply.getCreateDate())
@@ -251,6 +256,10 @@ public class ReportService {
         private ReportTargetContentDTO fetchCircleContent(Long circleId) {
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 모임입니다."));
+                Long leaderId = circleMemberRepository
+                                .findByCircleAndRole(circle, com.soldesk.moa.circle.entity.constant.CircleRole.LEADER)
+                                .map(m -> m.getUser().getUserId())
+                                .orElse(null);
                 return ReportTargetContentDTO.builder()
                                 .targetType(ReportTargetType.CIRCLE)
                                 .targetId(circleId)
@@ -261,6 +270,7 @@ public class ReportService {
                                 .circleStatus(circle.getStatus().name())
                                 .circleMaxMember(circle.getMaxMember())
                                 .circleCurrentMember(circle.getCurrentMember())
+                                .circleLeaderId(leaderId)
                                 .circleCreatedAt(circle.getCreateDate())
                                 .build();
         }
@@ -276,6 +286,7 @@ public class ReportService {
                                 .placeReviewContent(review.getComment())
                                 .placeReviewRating(review.getRating())
                                 .placeReviewAuthorName(review.getReviewer().getNickname())
+                                .placeReviewAuthorId(review.getReviewer().getUserId())
                                 .placeReviewPlaceName(review.getPlace().getName())
                                 .placeReviewPlaceId(review.getPlace().getId())
                                 .placeReviewCreatedAt(review.getCreateDate())

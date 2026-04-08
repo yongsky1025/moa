@@ -18,12 +18,14 @@ public record ReportTargetContentDTO(
         String postTitle,
         String postContent,
         String postAuthorName,
+        Long postAuthorId,
         Long postBoardId,
         LocalDateTime postCreatedAt,
 
         // REPLY
         String replyContent,
         String replyAuthorName,
+        Long replyAuthorId,
         Long replyPostId,
         String replyPostTitle,
         LocalDateTime replyCreatedAt,
@@ -34,6 +36,7 @@ public record ReportTargetContentDTO(
         String circleStatus,
         int circleMaxMember,
         int circleCurrentMember,
+        Long circleLeaderId,
         LocalDateTime circleCreatedAt,
 
         // USER
@@ -47,6 +50,7 @@ public record ReportTargetContentDTO(
         String placeReviewContent,
         Integer placeReviewRating,
         String placeReviewAuthorName,
+        Long placeReviewAuthorId,
         String placeReviewPlaceName,
         Long placeReviewPlaceId,
         LocalDateTime placeReviewCreatedAt,
