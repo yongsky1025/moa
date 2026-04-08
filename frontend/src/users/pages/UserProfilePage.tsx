@@ -7,6 +7,9 @@ import { circleApi } from "../../api/circleApi";
 import { circleBoardApi } from "../../api/circleBoardApi";
 import { scheduleApi } from "../../api/scheduleApi";
 import { postApi } from "../../post/api/postApi";
+import { fetchMyUsedPlaces, fetchMyLikedPlaces } from "../../place/api/placeRentalApi";
+import { fetchMyReviews, fetchPendingReviews } from "../../place/api/placeReviewApi";
+import { fetchMyReservations } from "../../place/api/reservationApi";
 import { getErrorMessage } from "../../common/utils/errorMessage";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
@@ -55,6 +58,11 @@ export default function UserProfilePage() {
   const [myPostCount, setMyPostCount] = useState<number>(0);
   const [myReplyCount, setMyReplyCount] = useState<number>(0);
   const [myBookmarkedPostCount, setMyBookmarkedPostCount] = useState<number>(0);
+  const [usedPlaceCount, setUsedPlaceCount] = useState<number>(0);
+  const [likedPlaceCount, setLikedPlaceCount] = useState<number>(0);
+  const [pendingReviewCount, setPendingReviewCount] = useState<number>(0);
+  const [writtenReviewCount, setWrittenReviewCount] = useState<number>(0);
+  const [reservationCount, setReservationCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   // 모달 상태
@@ -142,8 +150,13 @@ export default function UserProfilePage() {
           return r.data.length + circleBookmarkCount;
         })
         .catch(() => 0),
+      fetchMyUsedPlaces().then((r) => r.length).catch(() => 0),
+      fetchMyLikedPlaces().then((r) => r.length).catch(() => 0),
+      fetchPendingReviews().then((r) => r.length).catch(() => 0),
+      fetchMyReviews().then((r) => r.length).catch(() => 0),
+      fetchMyReservations().then((r) => r.length).catch(() => 0),
     ])
-      .then(([p, e, cc, lc, uc, dc, pc, rc, bc]) => {
+      .then(([p, e, cc, lc, uc, dc, pc, rc, bc, upc, lpc, prc, wrc, rsc]) => {
         setProfile(p);
         setEnergy(e);
         setCircleCount(cc);
@@ -153,6 +166,11 @@ export default function UserProfilePage() {
         setMyPostCount(pc);
         setMyReplyCount(rc);
         setMyBookmarkedPostCount(bc);
+        setUsedPlaceCount(upc);
+        setLikedPlaceCount(lpc);
+        setPendingReviewCount(prc);
+        setWrittenReviewCount(wrc);
+        setReservationCount(rsc);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -449,14 +467,14 @@ export default function UserProfilePage() {
           <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/place/my")}>
             <MapPin size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>이용한 장소</span>
-            <span style={s.rowCount}>0</span>
+            <span style={s.rowCount}>{usedPlaceCount}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
           <button className="mp-row mp-row-list" style={s.row} onClick={() => setReviewOpen((prev) => !prev)}>
             <Star size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>장소 후기</span>
-            <span style={s.rowCount}>0</span>
+            <span style={s.rowCount}>{pendingReviewCount + writtenReviewCount}</span>
             {reviewOpen ? <ChevronUp size={18} color="#999" /> : <ChevronDown size={18} color="#c0c0c0" />}
           </button>
           <div
@@ -471,13 +489,13 @@ export default function UserProfilePage() {
             <button className="mp-row mp-row-list" style={s.subRow} onClick={() => navigate("/place/my-reviews?tab=pending")}>
               <PenLine size={16} color="#A9C8BB" />
               <span style={s.subRowLabel}>작성 가능한 후기</span>
-              <span style={{ ...s.rowCount, color: "#5F8F7B", fontWeight: 700 }}>0</span>
+              <span style={{ ...s.rowCount, color: "#5F8F7B", fontWeight: 700 }}>{pendingReviewCount}</span>
               <ChevronRight size={16} color="#c0c0c0" />
             </button>
             <button className="mp-row mp-row-list" style={s.subRow} onClick={() => navigate("/place/my-reviews?tab=written")}>
               <MessageSquare size={16} color="#A9C8BB" />
               <span style={s.subRowLabel}>내가 쓴 후기</span>
-              <span style={s.rowCount}>0</span>
+              <span style={s.rowCount}>{writtenReviewCount}</span>
               <ChevronRight size={16} color="#c0c0c0" />
             </button>
           </div>
@@ -485,14 +503,14 @@ export default function UserProfilePage() {
           <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/place/liked")}>
             <Bookmark size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>찜한 장소</span>
-            <span style={s.rowCount}>0</span>
+            <span style={s.rowCount}>{likedPlaceCount}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
           <RowDivider />
           <button className="mp-row mp-row-list" style={s.row} onClick={() => navigate("/place/my-reservations")}>
             <CalendarDays size={18} color="#5F8F7B" />
             <span style={s.rowLabel}>예약 내역</span>
-            <span style={s.rowCount}>0</span>
+            <span style={s.rowCount}>{reservationCount}</span>
             <ChevronRight size={18} color="#c0c0c0" />
           </button>
         </SectionCard>
