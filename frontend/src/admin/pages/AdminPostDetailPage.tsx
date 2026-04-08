@@ -11,6 +11,7 @@ import AdminSanctionModal from "../component/post/AdminSanctionModal";
 import { useAdminToast } from "../hooks/useAdminToast";
 import AdminToast from "../component/AdminToast";
 import { NOTICE_CATEGORY_LABEL } from "../../post/constants/noticeCategory";
+import DOMPurify from "dompurify";
 
 const formatDateTime = (date: string | null | undefined) => {
   if (!date) return "-";
@@ -289,11 +290,10 @@ export default function AdminPostDetailPage() {
           </h3>
 
           {/* 본문 */}
-          <div className="border-moa-border bg-moa-light min-h-32 rounded-xl border p-4">
-            <p className="text-moa-text text-sm leading-relaxed whitespace-pre-wrap">
-              {post.content}
-            </p>
-          </div>
+          <div
+            className="border-moa-border bg-moa-light min-h-32 rounded-xl border p-4 text-sm leading-relaxed text-moa-text [&_img]:max-w-full [&_img]:rounded"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
+          />
         </div>
 
         {/* 신고/제재 관리 링크 */}
