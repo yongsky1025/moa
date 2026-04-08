@@ -100,6 +100,7 @@ public class SecurityConfig {
                                                                 "/api/auth/refresh",
                                                                 "/api/auth/logout")
                                                 .permitAll()
+                                                .requestMatchers("/oauth2/callback").permitAll()
                                                 .requestMatchers("/api/users/profile/check-nickname").permitAll()
                                                 .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**")
                                                 .permitAll()
