@@ -89,8 +89,8 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
                 Cookie clear = new Cookie(name, "");
                 clear.setPath("/");
                 clear.setHttpOnly(true);
-                clear.setSecure(true);
-                clear.setAttribute("SameSite", "Lax");
+                clear.setSecure(secureCookie);
+                clear.setAttribute("SameSite", sameSite);
                 clear.setMaxAge(0);
                 response.addCookie(clear);
             }
