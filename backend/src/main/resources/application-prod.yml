@@ -6,16 +6,17 @@ spring:
   jpa:
     hibernate:
       # validate, update
-      ddl-auto: validate
+      ddl-auto: create
     defer-datasource-initialization: true
   sql:
     init:
       # never, always
-      mode: never
+      mode: always
       data-locations:
         - classpath:seed-data.sql
         - classpath:dummy-data.sql
         - classpath:dummy-data-place.sql
+        - classpath:reset-board-post-reply-dummy.sql
 
 app:
   # 운영 프론트 도메인 URL (OAuth 리다이렉트 등에 사용)
@@ -23,6 +24,10 @@ app:
   cors:
     # 운영 프론트 도메인 Origin (배포 시 환경변수로 주입)
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERN}
+  cookie:
+    # 운영(HTTPS) 기본값: 크로스 사이트 요청에서도 refresh 쿠키를 보내기 위해 None+Secure 권장
+    secure: true
+    same-site: None
 
 upload:
   # 운영 스토리지 경로 (서버 파일시스템)
@@ -31,6 +36,8 @@ upload:
   base-url: ${APP_BACKEND_URL}
 
 server:
+  # 리버스 프록시(Nginx/ALB) 뒤에서 원본 스킴/호스트 인식
+  forward-headers-strategy: framework
   tomcat:
     accesslog:
       enabled: true

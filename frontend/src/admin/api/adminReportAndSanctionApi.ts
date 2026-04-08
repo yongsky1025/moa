@@ -21,21 +21,21 @@ export const fetchReportList = async (dto: ReportFilterDTO) => {
       category: dto.category,
     },
   });
-  console.log("report list data", res);
+  // console.log("report list data", res);
 
   return res.data;
 };
 
 export const fetchReportDetail = async (id: number) => {
   const res = await api.get(`${API_SERVER_HOST_ADMIN}/reports/${id}`);
-  console.log("report detail", res);
+  // console.log("report detail", res);
 
   return res.data;
 };
 
 export const postReport = async (dto: ReportRequestDTO) => {
   const res = await api.post(`${API_SERVER_HOST_ADMIN}/reports`, dto);
-  console.log("post report", dto);
+  // console.log("post report", dto);
 
   return res.data;
 };
@@ -54,7 +54,7 @@ export const patchReportStatus = async (
       },
     },
   );
-  console.log("patch report status", id, request);
+  // console.log("patch report status", id, request);
 
   return res.data;
 };
@@ -72,35 +72,35 @@ export const fetchSanctionList = async (dto: SanctionFilterDTO) => {
       sanctionState: dto.sanctionState,
     },
   });
-  console.log("fetch sanction list", res);
+  // console.log("fetch sanction list", res);
 
   return res.data;
 };
 
 export const fetchSanctionDetail = async (id: number) => {
   const res = await api.get(`${API_SERVER_HOST_ADMIN}/sanctions/${id}`);
-  console.log("sanction detail", res);
+  // console.log("sanction detail", res);
 
   return res.data;
 };
 
 export const fetchUserSanctionHistory = async (id: number) => {
   const res = await api.get(`${API_SERVER_HOST_ADMIN}/sanctions/users/${id}`);
-  console.log("user sanction history", res);
+  // console.log("user sanction history", res);
 
   return res.data;
 };
 
 export const applySanction = async (dto: SanctionApplyRequest) => {
   const res = await api.post(`${API_SERVER_HOST_ADMIN}/sanctions`, dto);
-  console.log("apply sanction", res);
+  // console.log("apply sanction", res);
 
   return res.data;
 };
 
 export const liftSanction = async (id: number) => {
   const res = await api.delete(`${API_SERVER_HOST_ADMIN}/sanctions/${id}`);
-  console.log("lift sanction", res);
+  // console.log("lift sanction", res);
 
   return res.data;
 };
@@ -116,7 +116,7 @@ export const cancelSanction = async (
       params: { cancelReason },
     },
   );
-  console.log("cancel sanction", res);
+  // console.log("cancel sanction", res);
 
   return res.data;
 };

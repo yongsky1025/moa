@@ -22,7 +22,9 @@ export default function AdminPlaceRegisterPage() {
 
   // ── 상태 ─────────────────────────────────
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(
+    "[공간 소개]\n내용을 입력해주세요.\n\n[시설 안내]\n내용을 입력해주세요.\n\n[유의사항]\n내용을 입력해주세요.\n\n[환불정책]\n내용을 입력해주세요.",
+  );
   const [selectedAddress, setSelectedAddress] =
     useState<SelectedAddress | null>(null);
   const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
@@ -67,10 +69,12 @@ export default function AdminPlaceRegisterPage() {
   const handleSubmit = async (e?: React.MouseEvent) => {
     e?.preventDefault?.();
     if (!name.trim()) return setValidationError("장소명을 입력해주세요.");
-    if (!selectedAddress) return setValidationError("주소를 검색하여 선택해주세요.");
+    if (!selectedAddress)
+      return setValidationError("주소를 검색하여 선택해주세요.");
     if (selectedTagIds.size === 0)
       return setValidationError("태그를 1개 이상 선택해주세요.");
-    if (!description.trim()) return setValidationError("장소 설명을 입력해주세요.");
+    if (!description.trim())
+      return setValidationError("장소 설명을 입력해주세요.");
 
     setSubmitting(true);
     setError("");

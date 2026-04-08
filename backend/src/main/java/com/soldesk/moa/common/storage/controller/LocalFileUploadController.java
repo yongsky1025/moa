@@ -1,10 +1,12 @@
 package com.soldesk.moa.common.storage.controller;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -17,10 +19,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import lombok.extern.log4j.Log4j2;
+import net.coobird.thumbnailator.Thumbnails;
+
 @RestController
 @Profile({ "local", "prod" })
 @RequestMapping("/api/local-files")
+@Log4j2
 public class LocalFileUploadController {
+
+    private static final int THUMBNAIL_MAX_WIDTH = 720;
+    private static final int THUMBNAIL_MAX_HEIGHT = 480;
 
     private final String localUploadDir;
     private final String localBaseUrl;
@@ -59,10 +68,17 @@ public class LocalFileUploadController {
         Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
         String fileUrl = normalizeBaseUrl(localBaseUrl) + "/uploads/" + safeKey;
-        return ResponseEntity.ok(Map.of(
-                "status", "success",
-                "key", safeKey,
-                "fileUrl", fileUrl));
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("key", safeKey);
+        response.put("fileUrl", fileUrl);
+
+        String thumbnailKey = toThumbnailKeyOrNull(safeKey);
+        if (thumbnailKey != null && createThumbnail(baseDir, targetPath, thumbnailKey, file)) {
+            response.put("thumbnailKey", thumbnailKey);
+            response.put("thumbnailUrl", normalizeBaseUrl(localBaseUrl) + "/uploads/" + thumbnailKey);
+        }
+        return ResponseEntity.ok(response);
     }
 
     private void validateSupportedPrefix(String safeKey) {
@@ -112,6 +128,53 @@ public class LocalFileUploadController {
             throw new IllegalStateException("upload.base-url 설정이 필요합니다.");
         }
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+    }
+
+    private String toThumbnailKeyOrNull(String key) {
+        if (key == null || key.isBlank() || !key.startsWith("images/")) {
+            return null;
+        }
+        int lastSlashIdx = key.lastIndexOf('/');
+        if (lastSlashIdx < 0 || lastSlashIdx == key.length() - 1) {
+            return null;
+        }
+
+        String directory = key.substring(0, lastSlashIdx);
+        String fileName = key.substring(lastSlashIdx + 1);
+        int dotIdx = fileName.lastIndexOf('.');
+        String baseName = dotIdx > 0 ? fileName.substring(0, dotIdx) : fileName;
+
+        return directory + "/thumbnails/" + baseName + "_thm.webp";
+    }
+
+    private boolean createThumbnail(Path baseDir, Path sourcePath, String thumbnailKey, MultipartFile file) {
+        String contentType = file.getContentType();
+        if (contentType != null && contentType.equalsIgnoreCase("image/svg+xml")) {
+            return false;
+        }
+
+        Path thumbnailPath = baseDir.resolve(thumbnailKey).normalize();
+        if (!thumbnailPath.startsWith(baseDir)) {
+            throw new IllegalArgumentException("유효하지 않은 thumbnail key 경로입니다.");
+        }
+
+        try {
+            Path parent = thumbnailPath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            try (InputStream input = Files.newInputStream(sourcePath)) {
+                Thumbnails.of(input)
+                        .size(THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT)
+                        .outputFormat("webp")
+                        .toFile(thumbnailPath.toFile());
+            }
+            return true;
+        } catch (Exception e) {
+            log.warn("[UPLOAD] thumbnail generation failed. source={}, thumbnailKey={}, reason={}",
+                    sourcePath, thumbnailKey, e.getMessage());
+            return false;
+        }
     }
 }
 

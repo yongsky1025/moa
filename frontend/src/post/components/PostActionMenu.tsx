@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bookmark, Flag, Trash2 } from "lucide-react";
+import { Bookmark, Flag, Pencil, Trash2 } from "lucide-react";
 
 interface PostActionMenuProps {
   canEdit: boolean;
@@ -114,7 +114,10 @@ export default function PostActionMenu({
               }}
               className="moa-dropdown-item"
             >
-              수정
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Pencil size={14} strokeWidth={2} aria-hidden="true" />
+                수정
+              </span>
             </button>
           )}
           {canPin && (

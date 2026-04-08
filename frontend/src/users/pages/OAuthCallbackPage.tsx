@@ -40,14 +40,20 @@ export default function OAuthCallbackPage() {
           sessionStorage.removeItem("postLoginRedirect");
           navigate("/users/onboarding");
         } else {
-          const redirect = sessionStorage.getItem("postLoginRedirect") ?? "/main";
+          const redirect =
+            sessionStorage.getItem("postLoginRedirect") ?? "/main";
           sessionStorage.removeItem("postLoginRedirect");
           navigate(redirect);
         }
       })
       .catch((e) => {
         console.error("[OAuthCallback] 유저 정보 조회 실패:", e);
-        navigate("/users/login?error=" + encodeURIComponent("로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요."));
+        navigate(
+          "/users/login?error=" +
+            encodeURIComponent(
+              "로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.",
+            ),
+        );
       });
   }, [searchParams, navigate, setAuth]);
 

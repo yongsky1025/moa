@@ -244,9 +244,16 @@ public class CircleService {
 
         // 서클 상세 정보
         @Transactional(readOnly = true)
-        public CircleResponseDTO getCircle(Long circleId) {
+        public CircleResponseDTO getCircle(Long circleId, Long userId) {
                 Circle circle = circleRepository.findById(circleId)
                                 .orElseThrow(() -> new IllegalArgumentException("서클이 존재하지 않습니다."));
+
+                if (userId != null) {
+                        return circleMemberRepository
+                                        .findByCircleAndUser_UserIdAndStatus(circle, userId, CircleMemberStatus.ACTIVE)
+                                        .map(member -> new CircleResponseDTO(circle, member.getRole()))
+                                        .orElseGet(() -> CircleResponseDTO.from(circle));
+                }
 
                 return CircleResponseDTO.from(circle);
         }

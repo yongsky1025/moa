@@ -22,6 +22,7 @@ spring:
         - classpath:seed-data.sql
         - classpath:dummy-data.sql
         - classpath:dummy-data-place.sql
+        - classpath:reset-board-post-reply-dummy.sql
 
 app:
   # 프론트 로그인/리다이렉트 기준 URL (로컬)

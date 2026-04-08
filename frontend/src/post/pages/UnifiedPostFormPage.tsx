@@ -443,7 +443,7 @@ function CirclePostFormScene() {
           backTo={detailPath}
           backLabel="이전으로 이동"
         />
-        <main style={{ maxWidth: 860, margin: "0 auto", padding: "14px 16px 32px" }}>
+        <main style={{ maxWidth: 668, margin: "0 auto", padding: "14px 16px 32px" }}>
           {detailLoading && <p style={{ margin: 0, color: "#6b7280" }}>모임 활동을 불러오는 중...</p>}
           {!detailLoading && detailError && <p style={{ margin: 0, color: "#dc2626" }}>{detailError}</p>}
           {!detailLoading && !detailError && post && (

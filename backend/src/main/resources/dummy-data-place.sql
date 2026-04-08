@@ -6,7 +6,8 @@
 -- dummy-data.sql의 DELETE 구문이 이 파일 전에 실행되므로
 -- 이 파일에서는 INSERT 만 수행합니다.
 --
--- [이미지 안내] uploads/images/place/ 디렉터리에 아래 파일명으로
+-- [이미지 안내] 원본은 uploads/images/place/ 에 저장하고,
+--               썸네일은 uploads/images/place/thumbnails/{baseName}_thm.webp 형태로 사용합니다.
 -- 이미지를 저장하세요. Unsplash/Pexels/Pixabay 에서 무료 다운로드:
 --   검색어 예: "meeting room" "yoga studio" "photo studio" "glamping"
 --              "climbing wall" "party room" "rooftop bar" "pottery class"
@@ -362,81 +363,81 @@ INSERT INTO place_closed_day (id, place_id, date, day_of_week, reason, closed_ty
 -- ============================================================
 -- 4. 장소 이미지 (image 테이블, id: 13~)
 --    domain = PLACE, owner_id = place_id, uploaded_by_user_id = 1(admin)
---    ※ 파일은 uploads/images/place/ 에 직접 저장 필요
+--    ※ path는 썸네일 경로(/uploads/images/place/thumbnails/*_thm.webp) 기준
 -- ============================================================
 INSERT INTO image (image_id, name, uuid, path, domain, owner_id, uploaded_by_user_id, ord, deleted, status, create_date, update_date) VALUES
 -- 기존 15개 장소 대표 이미지
-(13, 'place-1-study-cafe.jpg',       'img-place-001', '/uploads/images/place/place-1-study-cafe.jpg',       'PLACE', 1,  1, 0, false, 'USED', '2025-04-01 10:00:00', '2025-04-01 10:00:00'),
-(14, 'place-2-party-room.jpg',       'img-place-002', '/uploads/images/place/place-2-party-room.jpg',       'PLACE', 2,  1, 0, false, 'USED', '2025-04-10 10:00:00', '2025-04-10 10:00:00'),
-(15, 'place-3-meeting-room.jpg',     'img-place-003', '/uploads/images/place/place-3-meeting-room.jpg',     'PLACE', 3,  1, 0, false, 'USED', '2025-04-15 10:00:00', '2025-04-15 10:00:00'),
-(16, 'place-4-camping-lounge.jpg',   'img-place-004', '/uploads/images/place/place-4-camping-lounge.jpg',   'PLACE', 4,  1, 0, false, 'USED', '2025-05-01 10:00:00', '2025-05-01 10:00:00'),
-(17, 'place-5-music-studio.jpg',     'img-place-005', '/uploads/images/place/place-5-music-studio.jpg',     'PLACE', 5,  1, 0, false, 'USED', '2025-05-10 10:00:00', '2025-05-10 10:00:00'),
-(18, 'place-6-baking-studio.jpg',    'img-place-006', '/uploads/images/place/place-6-baking-studio.jpg',    'PLACE', 6,  1, 0, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
-(19, 'place-7-futsal.jpg',           'img-place-007', '/uploads/images/place/place-7-futsal.jpg',           'PLACE', 7,  1, 0, false, 'USED', '2025-06-15 10:00:00', '2025-06-15 10:00:00'),
-(20, 'place-8-yoga-studio.jpg',      'img-place-008', '/uploads/images/place/place-8-yoga-studio.jpg',      'PLACE', 8,  1, 0, false, 'USED', '2025-07-01 10:00:00', '2025-07-01 10:00:00'),
-(21, 'place-9-coworking.jpg',        'img-place-009', '/uploads/images/place/place-9-coworking.jpg',        'PLACE', 9,  1, 0, false, 'USED', '2025-07-15 10:00:00', '2025-07-15 10:00:00'),
-(22, 'place-10-tennis.jpg',          'img-place-010', '/uploads/images/place/place-10-tennis.jpg',          'PLACE', 10, 1, 0, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
-(23, 'place-11-gallery-cafe.jpg',    'img-place-011', '/uploads/images/place/place-11-gallery-cafe.jpg',    'PLACE', 11, 1, 0, false, 'USED', '2025-09-01 10:00:00', '2025-09-01 10:00:00'),
-(24, 'place-12-board-game.jpg',      'img-place-012', '/uploads/images/place/place-12-board-game.jpg',      'PLACE', 12, 1, 0, false, 'USED', '2025-10-01 10:00:00', '2025-10-01 10:00:00'),
-(25, 'place-13-maintenance.jpg',     'img-place-013', '/uploads/images/place/place-13-maintenance.jpg',     'PLACE', 13, 1, 0, false, 'USED', '2025-11-01 10:00:00', '2025-11-01 10:00:00'),
-(26, 'place-14-inactive.jpg',        'img-place-014', '/uploads/images/place/place-14-inactive.jpg',        'PLACE', 14, 1, 0, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
-(27, 'place-15-rooftop-bar.jpg',     'img-place-015', '/uploads/images/place/place-15-rooftop-bar.jpg',     'PLACE', 15, 1, 0, false, 'USED', '2026-01-01 10:00:00', '2026-01-01 10:00:00'),
+(13, 'place-1-study-cafe.jpg',       'img-place-001', '/uploads/images/place/thumbnails/place-1-study-cafe_thm.webp',       'PLACE', 1,  1, 0, false, 'USED', '2025-04-01 10:00:00', '2025-04-01 10:00:00'),
+(14, 'place-2-party-room.jpg',       'img-place-002', '/uploads/images/place/thumbnails/place-2-party-room_thm.webp',       'PLACE', 2,  1, 0, false, 'USED', '2025-04-10 10:00:00', '2025-04-10 10:00:00'),
+(15, 'place-3-meeting-room.jpg',     'img-place-003', '/uploads/images/place/thumbnails/place-3-meeting-room_thm.webp',     'PLACE', 3,  1, 0, false, 'USED', '2025-04-15 10:00:00', '2025-04-15 10:00:00'),
+(16, 'place-4-camping-lounge.jpg',   'img-place-004', '/uploads/images/place/thumbnails/place-4-camping-lounge_thm.webp',   'PLACE', 4,  1, 0, false, 'USED', '2025-05-01 10:00:00', '2025-05-01 10:00:00'),
+(17, 'place-5-music-studio.jpg',     'img-place-005', '/uploads/images/place/thumbnails/place-5-music-studio_thm.webp',     'PLACE', 5,  1, 0, false, 'USED', '2025-05-10 10:00:00', '2025-05-10 10:00:00'),
+(18, 'place-6-baking-studio.jpg',    'img-place-006', '/uploads/images/place/thumbnails/place-6-baking-studio_thm.webp',    'PLACE', 6,  1, 0, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
+(19, 'place-7-futsal.jpg',           'img-place-007', '/uploads/images/place/thumbnails/place-7-futsal_thm.webp',           'PLACE', 7,  1, 0, false, 'USED', '2025-06-15 10:00:00', '2025-06-15 10:00:00'),
+(20, 'place-8-yoga-studio.jpg',      'img-place-008', '/uploads/images/place/thumbnails/place-8-yoga-studio_thm.webp',      'PLACE', 8,  1, 0, false, 'USED', '2025-07-01 10:00:00', '2025-07-01 10:00:00'),
+(21, 'place-9-coworking.jpg',        'img-place-009', '/uploads/images/place/thumbnails/place-9-coworking_thm.webp',        'PLACE', 9,  1, 0, false, 'USED', '2025-07-15 10:00:00', '2025-07-15 10:00:00'),
+(22, 'place-10-tennis.jpg',          'img-place-010', '/uploads/images/place/thumbnails/place-10-tennis_thm.webp',          'PLACE', 10, 1, 0, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
+(23, 'place-11-gallery-cafe.jpg',    'img-place-011', '/uploads/images/place/thumbnails/place-11-gallery-cafe_thm.webp',    'PLACE', 11, 1, 0, false, 'USED', '2025-09-01 10:00:00', '2025-09-01 10:00:00'),
+(24, 'place-12-board-game.jpg',      'img-place-012', '/uploads/images/place/thumbnails/place-12-board-game_thm.webp',      'PLACE', 12, 1, 0, false, 'USED', '2025-10-01 10:00:00', '2025-10-01 10:00:00'),
+(25, 'place-13-maintenance.jpg',     'img-place-013', '/uploads/images/place/thumbnails/place-13-maintenance_thm.webp',     'PLACE', 13, 1, 0, false, 'USED', '2025-11-01 10:00:00', '2025-11-01 10:00:00'),
+(26, 'place-14-inactive.jpg',        'img-place-014', '/uploads/images/place/thumbnails/place-14-inactive_thm.webp',        'PLACE', 14, 1, 0, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
+(27, 'place-15-rooftop-bar.jpg',     'img-place-015', '/uploads/images/place/thumbnails/place-15-rooftop-bar_thm.webp',     'PLACE', 15, 1, 0, false, 'USED', '2026-01-01 10:00:00', '2026-01-01 10:00:00'),
 -- 기존 장소 추가 이미지 (2번째)
-(28, 'place-1-study-cafe-2.jpg',     'img-place-016', '/uploads/images/place/place-1-study-cafe-2.jpg',     'PLACE', 1,  1, 2, false, 'USED', '2025-04-01 10:00:00', '2025-04-01 10:00:00'),
-(29, 'place-2-party-room-2.jpg',     'img-place-017', '/uploads/images/place/place-2-party-room-2.jpg',     'PLACE', 2,  1, 2, false, 'USED', '2025-04-10 10:00:00', '2025-04-10 10:00:00'),
-(30, 'place-5-music-studio-2.jpg',   'img-place-018', '/uploads/images/place/place-5-music-studio-2.jpg',   'PLACE', 5,  1, 2, false, 'USED', '2025-05-10 10:00:00', '2025-05-10 10:00:00'),
-(31, 'place-9-coworking-2.jpg',      'img-place-019', '/uploads/images/place/place-9-coworking-2.jpg',      'PLACE', 9,  1, 2, false, 'USED', '2025-07-15 10:00:00', '2025-07-15 10:00:00'),
-(32, 'place-15-rooftop-bar-2.jpg',   'img-place-020', '/uploads/images/place/place-15-rooftop-bar-2.jpg',   'PLACE', 15, 1, 2, false, 'USED', '2026-01-01 10:00:00', '2026-01-01 10:00:00'),
+(28, 'place-1-study-cafe-2.jpg',     'img-place-016', '/uploads/images/place/thumbnails/place-1-study-cafe-2_thm.webp',     'PLACE', 1,  1, 2, false, 'USED', '2025-04-01 10:00:00', '2025-04-01 10:00:00'),
+(29, 'place-2-party-room-2.jpg',     'img-place-017', '/uploads/images/place/thumbnails/place-2-party-room-2_thm.webp',     'PLACE', 2,  1, 2, false, 'USED', '2025-04-10 10:00:00', '2025-04-10 10:00:00'),
+(30, 'place-5-music-studio-2.jpg',   'img-place-018', '/uploads/images/place/thumbnails/place-5-music-studio-2_thm.webp',   'PLACE', 5,  1, 2, false, 'USED', '2025-05-10 10:00:00', '2025-05-10 10:00:00'),
+(31, 'place-9-coworking-2.jpg',      'img-place-019', '/uploads/images/place/thumbnails/place-9-coworking-2_thm.webp',      'PLACE', 9,  1, 2, false, 'USED', '2025-07-15 10:00:00', '2025-07-15 10:00:00'),
+(32, 'place-15-rooftop-bar-2.jpg',   'img-place-020', '/uploads/images/place/thumbnails/place-15-rooftop-bar-2_thm.webp',   'PLACE', 15, 1, 2, false, 'USED', '2026-01-01 10:00:00', '2026-01-01 10:00:00'),
 -- 신규 장소 16~40 이미지 (각 2장)
-(33, 'place-16-photo-studio-1.jpg',  'img-place-021', '/uploads/images/place/place-16-photo-studio-1.jpg',  'PLACE', 16, 1, 0, false, 'USED', '2025-05-01 10:00:00', '2025-05-01 10:00:00'),
-(34, 'place-16-photo-studio-2.jpg',  'img-place-022', '/uploads/images/place/place-16-photo-studio-2.jpg',  'PLACE', 16, 1, 2, false, 'USED', '2025-05-01 10:00:00', '2025-05-01 10:00:00'),
-(35, 'place-17-screen-golf-1.jpg',   'img-place-023', '/uploads/images/place/place-17-screen-golf-1.jpg',   'PLACE', 17, 1, 0, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
-(36, 'place-17-screen-golf-2.jpg',   'img-place-024', '/uploads/images/place/place-17-screen-golf-2.jpg',   'PLACE', 17, 1, 2, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
-(37, 'place-18-craft-class-1.jpg',   'img-place-025', '/uploads/images/place/place-18-craft-class-1.jpg',   'PLACE', 18, 1, 0, false, 'USED', '2025-07-01 10:00:00', '2025-07-01 10:00:00'),
-(38, 'place-18-craft-class-2.jpg',   'img-place-026', '/uploads/images/place/place-18-craft-class-2.jpg',   'PLACE', 18, 1, 2, false, 'USED', '2025-07-01 10:00:00', '2025-07-01 10:00:00'),
-(39, 'place-19-camping-goyang-1.jpg','img-place-027', '/uploads/images/place/place-19-camping-goyang-1.jpg','PLACE', 19, 1, 0, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
-(40, 'place-19-camping-goyang-2.jpg','img-place-028', '/uploads/images/place/place-19-camping-goyang-2.jpg','PLACE', 19, 1, 2, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
-(41, 'place-20-climbing-1.jpg',      'img-place-029', '/uploads/images/place/place-20-climbing-1.jpg',      'PLACE', 20, 1, 0, false, 'USED', '2025-09-01 10:00:00', '2025-09-01 10:00:00'),
-(42, 'place-20-climbing-2.jpg',      'img-place-030', '/uploads/images/place/place-20-climbing-2.jpg',      'PLACE', 20, 1, 2, false, 'USED', '2025-09-01 10:00:00', '2025-09-01 10:00:00'),
-(43, 'place-21-rooftop-busan-1.jpg', 'img-place-031', '/uploads/images/place/place-21-rooftop-busan-1.jpg', 'PLACE', 21, 1, 0, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
-(44, 'place-21-rooftop-busan-2.jpg', 'img-place-032', '/uploads/images/place/place-21-rooftop-busan-2.jpg', 'PLACE', 21, 1, 2, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
-(45, 'place-22-yoga-busan-1.jpg',    'img-place-033', '/uploads/images/place/place-22-yoga-busan-1.jpg',    'PLACE', 22, 1, 0, false, 'USED', '2025-07-01 10:00:00', '2025-07-01 10:00:00'),
-(46, 'place-22-yoga-busan-2.jpg',    'img-place-034', '/uploads/images/place/place-22-yoga-busan-2.jpg',    'PLACE', 22, 1, 2, false, 'USED', '2025-07-01 10:00:00', '2025-07-01 10:00:00'),
-(47, 'place-23-meeting-daegu-1.jpg', 'img-place-035', '/uploads/images/place/place-23-meeting-daegu-1.jpg', 'PLACE', 23, 1, 0, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
-(48, 'place-23-meeting-daegu-2.jpg', 'img-place-036', '/uploads/images/place/place-23-meeting-daegu-2.jpg', 'PLACE', 23, 1, 2, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
-(49, 'place-24-pilates-daegu-1.jpg', 'img-place-037', '/uploads/images/place/place-24-pilates-daegu-1.jpg', 'PLACE', 24, 1, 0, false, 'USED', '2025-09-01 10:00:00', '2025-09-01 10:00:00'),
-(50, 'place-24-pilates-daegu-2.jpg', 'img-place-038', '/uploads/images/place/place-24-pilates-daegu-2.jpg', 'PLACE', 24, 1, 2, false, 'USED', '2025-09-01 10:00:00', '2025-09-01 10:00:00'),
-(51, 'place-25-glamping-jeju-1.jpg', 'img-place-039', '/uploads/images/place/place-25-glamping-jeju-1.jpg', 'PLACE', 25, 1, 0, false, 'USED', '2025-10-01 10:00:00', '2025-10-01 10:00:00'),
-(52, 'place-25-glamping-jeju-2.jpg', 'img-place-040', '/uploads/images/place/place-25-glamping-jeju-2.jpg', 'PLACE', 25, 1, 2, false, 'USED', '2025-10-01 10:00:00', '2025-10-01 10:00:00'),
-(53, 'place-26-studio-jeju-1.jpg',   'img-place-041', '/uploads/images/place/place-26-studio-jeju-1.jpg',   'PLACE', 26, 1, 0, false, 'USED', '2025-10-15 10:00:00', '2025-10-15 10:00:00'),
-(54, 'place-26-studio-jeju-2.jpg',   'img-place-042', '/uploads/images/place/place-26-studio-jeju-2.jpg',   'PLACE', 26, 1, 2, false, 'USED', '2025-10-15 10:00:00', '2025-10-15 10:00:00'),
-(55, 'place-27-surfing-1.jpg',       'img-place-043', '/uploads/images/place/place-27-surfing-1.jpg',       'PLACE', 27, 1, 0, false, 'USED', '2025-11-01 10:00:00', '2025-11-01 10:00:00'),
-(56, 'place-27-surfing-2.jpg',       'img-place-044', '/uploads/images/place/place-27-surfing-2.jpg',       'PLACE', 27, 1, 2, false, 'USED', '2025-11-01 10:00:00', '2025-11-01 10:00:00'),
-(57, 'place-28-pottery-1.jpg',       'img-place-045', '/uploads/images/place/place-28-pottery-1.jpg',       'PLACE', 28, 1, 0, false, 'USED', '2025-11-15 10:00:00', '2025-11-15 10:00:00'),
-(58, 'place-28-pottery-2.jpg',       'img-place-046', '/uploads/images/place/place-28-pottery-2.jpg',       'PLACE', 28, 1, 2, false, 'USED', '2025-11-15 10:00:00', '2025-11-15 10:00:00'),
-(59, 'place-29-hanok-studio-1.jpg',  'img-place-047', '/uploads/images/place/place-29-hanok-studio-1.jpg',  'PLACE', 29, 1, 0, false, 'USED', '2025-12-01 10:00:00', '2025-12-01 10:00:00'),
-(60, 'place-29-hanok-studio-2.jpg',  'img-place-048', '/uploads/images/place/place-29-hanok-studio-2.jpg',  'PLACE', 29, 1, 2, false, 'USED', '2025-12-01 10:00:00', '2025-12-01 10:00:00'),
-(61, 'place-30-theater-1.jpg',       'img-place-049', '/uploads/images/place/place-30-theater-1.jpg',       'PLACE', 30, 1, 0, false, 'USED', '2025-12-15 10:00:00', '2025-12-15 10:00:00'),
-(62, 'place-30-theater-2.jpg',       'img-place-050', '/uploads/images/place/place-30-theater-2.jpg',       'PLACE', 30, 1, 2, false, 'USED', '2025-12-15 10:00:00', '2025-12-15 10:00:00'),
-(63, 'place-31-gallery-gwangju-1.jpg','img-place-051','/uploads/images/place/place-31-gallery-gwangju-1.jpg','PLACE', 31, 1, 0, false, 'USED', '2026-01-01 10:00:00', '2026-01-01 10:00:00'),
-(64, 'place-31-gallery-gwangju-2.jpg','img-place-052','/uploads/images/place/place-31-gallery-gwangju-2.jpg','PLACE', 31, 1, 2, false, 'USED', '2026-01-01 10:00:00', '2026-01-01 10:00:00'),
-(65, 'place-32-cowork-gwangju-1.jpg','img-place-053', '/uploads/images/place/place-32-cowork-gwangju-1.jpg','PLACE', 32, 1, 0, false, 'USED', '2026-01-15 10:00:00', '2026-01-15 10:00:00'),
-(66, 'place-32-cowork-gwangju-2.jpg','img-place-054', '/uploads/images/place/place-32-cowork-gwangju-2.jpg','PLACE', 32, 1, 2, false, 'USED', '2026-01-15 10:00:00', '2026-01-15 10:00:00'),
-(67, 'place-33-music-daejeon-1.jpg', 'img-place-055', '/uploads/images/place/place-33-music-daejeon-1.jpg', 'PLACE', 33, 1, 0, false, 'USED', '2026-02-01 10:00:00', '2026-02-01 10:00:00'),
-(68, 'place-33-music-daejeon-2.jpg', 'img-place-056', '/uploads/images/place/place-33-music-daejeon-2.jpg', 'PLACE', 33, 1, 2, false, 'USED', '2026-02-01 10:00:00', '2026-02-01 10:00:00'),
-(69, 'place-34-cooking-daejeon-1.jpg','img-place-057','/uploads/images/place/place-34-cooking-daejeon-1.jpg','PLACE', 34, 1, 0, false, 'USED', '2026-02-15 10:00:00', '2026-02-15 10:00:00'),
-(70, 'place-34-cooking-daejeon-2.jpg','img-place-058','/uploads/images/place/place-34-cooking-daejeon-2.jpg','PLACE', 34, 1, 2, false, 'USED', '2026-02-15 10:00:00', '2026-02-15 10:00:00'),
-(71, 'place-35-hanok-gyeongju-1.jpg','img-place-059', '/uploads/images/place/place-35-hanok-gyeongju-1.jpg','PLACE', 35, 1, 0, false, 'USED', '2026-02-20 10:00:00', '2026-02-20 10:00:00'),
-(72, 'place-35-hanok-gyeongju-2.jpg','img-place-060', '/uploads/images/place/place-35-hanok-gyeongju-2.jpg','PLACE', 35, 1, 2, false, 'USED', '2026-02-20 10:00:00', '2026-02-20 10:00:00'),
-(73, 'place-36-craft-andong-1.jpg',  'img-place-061', '/uploads/images/place/place-36-craft-andong-1.jpg',  'PLACE', 36, 1, 0, false, 'USED', '2026-03-01 10:00:00', '2026-03-01 10:00:00'),
-(74, 'place-36-craft-andong-2.jpg',  'img-place-062', '/uploads/images/place/place-36-craft-andong-2.jpg',  'PLACE', 36, 1, 2, false, 'USED', '2026-03-01 10:00:00', '2026-03-01 10:00:00'),
-(75, 'place-37-glamping-chuncheon-1.jpg','img-place-063','/uploads/images/place/place-37-glamping-chuncheon-1.jpg','PLACE', 37, 1, 0, false, 'USED', '2026-03-05 10:00:00', '2026-03-05 10:00:00'),
-(76, 'place-37-glamping-chuncheon-2.jpg','img-place-064','/uploads/images/place/place-37-glamping-chuncheon-2.jpg','PLACE', 37, 1, 2, false, 'USED', '2026-03-05 10:00:00', '2026-03-05 10:00:00'),
-(77, 'place-38-water-sport-1.jpg',   'img-place-065', '/uploads/images/place/place-38-water-sport-1.jpg',   'PLACE', 38, 1, 0, false, 'USED', '2026-03-10 10:00:00', '2026-03-10 10:00:00'),
-(78, 'place-38-water-sport-2.jpg',   'img-place-066', '/uploads/images/place/place-38-water-sport-2.jpg',   'PLACE', 38, 1, 2, false, 'USED', '2026-03-10 10:00:00', '2026-03-10 10:00:00'),
-(79, 'place-39-yoga-ulsan-1.jpg',    'img-place-067', '/uploads/images/place/place-39-yoga-ulsan-1.jpg',    'PLACE', 39, 1, 0, false, 'USED', '2026-03-15 10:00:00', '2026-03-15 10:00:00'),
-(80, 'place-39-yoga-ulsan-2.jpg',    'img-place-068', '/uploads/images/place/place-39-yoga-ulsan-2.jpg',    'PLACE', 39, 1, 2, false, 'USED', '2026-03-15 10:00:00', '2026-03-15 10:00:00'),
-(81, 'place-40-rooftop-yeosu-1.jpg', 'img-place-069', '/uploads/images/place/place-40-rooftop-yeosu-1.jpg', 'PLACE', 40, 1, 0, false, 'USED', '2026-03-20 10:00:00', '2026-03-20 10:00:00');
+(33, 'place-16-photo-studio-1.jpg',  'img-place-021', '/uploads/images/place/thumbnails/place-16-photo-studio-1_thm.webp',  'PLACE', 16, 1, 0, false, 'USED', '2025-05-01 10:00:00', '2025-05-01 10:00:00'),
+(34, 'place-16-photo-studio-2.jpg',  'img-place-022', '/uploads/images/place/thumbnails/place-16-photo-studio-2_thm.webp',  'PLACE', 16, 1, 2, false, 'USED', '2025-05-01 10:00:00', '2025-05-01 10:00:00'),
+(35, 'place-17-screen-golf-1.jpg',   'img-place-023', '/uploads/images/place/thumbnails/place-17-screen-golf-1_thm.webp',   'PLACE', 17, 1, 0, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
+(36, 'place-17-screen-golf-2.jpg',   'img-place-024', '/uploads/images/place/thumbnails/place-17-screen-golf-2_thm.webp',   'PLACE', 17, 1, 2, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
+(37, 'place-18-craft-class-1.jpg',   'img-place-025', '/uploads/images/place/thumbnails/place-18-craft-class-1_thm.webp',   'PLACE', 18, 1, 0, false, 'USED', '2025-07-01 10:00:00', '2025-07-01 10:00:00'),
+(38, 'place-18-craft-class-2.jpg',   'img-place-026', '/uploads/images/place/thumbnails/place-18-craft-class-2_thm.webp',   'PLACE', 18, 1, 2, false, 'USED', '2025-07-01 10:00:00', '2025-07-01 10:00:00'),
+(39, 'place-19-camping-goyang-1.jpg','img-place-027', '/uploads/images/place/thumbnails/place-19-camping-goyang-1_thm.webp','PLACE', 19, 1, 0, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
+(40, 'place-19-camping-goyang-2.jpg','img-place-028', '/uploads/images/place/thumbnails/place-19-camping-goyang-2_thm.webp','PLACE', 19, 1, 2, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
+(41, 'place-20-climbing-1.jpg',      'img-place-029', '/uploads/images/place/thumbnails/place-20-climbing-1_thm.webp',      'PLACE', 20, 1, 0, false, 'USED', '2025-09-01 10:00:00', '2025-09-01 10:00:00'),
+(42, 'place-20-climbing-2.jpg',      'img-place-030', '/uploads/images/place/thumbnails/place-20-climbing-2_thm.webp',      'PLACE', 20, 1, 2, false, 'USED', '2025-09-01 10:00:00', '2025-09-01 10:00:00'),
+(43, 'place-21-rooftop-busan-1.jpg', 'img-place-031', '/uploads/images/place/thumbnails/place-21-rooftop-busan-1_thm.webp', 'PLACE', 21, 1, 0, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
+(44, 'place-21-rooftop-busan-2.jpg', 'img-place-032', '/uploads/images/place/thumbnails/place-21-rooftop-busan-2_thm.webp', 'PLACE', 21, 1, 2, false, 'USED', '2025-06-01 10:00:00', '2025-06-01 10:00:00'),
+(45, 'place-22-yoga-busan-1.jpg',    'img-place-033', '/uploads/images/place/thumbnails/place-22-yoga-busan-1_thm.webp',    'PLACE', 22, 1, 0, false, 'USED', '2025-07-01 10:00:00', '2025-07-01 10:00:00'),
+(46, 'place-22-yoga-busan-2.jpg',    'img-place-034', '/uploads/images/place/thumbnails/place-22-yoga-busan-2_thm.webp',    'PLACE', 22, 1, 2, false, 'USED', '2025-07-01 10:00:00', '2025-07-01 10:00:00'),
+(47, 'place-23-meeting-daegu-1.jpg', 'img-place-035', '/uploads/images/place/thumbnails/place-23-meeting-daegu-1_thm.webp', 'PLACE', 23, 1, 0, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
+(48, 'place-23-meeting-daegu-2.jpg', 'img-place-036', '/uploads/images/place/thumbnails/place-23-meeting-daegu-2_thm.webp', 'PLACE', 23, 1, 2, false, 'USED', '2025-08-01 10:00:00', '2025-08-01 10:00:00'),
+(49, 'place-24-pilates-daegu-1.jpg', 'img-place-037', '/uploads/images/place/thumbnails/place-24-pilates-daegu-1_thm.webp', 'PLACE', 24, 1, 0, false, 'USED', '2025-09-01 10:00:00', '2025-09-01 10:00:00'),
+(50, 'place-24-pilates-daegu-2.jpg', 'img-place-038', '/uploads/images/place/thumbnails/place-24-pilates-daegu-2_thm.webp', 'PLACE', 24, 1, 2, false, 'USED', '2025-09-01 10:00:00', '2025-09-01 10:00:00'),
+(51, 'place-25-glamping-jeju-1.jpg', 'img-place-039', '/uploads/images/place/thumbnails/place-25-glamping-jeju-1_thm.webp', 'PLACE', 25, 1, 0, false, 'USED', '2025-10-01 10:00:00', '2025-10-01 10:00:00'),
+(52, 'place-25-glamping-jeju-2.jpg', 'img-place-040', '/uploads/images/place/thumbnails/place-25-glamping-jeju-2_thm.webp', 'PLACE', 25, 1, 2, false, 'USED', '2025-10-01 10:00:00', '2025-10-01 10:00:00'),
+(53, 'place-26-studio-jeju-1.jpg',   'img-place-041', '/uploads/images/place/thumbnails/place-26-studio-jeju-1_thm.webp',   'PLACE', 26, 1, 0, false, 'USED', '2025-10-15 10:00:00', '2025-10-15 10:00:00'),
+(54, 'place-26-studio-jeju-2.jpg',   'img-place-042', '/uploads/images/place/thumbnails/place-26-studio-jeju-2_thm.webp',   'PLACE', 26, 1, 2, false, 'USED', '2025-10-15 10:00:00', '2025-10-15 10:00:00'),
+(55, 'place-27-surfing-1.jpg',       'img-place-043', '/uploads/images/place/thumbnails/place-27-surfing-1_thm.webp',       'PLACE', 27, 1, 0, false, 'USED', '2025-11-01 10:00:00', '2025-11-01 10:00:00'),
+(56, 'place-27-surfing-2.jpg',       'img-place-044', '/uploads/images/place/thumbnails/place-27-surfing-2_thm.webp',       'PLACE', 27, 1, 2, false, 'USED', '2025-11-01 10:00:00', '2025-11-01 10:00:00'),
+(57, 'place-28-pottery-1.jpg',       'img-place-045', '/uploads/images/place/thumbnails/place-28-pottery-1_thm.webp',       'PLACE', 28, 1, 0, false, 'USED', '2025-11-15 10:00:00', '2025-11-15 10:00:00'),
+(58, 'place-28-pottery-2.jpg',       'img-place-046', '/uploads/images/place/thumbnails/place-28-pottery-2_thm.webp',       'PLACE', 28, 1, 2, false, 'USED', '2025-11-15 10:00:00', '2025-11-15 10:00:00'),
+(59, 'place-29-hanok-studio-1.jpg',  'img-place-047', '/uploads/images/place/thumbnails/place-29-hanok-studio-1_thm.webp',  'PLACE', 29, 1, 0, false, 'USED', '2025-12-01 10:00:00', '2025-12-01 10:00:00'),
+(60, 'place-29-hanok-studio-2.jpg',  'img-place-048', '/uploads/images/place/thumbnails/place-29-hanok-studio-2_thm.webp',  'PLACE', 29, 1, 2, false, 'USED', '2025-12-01 10:00:00', '2025-12-01 10:00:00'),
+(61, 'place-30-theater-1.jpg',       'img-place-049', '/uploads/images/place/thumbnails/place-30-theater-1_thm.webp',       'PLACE', 30, 1, 0, false, 'USED', '2025-12-15 10:00:00', '2025-12-15 10:00:00'),
+(62, 'place-30-theater-2.jpg',       'img-place-050', '/uploads/images/place/thumbnails/place-30-theater-2_thm.webp',       'PLACE', 30, 1, 2, false, 'USED', '2025-12-15 10:00:00', '2025-12-15 10:00:00'),
+(63, 'place-31-gallery-gwangju-1.jpg','img-place-051','/uploads/images/place/thumbnails/place-31-gallery-gwangju-1_thm.webp','PLACE', 31, 1, 0, false, 'USED', '2026-01-01 10:00:00', '2026-01-01 10:00:00'),
+(64, 'place-31-gallery-gwangju-2.jpg','img-place-052','/uploads/images/place/thumbnails/place-31-gallery-gwangju-2_thm.webp','PLACE', 31, 1, 2, false, 'USED', '2026-01-01 10:00:00', '2026-01-01 10:00:00'),
+(65, 'place-32-cowork-gwangju-1.jpg','img-place-053', '/uploads/images/place/thumbnails/place-32-cowork-gwangju-1_thm.webp','PLACE', 32, 1, 0, false, 'USED', '2026-01-15 10:00:00', '2026-01-15 10:00:00'),
+(66, 'place-32-cowork-gwangju-2.jpg','img-place-054', '/uploads/images/place/thumbnails/place-32-cowork-gwangju-2_thm.webp','PLACE', 32, 1, 2, false, 'USED', '2026-01-15 10:00:00', '2026-01-15 10:00:00'),
+(67, 'place-33-music-daejeon-1.jpg', 'img-place-055', '/uploads/images/place/thumbnails/place-33-music-daejeon-1_thm.webp', 'PLACE', 33, 1, 0, false, 'USED', '2026-02-01 10:00:00', '2026-02-01 10:00:00'),
+(68, 'place-33-music-daejeon-2.jpg', 'img-place-056', '/uploads/images/place/thumbnails/place-33-music-daejeon-2_thm.webp', 'PLACE', 33, 1, 2, false, 'USED', '2026-02-01 10:00:00', '2026-02-01 10:00:00'),
+(69, 'place-34-cooking-daejeon-1.jpg','img-place-057','/uploads/images/place/thumbnails/place-34-cooking-daejeon-1_thm.webp','PLACE', 34, 1, 0, false, 'USED', '2026-02-15 10:00:00', '2026-02-15 10:00:00'),
+(70, 'place-34-cooking-daejeon-2.jpg','img-place-058','/uploads/images/place/thumbnails/place-34-cooking-daejeon-2_thm.webp','PLACE', 34, 1, 2, false, 'USED', '2026-02-15 10:00:00', '2026-02-15 10:00:00'),
+(71, 'place-35-hanok-gyeongju-1.jpg','img-place-059', '/uploads/images/place/thumbnails/place-35-hanok-gyeongju-1_thm.webp','PLACE', 35, 1, 0, false, 'USED', '2026-02-20 10:00:00', '2026-02-20 10:00:00'),
+(72, 'place-35-hanok-gyeongju-2.jpg','img-place-060', '/uploads/images/place/thumbnails/place-35-hanok-gyeongju-2_thm.webp','PLACE', 35, 1, 2, false, 'USED', '2026-02-20 10:00:00', '2026-02-20 10:00:00'),
+(73, 'place-36-craft-andong-1.jpg',  'img-place-061', '/uploads/images/place/thumbnails/place-36-craft-andong-1_thm.webp',  'PLACE', 36, 1, 0, false, 'USED', '2026-03-01 10:00:00', '2026-03-01 10:00:00'),
+(74, 'place-36-craft-andong-2.jpg',  'img-place-062', '/uploads/images/place/thumbnails/place-36-craft-andong-2_thm.webp',  'PLACE', 36, 1, 2, false, 'USED', '2026-03-01 10:00:00', '2026-03-01 10:00:00'),
+(75, 'place-37-glamping-chuncheon-1.jpg','img-place-063','/uploads/images/place/thumbnails/place-37-glamping-chuncheon-1_thm.webp','PLACE', 37, 1, 0, false, 'USED', '2026-03-05 10:00:00', '2026-03-05 10:00:00'),
+(76, 'place-37-glamping-chuncheon-2.jpg','img-place-064','/uploads/images/place/thumbnails/place-37-glamping-chuncheon-2_thm.webp','PLACE', 37, 1, 2, false, 'USED', '2026-03-05 10:00:00', '2026-03-05 10:00:00'),
+(77, 'place-38-water-sport-1.jpg',   'img-place-065', '/uploads/images/place/thumbnails/place-38-water-sport-1_thm.webp',   'PLACE', 38, 1, 0, false, 'USED', '2026-03-10 10:00:00', '2026-03-10 10:00:00'),
+(78, 'place-38-water-sport-2.jpg',   'img-place-066', '/uploads/images/place/thumbnails/place-38-water-sport-2_thm.webp',   'PLACE', 38, 1, 2, false, 'USED', '2026-03-10 10:00:00', '2026-03-10 10:00:00'),
+(79, 'place-39-yoga-ulsan-1.jpg',    'img-place-067', '/uploads/images/place/thumbnails/place-39-yoga-ulsan-1_thm.webp',    'PLACE', 39, 1, 0, false, 'USED', '2026-03-15 10:00:00', '2026-03-15 10:00:00'),
+(80, 'place-39-yoga-ulsan-2.jpg',    'img-place-068', '/uploads/images/place/thumbnails/place-39-yoga-ulsan-2_thm.webp',    'PLACE', 39, 1, 2, false, 'USED', '2026-03-15 10:00:00', '2026-03-15 10:00:00'),
+(81, 'place-40-rooftop-yeosu-1.jpg', 'img-place-069', '/uploads/images/place/thumbnails/place-40-rooftop-yeosu-1_thm.webp', 'PLACE', 40, 1, 0, false, 'USED', '2026-03-20 10:00:00', '2026-03-20 10:00:00');
 
 -- ============================================================
 -- 5. 예약 (기존 40건 + 신규 19건)
@@ -594,9 +595,149 @@ INSERT INTO likes (id, target_type, target_id, user_id, create_date, update_date
 (38, 'PLACE', 31, 40, '2026-01-02 10:00:00', '2026-01-02 10:00:00');
 
 -- ============================================================
+-- 8. 추가 예약 (COMPLETED, IDs 60~91) — 리뷰 정합성 보강
+-- ============================================================
+INSERT INTO reservation (id, start_time, end_time, total_price, reservation_status, place_id, schedule_id, reserved_by, hold_expired_at, version, create_date, update_date) VALUES
+-- Place 1 (스터디 카페 서울, 15000/h) — 6건 추가 → 총 10 리뷰
+(60, '2026-01-27 10:00:00', '2026-01-27 12:00:00',  30000, 'COMPLETED', 1,  NULL, 9,  NULL, 0, '2026-01-25 09:00:00', '2026-01-27 12:00:00'),
+(61, '2026-02-03 14:00:00', '2026-02-03 16:00:00',  30000, 'COMPLETED', 1,  NULL, 10, NULL, 0, '2026-02-01 10:00:00', '2026-02-03 16:00:00'),
+(62, '2026-02-11 10:00:00', '2026-02-11 12:00:00',  30000, 'COMPLETED', 1,  NULL, 16, NULL, 0, '2026-02-09 09:00:00', '2026-02-11 12:00:00'),
+(63, '2026-02-19 14:00:00', '2026-02-19 16:00:00',  30000, 'COMPLETED', 1,  NULL, 29, NULL, 0, '2026-02-17 11:00:00', '2026-02-19 16:00:00'),
+(64, '2026-03-03 10:00:00', '2026-03-03 12:00:00',  30000, 'COMPLETED', 1,  NULL, 42, NULL, 0, '2026-03-01 09:00:00', '2026-03-03 12:00:00'),
+(65, '2026-03-17 14:00:00', '2026-03-17 16:00:00',  30000, 'COMPLETED', 1,  NULL, 46, NULL, 0, '2026-03-15 10:00:00', '2026-03-17 16:00:00'),
+-- Place 9 (코워킹 스페이스 선릉, 10000/h) — 5건 추가 → 총 7 리뷰
+(66, '2026-01-27 09:00:00', '2026-01-27 13:00:00',  40000, 'COMPLETED', 9,  NULL, 30, NULL, 0, '2026-01-25 10:00:00', '2026-01-27 13:00:00'),
+(67, '2026-02-03 14:00:00', '2026-02-03 18:00:00',  40000, 'COMPLETED', 9,  NULL, 36, NULL, 0, '2026-02-01 11:00:00', '2026-02-03 18:00:00'),
+(68, '2026-02-12 09:00:00', '2026-02-12 13:00:00',  40000, 'COMPLETED', 9,  NULL, 46, NULL, 0, '2026-02-10 09:00:00', '2026-02-12 13:00:00'),
+(69, '2026-03-05 14:00:00', '2026-03-05 18:00:00',  40000, 'COMPLETED', 9,  NULL, 42, NULL, 0, '2026-03-03 10:00:00', '2026-03-05 18:00:00'),
+(70, '2026-03-19 09:00:00', '2026-03-19 13:00:00',  40000, 'COMPLETED', 9,  NULL, 10, NULL, 0, '2026-03-17 09:00:00', '2026-03-19 13:00:00'),
+-- Place 2 (파티룸 홍대, 25000/h) — 4건 추가 → 총 7 리뷰
+(71, '2026-01-18 18:00:00', '2026-01-18 21:00:00',  75000, 'COMPLETED', 2,  NULL, 10, NULL, 0, '2026-01-16 15:00:00', '2026-01-18 21:00:00'),
+(72, '2026-02-07 19:00:00', '2026-02-07 22:00:00',  75000, 'COMPLETED', 2,  NULL, 9,  NULL, 0, '2026-02-05 14:00:00', '2026-02-07 22:00:00'),
+(73, '2026-02-22 19:00:00', '2026-02-22 22:00:00',  75000, 'COMPLETED', 2,  NULL, 16, NULL, 0, '2026-02-20 12:00:00', '2026-02-22 22:00:00'),
+(74, '2026-03-15 18:00:00', '2026-03-15 21:00:00',  75000, 'COMPLETED', 2,  NULL, 30, NULL, 0, '2026-03-13 10:00:00', '2026-03-15 21:00:00'),
+-- Place 7 (풋살장 잠실, 40000/h) — 3건 추가 → 총 6 리뷰
+(75, '2026-01-25 14:00:00', '2026-01-25 16:00:00',  80000, 'COMPLETED', 7,  NULL, 9,  NULL, 0, '2026-01-23 08:00:00', '2026-01-25 16:00:00'),
+(76, '2026-02-15 10:00:00', '2026-02-15 12:00:00',  80000, 'COMPLETED', 7,  NULL, 16, NULL, 0, '2026-02-13 08:00:00', '2026-02-15 12:00:00'),
+(77, '2026-03-22 14:00:00', '2026-03-22 16:00:00',  80000, 'COMPLETED', 7,  NULL, 36, NULL, 0, '2026-03-20 08:00:00', '2026-03-22 16:00:00'),
+-- Place 21 (해운대 루프탑, 60000/h) — 3건 추가 → 총 5 리뷰
+(78, '2026-01-18 19:00:00', '2026-01-18 21:00:00', 120000, 'COMPLETED', 21, NULL, 10, NULL, 0, '2026-01-16 10:00:00', '2026-01-18 21:00:00'),
+(79, '2026-02-08 19:00:00', '2026-02-08 21:00:00', 120000, 'COMPLETED', 21, NULL, 30, NULL, 0, '2026-02-06 11:00:00', '2026-02-08 21:00:00'),
+(80, '2026-03-08 19:00:00', '2026-03-08 21:00:00', 120000, 'COMPLETED', 21, NULL, 42, NULL, 0, '2026-03-06 10:00:00', '2026-03-08 21:00:00'),
+-- Place 3 (회의실 을지로, 20000/h) — 2건 추가 → 총 5 리뷰
+(81, '2026-02-04 09:00:00', '2026-02-04 11:00:00',  40000, 'COMPLETED', 3,  NULL, 36, NULL, 0, '2026-02-02 09:00:00', '2026-02-04 11:00:00'),
+(82, '2026-03-04 14:00:00', '2026-03-04 16:00:00',  40000, 'COMPLETED', 3,  NULL, 42, NULL, 0, '2026-03-02 10:00:00', '2026-03-04 16:00:00'),
+-- Place 5 (음악 연습실 합정, 12000/h) — 3건 추가 → 총 4 리뷰
+(83, '2026-01-28 14:00:00', '2026-01-28 16:00:00',  24000, 'COMPLETED', 5,  NULL, 9,  NULL, 0, '2026-01-26 10:00:00', '2026-01-28 16:00:00'),
+(84, '2026-02-04 14:00:00', '2026-02-04 16:00:00',  24000, 'COMPLETED', 5,  NULL, 36, NULL, 0, '2026-02-02 11:00:00', '2026-02-04 16:00:00'),
+(85, '2026-02-25 14:00:00', '2026-02-25 16:00:00',  24000, 'COMPLETED', 5,  NULL, 30, NULL, 0, '2026-02-23 10:00:00', '2026-02-25 16:00:00'),
+-- Place 8 (요가 스튜디오, 15000/h) — 2건 추가 → 총 4 리뷰
+(86, '2026-02-10 18:00:00', '2026-02-10 20:00:00',  30000, 'COMPLETED', 8,  NULL, 9,  NULL, 0, '2026-02-08 09:00:00', '2026-02-10 20:00:00'),
+(87, '2026-03-10 18:00:00', '2026-03-10 20:00:00',  30000, 'COMPLETED', 8,  NULL, 36, NULL, 0, '2026-03-08 10:00:00', '2026-03-10 20:00:00'),
+-- Place 15 (루프탑 바 한남, 50000/h) — 2건 추가 → 총 4 리뷰
+(88, '2026-03-14 20:00:00', '2026-03-14 22:00:00', 100000, 'COMPLETED', 15, NULL, 9,  NULL, 0, '2026-03-12 10:00:00', '2026-03-14 22:00:00'),
+(89, '2026-03-21 20:00:00', '2026-03-21 22:00:00', 100000, 'COMPLETED', 15, NULL, 10, NULL, 0, '2026-03-19 11:00:00', '2026-03-21 22:00:00'),
+-- Place 37 (춘천 글램핑, 50000/h) — 2건 추가 → 총 4 리뷰
+(90, '2026-01-15 15:00:00', '2026-01-16 11:00:00', 100000, 'COMPLETED', 37, NULL, 9,  NULL, 0, '2026-01-13 09:00:00', '2026-01-16 11:00:00'),
+(91, '2026-02-19 15:00:00', '2026-02-20 11:00:00', 100000, 'COMPLETED', 37, NULL, 10, NULL, 0, '2026-02-17 10:00:00', '2026-02-20 11:00:00');
+
+-- ============================================================
+-- 9. 추가 장소 리뷰 (IDs 40~71) — 위 예약에 대응
+-- ============================================================
+INSERT INTO place_review (id, rating, comment, place_id, user_id, reservation_id) VALUES
+-- Place 1 추가 리뷰 (+6 → 총 10개)
+(40, 5, '파티션 덕분에 집중이 잘 됩니다. 다음에도 이용할게요!',       1,  9,  60),
+(41, 4, '에어컨도 잘 되고 WIFI 속도도 빠릅니다. 만족했어요.',         1,  10, 61),
+(42, 4, '역에서 가깝고 조용해서 자주 올 것 같아요.',                  1,  16, 62),
+(43, 5, '개인 콘센트가 있어서 공부하기 최고예요.',                    1,  29, 63),
+(44, 4, '가격 대비 최고의 스터디 공간입니다.',                        1,  42, 64),
+(45, 5, '복합기 무료 제공이라 자료 출력도 편했어요.',                  1,  46, 65),
+-- Place 9 추가 리뷰 (+5 → 총 7개)
+(46, 4, '고속 WIFI 덕분에 재택근무 최고 효율 나왔어요.',              9,  30, 66),
+(47, 5, '개인 집중룸이 있어서 화상회의도 문제없어요.',                 9,  36, 67),
+(48, 4, '카페테리아도 있어서 하루 종일 있어도 편했습니다.',            9,  46, 68),
+(49, 5, '선릉역 직결이라 출퇴근 편해요. 자주 이용할게요!',             9,  42, 69),
+(50, 4, '모니터 품질도 좋고 좌석도 편안해요. 적극 추천!',             9,  10, 70),
+-- Place 2 추가 리뷰 (+4 → 총 7개)
+(51, 5, '생일파티 최고! 블루투스 스피커 음질이 너무 좋아요.',          2,  10, 71),
+(52, 4, '프라이빗하고 넓어서 단체 모임에 딱이에요.',                   2,  9,  72),
+(53, 4, '무드 조명이 분위기를 확 살려줘요. 다시 올게요!',              2,  16, 73),
+(54, 5, '홍대 한가운데에 이런 공간이! 완전 만족합니다.',               2,  30, 74),
+-- Place 7 추가 리뷰 (+3 → 총 6개)
+(55, 4, '인조 잔디 상태 좋고 야간 조명도 밝아요. 풋살 추천!',          7,  9,  75),
+(56, 5, '샤워실도 깨끗하고 편의시설이 잘 갖춰져 있어요.',              7,  16, 76),
+(57, 4, '주차도 편하고 접근성 좋습니다. 또 올게요.',                   7,  36, 77),
+-- Place 21 추가 리뷰 (+3 → 총 5개)
+(58, 5, '해운대 뷰와 파티룸의 완벽한 조합이에요!',                    21, 10, 78),
+(59, 4, '바베큐도 맛있고 루프탑 분위기 너무 좋아요.',                  21, 30, 79),
+(60, 5, '부산 여행 중 최고의 경험이었습니다!',                        21, 42, 80),
+-- Place 3 추가 리뷰 (+2 → 총 5개)
+(61, 5, '프레젠테이션 준비하기 딱 좋은 공간이에요.',                   3,  36, 81),
+(62, 4, '화이트보드와 빔프로젝터 상태 최상. 추천합니다!',              3,  42, 82),
+-- Place 5 추가 리뷰 (+3 → 총 4개)
+(63, 5, '방음이 완벽해요. 새벽까지 연습해도 걱정 없어요.',             5,  9,  83),
+(64, 5, '드럼 세트 상태가 훌륭합니다. 밴드 합주에 최적!',              5,  36, 84),
+(65, 4, 'PA시스템도 잘 갖춰져 있어서 공연 준비하기 좋아요.',           5,  30, 85),
+-- Place 8 추가 리뷰 (+2 → 총 4개)
+(66, 5, '바닥 난방과 아로마 향이 힐링을 배가해줘요.',                  8,  9,  86),
+(67, 4, '요가 매트 품질이 좋고 채광도 좋아요!',                       8,  36, 87),
+-- Place 15 추가 리뷰 (+2 → 총 4개)
+(68, 5, '한남 루프탑 뷰가 환상적. 칵테일도 맛있었어요!',              15, 9,  88),
+(69, 5, '프라이빗한 분위기에서 데이트하기 최고입니다.',               15, 10, 89),
+-- Place 37 추가 리뷰 (+2 → 총 4개)
+(70, 4, '가평천 뷰 글램핑 너무 좋았어요. 캠프파이어 최고!',           37, 9,  90),
+(71, 5, '반려동물 동반 가능해서 강아지랑 함께 왔어요. 완전 추천!',    37, 10, 91);
+
+-- ============================================================
+-- 10. place 테이블 review_count / average_rating 정합성 보정
+--     (실제 place_review 레코드 수와 평점 평균에 맞춤)
+-- ============================================================
+UPDATE place SET review_count = 10, average_rating = 4.6 WHERE id = 1;  -- (5+4+5+5+5+4+4+5+4+5)/10
+UPDATE place SET review_count = 7,  average_rating = 4.4 WHERE id = 2;  -- (4+4+5+5+4+4+5)/7
+UPDATE place SET review_count = 5,  average_rating = 4.8 WHERE id = 3;  -- (5+5+5+5+4)/5
+UPDATE place SET review_count = 1,  average_rating = 4.0 WHERE id = 4;
+UPDATE place SET review_count = 4,  average_rating = 4.8 WHERE id = 5;  -- (5+5+5+4)/4
+UPDATE place SET review_count = 1,  average_rating = 4.0 WHERE id = 6;
+UPDATE place SET review_count = 6,  average_rating = 4.3 WHERE id = 7;  -- (4+5+4+4+5+4)/6
+UPDATE place SET review_count = 4,  average_rating = 4.5 WHERE id = 8;  -- (5+4+5+4)/4
+UPDATE place SET review_count = 7,  average_rating = 4.4 WHERE id = 9;  -- (4+4+4+5+4+5+4)/7
+UPDATE place SET review_count = 1,  average_rating = 4.0 WHERE id = 10;
+UPDATE place SET review_count = 1,  average_rating = 4.0 WHERE id = 11;
+UPDATE place SET review_count = 1,  average_rating = 5.0 WHERE id = 12;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 13;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 14;
+UPDATE place SET review_count = 4,  average_rating = 5.0 WHERE id = 15;  -- (5+5+5+5)/4
+UPDATE place SET review_count = 1,  average_rating = 5.0 WHERE id = 16;
+UPDATE place SET review_count = 1,  average_rating = 4.0 WHERE id = 17;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 18;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 19;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 20;
+UPDATE place SET review_count = 5,  average_rating = 4.6 WHERE id = 21;  -- (5+4+5+4+5)/5
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 22;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 23;
+UPDATE place SET review_count = 2,  average_rating = 5.0 WHERE id = 24;
+UPDATE place SET review_count = 2,  average_rating = 4.5 WHERE id = 25;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 26;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 27;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 28;
+UPDATE place SET review_count = 1,  average_rating = 5.0 WHERE id = 29;
+UPDATE place SET review_count = 2,  average_rating = 4.5 WHERE id = 30;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 31;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 32;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 33;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 34;
+UPDATE place SET review_count = 1,  average_rating = 4.0 WHERE id = 35;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 36;
+UPDATE place SET review_count = 4,  average_rating = 4.5 WHERE id = 37;  -- (5+4+4+5)/4
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 38;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 39;
+UPDATE place SET review_count = 0,  average_rating = 0.0 WHERE id = 40;
+
+-- ============================================================
 -- DONE
 -- ============================================================
 SET FOREIGN_KEY_CHECKS = 1;
 SET SQL_MODE = @OLD_SQL_MODE;
+
 
 

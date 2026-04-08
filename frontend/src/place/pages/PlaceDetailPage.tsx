@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import {
   MapPin,
@@ -9,8 +14,10 @@ import {
   Clock,
   CalendarX,
   ChevronLeft,
+  ChevronRight,
   Tag,
   MessageSquare,
+  X,
 } from "lucide-react";
 import Navbar from "../../common/layout/Navbar";
 import Footer from "../../common/layout/Footer";
@@ -21,12 +28,13 @@ import {
   fetchPlaceReviews,
   togglePlaceLike,
 } from "../api/placeRentalApi";
+import { toAssetUrl } from "../../common/utils/assetUrl";
 import type { PlaceDetailDTO, PlaceReviewDTO } from "../types/placeTypes";
 import ReportButton from "../../common/components/ReportButton";
 
 /** description에서 [섹션 제목] 패턴을 파싱해 섹션 배열로 변환 */
 function parseDescriptionSections(
-  text: string
+  text: string,
 ): Array<{ title: string; content: string }> {
   const parts = text.split(/(\[[^\]]+\])/);
   const sections: Array<{ title: string; content: string }> = [];
@@ -38,7 +46,7 @@ function parseDescriptionSections(
       if (currentTitle || currentContent.trim()) {
         sections.push({ title: currentTitle, content: currentContent.trim() });
       }
-      currentTitle = part.slice(1, -1); // [ ] 제거
+      currentTitle = part.slice(1, -1);
       currentContent = "";
     } else {
       currentContent += part;
@@ -87,7 +95,6 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-// 카카오맵 미니 (장소 위치 표시)
 declare global {
   interface Window {
     kakao: {
@@ -96,9 +103,7 @@ declare global {
         Map: new (
           el: HTMLElement,
           opts: object,
-        ) => {
-          setCenter: (latlng: object) => void;
-        };
+        ) => { setCenter: (latlng: object) => void };
         LatLng: new (lat: number, lng: number) => object;
         Marker: new (opts: object) => { setMap: (m: object) => void };
       };
@@ -116,7 +121,6 @@ function PlaceMiniMap({
   name: string;
 }) {
   const containerId = "place-detail-map";
-
   useEffect(() => {
     const init = () => {
       const el = document.getElementById(containerId);
@@ -150,13 +154,60 @@ function PlaceMiniMap({
   );
 }
 
+// ── JS 기반 sticky hook ─────────────────────────────────────────────────────
+// CSS sticky가 body overflow-y:auto 조합에서 신뢰할 수 없어 직접 구현
+function useJsSticky(offsetTop: number, ready: boolean) {
+  const wrapRef = useRef<HTMLDivElement>(null); // 레이아웃 공간 유지용 외부 div
+  const [fixed, setFixed] = useState(false);
+  const dimsRef = useRef({ left: 0, width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!ready) return;
+
+    let naturalTop: number | null = null;
+    let isFixed = false;
+
+    const check = () => {
+      if (naturalTop === null) return;
+      const shouldFix = window.scrollY + offsetTop >= naturalTop;
+      if (shouldFix === isFixed) return;
+      isFixed = shouldFix;
+      if (shouldFix && wrapRef.current) {
+        const r = wrapRef.current.getBoundingClientRect();
+        dimsRef.current = { left: r.left, width: r.width, height: r.height };
+      }
+      setFixed(shouldFix);
+    };
+
+    const raf = requestAnimationFrame(() => {
+      if (!wrapRef.current) return;
+      const r = wrapRef.current.getBoundingClientRect();
+      naturalTop = r.top + window.scrollY;
+      if (dimsRef.current.height === 0) {
+        dimsRef.current = { left: r.left, width: r.width, height: r.height };
+      }
+      check();
+    });
+
+    window.addEventListener("scroll", check, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", check);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, offsetTop]);
+
+  return { wrapRef, fixed, dimsRef };
+}
+
 export default function PlaceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const initialDate = searchParams.get("date") ?? undefined;
-  const initialScheduleId = (location.state as { scheduleId?: number } | null)?.scheduleId;
+  const initialScheduleId = (location.state as { scheduleId?: number } | null)
+    ?.scheduleId;
   const { isLoggedIn } = useAuthStore();
   const [place, setPlace] = useState<PlaceDetailDTO | null>(null);
   const [reviews, setReviews] = useState<PlaceReviewDTO[]>([]);
@@ -164,6 +215,14 @@ export default function PlaceDetailPage() {
   const [activeSection, setActiveSection] = useState<SectionKey>("intro");
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [reviewLightbox, setReviewLightbox] = useState<{
+    images: string[];
+    index: number;
+  } | null>(null);
+
+  // JS sticky — subnav (navbar 실제 높이 68px), 예약 패널 (84px)
+  const subnavSticky = useJsSticky(0, !!place);
+  const panelSticky = useJsSticky(84, !!place);
 
   // 섹션 refs
   const introRef = useRef<HTMLDivElement>(null);
@@ -197,7 +256,6 @@ export default function PlaceDetailPage() {
   }, [id]);
 
   // IntersectionObserver — 현재 보이는 섹션 active
-  // rootMargin: navbar(60) + subnav(~46) + 여백 = -110px
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
     const entries: Record<SectionKey, boolean> = {
@@ -206,7 +264,6 @@ export default function PlaceDetailPage() {
       location: false,
       review: false,
     };
-
     SUB_NAV_ITEMS.forEach(({ key }) => {
       const el = sectionRefs[key].current;
       if (!el) return;
@@ -221,7 +278,6 @@ export default function PlaceDetailPage() {
       obs.observe(el);
       observers.push(obs);
     });
-
     return () => observers.forEach((o) => o.disconnect());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [place]);
@@ -242,7 +298,6 @@ export default function PlaceDetailPage() {
   const scrollTo = (key: SectionKey) => {
     const el = sectionRefs[key].current;
     if (!el) return;
-    // navbar(60) + subnav(~46) + 여백 8 = 114
     const offset = el.getBoundingClientRect().top + window.scrollY - 114;
     window.scrollTo({ top: offset, behavior: "smooth" });
   };
@@ -252,14 +307,7 @@ export default function PlaceDetailPage() {
       <div style={{ minHeight: "100vh", backgroundColor: "white" }}>
         <Navbar />
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "60px 20px" }}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-              animationName: "pulse",
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div
               style={{
                 height: 420,
@@ -358,7 +406,7 @@ export default function PlaceDetailPage() {
           <PlaceImageGallery images={place.images} name={place.name} />
         </div>
 
-        {/* 본문: 2컬럼 */}
+        {/* 본문: 2컬럼 flex */}
         <div style={{ display: "flex", gap: 32, alignItems: "flex-start" }}>
           {/* 왼쪽: 상세 정보 */}
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -459,7 +507,6 @@ export default function PlaceDetailPage() {
               </div>
             </div>
 
-            {/* 구분선 */}
             <div
               style={{
                 height: 1,
@@ -505,45 +552,61 @@ export default function PlaceDetailPage() {
               </div>
             )}
 
-            {/* ── 서브 네비게이션 바 (태그↔장소소개 사이 인라인 → 스크롤 시 navbar 아래 sticky) ── */}
+            {/* ── 서브 네비게이션 바: JS sticky ── */}
+            {/* outer: fixed 전환 시 레이아웃 공간 유지 */}
             <div
+              ref={subnavSticky.wrapRef}
               style={{
-                position: "sticky",
-                top: 60,
-                zIndex: 30,
-                backgroundColor: "white",
-                borderTop: "1px solid #f0f0f0",
-                borderBottom: "1px solid #f0f0f0",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-                display: "flex",
-                gap: 0,
+                height: subnavSticky.fixed
+                  ? subnavSticky.dimsRef.current.height
+                  : undefined,
                 marginBottom: 24,
                 marginLeft: -4,
               }}
             >
-              {SUB_NAV_ITEMS.map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => scrollTo(key)}
-                  style={{
-                    padding: "13px 18px",
-                    fontSize: 14,
-                    fontWeight: activeSection === key ? 700 : 500,
-                    color: activeSection === key ? "#5F8F7B" : "#666",
-                    background: "none",
-                    border: "none",
-                    borderBottom:
-                      activeSection === key
-                        ? "2px solid #5F8F7B"
-                        : "2px solid transparent",
-                    cursor: "pointer",
-                    transition: "color 0.15s",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
+              <div
+                style={{
+                  ...(subnavSticky.fixed
+                    ? {
+                        position: "fixed" as const,
+                        top: 0,
+                        left: subnavSticky.dimsRef.current.left,
+                        width: subnavSticky.dimsRef.current.width,
+                      }
+                    : {}),
+                  zIndex: 30,
+                  backgroundColor: "white",
+                  borderTop: "1px solid #f0f0f0",
+                  borderBottom: "1px solid #f0f0f0",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+                  display: "flex",
+                  gap: 0,
+                }}
+              >
+                {SUB_NAV_ITEMS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => scrollTo(key)}
+                    style={{
+                      padding: "13px 18px",
+                      fontSize: 14,
+                      fontWeight: activeSection === key ? 700 : 500,
+                      color: activeSection === key ? "#5F8F7B" : "#666",
+                      background: "none",
+                      border: "none",
+                      borderBottom:
+                        activeSection === key
+                          ? "2px solid #5F8F7B"
+                          : "2px solid transparent",
+                      cursor: "pointer",
+                      transition: "color 0.15s",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* 장소 소개 */}
@@ -575,7 +638,6 @@ export default function PlaceDetailPage() {
                     }}
                   >
                     {sections.map((section, i) => {
-                      // ` · ` 또는 ` / ` 기준으로 항목 분리
                       const items = section.content
                         .split(/ · | \/ /)
                         .map((s) => s.trim())
@@ -845,7 +907,6 @@ export default function PlaceDetailPage() {
                   ({place.reviewCount}개)
                 </span>
               </h2>
-
               {reviews.length === 0 ? (
                 <div
                   style={{
@@ -927,6 +988,32 @@ export default function PlaceDetailPage() {
                       >
                         {r.comment}
                       </p>
+                      {r.images && r.images.length > 0 && (
+                        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                          {r.images.map((path, idx) => (
+                            <img
+                              key={path}
+                              src={toAssetUrl(path)}
+                              alt={`후기 이미지 ${idx + 1}`}
+                              onClick={() =>
+                                setReviewLightbox({
+                                  images: r.images!,
+                                  index: idx,
+                                })
+                              }
+                              style={{
+                                width: 72,
+                                height: 72,
+                                borderRadius: 10,
+                                objectFit: "cover",
+                                border: "1px solid #f0f0f0",
+                                cursor: "pointer",
+                                transition: "opacity 0.15s",
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -934,14 +1021,174 @@ export default function PlaceDetailPage() {
             </div>
           </div>
 
-          {/* 오른쪽: 예약 패널 (sticky — navbar 60 + 여백 24 = 84) */}
+          {/* 오른쪽: 예약 패널 — JS sticky */}
+          {/* outer: fixed 전환 시 레이아웃 공간 유지 */}
           <div
-            style={{ width: 340, flexShrink: 0, position: "sticky", top: 84 }}
+            ref={panelSticky.wrapRef}
+            style={{
+              width: 340,
+              flexShrink: 0,
+              minHeight: panelSticky.fixed
+                ? panelSticky.dimsRef.current.height
+                : undefined,
+            }}
           >
-            <PlaceReservationPanel place={place} initialDate={initialDate} initialScheduleId={initialScheduleId} />
+            <div
+              style={
+                panelSticky.fixed
+                  ? {
+                      position: "fixed",
+                      top: 84,
+                      left: panelSticky.dimsRef.current.left,
+                      width: panelSticky.dimsRef.current.width,
+                    }
+                  : {}
+              }
+            >
+              <PlaceReservationPanel
+                place={place}
+                initialDate={initialDate}
+                initialScheduleId={initialScheduleId}
+              />
+            </div>
           </div>
         </div>
       </div>
+
+      {/* ── 리뷰 이미지 라이트박스 ── */}
+      {reviewLightbox &&
+        (() => {
+          const imgs = reviewLightbox.images.map((p) => toAssetUrl(p));
+          const idx = reviewLightbox.index;
+          const prevImg = () =>
+            setReviewLightbox((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    index:
+                      (prev.index - 1 + prev.images.length) %
+                      prev.images.length,
+                  }
+                : null,
+            );
+          const nextImg = () =>
+            setReviewLightbox((prev) =>
+              prev
+                ? { ...prev, index: (prev.index + 1) % prev.images.length }
+                : null,
+            );
+          return (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 1000,
+                backgroundColor: "rgba(0,0,0,0.9)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onClick={() => setReviewLightbox(null)}
+            >
+              <button
+                onClick={() => setReviewLightbox(null)}
+                style={{
+                  position: "absolute",
+                  top: 20,
+                  right: 20,
+                  background: "rgba(255,255,255,0.15)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 40,
+                  height: 40,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <X style={{ width: 22, height: 22, color: "white" }} />
+              </button>
+              {imgs.length > 1 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prevImg();
+                  }}
+                  style={{
+                    position: "absolute",
+                    left: 20,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "rgba(255,255,255,0.15)",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: 48,
+                    height: 48,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ChevronLeft
+                    style={{ width: 26, height: 26, color: "white" }}
+                  />
+                </button>
+              )}
+              <img
+                src={imgs[idx]}
+                alt={`후기 이미지 ${idx + 1}`}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  maxHeight: "90vh",
+                  maxWidth: "90vw",
+                  objectFit: "contain",
+                  borderRadius: 8,
+                }}
+              />
+              {imgs.length > 1 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextImg();
+                  }}
+                  style={{
+                    position: "absolute",
+                    right: 20,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "rgba(255,255,255,0.15)",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: 48,
+                    height: 48,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ChevronRight
+                    style={{ width: 26, height: 26, color: "white" }}
+                  />
+                </button>
+              )}
+              {imgs.length > 1 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 20,
+                    color: "rgba(255,255,255,0.7)",
+                    fontSize: 13,
+                  }}
+                >
+                  {idx + 1} / {imgs.length}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
       <Footer />
     </div>

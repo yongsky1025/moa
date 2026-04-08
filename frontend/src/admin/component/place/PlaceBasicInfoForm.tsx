@@ -25,12 +25,16 @@ export default function PlaceBasicInfoForm({
       />
 
       <label className="mb-1 block text-sm font-medium text-gray-600">장소 설명</label>
+      <p className="mb-2 text-xs text-gray-400">
+        <span className="font-semibold text-[#5F8F7B]">[섹션 이름]</span> 형식으로 섹션을 구분하세요.
+        항목 구분은 <span className="font-semibold">·</span> 또는 <span className="font-semibold">/</span>로 작성하면 목록으로 표시됩니다.
+      </p>
       <textarea
         value={description}
         onChange={(e) => onDescriptionChange(e.target.value)}
-        placeholder="장소에 대한 상세 설명을 입력해주세요"
-        rows={4}
-        className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#5F8F7B] focus:ring-1 focus:ring-[#5F8F7B]"
+        placeholder="[장소 소개]&#10;내용을 입력해주세요."
+        rows={12}
+        className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#5F8F7B] focus:ring-1 focus:ring-[#5F8F7B] font-mono leading-relaxed"
       />
     </section>
   );

@@ -7,6 +7,7 @@ spring:
             # 구글 OAuth 앱의 클라이언트 식별자/비밀키 (.env)
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
+            # 구글 클라우드 콘솔에 등록된 Redirect URI와 반드시 일치해야 함
             redirect-uri: ${GOOGLE_REDIRECT_URI}
             # 구글에서 사용자에게 동의받을 권한 범위
             scope:

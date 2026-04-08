@@ -95,6 +95,7 @@ export default function PostDetailArticleCard({
 
   return (
     <section
+      className="post-detail-article-card"
       style={{
         backgroundColor: "#fff",
         border: "1px solid #d6d9dd",

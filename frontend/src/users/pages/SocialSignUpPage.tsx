@@ -145,7 +145,9 @@ export default function SocialSignUpPage() {
 
       const response = await authApi.refresh();
       setAuth(response.data.accessToken, response.data.user);
-      navigate(response.data.user.onboardingCompleted ? "/main" : "/users/onboarding");
+      navigate(
+        response.data.user.onboardingCompleted ? "/main" : "/users/onboarding",
+      );
     } catch (signupError) {
       setError(getErrorMessage(signupError));
     } finally {
@@ -177,16 +179,42 @@ export default function SocialSignUpPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f7f7f8", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#f7f7f8",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px 16px",
+      }}
+    >
       <div style={{ width: "100%", maxWidth: 460 }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <span style={{ fontSize: 32, fontWeight: 900, color: "#111", letterSpacing: -1 }}>moa</span>
-          <p style={{ marginTop: 6, fontSize: 14, color: "#888" }}>추가 정보를 입력해주세요</p>
+          <span
+            style={{
+              fontSize: 32,
+              fontWeight: 900,
+              color: "#111",
+              letterSpacing: -1,
+            }}
+          >
+            moa
+          </span>
+          <p style={{ marginTop: 6, fontSize: 14, color: "#888" }}>
+            추가 정보를 입력해주세요
+          </p>
         </div>
 
         <SignUpStepper currentStep={2} />
 
-        <AuthCard style={{ borderRadius: 16, padding: "36px 32px", boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
+        <AuthCard
+          style={{
+            borderRadius: 16,
+            padding: "36px 32px",
+            boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
+          }}
+        >
           <form onSubmit={handleSubmit}>
             <FormField label="닉네임">
               <NicknameCheckField
@@ -196,28 +224,62 @@ export default function SocialSignUpPage() {
                 required
                 onCheck={handleCheckNickname}
                 checking={nicknameChecking}
-                validationState={form.nickname ? (nicknameValid ? "valid" : nicknameMsg?.type === "err" || !nicknameFormatOk ? "invalid" : null) : null}
-                feedback={nicknameMsg ? { tone: nicknameMsg.type === "ok" ? "success" : "error", text: nicknameMsg.text } : null}
-                fallbackError={form.nickname && !nicknameFormatOk ? "닉네임은 2~10자여야 합니다." : undefined}
+                validationState={
+                  form.nickname
+                    ? nicknameValid
+                      ? "valid"
+                      : nicknameMsg?.type === "err" || !nicknameFormatOk
+                        ? "invalid"
+                        : null
+                    : null
+                }
+                feedback={
+                  nicknameMsg
+                    ? {
+                        tone: nicknameMsg.type === "ok" ? "success" : "error",
+                        text: nicknameMsg.text,
+                      }
+                    : null
+                }
+                fallbackError={
+                  form.nickname && !nicknameFormatOk
+                    ? "닉네임은 2~10자여야 합니다."
+                    : undefined
+                }
               />
             </FormField>
 
             <FormField label="생년월일">
-              <BirthDatePicker value={form.birthDate} onChange={handleBirthDateChange} />
+              <BirthDatePicker
+                value={form.birthDate}
+                onChange={handleBirthDateChange}
+              />
             </FormField>
 
             <FormField label="성별" last>
               <div style={{ display: "flex", gap: 10 }}>
-                <GenderButton selected={form.userGender === "MALE"} onClick={() => handleGenderChange("MALE")}>
+                <GenderButton
+                  selected={form.userGender === "MALE"}
+                  onClick={() => handleGenderChange("MALE")}
+                >
                   남성
                 </GenderButton>
-                <GenderButton selected={form.userGender === "FEMALE"} onClick={() => handleGenderChange("FEMALE")}>
+                <GenderButton
+                  selected={form.userGender === "FEMALE"}
+                  onClick={() => handleGenderChange("FEMALE")}
+                >
                   여성
                 </GenderButton>
               </div>
             </FormField>
 
-            <div style={{ height: 1, backgroundColor: "#eee", margin: "20px 0 16px" }} />
+            <div
+              style={{
+                height: 1,
+                backgroundColor: "#eee",
+                margin: "20px 0 16px",
+              }}
+            />
 
             <label
               style={{
@@ -234,21 +296,46 @@ export default function SocialSignUpPage() {
                 type="checkbox"
                 checked={privacyAgreed}
                 disabled={privacySaving || privacyLocked}
-                onChange={(event) => void handlePrivacyChange(event.target.checked)}
-                style={{ width: 16, height: 16, cursor: privacyLocked ? "default" : "pointer", accentColor: "#5F8F7B" }}
+                onChange={(event) =>
+                  void handlePrivacyChange(event.target.checked)
+                }
+                style={{
+                  width: 16,
+                  height: 16,
+                  cursor: privacyLocked ? "default" : "pointer",
+                  accentColor: "#5F8F7B",
+                }}
               />
               개인정보 수집 및 이용에 동의합니다. (필수)
             </label>
 
             {privacyLocked && (
-              <p style={{ fontSize: 12, color: "#666", margin: "8px 0 0", textAlign: "center" }}>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#666",
+                  margin: "8px 0 0",
+                  textAlign: "center",
+                }}
+              >
                 동의 내역이 저장되었습니다. 추가 정보를 이어서 입력해도 됩니다.
               </p>
             )}
 
             <FormErrorList errors={fieldErrors} />
 
-            {error && <p style={{ fontSize: 13, color: "#ff4d4f", marginTop: 14, textAlign: "center" }}>{error}</p>}
+            {error && (
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "#ff4d4f",
+                  marginTop: 14,
+                  textAlign: "center",
+                }}
+              >
+                {error}
+              </p>
+            )}
 
             <button
               type="submit"
@@ -257,7 +344,8 @@ export default function SocialSignUpPage() {
                 width: "100%",
                 height: 50,
                 marginTop: 20,
-                backgroundColor: loading || privacySaving ? "#A9C8BB" : "#5F8F7B",
+                backgroundColor:
+                  loading || privacySaving ? "#A9C8BB" : "#5F8F7B",
                 color: "#fff",
                 border: "none",
                 borderRadius: 12,

@@ -227,6 +227,8 @@ export default function CirclePostDetailPage() {
   const liked = (localPostReaction?.myReaction ?? post?.myReaction) === "LIKE";
   const displayReplyCount = post?.replyCount ?? totalReplyCount;
   const isOwner = !!post && !!user && post.authorPublicId === user.publicId;
+  const isCircleLeader = circle?.myRole === "LEADER";
+  const canDeletePost = isOwner || isCircleLeader;
   const canUseCircleReport = isAdmin || !!circle?.myRole;
 
   const bookmarkQuery = useQuery<PostBookmarkSummary>({
@@ -391,6 +393,29 @@ export default function CirclePostDetailPage() {
     openReportForm("POST", pid);
   };
 
+  const handleDeletePost = async () => {
+    if (!post) return;
+    if (!isLoggedIn) {
+      window.alert("로그인 후 게시글을 삭제할 수 있습니다.");
+      navigate("/users/login");
+      return;
+    }
+    if (!canDeletePost) {
+      window.alert("게시글 삭제 권한이 없습니다.");
+      return;
+    }
+    if (!window.confirm("게시글을 삭제하시겠습니까?")) {
+      return;
+    }
+    try {
+      await circleBoardApi.deletePost(cid, bid, pid);
+      window.alert("게시글이 삭제되었습니다.");
+      navigate(resolvedBackPath, { replace: true });
+    } catch (e) {
+      window.alert(getErrorMessage(e));
+    }
+  };
+
   const handleSidebarBoardSelect = (board: "all" | number) => {
     if (isActivityContext) {
       navigate(`/circle/${cid}/activity`);
@@ -488,17 +513,18 @@ export default function CirclePostDetailPage() {
                   headerAction={
                     <PostActionMenu
                       canEdit={isOwner}
-                      canDelete={false}
+                      canDelete={canDeletePost}
                       canReport={!isOwner}
                       bookmarked={isBookmarked}
                       onToggleBookmark={toggleBookmark}
-                        onEdit={() =>
-                          navigate(`/circle/${cid}/board/${bid}/posts/${pid}/edit`, {
-                            state: { from: resolvedBackPath },
-                          })
-                        }
-                        onReport={handleOpenPostReport}
-                      />
+                      onDelete={() => void handleDeletePost()}
+                      onEdit={() =>
+                        navigate(`/circle/${cid}/board/${bid}/posts/${pid}/edit`, {
+                          state: { from: resolvedBackPath },
+                        })
+                      }
+                      onReport={handleOpenPostReport}
+                    />
                     }
                   actionSection={
                     <div className="post-detail-engagement">
