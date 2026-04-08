@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Activity, Inbox, Loader2, MessageSquare, Users } from "lucide-react";
 import Navbar from "../../common/layout/Navbar";
@@ -9,6 +9,7 @@ import { circleApi } from "../../api/circleApi";
 import { circleBoardApi } from "../../api/circleBoardApi";
 import type { CircleResponse } from "../../circle/types/circle";
 import { postRoutes } from "../routes/postRoutes";
+import { useInfiniteScroll } from "../../admin/hooks/useInfiniteScroll";
 
 type TopTab = "board" | "activity";
 type BoardFilter = "all" | "community" | "circle";
@@ -53,6 +54,8 @@ const TOP_TAB_LABEL: Record<TopTab, string> = {
   board: "게시판",
   activity: "모임 활동",
 };
+const INITIAL_VISIBLE_COUNT = 15;
+const LOAD_MORE_COUNT = 15;
 
 export default function MyRepliesPage() {
   const navigate = useNavigate();
@@ -66,6 +69,7 @@ export default function MyRepliesPage() {
   const [myCircles, setMyCircles] = useState<CircleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
 
   const circleNameById = useMemo(
     () => new Map(myCircles.map((c) => [c.circleId, c.name])),
@@ -157,6 +161,23 @@ export default function MyRepliesPage() {
     }
     return boardReplies;
   }, [activityCircleId, activityReplies, boardFilter, boardReplies, topTab]);
+  const visibleReplies = useMemo(
+    () => displayedReplies.slice(0, visibleCount),
+    [displayedReplies, visibleCount],
+  );
+  const hasMoreReplies = visibleCount < displayedReplies.length;
+  const loadMoreReplies = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + LOAD_MORE_COUNT, displayedReplies.length));
+  }, [displayedReplies.length]);
+  const sentinelRef = useInfiniteScroll(
+    loadMoreReplies,
+    !loading && !error && hasMoreReplies,
+    "260px",
+  );
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE_COUNT);
+  }, [topTab, boardFilter, activityCircleId, boardReplies, activityReplies]);
 
   const switchTopTab = (tab: TopTab) => {
     if (tab === "activity") {
@@ -308,7 +329,7 @@ export default function MyRepliesPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {displayedReplies.map((item) => {
+                {visibleReplies.map((item) => {
                   const circleName =
                     item.reply.circleId != null
                       ? (circleNameById.get(item.reply.circleId) ?? "모임")
@@ -355,6 +376,12 @@ export default function MyRepliesPage() {
                     </Link>
                   );
                 })}
+                {hasMoreReplies && <div ref={sentinelRef} className="h-6" />}
+                {!hasMoreReplies && displayedReplies.length > 0 && (
+                  <p className="py-1 text-center text-xs text-gray-400">
+                    모든 댓글을 불러왔습니다.
+                  </p>
+                )}
               </div>
             )}
           </main>

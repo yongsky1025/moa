@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Activity, FileText, Inbox, Loader2, Users } from "lucide-react";
 import Navbar from "../../common/layout/Navbar";
@@ -9,6 +9,7 @@ import type { PostResponse } from "../types/postTypes";
 import { circleApi } from "../../api/circleApi";
 import { circleBoardApi } from "../../api/circleBoardApi";
 import type { CircleResponse } from "../../circle/types/circle";
+import { useInfiniteScroll } from "../../admin/hooks/useInfiniteScroll";
 
 type TopTab = "board" | "activity";
 type BoardFilter = "all" | "community" | "circle";
@@ -53,6 +54,8 @@ const TOP_TAB_LABEL: Record<TopTab, string> = {
   board: "게시판",
   activity: "모임 활동",
 };
+const INITIAL_VISIBLE_COUNT = 15;
+const LOAD_MORE_COUNT = 15;
 
 export default function MyPostsPage() {
   const navigate = useNavigate();
@@ -66,6 +69,7 @@ export default function MyPostsPage() {
   const [myCircles, setMyCircles] = useState<CircleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
 
   const fetchCommunityPosts = async (): Promise<MyPostItem[]> => {
     const res = await postApi.getMyCommunityPosts({ board: "all" });
@@ -152,6 +156,23 @@ export default function MyPostsPage() {
     }
     return boardPosts;
   }, [activityCircleId, activityPosts, boardFilter, boardPosts, topTab]);
+  const visiblePosts = useMemo(
+    () => displayedPosts.slice(0, visibleCount),
+    [displayedPosts, visibleCount],
+  );
+  const hasMorePosts = visibleCount < displayedPosts.length;
+  const loadMorePosts = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + LOAD_MORE_COUNT, displayedPosts.length));
+  }, [displayedPosts.length]);
+  const sentinelRef = useInfiniteScroll(
+    loadMorePosts,
+    !loading && !error && hasMorePosts,
+    "260px",
+  );
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE_COUNT);
+  }, [topTab, boardFilter, activityCircleId, boardPosts, activityPosts]);
 
   const switchTopTab = (tab: TopTab) => {
     if (tab === "activity") {
@@ -313,7 +334,7 @@ export default function MyPostsPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {displayedPosts.map((item) => (
+                {visiblePosts.map((item) => (
                   <Link
                     key={`${item.source}-${item.post.postId}-${item.post.boardId}-${item.post.circleId ?? 0}`}
                     to={toDetailPath(item)}
@@ -349,6 +370,12 @@ export default function MyPostsPage() {
                     </p>
                   </Link>
                 ))}
+                {hasMorePosts && <div ref={sentinelRef} className="h-6" />}
+                {!hasMorePosts && displayedPosts.length > 0 && (
+                  <p className="py-1 text-center text-xs text-gray-400">
+                    모든 게시글을 불러왔습니다.
+                  </p>
+                )}
               </div>
             )}
           </main>
