@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Heart, Pin, RefreshCcw, Settings, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Navbar from "../../common/layout/Navbar";
@@ -50,6 +50,7 @@ import { getErrorMessage } from "../../common/utils/errorMessage";
 import type { BoardResponse } from "../types/boardTypes";
 import { openReportForm } from "../../common/utils/openReportForm";
 import { useDelayedLoading } from "../../common/hooks/useDelayedLoading";
+import { useInfiniteScroll } from "../../admin/hooks/useInfiniteScroll";
 
 interface CommunityPostItem {
   postId: number;
@@ -90,6 +91,9 @@ const toDateLabel = (value: string) => {
 
 const COMMUNITY_POST_TITLE_MAX_CHARS = 42;
 const COMMUNITY_PAGE_SIZE = 15;
+const ACTIVITY_INITIAL_VISIBLE_COUNT = 10;
+const ACTIVITY_LOAD_MORE_COUNT = 10;
+const ACTIVITY_SCROLL_TRIGGER_PX = 240;
 const REACTION_COMMIT_DEBOUNCE_MS = 300;
 
 const truncateByCharCount = (value: string, maxChars: number) => {
@@ -204,6 +208,8 @@ export default function BoardCommunityPage() {
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [searchType, setSearchType] = useState<"all" | "title" | "content">("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [visibleActivityPostCount, setVisibleActivityPostCount] = useState(ACTIVITY_INITIAL_VISIBLE_COUNT);
+  const [visibleActivityReplyCount, setVisibleActivityReplyCount] = useState(ACTIVITY_INITIAL_VISIBLE_COUNT);
   const [editMode, setEditMode] = useState(false);
   const [pinAnimatingPostId, setPinAnimatingPostId] = useState<number | null>(null);
   const [localPinOverrides, setLocalPinOverrides] = useState<
@@ -613,6 +619,37 @@ export default function BoardCommunityPage() {
   }, [activityView, isLoggedIn]);
 
   const activityPendingDeleteCount = Object.keys(activityStagedDeletes).length;
+  const visibleActivityPostItems = useMemo(
+    () => activityPostItems.slice(0, visibleActivityPostCount),
+    [activityPostItems, visibleActivityPostCount],
+  );
+  const visibleActivityReplyItems = useMemo(
+    () => activityReplyItems.slice(0, visibleActivityReplyCount),
+    [activityReplyItems, visibleActivityReplyCount],
+  );
+  const hasMoreActivityPosts = visibleActivityPostCount < activityPostItems.length;
+  const hasMoreActivityReplies = visibleActivityReplyCount < activityReplyItems.length;
+
+  const loadMoreActivityPosts = useCallback(() => {
+    setVisibleActivityPostCount((prev) => Math.min(prev + ACTIVITY_LOAD_MORE_COUNT, activityPostItems.length));
+  }, [activityPostItems.length]);
+
+  const loadMoreActivityReplies = useCallback(() => {
+    setVisibleActivityReplyCount((prev) => Math.min(prev + ACTIVITY_LOAD_MORE_COUNT, activityReplyItems.length));
+  }, [activityReplyItems.length]);
+
+  useEffect(() => {
+    setVisibleActivityPostCount(ACTIVITY_INITIAL_VISIBLE_COUNT);
+    setVisibleActivityReplyCount(ACTIVITY_INITIAL_VISIBLE_COUNT);
+  }, [activityView]);
+
+  useEffect(() => {
+    setVisibleActivityPostCount(ACTIVITY_INITIAL_VISIBLE_COUNT);
+  }, [activityPostItems]);
+
+  useEffect(() => {
+    setVisibleActivityReplyCount(ACTIVITY_INITIAL_VISIBLE_COUNT);
+  }, [activityReplyItems]);
 
   const resetActivityEditState = () => {
     setActivityStagedDeletes({});
@@ -877,6 +914,68 @@ export default function BoardCommunityPage() {
     topTab === "board" && (forceTopTabSkeleton || delayedGlobalBoardMenuSkeleton);
   const showActivityLayoutSkeleton =
     topTab === "activity" && (forceTopTabSkeleton || delayedActivityListSkeleton);
+  useEffect(() => {
+    const shouldHandle =
+      topTab === "activity" &&
+      !activityLoading &&
+      !delayedActivityListSkeleton &&
+      (activityView === "myReplies" ? hasMoreActivityReplies : hasMoreActivityPosts);
+    if (!shouldHandle) {
+      return;
+    }
+
+    const maybeLoadMore = () => {
+      const scrollTop = window.scrollY ?? document.documentElement.scrollTop ?? 0;
+      const viewportBottom = scrollTop + window.innerHeight;
+      const pageBottom = document.documentElement.scrollHeight;
+      const isNearBottom = pageBottom - viewportBottom <= ACTIVITY_SCROLL_TRIGGER_PX;
+      if (!isNearBottom) {
+        return;
+      }
+      if (activityView === "myReplies") {
+        loadMoreActivityReplies();
+      } else {
+        loadMoreActivityPosts();
+      }
+    };
+
+    const onScroll = () => {
+      maybeLoadMore();
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    maybeLoadMore();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [
+    activityLoading,
+    activityView,
+    delayedActivityListSkeleton,
+    hasMoreActivityPosts,
+    hasMoreActivityReplies,
+    loadMoreActivityPosts,
+    loadMoreActivityReplies,
+    topTab,
+  ]);
+  const activityPostSentinelRef = useInfiniteScroll(
+    loadMoreActivityPosts,
+    topTab === "activity" &&
+      !delayedActivityListSkeleton &&
+      !activityLoading &&
+      activityView !== "myReplies" &&
+      hasMoreActivityPosts,
+    "260px",
+  );
+  const activityReplySentinelRef = useInfiniteScroll(
+    loadMoreActivityReplies,
+    topTab === "activity" &&
+      !delayedActivityListSkeleton &&
+      !activityLoading &&
+      activityView === "myReplies" &&
+      hasMoreActivityReplies,
+    "260px",
+  );
   const showGlobalBoardMenuSkeleton = topTab === "board" && (showBoardLayoutSkeleton || delayedGlobalBoardMenuSkeleton);
   const showGlobalBoardListSkeleton = topTab === "board" && (showBoardLayoutSkeleton || delayedGlobalBoardListSkeleton);
   const activityCircleIdByPostId = useMemo(() => {
@@ -1899,7 +1998,7 @@ export default function BoardCommunityPage() {
                     >
                 {activityView === "myReplies" ? (
                   <ul className="community-post-list">
-                    {activityReplyItems.map((item) => (
+                    {visibleActivityReplyItems.map((item) => (
                       <li key={`activity-reply-${item.replyId}`}>
                         <Link
                           to={
@@ -1932,7 +2031,7 @@ export default function BoardCommunityPage() {
                   </ul>
                 ) : (
                   <ul className="community-post-list">
-                    {activityPostItems.map((post) => {
+                    {visibleActivityPostItems.map((post) => {
                       const circleName = post.circleName?.trim() || "모임";
                       const href =
                         post.circleId != null
@@ -2022,6 +2121,25 @@ export default function BoardCommunityPage() {
                     })}
                   </ul>
                 )}
+                    {activityView === "myReplies" ? (
+                      hasMoreActivityReplies ? (
+                        <div ref={activityReplySentinelRef} className="h-6" />
+                      ) : (
+                        activityReplyItems.length > 0 && (
+                          <p style={{ margin: "8px 0 0", textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
+                            모든 댓글을 불러왔습니다.
+                          </p>
+                        )
+                      )
+                    ) : hasMoreActivityPosts ? (
+                      <div ref={activityPostSentinelRef} className="h-6" />
+                    ) : (
+                      activityPostItems.length > 0 && (
+                        <p style={{ margin: "8px 0 0", textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
+                          모든 게시글을 불러왔습니다.
+                        </p>
+                      )
+                    )}
                     </CommunityListState>
                   </section>
                   <aside className="community-right-sidebar" aria-hidden="true" />
