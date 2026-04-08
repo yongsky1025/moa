@@ -5,8 +5,8 @@
 -- - 용도: 서비스 기동 시 필수 마스터/기본 데이터 보장
 -- - 특성: 전 구문 멱등(WHERE NOT EXISTS) 처리
 -- - 관리자 계정: 2명
---   * admin@moa.com / 1234
---   * admin2@moa.com / 1234
+--   * admin@moa.com / moa1234!@
+--   * admin2@moa.com / moa1234!@
 -- - 글로벌 게시판: 2개 (공지사항, 자유게시판)
 -- - 서클 카테고리: 12개
 -- - 태그 카테고리: 15개
@@ -14,13 +14,13 @@
 -- - 주의: Spring SQL initializer 호환을 위해 SET NAMES 구문 미사용
 
 -- 1) 관리자 계정 2명 (멱등 삽입)
--- 비밀번호: 1234 (bcrypt 해시)
+-- 비밀번호: moa1234!@ (bcrypt 해시)
 INSERT INTO users (
     user_id, name, email, password, nickname, birth_date, age, user_role, user_gender,
     provider, public_id, user_status, privacy_agreed_at, sanction_count, create_date, update_date
 )
 SELECT 1, '김관리', 'admin@moa.com',
-       '{bcrypt}$2a$10$YoFoYMZu8cDn0QhwUIMV6Ov2JFIyiWWa1nZUT4HgS1UncuV6GSYNi',
+       '{bcrypt}$2a$10$58.U9yHQuc8iYBPO9pngO.W0k32d2BPSXCkgNoO0ebIxZQ5Tsi/bW',
        '관리자', '1985-03-15', 41, 'ADMIN', 'MALE',
        'LOCAL', UUID(), 'ACTIVE', '2025-04-01 09:00:00',
        0, '2025-04-01 09:00:00', '2025-04-01 09:00:00'
@@ -31,7 +31,7 @@ INSERT INTO users (
     provider, public_id, user_status, privacy_agreed_at, sanction_count, create_date, update_date
 )
 SELECT 2, '이운영', 'admin2@moa.com',
-       '{bcrypt}$2a$10$YoFoYMZu8cDn0QhwUIMV6Ov2JFIyiWWa1nZUT4HgS1UncuV6GSYNi',
+       '{bcrypt}$2a$10$58.U9yHQuc8iYBPO9pngO.W0k32d2BPSXCkgNoO0ebIxZQ5Tsi/bW',
        '부관리자', '1990-07-22', 35, 'ADMIN', 'FEMALE',
        'LOCAL', UUID(), 'ACTIVE', '2025-04-01 09:00:00',
        0, '2025-04-01 09:00:00', '2025-04-01 09:00:00'
@@ -855,6 +855,7 @@ WHERE NOT EXISTS (SELECT 1 FROM tag WHERE id = 234 OR (name = '런닝머신' AND
 INSERT INTO tag (id, name, is_active, tag_category_id)
 SELECT 235, '사격장', true, 15
 WHERE NOT EXISTS (SELECT 1 FROM tag WHERE id = 235 OR (name = '사격장' AND tag_category_id = 15));
+
 
 
 
