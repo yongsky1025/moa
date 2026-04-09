@@ -6,12 +6,12 @@ spring:
   jpa:
     hibernate:
       # validate, update
-      ddl-auto: create
+      ddl-auto: validate
     defer-datasource-initialization: true
   sql:
     init:
       # never, always
-      mode: always
+      mode: never
       data-locations:
         - classpath:seed-data.sql
         - classpath:dummy-data.sql
