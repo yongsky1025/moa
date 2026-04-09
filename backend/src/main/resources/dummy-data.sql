@@ -39,6 +39,8 @@ DELETE FROM user_energy_profile;
 DELETE FROM refresh_token;
 DELETE FROM image;
 DELETE FROM common_file;
+-- seed-data.sql에서 생성한 관리자(1,2) 보존, 더미 유저(3+)만 재생성
+DELETE FROM users WHERE user_id >= 3;
 
 -- ============================================================
 -- 1. Users (48명: 일반 유저, 관리자 2명은 seed-data.sql 사용)
