@@ -36,7 +36,7 @@ jwt:
   guest-token-exp-ms: 86400000
 
 meilisearch:
-  enabled: false
+  enabled: true
   host: ${MEILISEARCH_HOST}
   master-api-key: ${MEILISEARCH_MASTER_API_KEY}
   search-api-key: ${MEILISEARCH_SEARCH_API_KEY}
