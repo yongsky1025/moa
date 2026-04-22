@@ -60,9 +60,16 @@ public class PostDomainSearchSupport extends DomainSearchSupport<PostSearchDocum
                     "searchableAttributes", searchableWithChosung(BASE_SEARCHABLE_FIELDS),
                     "filterableAttributes", List.of("boardType", "circleId"),
                     "sortableAttributes", List.of("createDate", "viewCount", "likeCount"),
-                    "typoTolerance", typoToleranceForChosung(BASE_SEARCHABLE_FIELDS)));
+                    "typoTolerance", Map.of("enabled", false)));
             configured = true;
         }
+    }
+
+    public void reconfigure() {
+        synchronized (configureLock) {
+            configured = false;
+        }
+        ensureConfigured();
     }
 
     public long upsertDocuments(Collection<PostSearchDocument> documents) {
@@ -77,7 +84,11 @@ public class PostDomainSearchSupport extends DomainSearchSupport<PostSearchDocum
     }
 
     public long deleteIndex() {
-        return deleteCurrentIndex();
+        long taskUid = deleteCurrentIndex();
+        synchronized (configureLock) {
+            configured = false;
+        }
+        return taskUid;
     }
 
     public SearchPage<PostSearchHitDTO> searchPosts(SearchQuery query) {

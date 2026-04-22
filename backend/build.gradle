@@ -102,8 +102,6 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	// 테스트용 인메모리 DB (빌드 오류 수정)
 	testRuntimeOnly 'com.h2database:h2'
-	// 채팅 - Redis pub/sub 메시지 브로커
-	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 
 tasks.named('test') {

@@ -78,12 +78,22 @@ public class PostSearchService {
     }
 
     public long reindexAll(Integer requestedBatchSize) {
+        return reindexAll(requestedBatchSize, false);
+    }
+
+    public long reindexAll(Integer requestedBatchSize, boolean failOnMeiliError) {
         int batchSize = safeBatchSize(requestedBatchSize);
         boolean meiliEnabled = postDomainSearchSupport.enabled();
+        if (failOnMeiliError && !meiliEnabled) {
+            throw new InvalidRequestException("[#SEARCH] Meilisearch가 비활성화되어 재색인을 수행할 수 없습니다.");
+        }
         if (meiliEnabled) {
             try {
-                ensureIndexConfigured();
+                forceReconfigureIndex();
             } catch (RestClientException | IllegalStateException e) {
+                if (failOnMeiliError) {
+                    throw new InvalidRequestException("[#SEARCH] Meilisearch 인덱스 초기화 실패: " + e.getMessage());
+                }
                 log.warn("[#SEARCH] Meilisearch 인덱스 초기화 실패, DB 검색 인덱싱만 진행합니다. message={}", e.getMessage());
                 meiliEnabled = false;
             }
@@ -111,6 +121,9 @@ public class PostSearchService {
                             .toList();
                     postDomainSearchSupport.upsertDocuments(documents);
                 } catch (RestClientException | IllegalStateException e) {
+                    if (failOnMeiliError) {
+                        throw new InvalidRequestException("[#SEARCH] Meilisearch 배치 동기화 실패: " + e.getMessage());
+                    }
                     log.warn("[#SEARCH] Meilisearch 배치 동기화 실패, 남은 배치는 DB 검색 인덱싱만 진행합니다. message={}", e.getMessage());
                     meiliEnabled = false;
                 }
@@ -208,6 +221,10 @@ public class PostSearchService {
 
     private void ensureIndexConfigured() {
         postDomainSearchSupport.ensureConfigured();
+    }
+
+    private void forceReconfigureIndex() {
+        postDomainSearchSupport.reconfigure();
     }
 
     private void safeRun(Runnable action, String operation, Long postId) {
