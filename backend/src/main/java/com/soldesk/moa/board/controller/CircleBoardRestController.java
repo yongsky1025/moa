@@ -21,8 +21,8 @@ import com.soldesk.moa.board.service.BoardService;
 import com.soldesk.moa.post.dto.PostRequestDTO;
 import com.soldesk.moa.post.dto.PostResponseDTO;
 import com.soldesk.moa.post.entity.Post;
-import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.post.service.PostService;
+import com.soldesk.moa.post.repository.PostRepository;
 import com.soldesk.moa.auth.dto.AuthUserDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
